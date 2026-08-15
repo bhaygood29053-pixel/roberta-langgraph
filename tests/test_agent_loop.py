@@ -29,7 +29,7 @@ def test_roberta_can_answer_without_a_specialist() -> None:
     assert result["messages"][-1].content == "Roberta answered without a specialist."
 
 
-def test_roberta_delegates_to_x1_scout_observes_report_and_finishes() -> None:
+def test_roberta_delegates_market_risk_to_x1_scout_risk_check() -> None:
     model = ScriptedOracleModel(request_tool=True)
     graph = build_graph(model=model, tools=_test_tools())
 
@@ -55,8 +55,9 @@ def test_roberta_delegates_to_x1_scout_observes_report_and_finishes() -> None:
     assert '"specialist": "x1_scout"' in content
     assert '"chain": "x1"' in content
     assert '"service": "cmis"' in content
+    assert '"operation": "risk_check"' in content
     assert '"cmis_status": "partial"' in content
-    assert "TEST_ONLY" in content
+    assert '"risk": {"flags": ["NOT_LIVE_DATA"], "outcome": "TEST_ONLY", "score": null}' in content
     assert "AGI" in content
 
     final_message = result["messages"][-1]

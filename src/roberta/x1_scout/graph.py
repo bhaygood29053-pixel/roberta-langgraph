@@ -1,7 +1,8 @@
 """X1 Scout LangGraph specialist subgraph.
 
-X1 Scout owns X1-specific investigation flow. CMIS owns deterministic current
-market/tokenomics/risk services and the X1 Provider beneath them.
+X1 Scout owns X1-specific investigation planning and interpretation. CMIS owns
+deterministic current market/tokenomics/risk services and the X1 Provider
+beneath them.
 """
 
 from collections.abc import Callable
@@ -13,6 +14,48 @@ from roberta.cmis.client import CMISClient
 from roberta.cmis.contracts import CMISOperation
 from roberta.x1_scout.state import X1ScoutReport, X1ScoutState
 
+_RISK_TERMS = (
+    "risk",
+    "risky",
+    "safety",
+    "safe",
+    "danger",
+    "rug",
+)
+_TOKENOMICS_TERMS = (
+    "tokenomics",
+    "supply",
+    "mint authority",
+    "freeze authority",
+    "minting",
+)
+
+
+def select_cmis_operation(objective: str) -> CMISOperation:
+    """Select the minimum deterministic CMIS operation required by an objective.
+
+    This is a safety policy boundary, not market analysis. Risk objectives must
+    use ``risk_check`` so an LLM never derives a categorical risk conclusion
+    from raw ``market_report`` facts. Explicit operations supplied by internal
+    callers remain authoritative and bypass this selector.
+    """
+
+    normalized = " ".join(str(objective or "").strip().lower().split())
+    if any(term in normalized for term in _RISK_TERMS):
+        return "risk_check"
+    if any(term in normalized for term in _TOKENOMICS_TERMS):
+        return "tokenomics"
+    return "market_report"
+
+
+def plan_cmis_operation(state: X1ScoutState) -> dict[str, Any]:
+    """Populate an operation when the caller supplied only an investigation goal."""
+
+    request = dict(state["request"])
+    if "operation" not in request:
+        request["operation"] = select_cmis_operation(request["objective"])
+    return {"request": request, "status": "running"}
+
 
 def make_cmis_call_node(
     cmis_client: CMISClient,
@@ -21,7 +64,7 @@ def make_cmis_call_node(
 
     def cmis_call_node(state: X1ScoutState) -> dict[str, Any]:
         request = state["request"]
-        operation: CMISOperation = request.get("operation", "market_report")
+        operation: CMISOperation = request["operation"]
         asset = request["asset"]
 
         if operation == "market_report":
@@ -87,12 +130,19 @@ def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
 
 
 def build_x1_scout_graph(cmis_client: CMISClient):
-    """Compile X1 Scout's deterministic CMIS dispatch subgraph."""
+    """Compile X1 Scout's objective-planning and CMIS dispatch subgraph.
+
+    Flow::
+
+        START -> plan -> cmis_call -> interpret -> END
+    """
 
     builder = StateGraph(X1ScoutState)
+    builder.add_node("plan", plan_cmis_operation)
     builder.add_node("cmis_call", make_cmis_call_node(cmis_client))
     builder.add_node("interpret", interpret_cmis_result)
-    builder.add_edge(START, "cmis_call")
+    builder.add_edge(START, "plan")
+    builder.add_edge("plan", "cmis_call")
     builder.add_edge("cmis_call", "interpret")
     builder.add_edge("interpret", END)
     return builder.compile()

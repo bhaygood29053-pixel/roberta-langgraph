@@ -3,10 +3,10 @@
 import pytest
 
 from roberta.cmis.mock import MockCMISClient
-from roberta.x1_scout.graph import build_x1_scout_graph
+from roberta.x1_scout.graph import build_x1_scout_graph, select_cmis_operation
 
 
-def test_x1_scout_scopes_market_report_to_x1_and_preserves_envelope() -> None:
+def test_x1_scout_routes_market_risk_objective_to_risk_check() -> None:
     cmis = MockCMISClient()
     scout = build_x1_scout_graph(cmis)
 
@@ -22,7 +22,7 @@ def test_x1_scout_scopes_market_report_to_x1_and_preserves_envelope() -> None:
 
     assert cmis.calls == [
         {
-            "operation": "market_report",
+            "operation": "risk_check",
             "chain": "x1",
             "asset": "AGI",
         }
@@ -36,20 +36,42 @@ def test_x1_scout_scopes_market_report_to_x1_and_preserves_envelope() -> None:
     assert report["asset"] == {"symbol": "AGI"}
     assert report["source"] == {
         "service": "cmis",
-        "operation": "market_report",
+        "operation": "risk_check",
     }
     assert report["cmis_status"] == "partial"
     assert report["observed_at"] == "2026-08-15T21:45:00Z"
     assert report["confidence"] == {"level": "TEST_ONLY"}
-    assert report["findings"]["data"]["price"] is None
+    assert report["findings"]["risk"] == {
+        "outcome": "TEST_ONLY",
+        "score": None,
+        "flags": ["NOT_LIVE_DATA"],
+    }
     assert report["errors"] == []
+
+
+@pytest.mark.parametrize(
+    ("objective", "expected"),
+    [
+        ("check market risk", "risk_check"),
+        ("is this asset safe?", "risk_check"),
+        ("check token supply", "tokenomics"),
+        ("verify mint authority", "tokenomics"),
+        ("show price and liquidity", "market_report"),
+        ("current market activity", "market_report"),
+    ],
+)
+def test_objective_planner_selects_minimum_required_operation(
+    objective: str,
+    expected: str,
+) -> None:
+    assert select_cmis_operation(objective) == expected
 
 
 @pytest.mark.parametrize(
     "operation",
     ["market_report", "tokenomics", "risk_check", "pre_trade_check"],
 )
-def test_x1_scout_dispatches_initial_cmis_operations(operation: str) -> None:
+def test_x1_scout_dispatches_explicit_cmis_operations(operation: str) -> None:
     cmis = MockCMISClient()
     scout = build_x1_scout_graph(cmis)
     request: dict[str, object] = {
@@ -82,13 +104,13 @@ def test_x1_scout_propagates_failed_cmis_state_without_fabrication(
             "request": {
                 "asset": "AGI",
                 "objective": "assess market risk",
-                "operation": "risk_check",
             },
             "status": "running",
         }
     )
 
     report = result["report"]
+    assert cmis.calls[0]["operation"] == "risk_check"
     assert result["status"] == "error"
     assert report["status"] == "error"
     assert report["cmis_status"] == status
