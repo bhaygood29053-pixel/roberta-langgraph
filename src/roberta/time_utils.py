@@ -1,4 +1,4 @@
-"""Deterministic timestamp normalization helpers."""
+"""Deterministic timestamp normalization and display helpers."""
 
 from datetime import datetime, timezone
 from math import isfinite
@@ -30,3 +30,26 @@ def normalize_observed_at(value: object | None) -> str | None:
         return observed.isoformat(timespec="microseconds").replace("+00:00", "Z")
 
     return None
+
+
+def format_observed_at_utc(value: object | None) -> str | None:
+    """Render a verified timezone-aware timestamp as a compact UTC display."""
+
+    normalized = normalize_observed_at(value)
+    if normalized is None:
+        return None
+
+    candidate = normalized.strip()
+    if candidate.endswith("Z"):
+        candidate = candidate[:-1] + "+00:00"
+
+    try:
+        observed = datetime.fromisoformat(candidate)
+    except ValueError:
+        return None
+
+    if observed.tzinfo is None:
+        return None
+
+    observed = observed.astimezone(timezone.utc)
+    return observed.strftime("%Y-%m-%d | %H:%M:%S UTC")
