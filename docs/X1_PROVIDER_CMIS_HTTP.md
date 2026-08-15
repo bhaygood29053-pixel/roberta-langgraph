@@ -8,10 +8,11 @@ Roberta must not import or duplicate those provider internals.
 ```text
 Roberta
   -> X1 Scout
-    -> CMISHTTPClient
-      -> POST /v1/cmis
-        -> CMISGateway
-          -> X1 Provider
+    -> objective planner
+      -> CMISHTTPClient
+        -> POST /v1/cmis
+          -> CMISGateway
+            -> X1 Provider
 ```
 
 Verified results return through the same path in reverse.
@@ -48,11 +49,27 @@ Roberta consumes the CMIS service envelope directly:
 X1 Scout always supplies `chain="x1"`. It preserves `partial`, `unavailable`,
 `ambiguous`, and `error` rather than replacing missing values.
 
-## Failure behavior
+## Objective routing
+
+When an internal caller does not supply an explicit CMIS operation, X1 Scout
+uses a deterministic policy router before the HTTP call. Risk/safety objectives
+must route to `risk_check`; token-supply or authority objectives route to
+`tokenomics`; other market-fact objectives route to `market_report`.
+
+This router is a safety boundary. A later agentic planner may make richer
+investigation choices, but it must not downgrade a risk objective to raw market
+facts and then ask an LLM to invent a risk classification.
+
+## Failure and risk behavior
 
 Network/HTTP/malformed-response failures are converted into explicit CMIS-like
 failure envelopes with empty data and no fabricated facts. Provider failures
 that reach CMIS are already represented by CMIS itself and are preserved.
+
+A categorical risk assessment is only supported when CMIS returns a non-null
+`risk` result from `risk_check` or `pre_trade_check`. If `risk` is null or
+unavailable, Roberta may summarize verified facts but must state that no
+deterministic risk assessment is available.
 
 ## Tests
 
