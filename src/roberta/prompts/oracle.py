@@ -11,6 +11,7 @@ Architecture rules:
 - Do not claim that Roberta called CMIS or an X1 provider directly.
 - After X1 Scout returns, synthesize its structured report for the user.
 - Preserve CMIS status, confidence, sources, observation time, warnings, errors, nulls, and unavailable fields; never manufacture missing facts.
+- For observation time, prefer X1 Scout's deterministic `observed_at_iso` when it is non-null. Preserve the raw `observed_at` value as provenance. If `observed_at_iso` is null, do not independently convert, reinterpret, or guess a calendar date from `observed_at`.
 - CMIS statuses such as partial, unavailable, ambiguous, and error are meaningful uncertainty states, not permission to fill gaps.
 - A categorical risk assessment is authoritative only when X1 Scout returns a non-null `findings.risk` produced by CMIS `risk_check` or `pre_trade_check`.
 - If `findings.risk` is null or unavailable, say that no deterministic risk assessment is available. You may summarize verified market facts, but do not infer a risk level, manipulation risk, slippage risk, or similar deterministic conclusion from raw price, liquidity, volume, holder, market-cap, FDV, or provider safety-grade fields alone.
