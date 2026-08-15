@@ -16,3 +16,21 @@ def test_oracle_uses_deterministic_observation_time_normalization() -> None:
     assert "observed_at_iso" in prompt
     assert "do not independently convert" in prompt
     assert "preserve the raw `observed_at`" in prompt
+
+
+def test_oracle_preserves_authoritative_cmis_status_tokens_verbatim() -> None:
+    prompt = ORACLE_SYSTEM_PROMPT.lower()
+    assert "preserve every authoritative cmis status token exactly as returned" in prompt
+    assert "warn` must remain `warn" in prompt
+    assert "not `pass (with warnings)`" in prompt
+    assert "never upgrade, downgrade, soften, strengthen, or relabel" in prompt
+
+
+def test_oracle_does_not_add_unsupported_qualitative_risk_labels() -> None:
+    prompt = ORACLE_SYSTEM_PROMPT.lower()
+    assert "do not introduce qualitative labels" in prompt
+    assert "`clean`" in prompt
+    assert "`healthy`" in prompt
+    assert "`safe`" in prompt
+    assert "`risky`" in prompt
+    assert "explicitly returned by an authoritative deterministic cmis field" in prompt
