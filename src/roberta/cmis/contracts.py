@@ -1,108 +1,55 @@
-"""Structured contracts for the Cross-Chain Market Intelligence Service.
+"""External contracts for the Cross-Chain Market Intelligence Service.
 
-These contracts model the Roberta-side service boundary. They are deliberately
-provider-neutral and preserve unavailable values, confidence, warnings, source
-metadata, and service errors instead of asking an LLM to infer missing facts.
+Roberta-side types mirror the CMIS HTTP service envelope. They intentionally do
+not restate provider-specific market schemas; X1 Scout preserves the structured
+CMIS payload and interprets it without inventing unavailable fields.
 """
 
 from typing import Literal, TypeAlias, TypedDict
 
+CMISService: TypeAlias = Literal[
+    "asset_lookup",
+    "market_report",
+    "rank",
+    "historical_compare",
+    "tokenomics",
+    "risk_check",
+    "pre_trade_check",
+]
 CMISOperation: TypeAlias = Literal[
     "market_report",
     "tokenomics",
     "risk_check",
     "pre_trade_check",
 ]
-DataConfidence: TypeAlias = Literal[
-    "HIGH",
-    "MEDIUM",
-    "LOW",
-    "UNAVAILABLE",
-    "TEST_ONLY",
+CMISStatus: TypeAlias = Literal[
+    "ok",
+    "partial",
+    "unavailable",
+    "ambiguous",
+    "error",
 ]
 TradeAction: TypeAlias = Literal["BUY", "SELL"]
-RiskLevel: TypeAlias = Literal[
-    "LOW",
-    "MEDIUM",
-    "HIGH",
-    "CRITICAL",
-    "UNKNOWN",
-    "TEST_ONLY",
-]
-RiskDecision: TypeAlias = Literal[
-    "ALLOW",
-    "WARN",
-    "BLOCK",
-    "UNAVAILABLE",
-    "TEST_ONLY",
-]
 
 
-class CMISError(TypedDict):
-    code: str
-    message: str
-    retryable: bool
-    source: str | None
+class CMISEnvelope(TypedDict):
+    """Standard CMIS HTTP response envelope."""
 
-
-class MarketSnapshot(TypedDict):
-    price: float | None
-    liquidity: float | None
-    lp_count: int | None
-    volume_24h: float | None
-    volume_rank: int | None
-    liquidity_rank: int | None
-
-
-class TokenomicsSnapshot(TypedDict):
-    supply: float | None
-    mint_authority: str | None
-    freeze_authority: str | None
-
-
-class RiskSnapshot(TypedDict):
-    score: float | None
-    level: RiskLevel
-    decision: RiskDecision
-    flags: list[str]
-
-
-class CMISBaseReport(TypedDict):
-    service: Literal["cmis"]
+    service: CMISService
     chain: str
-    asset: str
-    timestamp: str
-    data_confidence: DataConfidence
-    sources: list[str]
-    warnings: list[str]
-    errors: list[CMISError]
+    status: CMISStatus
+    asset: dict[str, object]
+    data: dict[str, object]
+    risk: dict[str, object] | None
+    confidence: dict[str, object]
+    sources: list[object]
+    observed_at: object | None
+    warnings: list[object]
+    errors: list[object]
 
 
-class CMISMarketReport(CMISBaseReport):
-    operation: Literal["market_report"]
-    market: MarketSnapshot
-    risk: RiskSnapshot
-
-
-class CMISTokenomicsReport(CMISBaseReport):
-    operation: Literal["tokenomics"]
-    tokenomics: TokenomicsSnapshot
-
-
-class CMISRiskCheck(CMISBaseReport):
-    operation: Literal["risk_check"]
-    risk: RiskSnapshot
-
-
-class CMISPreTradeCheck(CMISBaseReport):
-    operation: Literal["pre_trade_check"]
-    action: TradeAction
-    amount_usd: float
-    market: MarketSnapshot
-    tokenomics: TokenomicsSnapshot
-    risk: RiskSnapshot
-
-
-CMISResult: TypeAlias = (
-    CMISMarketReport | CMISTokenomicsReport | CMISRiskCheck | CMISPreTradeCheck
-)
+CMISResult: TypeAlias = CMISEnvelope
+CMISMarketReport: TypeAlias = CMISEnvelope
+CMISTokenomicsReport: TypeAlias = CMISEnvelope
+CMISRiskCheck: TypeAlias = CMISEnvelope
+CMISPreTradeCheck: TypeAlias = CMISEnvelope

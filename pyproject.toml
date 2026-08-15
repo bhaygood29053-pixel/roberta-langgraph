@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "roberta-langgraph"
-version = "0.2.0"
+version = "0.3.0"
 description = "Roberta Oracle / Coordinator built on LangGraph"
 requires-python = ">=3.11"
 dependencies = [
@@ -24,4 +24,5 @@ pythonpath = ["src"]
 testpaths = ["tests"]
 markers = [
   "live: opt-in test that makes a paid external model API call",
+  "cmis_live: opt-in integration test against a running CMIS gateway",
 ]

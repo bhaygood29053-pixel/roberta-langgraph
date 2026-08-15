@@ -6,7 +6,7 @@ from roberta.cmis.mock import MockCMISClient
 from roberta.x1_scout.graph import build_x1_scout_graph
 
 
-def test_x1_scout_scopes_market_report_to_x1_and_returns_structured_report() -> None:
+def test_x1_scout_scopes_market_report_to_x1_and_preserves_envelope() -> None:
     cmis = MockCMISClient()
     scout = build_x1_scout_graph(cmis)
 
@@ -32,16 +32,17 @@ def test_x1_scout_scopes_market_report_to_x1_and_returns_structured_report() -> 
     assert result["status"] == "complete"
     assert report["specialist"] == "x1_scout"
     assert report["chain"] == "x1"
-    assert report["asset"] == "AGI"
+    assert report["requested_asset"] == "agi"
+    assert report["asset"] == {"symbol": "AGI"}
     assert report["source"] == {
         "service": "cmis",
         "operation": "market_report",
     }
-    assert report["timestamp"] == "2026-08-15T21:45:00Z"
-    assert report["data_confidence"] == "TEST_ONLY"
-    assert report["findings"]["market"]["price"] is None
+    assert report["cmis_status"] == "partial"
+    assert report["observed_at"] == "2026-08-15T21:45:00Z"
+    assert report["confidence"] == {"level": "TEST_ONLY"}
+    assert report["findings"]["data"]["price"] is None
     assert report["errors"] == []
-    assert "NOT_LIVE_DATA" in report["warnings"]
 
 
 @pytest.mark.parametrize(
@@ -64,11 +65,16 @@ def test_x1_scout_dispatches_initial_cmis_operations(operation: str) -> None:
     assert cmis.calls[0]["operation"] == operation
     assert cmis.calls[0]["chain"] == "x1"
     assert result["report"]["source"]["operation"] == operation
+    assert result["report"]["cmis_status"] == "partial"
     assert result["report"]["status"] == "complete"
 
 
-def test_x1_scout_propagates_structured_cmis_error_without_fabrication() -> None:
-    cmis = MockCMISClient(scenario="error")
+@pytest.mark.parametrize("scenario,status", [("unavailable", "unavailable"), ("error", "error")])
+def test_x1_scout_propagates_failed_cmis_state_without_fabrication(
+    scenario: str,
+    status: str,
+) -> None:
+    cmis = MockCMISClient(scenario=scenario)
     scout = build_x1_scout_graph(cmis)
 
     result = scout.invoke(
@@ -85,6 +91,5 @@ def test_x1_scout_propagates_structured_cmis_error_without_fabrication() -> None
     report = result["report"]
     assert result["status"] == "error"
     assert report["status"] == "error"
-    assert report["data_confidence"] == "UNAVAILABLE"
-    assert report["findings"]["risk"]["score"] is None
-    assert report["errors"][0]["code"] == "CMIS_PROVIDER_UNAVAILABLE"
+    assert report["cmis_status"] == status
+    assert report["findings"]["risk"] is None
