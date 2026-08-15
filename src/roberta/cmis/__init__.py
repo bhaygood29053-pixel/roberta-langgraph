@@ -2,28 +2,24 @@
 
 from roberta.cmis.client import CMISClient
 from roberta.cmis.contracts import (
-    CMISError,
-    CMISMarketReport,
+    CMISEnvelope,
     CMISOperation,
-    CMISPreTradeCheck,
     CMISResult,
-    CMISRiskCheck,
-    CMISTokenomicsReport,
-    DataConfidence,
+    CMISService,
+    CMISStatus,
     TradeAction,
 )
+from roberta.cmis.http import CMISHTTPClient
 from roberta.cmis.mock import MockCMISClient
 
 __all__ = [
     "CMISClient",
-    "CMISError",
-    "CMISMarketReport",
+    "CMISEnvelope",
+    "CMISHTTPClient",
     "CMISOperation",
-    "CMISPreTradeCheck",
     "CMISResult",
-    "CMISRiskCheck",
-    "CMISTokenomicsReport",
-    "DataConfidence",
+    "CMISService",
+    "CMISStatus",
     "MockCMISClient",
     "TradeAction",
 ]

@@ -2,13 +2,19 @@
 
 from langchain_core.messages import AIMessage, ToolMessage
 
+from roberta.cmis.mock import MockCMISClient
 from roberta.graph import build_graph
+from roberta.tools import get_roberta_tools
 from tests.fakes import ScriptedOracleModel
+
+
+def _test_tools():
+    return get_roberta_tools(cmis_client=MockCMISClient())
 
 
 def test_roberta_can_answer_without_a_specialist() -> None:
     model = ScriptedOracleModel(request_tool=False)
-    graph = build_graph(model=model)
+    graph = build_graph(model=model, tools=_test_tools())
 
     result = graph.invoke(
         {
@@ -25,7 +31,7 @@ def test_roberta_can_answer_without_a_specialist() -> None:
 
 def test_roberta_delegates_to_x1_scout_observes_report_and_finishes() -> None:
     model = ScriptedOracleModel(request_tool=True)
-    graph = build_graph(model=model)
+    graph = build_graph(model=model, tools=_test_tools())
 
     result = graph.invoke(
         {
@@ -49,6 +55,7 @@ def test_roberta_delegates_to_x1_scout_observes_report_and_finishes() -> None:
     assert '"specialist": "x1_scout"' in content
     assert '"chain": "x1"' in content
     assert '"service": "cmis"' in content
+    assert '"cmis_status": "partial"' in content
     assert "TEST_ONLY" in content
     assert "AGI" in content
 
