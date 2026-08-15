@@ -2,12 +2,21 @@
 
 from typing import Literal, NotRequired, TypedDict
 
-from roberta.cmis.contracts import CMISMarketReport
+from roberta.cmis.contracts import (
+    CMISError,
+    CMISOperation,
+    CMISResult,
+    DataConfidence,
+    TradeAction,
+)
 
 
 class X1ScoutRequest(TypedDict):
     asset: str
     objective: str
+    operation: NotRequired[CMISOperation]
+    action: NotRequired[TradeAction]
+    amount_usd: NotRequired[float]
 
 
 class X1ScoutReport(TypedDict):
@@ -15,15 +24,18 @@ class X1ScoutReport(TypedDict):
     chain: Literal["x1"]
     asset: str
     objective: str
-    status: Literal["complete"]
-    data_confidence: Literal["TEST_ONLY"]
+    status: Literal["complete", "error"]
+    timestamp: str
+    data_confidence: DataConfidence
     findings: dict[str, object]
     source: dict[str, str]
+    sources: list[str]
     warnings: list[str]
+    errors: list[CMISError]
 
 
 class X1ScoutState(TypedDict):
     request: X1ScoutRequest
     status: Literal["running", "complete", "error"]
-    cmis_result: NotRequired[CMISMarketReport]
+    cmis_result: NotRequired[CMISResult]
     report: NotRequired[X1ScoutReport]
