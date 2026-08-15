@@ -8,11 +8,30 @@ from the external Cross-Chain Market Intelligence Service (CMIS).
 User
   -> Roberta
     -> X1 Scout
-      -> CMIS HTTP gateway
-        -> X1 Provider
+      -> objective planner
+        -> CMIS HTTP gateway
+          -> X1 Provider
 ```
 
 Roberta does not call CMIS or X1 provider internals directly.
+
+## X1 Scout routing safety
+
+X1 Scout now chooses the minimum deterministic CMIS operation needed by an
+implicit objective before dispatching the request:
+
+- market-risk/safety objectives -> `risk_check`
+- token supply/authority objectives -> `tokenomics`
+- market-price/liquidity/activity objectives -> `market_report`
+- explicit internal operations remain supported for deterministic workflows
+
+A categorical risk assessment is authoritative only when CMIS returns a
+non-null `risk` result from `risk_check` or `pre_trade_check`. Raw market facts
+must not be converted by Roberta into an invented risk level when CMIS risk is
+null or unavailable.
+
+This routing node is intentionally deterministic. It establishes the safety
+policy boundary that a later agentic X1 Scout planner must operate within.
 
 ## Install
 
@@ -29,9 +48,9 @@ python -m pip install -e '.[dev,deepseek]'
 python -m pytest -v -m 'not live and not cmis_live'
 ```
 
-The suite covers Roberta delegation, the X1 Scout boundary, CMIS envelope
-semantics, HTTP transport behavior, explicit X1 chain scoping, unavailable
-states, warnings, and service errors.
+The suite covers Roberta delegation, X1 Scout objective routing, the X1 Scout
+boundary, CMIS envelope semantics, HTTP transport behavior, explicit X1 chain
+scoping, unavailable states, warnings, and service errors.
 
 ## Provider-backed CMIS
 
@@ -83,4 +102,5 @@ For an actual end-to-end live run, start CMIS first and then execute:
 roberta-live "On X1, check AGI market risk"
 ```
 
+For that objective, X1 Scout must call CMIS `risk_check`, not `market_report`.
 See `docs/X1_PROVIDER_CMIS_HTTP.md` for the current runtime boundary.
