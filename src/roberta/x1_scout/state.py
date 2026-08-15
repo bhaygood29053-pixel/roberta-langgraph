@@ -26,11 +26,14 @@ class X1ScoutReport(TypedDict):
     objective: str
     status: Literal["complete", "error"]
     cmis_status: CMISStatus
+    cmis_status_help: dict[str, object] | None
     observed_at: object | None
     observed_at_iso: str | None
+    observed_at_display: str | None
     findings: dict[str, object]
     confidence: dict[str, object]
     risk_help: dict[str, object] | None
+    component_status_table: str | None
     source: dict[str, str]
     sources: list[object]
     warnings: list[object]

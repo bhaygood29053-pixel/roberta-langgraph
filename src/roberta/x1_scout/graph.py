@@ -12,8 +12,10 @@ from langgraph.graph import END, START, StateGraph
 
 from roberta.cmis.client import CMISClient
 from roberta.cmis.contracts import CMISOperation
+from roberta.presentation import format_component_status_table
 from roberta.risk_help import build_risk_help
-from roberta.time_utils import normalize_observed_at
+from roberta.status_help import build_cmis_status_help
+from roberta.time_utils import format_observed_at_utc, normalize_observed_at
 from roberta.x1_scout.state import X1ScoutReport, X1ScoutState
 
 _RISK_TERMS = (
@@ -97,14 +99,17 @@ def make_cmis_call_node(
 
 
 def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
-    """Preserve the external CMIS envelope in X1 Scout's specialist report."""
+    """Preserve CMIS facts and attach deterministic user-facing presentation."""
 
     request = state["request"]
     result = state["cmis_result"]
+    service = result["service"]
     cmis_status = result["status"]
     observed_at = result["observed_at"]
+    observed_at_iso = normalize_observed_at(observed_at)
     risk = dict(result["risk"]) if result["risk"] is not None else None
     confidence = dict(result["confidence"])
+    risk_help = build_risk_help(risk, confidence)
 
     report_status: Literal["complete", "error"] = (
         "error" if cmis_status in {"unavailable", "error"} else "complete"
@@ -117,17 +122,24 @@ def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
         "objective": request["objective"],
         "status": report_status,
         "cmis_status": cmis_status,
+        "cmis_status_help": build_cmis_status_help(
+            service,
+            cmis_status,
+            confidence,
+        ),
         "observed_at": observed_at,
-        "observed_at_iso": normalize_observed_at(observed_at),
+        "observed_at_iso": observed_at_iso,
+        "observed_at_display": format_observed_at_utc(observed_at_iso),
         "findings": {
             "data": dict(result["data"]),
             "risk": risk,
         },
         "confidence": confidence,
-        "risk_help": build_risk_help(risk, confidence),
+        "risk_help": risk_help,
+        "component_status_table": format_component_status_table(risk_help),
         "source": {
             "service": "cmis",
-            "operation": result["service"],
+            "operation": service,
         },
         "sources": list(result["sources"]),
         "warnings": list(result["warnings"]),
