@@ -27,6 +27,7 @@ class X1ScoutReport(TypedDict):
     status: Literal["complete", "error"]
     cmis_status: CMISStatus
     observed_at: object | None
+    observed_at_iso: str | None
     findings: dict[str, object]
     confidence: dict[str, object]
     source: dict[str, str]

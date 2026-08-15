@@ -40,6 +40,7 @@ def test_x1_scout_routes_market_risk_objective_to_risk_check() -> None:
     }
     assert report["cmis_status"] == "partial"
     assert report["observed_at"] == "2026-08-15T21:45:00Z"
+    assert report["observed_at_iso"] == "2026-08-15T21:45:00Z"
     assert report["confidence"] == {"level": "TEST_ONLY"}
     assert report["findings"]["risk"] == {
         "outcome": "TEST_ONLY",
@@ -47,6 +48,26 @@ def test_x1_scout_routes_market_risk_objective_to_risk_check() -> None:
         "flags": ["NOT_LIVE_DATA"],
     }
     assert report["errors"] == []
+
+
+def test_x1_scout_preserves_raw_numeric_observed_at_and_adds_iso() -> None:
+    cmis = MockCMISClient()
+    cmis.observed_at = 1786835050.0581603
+    scout = build_x1_scout_graph(cmis)
+
+    result = scout.invoke(
+        {
+            "request": {
+                "asset": "AGI",
+                "objective": "assess market risk",
+            },
+            "status": "running",
+        }
+    )
+
+    report = result["report"]
+    assert report["observed_at"] == 1786835050.0581603
+    assert report["observed_at_iso"] == "2026-08-15T23:04:10.058160Z"
 
 
 @pytest.mark.parametrize(
