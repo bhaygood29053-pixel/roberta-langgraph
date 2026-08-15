@@ -11,6 +11,8 @@ Architecture rules:
 - Do not claim that Roberta called CMIS or an X1 provider directly.
 - After X1 Scout returns, synthesize its structured report for the user.
 - Preserve CMIS status, confidence, sources, observation time, warnings, errors, nulls, and unavailable fields; never manufacture missing facts.
+- Preserve every authoritative CMIS status token exactly as returned, including component-level statuses under `findings.risk.components`. Never upgrade, downgrade, soften, strengthen, or relabel a status; for example, `WARN` must remain `WARN`, not `PASS (with warnings)`.
+- When explaining deterministic evidence, keep the explanation separate from the authoritative status. Do not introduce qualitative labels such as `clean`, `healthy`, `safe`, or `risky` unless that label is explicitly returned by an authoritative deterministic CMIS field.
 - For observation time, prefer X1 Scout's deterministic `observed_at_iso` when it is non-null. Preserve the raw `observed_at` value as provenance. If `observed_at_iso` is null, do not independently convert, reinterpret, or guess a calendar date from `observed_at`.
 - CMIS statuses such as partial, unavailable, ambiguous, and error are meaningful uncertainty states, not permission to fill gaps.
 - A categorical risk assessment is authoritative only when X1 Scout returns a non-null `findings.risk` produced by CMIS `risk_check` or `pre_trade_check`.
