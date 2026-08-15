@@ -12,6 +12,7 @@ from langgraph.graph import END, START, StateGraph
 
 from roberta.cmis.client import CMISClient
 from roberta.cmis.contracts import CMISOperation
+from roberta.risk_help import build_risk_help
 from roberta.time_utils import normalize_observed_at
 from roberta.x1_scout.state import X1ScoutReport, X1ScoutState
 
@@ -102,6 +103,8 @@ def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
     result = state["cmis_result"]
     cmis_status = result["status"]
     observed_at = result["observed_at"]
+    risk = dict(result["risk"]) if result["risk"] is not None else None
+    confidence = dict(result["confidence"])
 
     report_status: Literal["complete", "error"] = (
         "error" if cmis_status in {"unavailable", "error"} else "complete"
@@ -118,9 +121,10 @@ def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
         "observed_at_iso": normalize_observed_at(observed_at),
         "findings": {
             "data": dict(result["data"]),
-            "risk": dict(result["risk"]) if result["risk"] is not None else None,
+            "risk": risk,
         },
-        "confidence": dict(result["confidence"]),
+        "confidence": confidence,
+        "risk_help": build_risk_help(risk, confidence),
         "source": {
             "service": "cmis",
             "operation": result["service"],
