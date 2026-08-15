@@ -30,6 +30,7 @@ class X1ScoutReport(TypedDict):
     observed_at_iso: str | None
     findings: dict[str, object]
     confidence: dict[str, object]
+    risk_help: dict[str, object] | None
     source: dict[str, str]
     sources: list[object]
     warnings: list[object]

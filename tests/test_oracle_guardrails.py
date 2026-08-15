@@ -34,3 +34,11 @@ def test_oracle_does_not_add_unsupported_qualitative_risk_labels() -> None:
     assert "`safe`" in prompt
     assert "`risky`" in prompt
     assert "explicitly returned by an authoritative deterministic cmis field" in prompt
+
+
+def test_oracle_uses_deterministic_risk_help_for_tooltip_meanings() -> None:
+    prompt = ORACLE_SYSTEM_PROMPT.lower()
+    assert "`risk_help`" in prompt
+    assert "ⓘ what this means" in prompt
+    assert "not the probability that an asset is safe" in prompt
+    assert "never infer or manufacture a numeric score" in prompt
