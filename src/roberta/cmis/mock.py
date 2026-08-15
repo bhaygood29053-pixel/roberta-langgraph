@@ -1,148 +1,135 @@
-"""Deterministic CMIS test adapter.
-
-This adapter never represents live market data. It exercises the production
-contract shape, explicit chain scoping, unavailable-value behavior, warnings,
-and structured service errors without depending on an X1 provider.
-"""
+"""Deterministic CMIS test adapter matching the external service envelope."""
 
 from typing import Literal
 
-from roberta.cmis.contracts import (
-    CMISError,
-    CMISMarketReport,
-    CMISPreTradeCheck,
-    CMISRiskCheck,
-    CMISTokenomicsReport,
-    DataConfidence,
-    MarketSnapshot,
-    RiskSnapshot,
-    TokenomicsSnapshot,
-    TradeAction,
-)
+from roberta.cmis.contracts import CMISEnvelope, CMISOperation, TradeAction
 
 MockScenario = Literal["test_only", "warning", "unavailable", "error"]
 
 
 class MockCMISClient:
-    """Record CMIS calls and return deterministic contract-complete results."""
+    """Record CMIS calls and return deterministic non-live envelopes."""
 
     def __init__(
         self,
         *,
         scenario: MockScenario = "test_only",
-        timestamp: str = "2026-08-15T21:45:00Z",
+        observed_at: str = "2026-08-15T21:45:00Z",
     ) -> None:
         self.scenario = scenario
-        self.timestamp = timestamp
+        self.observed_at = observed_at
         self.calls: list[dict[str, object]] = []
 
-    def _normalize(self, *, chain: str, asset: str) -> tuple[str, str]:
-        normalized_chain = chain.strip().lower()
-        normalized_asset = asset.strip().upper()
-        if not normalized_chain:
+    @staticmethod
+    def _identity(chain: str, asset: str) -> tuple[str, str]:
+        chain = str(chain or "").strip().lower()
+        asset = str(asset or "").strip().upper()
+        if not chain:
             raise ValueError("chain must not be empty")
-        if not normalized_asset:
+        if not asset:
             raise ValueError("asset must not be empty")
-        return normalized_chain, normalized_asset
+        return chain, asset
 
-    def _confidence(self) -> DataConfidence:
-        if self.scenario in {"unavailable", "error"}:
-            return "UNAVAILABLE"
-        return "TEST_ONLY"
+    def _status(self) -> str:
+        if self.scenario == "error":
+            return "error"
+        if self.scenario == "unavailable":
+            return "unavailable"
+        return "partial"
 
-    def _warnings(self) -> list[str]:
-        warnings = ["MOCK_CMIS", "NOT_LIVE_DATA"]
+    def _warnings(self) -> list[object]:
+        warnings: list[object] = [
+            {"code": "MOCK_CMIS", "message": "Deterministic test adapter."},
+            {"code": "NOT_LIVE_DATA", "message": "No live market facts are supplied."},
+        ]
         if self.scenario == "warning":
-            warnings.append("PARTIAL_DATA")
-        elif self.scenario == "unavailable":
-            warnings.append("DATA_UNAVAILABLE")
-        elif self.scenario == "error":
-            warnings.append("SERVICE_ERROR")
+            warnings.append(
+                {"code": "PARTIAL_DATA", "message": "Mock partial-data warning."}
+            )
+        if self.scenario == "unavailable":
+            warnings.append(
+                {"code": "DATA_UNAVAILABLE", "message": "Mock data unavailable."}
+            )
         return warnings
 
-    def _errors(self) -> list[CMISError]:
+    def _errors(self) -> list[object]:
         if self.scenario != "error":
             return []
         return [
             {
                 "code": "CMIS_PROVIDER_UNAVAILABLE",
                 "message": "Mock provider unavailable.",
-                "retryable": True,
-                "source": "mock_cmis",
             }
         ]
 
-    def _market(self) -> MarketSnapshot:
+    def _response(
+        self,
+        *,
+        service: CMISOperation,
+        chain: str,
+        asset: str,
+        data: dict[str, object],
+        risk: dict[str, object] | None = None,
+    ) -> CMISEnvelope:
         return {
-            "price": None,
-            "liquidity": None,
-            "lp_count": None,
-            "volume_24h": None,
-            "volume_rank": None,
-            "liquidity_rank": None,
-        }
-
-    def _tokenomics(self) -> TokenomicsSnapshot:
-        return {
-            "supply": None,
-            "mint_authority": None,
-            "freeze_authority": None,
-        }
-
-    def _risk(self) -> RiskSnapshot:
-        if self.scenario in {"unavailable", "error"}:
-            return {
-                "score": None,
-                "level": "UNKNOWN",
-                "decision": "UNAVAILABLE",
-                "flags": ["DATA_UNAVAILABLE"],
-            }
-        return {
-            "score": None,
-            "level": "TEST_ONLY",
-            "decision": "TEST_ONLY",
-            "flags": ["NOT_LIVE_DATA"],
-        }
-
-    def _base(self, *, chain: str, asset: str) -> dict[str, object]:
-        return {
-            "service": "cmis",
+            "service": service,
             "chain": chain,
-            "asset": asset,
-            "timestamp": self.timestamp,
-            "data_confidence": self._confidence(),
-            "sources": ["mock://cmis"],
+            "status": self._status(),  # type: ignore[typeddict-item]
+            "asset": {"symbol": asset},
+            "data": data,
+            "risk": risk,
+            "confidence": {"level": "TEST_ONLY"},
+            "sources": [{"source": "mock_cmis", "role": "test"}],
+            "observed_at": self.observed_at,
             "warnings": self._warnings(),
             "errors": self._errors(),
         }
 
-    def market_report(self, *, chain: str, asset: str) -> CMISMarketReport:
-        chain, asset = self._normalize(chain=chain, asset=asset)
+    def market_report(self, *, chain: str, asset: str) -> CMISEnvelope:
+        chain, asset = self._identity(chain, asset)
         self.calls.append({"operation": "market_report", "chain": chain, "asset": asset})
-        return {
-            **self._base(chain=chain, asset=asset),
-            "operation": "market_report",
-            "market": self._market(),
-            "risk": self._risk(),
-        }  # type: ignore[return-value]
+        return self._response(
+            service="market_report",
+            chain=chain,
+            asset=asset,
+            data={
+                "price": None,
+                "liquidity": None,
+                "#LPs": None,
+                "volume_24h": None,
+            },
+            risk=None,
+        )
 
-    def tokenomics(self, *, chain: str, asset: str) -> CMISTokenomicsReport:
-        chain, asset = self._normalize(chain=chain, asset=asset)
+    def tokenomics(self, *, chain: str, asset: str) -> CMISEnvelope:
+        chain, asset = self._identity(chain, asset)
         self.calls.append({"operation": "tokenomics", "chain": chain, "asset": asset})
-        return {
-            **self._base(chain=chain, asset=asset),
-            "operation": "tokenomics",
-            "tokenomics": self._tokenomics(),
-        }  # type: ignore[return-value]
+        return self._response(
+            service="tokenomics",
+            chain=chain,
+            asset=asset,
+            data={
+                "total_supply": None,
+                "mint_authority": None,
+                "freeze_authority": None,
+            },
+        )
 
-    def risk_check(self, *, chain: str, asset: str) -> CMISRiskCheck:
-        chain, asset = self._normalize(chain=chain, asset=asset)
+    def risk_check(self, *, chain: str, asset: str) -> CMISEnvelope:
+        chain, asset = self._identity(chain, asset)
         self.calls.append({"operation": "risk_check", "chain": chain, "asset": asset})
-        return {
-            **self._base(chain=chain, asset=asset),
-            "operation": "risk_check",
-            "risk": self._risk(),
-        }  # type: ignore[return-value]
+        risk = (
+            None
+            if self.scenario in {"unavailable", "error"}
+            else {"outcome": "TEST_ONLY", "score": None, "flags": ["NOT_LIVE_DATA"]}
+        )
+        return self._response(
+            service="risk_check",
+            chain=chain,
+            asset=asset,
+            data={},
+            risk=risk,
+        )
 
     def pre_trade_check(
         self,
@@ -151,9 +138,9 @@ class MockCMISClient:
         asset: str,
         action: TradeAction,
         amount_usd: float,
-    ) -> CMISPreTradeCheck:
-        chain, asset = self._normalize(chain=chain, asset=asset)
-        normalized_action = action.strip().upper()
+    ) -> CMISEnvelope:
+        chain, asset = self._identity(chain, asset)
+        normalized_action = str(action or "").strip().upper()
         if normalized_action not in {"BUY", "SELL"}:
             raise ValueError("action must be BUY or SELL")
         if amount_usd <= 0:
@@ -164,15 +151,22 @@ class MockCMISClient:
                 "chain": chain,
                 "asset": asset,
                 "action": normalized_action,
-                "amount_usd": amount_usd,
+                "amount_usd": float(amount_usd),
             }
         )
-        return {
-            **self._base(chain=chain, asset=asset),
-            "operation": "pre_trade_check",
-            "action": normalized_action,
-            "amount_usd": amount_usd,
-            "market": self._market(),
-            "tokenomics": self._tokenomics(),
-            "risk": self._risk(),
-        }  # type: ignore[return-value]
+        return self._response(
+            service="pre_trade_check",
+            chain=chain,
+            asset=asset,
+            data={
+                "trade": {
+                    "side": normalized_action.lower(),
+                    "notional_usd": float(amount_usd),
+                }
+            },
+            risk=(
+                None
+                if self.scenario in {"unavailable", "error"}
+                else {"outcome": "TEST_ONLY", "score": None, "flags": ["NOT_LIVE_DATA"]}
+            ),
+        )

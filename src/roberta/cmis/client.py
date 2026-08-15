@@ -2,33 +2,23 @@
 
 from typing import Protocol
 
-from roberta.cmis.contracts import (
-    CMISMarketReport,
-    CMISPreTradeCheck,
-    CMISRiskCheck,
-    CMISTokenomicsReport,
-    TradeAction,
-)
+from roberta.cmis.contracts import CMISEnvelope, TradeAction
 
 
 class CMISClient(Protocol):
-    """Operations currently required by chain-specialist agents.
+    """CMIS operations currently required by X1 Scout.
 
-    Every call names the target chain explicitly. Implementations may use RPC,
-    DEX integrations, indexers, scanners, or a remote CMIS service underneath
-    this boundary, but those provider details stay hidden from the Scouts.
+    Every call names its target chain explicitly. Provider and transport details
+    stay beneath this interface.
     """
 
-    def market_report(self, *, chain: str, asset: str) -> CMISMarketReport:
-        """Return market and market-risk facts for an explicitly named chain."""
+    def market_report(self, *, chain: str, asset: str) -> CMISEnvelope:
         ...
 
-    def tokenomics(self, *, chain: str, asset: str) -> CMISTokenomicsReport:
-        """Return deterministic tokenomics facts for an explicitly named chain."""
+    def tokenomics(self, *, chain: str, asset: str) -> CMISEnvelope:
         ...
 
-    def risk_check(self, *, chain: str, asset: str) -> CMISRiskCheck:
-        """Return deterministic market-risk evaluation for an asset."""
+    def risk_check(self, *, chain: str, asset: str) -> CMISEnvelope:
         ...
 
     def pre_trade_check(
@@ -38,6 +28,5 @@ class CMISClient(Protocol):
         asset: str,
         action: TradeAction,
         amount_usd: float,
-    ) -> CMISPreTradeCheck:
-        """Return a deterministic pre-trade market/tokenomics/risk check."""
+    ) -> CMISEnvelope:
         ...

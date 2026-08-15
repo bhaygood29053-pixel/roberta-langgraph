@@ -1,10 +1,7 @@
 """X1 Scout LangGraph specialist subgraph.
 
-X1 Scout owns chain-specific investigation flow. CMIS owns deterministic data
-operations. The Roberta-facing tool still defaults to ``market_report`` in this
-milestone; the optional operation field exists inside Scout state so future
-Scout planning can choose among typed CMIS operations without changing the
-service boundary.
+X1 Scout owns X1-specific investigation flow. CMIS owns deterministic current
+market/tokenomics/risk services and the X1 Provider beneath them.
 """
 
 from collections.abc import Callable
@@ -46,7 +43,7 @@ def make_cmis_call_node(
                 action=action,
                 amount_usd=amount_usd,
             )
-        else:  # pragma: no cover - TypedDict contract protects normal callers.
+        else:  # pragma: no cover
             raise ValueError(f"Unsupported CMIS operation: {operation!r}")
 
         return {"cmis_result": result, "status": "running"}
@@ -55,46 +52,32 @@ def make_cmis_call_node(
 
 
 def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
-    """Convert a CMIS result into X1 Scout's structured specialist report."""
+    """Preserve the external CMIS envelope in X1 Scout's specialist report."""
+
     request = state["request"]
     result = state["cmis_result"]
-    operation = result["operation"]
-
-    if operation == "market_report":
-        findings: dict[str, object] = {
-            "market": result["market"],
-            "risk": result["risk"],
-        }
-    elif operation == "tokenomics":
-        findings = {"tokenomics": result["tokenomics"]}
-    elif operation == "risk_check":
-        findings = {"risk": result["risk"]}
-    else:
-        findings = {
-            "trade": {
-                "action": result["action"],
-                "amount_usd": result["amount_usd"],
-            },
-            "market": result["market"],
-            "tokenomics": result["tokenomics"],
-            "risk": result["risk"],
-        }
+    cmis_status = result["status"]
 
     report_status: Literal["complete", "error"] = (
-        "error" if result["errors"] else "complete"
+        "error" if cmis_status in {"unavailable", "error"} else "complete"
     )
     report: X1ScoutReport = {
         "specialist": "x1_scout",
         "chain": "x1",
-        "asset": result["asset"],
+        "requested_asset": request["asset"],
+        "asset": dict(result["asset"]),
         "objective": request["objective"],
         "status": report_status,
-        "timestamp": result["timestamp"],
-        "data_confidence": result["data_confidence"],
-        "findings": findings,
+        "cmis_status": cmis_status,
+        "observed_at": result["observed_at"],
+        "findings": {
+            "data": dict(result["data"]),
+            "risk": dict(result["risk"]) if result["risk"] is not None else None,
+        },
+        "confidence": dict(result["confidence"]),
         "source": {
-            "service": result["service"],
-            "operation": operation,
+            "service": "cmis",
+            "operation": result["service"],
         },
         "sources": list(result["sources"]),
         "warnings": list(result["warnings"]),
@@ -104,12 +87,8 @@ def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
 
 
 def build_x1_scout_graph(cmis_client: CMISClient):
-    """Compile X1 Scout's deterministic service-dispatch subgraph.
+    """Compile X1 Scout's deterministic CMIS dispatch subgraph."""
 
-    Flow::
-
-        START -> cmis_call -> interpret -> END
-    """
     builder = StateGraph(X1ScoutState)
     builder.add_node("cmis_call", make_cmis_call_node(cmis_client))
     builder.add_node("interpret", interpret_cmis_result)
