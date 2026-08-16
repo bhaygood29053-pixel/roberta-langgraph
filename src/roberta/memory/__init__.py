@@ -6,6 +6,7 @@ from roberta.memory.context import (
     latest_user_query,
 )
 from roberta.memory.contracts import (
+    ALL_MEMORY_CATEGORIES,
     DURABLE_MEMORY_CATEGORIES,
     FRESHNESS_SENSITIVE_CATEGORIES,
     DurableMemoryStore,
@@ -28,6 +29,7 @@ from roberta.memory.retrieval import (
 )
 
 __all__ = [
+    "ALL_MEMORY_CATEGORIES",
     "DURABLE_MEMORY_CATEGORIES",
     "FRESHNESS_SENSITIVE_CATEGORIES",
     "DurableMemoryStore",
