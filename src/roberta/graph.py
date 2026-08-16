@@ -49,7 +49,12 @@ def route_after_oracle(state: RobertaState) -> Route:
     return END
 
 
-def build_graph(model: Any, tools: Sequence[BaseTool] | None = None):
+def build_graph(
+    model: Any,
+    tools: Sequence[BaseTool] | None = None,
+    *,
+    checkpointer: Any | None = None,
+):
     """Build Roberta's coordinator loop.
 
     Flow::
@@ -57,8 +62,10 @@ def build_graph(model: Any, tools: Sequence[BaseTool] | None = None):
         START -> oracle -> [tools | END]
                          tools -> oracle
 
-    In Task 4 the default registry exposes X1 Scout to Roberta. CMIS remains
-    beneath the Scout boundary and is not directly available to the Oracle.
+    The optional checkpointer owns LangGraph thread/task execution state. It is
+    deliberately separate from future HXMP/HMPX durable-memory integration.
+    The default remains stateless so existing deterministic callers do not need
+    a thread identifier unless persistence is explicitly enabled.
     """
     active_tools = list(tools) if tools is not None else get_roberta_tools()
     model_with_tools = _bind_tools(model, active_tools)
@@ -78,4 +85,4 @@ def build_graph(model: Any, tools: Sequence[BaseTool] | None = None):
     )
     builder.add_edge("tools", "oracle")
 
-    return builder.compile()
+    return builder.compile(checkpointer=checkpointer)
