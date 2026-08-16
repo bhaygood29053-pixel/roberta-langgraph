@@ -8,6 +8,7 @@ from langchain_core.messages import AIMessage, ToolMessage
 
 from roberta.graph import build_graph
 from roberta.models import create_runtime_model
+from roberta.tools import get_roberta_tools
 
 
 def _message_text(message: object) -> str:
@@ -29,8 +30,10 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    model = create_runtime_model()
-    graph = build_graph(model=model)
+    oracle_model = create_runtime_model()
+    x1_planner_model = create_runtime_model()
+    tools = get_roberta_tools(x1_planner_model=x1_planner_model)
+    graph = build_graph(model=oracle_model, tools=tools)
     result = graph.invoke(
         {
             "messages": [{"role": "user", "content": args.message}],
