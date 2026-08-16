@@ -4,15 +4,15 @@ Last updated: 2026-08-15
 
 ## Status legend
 
-- ✅ Complete — implemented, tested, and merged
-- 🟡 Active / partial — implementation exists but milestone is still in progress or externally blocked
+- ✅ Complete — implemented, tested, merged, and accepted
+- 🟡 Active / partial — current milestone or externally blocked work
 - ⬜ Planned — not yet started as a development milestone
 
 ## Current position
 
-Roberta has completed the core Oracle runtime, provider-neutral model/tool loop, X1 Scout boundary, CMIS/X1 Provider integration, constrained agentic X1 Scout planning, and LangGraph thread/checkpoint persistence.
+Roberta has completed the core Oracle runtime, provider-neutral model/tool loop, X1 Scout boundary, CMIS/X1 Provider integration, constrained agentic X1 Scout planning, LangGraph thread/checkpoint persistence, and the HXMP durable-memory boundary including real read-only live verification.
 
-The active milestone is **Phase 7B — HXMP/HMPX Durable Memory Adapter**.
+The active milestone is **Phase 8 — Oracle Policy**.
 
 ```text
 FOUNDATION
@@ -20,13 +20,13 @@ FOUNDATION
 ████████████████████  Phase 2  Provider-Neutral Model Loop     ✅
 ████████████████████  Phase 3  X1 Scout Boundary               ✅
 ████████████████████  Phase 4  CMIS / X1 Provider Integration  ✅
-████████████░░░░░░░░  Phase 5  X1 Evidence Completeness       🟡
+████████████░░░░░░░░  Phase 5  X1 Evidence Completeness       🟡 BLOCKED
 ████████████████████  Phase 6  Agentic X1 Scout Planning       ✅
 ████████████████████  Phase 7A Thread / Checkpoint Persistence ✅
-████░░░░░░░░░░░░░░░░  Phase 7B HXMP/HMPX Durable Memory       🟡 CURRENT
+████████████████████  Phase 7B HXMP Durable Memory             ✅
+████░░░░░░░░░░░░░░░░  Phase 8  Oracle Policy                  🟡 CURRENT
 
 NEXT
-░░░░░░░░░░░░░░░░░░░░  Phase 8  Oracle Policy                 ⬜
 ░░░░░░░░░░░░░░░░░░░░  Phase 9  Human in the Loop             ⬜
 ░░░░░░░░░░░░░░░░░░░░  Phase 10 More Specialists / Providers  ⬜
 ░░░░░░░░░░░░░░░░░░░░  Phase 11 Controlled Execution         ⬜
@@ -44,10 +44,10 @@ Prove that Roberta can autonomously choose and call a tool through LangGraph.
 - START → Oracle → tool → Oracle → END loop
 - model node and tool routing
 - deterministic scripted tests
-- small state schema with explicit execution status
+- small execution-state schema
 
-### Completion condition
-Roberta can receive a user goal, decide whether a tool is required, execute it through LangGraph, and finish deterministically.
+### Result
+Roberta can receive a user goal, choose whether a specialist/tool is required, execute through LangGraph, and finish deterministically.
 
 ---
 
@@ -62,9 +62,9 @@ Keep Roberta independent of one LLM provider while proving the real runtime path
 - deterministic fake models
 - DeepSeek runtime integration
 - opt-in live model tests
-- separate Oracle and specialist-planner model injection paths
+- separate Oracle and specialist-planner model dependencies
 
-### Architectural result
+### Result
 LangGraph owns orchestration; the model provider is an injected runtime dependency.
 
 ---
@@ -79,10 +79,10 @@ Establish the specialist hierarchy so Roberta coordinates X1 work without direct
 - Roberta exposes X1 Scout, not CMIS/provider HTTP tools
 - X1-only chain boundary
 - structured specialist reports
-- deterministic operation routing guardrails
+- deterministic operation-routing guardrails
 - CMIS status/provenance preservation
 
-### Architectural result
+### Architecture
 
 ```text
 Roberta
@@ -130,7 +130,7 @@ Improve deterministic X1 evidence coverage without inventing unavailable market 
 - own historical snapshot comparison path
 - read-only XDEX provider groundwork
 - live XDEX token-price request contract verified
-- public XDEX pool discovery added
+- public XDEX pool discovery
 - exact public-address identity rule for non-native token assets
 - native XNT kept separate from wrapped-token assumptions
 - fail-closed XDEX schema and error handling
@@ -138,12 +138,12 @@ Improve deterministic X1 evidence coverage without inventing unavailable market 
 ### Still open
 - verify live XDEX chart/history response semantics against a real current non-XNT pool
 - verify live XDEX quote response fields/units/route/freshness against a real current non-XNT pool
-- promote verified XDEX history into CMIS `historical_compare` only after those semantics are proven
+- promote verified XDEX history into CMIS `historical_compare` only after semantics are proven
 - promote verified quote evidence into `pre_trade_check` only after its contract is proven
 - verify provider-specific native XNT quote/market translation without substituting WXNT
 
 ### Current blocker
-The public XDEX X1 pool surface currently exposes no usable non-XNT pool pair. The provider groundwork is merged, but history/quote promotion is intentionally gated until a real market exists.
+The public XDEX X1 pool surface currently exposes no usable non-XNT pool pair. Provider groundwork is merged, but history/quote promotion is intentionally gated until a real market exists.
 
 Tracking: Liquidity Scout issue #28.
 
@@ -159,7 +159,7 @@ Let X1 Scout plan bounded multi-step investigations while deterministic code rem
 
 ### Delivered
 - separate X1 Scout planner-model dependency
-- graph flow:
+- planner graph:
 
 ```text
 START
@@ -175,10 +175,7 @@ interpret
 END
 ```
 
-- autonomous planner scope limited to read-only:
-  - `market_report`
-  - `tokenomics`
-  - `risk_check`
+- autonomous planner scope limited to read-only `market_report`, `tokenomics`, and `risk_check`
 - deterministic enforcement of required risk/tokenomics operations
 - duplicate removal and plan-length cap
 - invalid planner output fallback
@@ -187,7 +184,7 @@ END
 - per-investigation CMIS status/provenance preserved
 - real DeepSeek planner probe passed
 
-### Architectural result
+### Result
 The LLM proposes investigations; deterministic policy decides what is allowed to execute.
 
 ---
@@ -213,31 +210,49 @@ Give Roberta resumable current-task/thread state without turning checkpoints int
 - Oracle guardrail: checkpointed market snapshots are historical context only
 
 ### Authority rule
-LangGraph checkpointing owns **current task/thread execution state**.
-
-It does not own permanent memory and it is not authoritative for current market facts.
+LangGraph checkpointing owns **current task/thread execution state**. It does not own permanent memory and is not authoritative for current market facts.
 
 ---
 
-## Phase 7B — HXMP/HMPX Durable Memory Adapter 🟡 Active
+## Phase 7B — HXMP Durable Memory Adapter ✅ Complete
 
-Tracking: Roberta issue #20.
+Tracking: Roberta issues #20 and #22 — closed completed.
 
 ### Goal
 Add durable long-term memory beneath Roberta while retrieving only context relevant to the current task.
 
-### Implementation order
-1. provider-neutral memory contracts
-2. deterministic in-memory test adapter
-3. typed memory records and stable keys
-4. relevance-filtered retrieval
-5. deterministic write policy
-6. graph/runtime injection boundary
-7. Oracle context integration
-8. fresh-data override and failure-mode tests
-9. bind the stable contracts to the real HXMP/HMPX client
+### Delivered
+- provider-neutral `DurableMemoryStore` contract
+- typed `MemoryRecord` and `MemoryCandidate`
+- stable/freshness-sensitive memory categories
+- deterministic write authorization
+- deterministic relevance filtering
+- guarded JSON memory context for the Oracle
+- in-memory deterministic test adapter
+- optional graph/runtime memory injection
+- failure-safe no-memory degradation
+- fresh-data override tests
+- real `SyntharaLabs/HXMP` backend adapter
+- deterministic whole-snapshot serialization in the `roberta-memory` lane
+- verified `read-soul` path
+- read-only `dry-run-soul` preparation path
+- ordinary HXMP `upsert()` fail-closed behavior
+- exact SHA-256 + wallet + lane approval binding
+- signer-wallet preflight before `write-soul`
+- `readback_verified` requirement before a write can be treated as committed
+- opt-in real HXMP live contract probe
 
-### Permanent-memory candidates
+### Live acceptance completed
+Using Roberta's AgentID wallet, the real local HXMP probe passed:
+
+```text
+test_real_hxmp_rpc_and_dry_run_contract_without_keypair_or_write  PASSED
+test_real_hxmp_read_contract_when_memory_key_is_configured        PASSED
+```
+
+The live acceptance exercised X1 RPC, `dry-run-soul`, AgentID-aware preview behavior, and `read-soul` decryption/verification. It supplied no signing keypair and performed no `write-soul` transaction.
+
+### Durable-memory candidates
 - Roberta identity and role
 - stable user preferences
 - user risk policies
@@ -245,8 +260,7 @@ Add durable long-term memory beneath Roberta while retrieving only context relev
 - specialist registry and structural capabilities
 - CMIS service contracts
 - approval rules
-- important decisions
-- decision rationale
+- important decisions and rationale
 
 ### Never authoritative as current truth
 - token prices
@@ -272,37 +286,68 @@ Fresh verified CMIS/provider data always overrides remembered or conversational 
 
 ---
 
-## Phase 8 — Oracle Policy ⬜ Planned
+## Phase 8 — Oracle Policy 🟡 Active
+
+Tracking: Roberta issue #24.
 
 ### Goal
-Turn Roberta from a capable coordinator into a policy-aware Oracle that applies durable user context across specialists.
+Turn Roberta from a capable coordinator into a policy-aware Oracle that applies durable user context across specialist findings.
 
-### Existing foundation already complete
+### Existing foundation
 - final Oracle synthesis
 - X1 specialist delegation
 - CMIS status/provenance guardrails
 - planner-diagnostic vs market-fact separation
 - fresh-data override prompt guardrails
+- durable HXMP retrieval for stable user context
 
-### Remaining milestone scope
-- durable user risk policy
+### Active milestone scope
+- typed Oracle policy contracts separate from memory and market evidence
+- durable user risk policy compilation
 - portfolio / exposure rules
 - user-specific thresholds and constraints
-- specialist selection policy
-- cross-chain routing policy
-- comparison of findings across chain Scouts
-- explainable decision factors and rationale
-- deterministic policy enforcement where possible
+- hard-constraint vs soft-preference distinction
+- deterministic threshold evaluation where possible
+- explicit `insufficient_evidence` state when required fresh inputs are missing
+- specialist-selection/routing policy hooks
+- cross-chain-ready policy interfaces without inventing Solana behavior before Solana Scout exists
+- explainable rule-level policy results
+- final synthesis that identifies which user constraints materially affected the recommendation
+
+### First implementation slice
+
+```text
+Durable HXMP memory
+  ↓
+relevant user policy records
+  ↓
+policy compiler
+  ↓
+typed deterministic rules
+  ↓
+policy evaluator
+  ↓
+structured rule outcomes
+  ↓
+Oracle synthesis
+```
+
+Initial rule model:
+- **hard constraint** — cannot be overridden by the LLM
+- **preference** — influences synthesis but does not override hard constraints
+- **threshold rule** — compares verified input to a user-defined bound
+- **evidence requirement** — refuses pass/fail when required fresh evidence is unavailable
+- **approval rule** — records that later user approval would be required; Phase 8 does not execute anything
 
 ### Rule
-User policy belongs to Roberta, not CMIS and not chain providers.
+User policy belongs to Roberta, not CMIS and not chain providers. A policy result may use current facts only when those facts come from fresh verified specialists/CMIS/providers.
 
 ---
 
 ## Phase 9 — Human in the Loop ⬜ Planned
 
 ### Goal
-Introduce interrupt/resume approval flow before consequential blockchain actions.
+Introduce LangGraph interrupt/resume approval flow before consequential blockchain actions.
 
 ### Planned
 - LangGraph interrupt boundary
@@ -318,6 +363,7 @@ Introduce interrupt/resume approval flow before consequential blockchain actions
 - transferring assets
 - changing wallet permissions
 - granting execution authority
+- HXMP durable-memory writes that spend gas
 - other consequential blockchain actions
 
 ### Automatic actions remain allowed
@@ -327,7 +373,7 @@ Introduce interrupt/resume approval flow before consequential blockchain actions
 - specialist calls
 - deterministic CMIS checks
 - transaction simulation
-- preparation of proposed transactions
+- preparation of proposed transactions or HXMP write previews
 
 ---
 
@@ -368,7 +414,7 @@ Do not duplicate CMIS per chain. Add chain providers beneath shared deterministi
 ## Phase 11 — Controlled Execution ⬜ Planned
 
 ### Goal
-Add a tightly scoped Execution Agent only after policy and human approval boundaries are proven.
+Add a tightly scoped Execution Agent only after policy and human-approval boundaries are proven.
 
 ### Target flow
 
@@ -423,6 +469,13 @@ Verified information flows upward:
 Chain Provider → CMIS → Chain Scout → Roberta
 ```
 
+HXMP is orthogonal to live market verification:
+
+```text
+HXMP → durable stable context → Roberta
+CMIS → fresh verified facts    → Roberta
+```
+
 ---
 
 # Development principles
@@ -435,24 +488,27 @@ Chain Provider → CMIS → Chain Scout → Roberta
 6. Prefer shared CMIS contracts with chain-specific providers rather than duplicate intelligence stacks.
 7. Do not grant broad wallet authority to demonstrate autonomy.
 8. Require explicit human approval before consequential blockchain actions.
-9. Use GitHub issues/PRs/CI as the development checkpoint for each coherent milestone.
+9. Keep HXMP signing and memory-encryption keys local; never commit or print secret bytes.
+10. Use GitHub issues/PRs/CI as the development checkpoint for each coherent milestone.
 
 ---
 
 # Current next action
 
-**Phase 7B — HXMP/HMPX Durable Memory Adapter**
-
-Active branch:
-
-```text
-agent/hxmp-durable-memory-adapter
-```
+**Phase 8 — Oracle Policy**
 
 Active tracker:
 
 ```text
-roberta-langgraph issue #20
+roberta-langgraph issue #24
 ```
 
-First coding target: provider-neutral memory contracts plus a deterministic in-memory adapter, before binding Roberta to the real HXMP/HMPX implementation.
+First coding target:
+
+```text
+typed policy contracts
+  + deterministic evaluator
+  + durable-memory-derived risk-policy tests
+```
+
+Do not change X1 Scout, CMIS, provider behavior, or transaction execution in the first Phase 8 slice.
