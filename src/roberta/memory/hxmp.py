@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Protocol
 
-from roberta.memory.contracts import MemoryCandidate, MemoryRecord
+from roberta.memory.contracts import DURABLE_MEMORY_CATEGORIES, MemoryCandidate, MemoryRecord
 from roberta.memory.policy import classify_memory_candidate
 from roberta.memory.retrieval import select_relevant_memory
 
@@ -44,6 +44,13 @@ class HXMPCommandRunner(Protocol):
 
     def run(self, command: str, args: Sequence[str]) -> Mapping[str, Any]:
         """Run one HXMP command and return its parsed JSON object."""
+
+
+class HXMPKeypairWalletResolver(Protocol):
+    """Resolve a keypair file to its public wallet without exposing secret bytes."""
+
+    def resolve(self, keypair_path: str) -> str:
+        """Return the public wallet address represented by one keypair file."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -150,6 +157,44 @@ class SubprocessHXMPCommandRunner:
         return payload
 
 
+class SolanaCLIKeypairWalletResolver:
+    """Use the upstream-documented `solana address -k` safe public-key check."""
+
+    def __init__(
+        self,
+        *,
+        executable: str = "solana",
+        timeout_seconds: int = 15,
+    ) -> None:
+        self.executable = str(executable)
+        self.timeout_seconds = int(timeout_seconds)
+
+    def resolve(self, keypair_path: str) -> str:
+        path = str(Path(keypair_path).expanduser())
+        try:
+            completed = subprocess.run(
+                [self.executable, "address", "-k", path],
+                capture_output=True,
+                text=True,
+                timeout=self.timeout_seconds,
+                check=False,
+            )
+        except OSError as exc:
+            raise HXMPMemoryError(
+                "cannot verify HXMP keypair wallet before execution"
+            ) from exc
+        if completed.returncode != 0:
+            raise HXMPMemoryError(
+                "cannot verify HXMP keypair wallet before execution"
+            )
+        wallet = completed.stdout.strip()
+        if not wallet:
+            raise HXMPMemoryError(
+                "keypair wallet verification returned an empty public address"
+            )
+        return wallet
+
+
 def _record_to_json(record: MemoryRecord) -> dict[str, Any]:
     return {
         "key": record.key,
@@ -250,12 +295,16 @@ class HXMPMemoryStore:
         config: HXMPMemoryConfig,
         *,
         runner: HXMPCommandRunner | None = None,
+        keypair_wallet_resolver: HXMPKeypairWalletResolver | None = None,
     ) -> None:
         self.config = config
         self.runner = runner or SubprocessHXMPCommandRunner(
             config.script_path,
             node_executable=config.node_executable,
             timeout_seconds=config.timeout_seconds,
+        )
+        self.keypair_wallet_resolver = (
+            keypair_wallet_resolver or SolanaCLIKeypairWalletResolver()
         )
 
     def _read_records(self) -> list[MemoryRecord]:
@@ -339,17 +388,26 @@ class HXMPMemoryStore:
     def prepare_upsert(self, record: MemoryRecord) -> HXMPPreparedWrite:
         """Create a 0600 temporary snapshot and run HXMP dry-run-soul only."""
 
+        self._validate_writable_record(record)
         return self._prepare_upsert_against_records(record, self._read_records())
+
+    @staticmethod
+    def _validate_writable_record(record: MemoryRecord) -> None:
+        if record.authority != "durable":
+            raise HXMPWriteRefusedError(
+                "standard HXMP writes accept only authority='durable'"
+            )
+        if record.category not in DURABLE_MEMORY_CATEGORIES:
+            raise HXMPWriteRefusedError(
+                "freshness-sensitive categories cannot be written as durable HXMP truth"
+            )
 
     def _prepare_upsert_against_records(
         self,
         record: MemoryRecord,
         current_records: Sequence[MemoryRecord],
     ) -> HXMPPreparedWrite:
-        if record.authority != "durable":
-            raise HXMPWriteRefusedError(
-                "standard HXMP writes accept only authority='durable'"
-            )
+        self._validate_writable_record(record)
         records = {item.key: item for item in current_records}
         records[record.key] = record
         content = serialize_memory_records(list(records.values()))
@@ -420,6 +478,8 @@ class HXMPMemoryStore:
         prepared: HXMPPreparedWrite,
         *,
         approved_sha256: str,
+        approved_wallet: str,
+        approved_lane: str,
         user_approved: bool,
         keypair_path: str | None = None,
     ) -> HXMPWriteCommit:
@@ -431,6 +491,27 @@ class HXMPMemoryStore:
             raise HXMPApprovalRequiredError(
                 "approved SHA-256 does not match the prepared HXMP preview"
             )
+        if approved_wallet != self.config.wallet:
+            raise HXMPApprovalRequiredError(
+                "approved wallet does not match the configured HXMP wallet"
+            )
+        if approved_lane != self.config.lane:
+            raise HXMPApprovalRequiredError(
+                "approved lane does not match the configured HXMP lane"
+            )
+        if prepared.preview.get("wallet") != approved_wallet:
+            raise HXMPVerificationError(
+                "prepared HXMP preview wallet does not match approval"
+            )
+        if prepared.preview.get("lane") != approved_lane:
+            raise HXMPVerificationError(
+                "prepared HXMP preview lane does not match approval"
+            )
+        if prepared.preview.get("plaintext_sha256") != approved_sha256:
+            raise HXMPVerificationError(
+                "prepared HXMP preview hash does not match approval"
+            )
+        self._validate_writable_record(prepared.record)
         if not prepared.ready_to_execute:
             raise HXMPWriteRefusedError(
                 "HXMP dry-run is not executable; inspect Agent ID and safety status"
@@ -438,16 +519,36 @@ class HXMPMemoryStore:
         source = Path(prepared.source_path)
         if not source.is_file():
             raise HXMPVerificationError("prepared HXMP source file no longer exists")
-        actual_hash = _sha256_label_bytes(source.read_bytes())
+        source_bytes = source.read_bytes()
+        actual_hash = _sha256_label_bytes(source_bytes)
         if actual_hash != prepared.plaintext_sha256:
             raise HXMPVerificationError(
                 "prepared HXMP source changed after dry-run; prepare again"
+            )
+        try:
+            staged_records = deserialize_memory_records(source_bytes.decode("utf-8"))
+        except UnicodeDecodeError as exc:
+            raise HXMPVerificationError(
+                "prepared HXMP source is not valid UTF-8"
+            ) from exc
+        staged_record = next(
+            (record for record in staged_records if record.key == prepared.record.key),
+            None,
+        )
+        if staged_record != prepared.record:
+            raise HXMPVerificationError(
+                "prepared HXMP source does not contain the exact approved memory record"
             )
 
         keypair = keypair_path or self.config.keypair_path
         if not keypair:
             raise HXMPApprovalRequiredError(
                 "HXMP keypair path is required only for explicitly approved execution"
+            )
+        keypair_wallet = self.keypair_wallet_resolver.resolve(keypair)
+        if keypair_wallet != approved_wallet:
+            raise HXMPApprovalRequiredError(
+                "HXMP keypair public wallet does not match the approved wallet"
             )
 
         result = self.runner.run(
@@ -508,6 +609,7 @@ __all__ = [
     "DEFAULT_HXMP_MEMORY_LANE",
     "HXMPApprovalRequiredError",
     "HXMPCommandRunner",
+    "HXMPKeypairWalletResolver",
     "HXMPMemoryConfig",
     "HXMPMemoryError",
     "HXMPMemoryStore",
@@ -517,6 +619,7 @@ __all__ = [
     "HXMPWriteRefusedError",
     "HXMP_MEMORY_SCHEMA",
     "HXMP_MEMORY_VERSION",
+    "SolanaCLIKeypairWalletResolver",
     "SubprocessHXMPCommandRunner",
     "deserialize_memory_records",
     "serialize_memory_records",

@@ -105,6 +105,16 @@ class FakeHXMPRunner:
         raise AssertionError(f"unexpected fake command: {command}")
 
 
+class FakeKeypairWalletResolver:
+    def __init__(self, wallet: str = "Wallet111111111111111111111111111111111") -> None:
+        self.wallet = wallet
+        self.calls: list[str] = []
+
+    def resolve(self, keypair_path: str) -> str:
+        self.calls.append(keypair_path)
+        return self.wallet
+
+
 def _config(*, keypair_path: str | None = None) -> HXMPMemoryConfig:
     return HXMPMemoryConfig(
         script_path="/opt/hxmp/scripts/hxmp_tools.mjs",
@@ -274,7 +284,12 @@ def test_dry_run_hash_mismatch_fails_closed_and_removes_staged_plaintext() -> No
 
 def test_execute_requires_explicit_approval_and_exact_hash_before_write_command() -> None:
     runner = FakeHXMPRunner(records=None)
-    store = HXMPMemoryStore(_config(keypair_path="/secrets/id.json"), runner=runner)
+    resolver = FakeKeypairWalletResolver()
+    store = HXMPMemoryStore(
+        _config(keypair_path="/secrets/id.json"),
+        runner=runner,
+        keypair_wallet_resolver=resolver,
+    )
     prepared = store.prepare_upsert(_record())
 
     try:
@@ -283,6 +298,8 @@ def test_execute_requires_explicit_approval_and_exact_hash_before_write_command(
             store.execute_prepared_write(
                 prepared,
                 approved_sha256=prepared.plaintext_sha256,
+                approved_wallet=store.config.wallet,
+                approved_lane=store.config.lane,
                 user_approved=False,
             )
         assert len(runner.calls) == before
@@ -291,6 +308,8 @@ def test_execute_requires_explicit_approval_and_exact_hash_before_write_command(
             store.execute_prepared_write(
                 prepared,
                 approved_sha256="sha256:" + ("f" * 64),
+                approved_wallet=store.config.wallet,
+                approved_lane=store.config.lane,
                 user_approved=True,
             )
         assert len(runner.calls) == before
@@ -300,12 +319,19 @@ def test_execute_requires_explicit_approval_and_exact_hash_before_write_command(
 
 def test_execute_approved_write_uses_hxmp_flags_and_requires_verified_readback() -> None:
     runner = FakeHXMPRunner(records=None)
-    store = HXMPMemoryStore(_config(keypair_path="/secrets/id.json"), runner=runner)
+    resolver = FakeKeypairWalletResolver()
+    store = HXMPMemoryStore(
+        _config(keypair_path="/secrets/id.json"),
+        runner=runner,
+        keypair_wallet_resolver=resolver,
+    )
     prepared = store.prepare_upsert(_record())
 
     commit = store.execute_prepared_write(
         prepared,
         approved_sha256=prepared.plaintext_sha256,
+        approved_wallet=store.config.wallet,
+        approved_lane=store.config.lane,
         user_approved=True,
     )
 
@@ -317,6 +343,7 @@ def test_execute_approved_write_uses_hxmp_flags_and_requires_verified_readback()
     assert prepared.plaintext_sha256 in args
     assert "--execute" in args
     assert "--confirm-write" in args
+    assert resolver.calls == ["/secrets/id.json"]
     assert commit.readback_verified is True
     assert commit.latest_tx == "5YverifiedLatestTx"
     assert not Path(prepared.source_path).exists()
@@ -325,7 +352,12 @@ def test_execute_approved_write_uses_hxmp_flags_and_requires_verified_readback()
 def test_failed_write_readback_is_not_reported_as_committed() -> None:
     runner = FakeHXMPRunner(records=None)
     runner.write_readback_verified = False
-    store = HXMPMemoryStore(_config(keypair_path="/secrets/id.json"), runner=runner)
+    resolver = FakeKeypairWalletResolver()
+    store = HXMPMemoryStore(
+        _config(keypair_path="/secrets/id.json"),
+        runner=runner,
+        keypair_wallet_resolver=resolver,
+    )
     prepared = store.prepare_upsert(_record())
 
     try:
@@ -333,8 +365,53 @@ def test_failed_write_readback_is_not_reported_as_committed() -> None:
             store.execute_prepared_write(
                 prepared,
                 approved_sha256=prepared.plaintext_sha256,
+                approved_wallet=store.config.wallet,
+                approved_lane=store.config.lane,
                 user_approved=True,
             )
         assert Path(prepared.source_path).exists()
+    finally:
+        store.discard_prepared_write(prepared)
+
+
+def test_direct_prepare_upsert_cannot_bypass_freshness_sensitive_policy() -> None:
+    runner = FakeHXMPRunner(records=None)
+    store = HXMPMemoryStore(_config(), runner=runner)
+    record = MemoryRecord(
+        key="market:agi",
+        category="market_snapshot",
+        content="Old market snapshot",
+        topics=("agi", "price"),
+        authority="durable",
+    )
+
+    with pytest.raises(HXMPWriteRefusedError, match="freshness-sensitive"):
+        store.prepare_upsert(record)
+
+    assert runner.calls == []
+
+
+def test_keypair_wallet_mismatch_is_refused_before_write_soul() -> None:
+    runner = FakeHXMPRunner(records=None)
+    resolver = FakeKeypairWalletResolver(wallet="DifferentWallet22222222222222222222222222222")
+    store = HXMPMemoryStore(
+        _config(keypair_path="/secrets/id.json"),
+        runner=runner,
+        keypair_wallet_resolver=resolver,
+    )
+    prepared = store.prepare_upsert(_record())
+
+    try:
+        before = len(runner.calls)
+        with pytest.raises(HXMPApprovalRequiredError, match="keypair public wallet"):
+            store.execute_prepared_write(
+                prepared,
+                approved_sha256=prepared.plaintext_sha256,
+                approved_wallet=store.config.wallet,
+                approved_lane=store.config.lane,
+                user_approved=True,
+            )
+        assert len(runner.calls) == before
+        assert resolver.calls == ["/secrets/id.json"]
     finally:
         store.discard_prepared_write(prepared)

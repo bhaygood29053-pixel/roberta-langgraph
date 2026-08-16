@@ -67,7 +67,8 @@ MemoryCandidate
   -> HXMP dry-run-soul
   -> verify exact plaintext SHA-256 / wallet / lane / Agent ID / safety
   -> return HXMPPreparedWrite
-  -> HUMAN APPROVES EXACT SHA-256
+  -> HUMAN APPROVES EXACT SHA-256 + WALLET + LANE
+  -> verify configured keypair resolves to that approved wallet
   -> execute_prepared_write(..., user_approved=True)
   -> HXMP write-soul
   -> encrypted chunks + soul.latest
@@ -75,20 +76,22 @@ MemoryCandidate
   -> HXMPWriteCommit
 ```
 
-No Python code reads wallet secret bytes or HXMP encryption-key bytes. The adapter passes configured file paths to the upstream HXMP process.
+No Python code reads wallet secret bytes or HXMP encryption-key bytes. The adapter passes configured file paths to the upstream HXMP process. Before execution it uses the upstream-documented `solana address -k <KEYPAIR_PATH>` command to resolve only the public address and bind the signer to the approved wallet.
 
 A write cannot execute unless all of these are true:
 
 - Roberta's deterministic category policy allows the record.
-- The record authority is `durable`.
+- The record authority is `durable` and its category is one of Roberta's durable categories.
 - HXMP dry-run returns the exact deterministic snapshot hash.
 - HXMP dry-run reports the configured wallet and lane.
 - Agent ID verification is true.
 - HXMP safety classification is `safe`.
 - The caller supplies `user_approved=True`.
-- The caller supplies the exact dry-run SHA-256.
-- The staged source still hashes to the same SHA-256.
+- The caller supplies the exact approved dry-run SHA-256, wallet, and lane.
+- The prepared preview still matches that approved hash, wallet, and lane.
+- The staged source still hashes to the same SHA-256 and contains the exact prepared `MemoryRecord`.
 - A keypair path is explicitly configured/provided for execution.
+- `solana address -k <KEYPAIR_PATH>` resolves to the exact approved wallet before `write-soul` is invoked.
 - HXMP `write-soul` reports `readback_verified: true`.
 - The committed wallet, lane, and hash match the approved preview.
 
@@ -128,7 +131,15 @@ The staged plaintext remains local and should be discarded if the proposal is re
 
 ## Execution behavior
 
-After explicit approval of the exact hash:
+After explicit approval of the exact hash, wallet, and lane, the adapter first verifies signer identity without printing secret bytes:
+
+```bash
+solana address -k <LOCAL_KEYPAIR_PATH>
+```
+
+If that public address differs from the approved wallet, execution stops **before** `write-soul`.
+
+Only after that binding check does the adapter invoke:
 
 ```bash
 node <HXMP>/scripts/hxmp_tools.mjs write-soul \
@@ -176,7 +187,8 @@ Normal HXMP writes additionally require:
 - X1 wallet funded with XNT for gas
 - Agent ID Protocol verification
 - local HXMP encryption key
-- explicit approval of the exact dry-run SHA-256
+- Solana CLI available for the pre-execution public-wallet binding check
+- explicit approval of the exact dry-run SHA-256, wallet, and lane
 
 ## Deliberate limitations
 
@@ -186,8 +198,9 @@ This adapter does not:
 - bypass HXMP Agent ID verification
 - use `force-sensitive`
 - print or inspect secret key bytes
+- rely on a post-broadcast wallet mismatch check as its signer-identity control
 - treat memory as current market truth
-- bypass Roberta's stable-vs-freshness-sensitive category policy
+- bypass Roberta's stable-vs-freshness-sensitive category policy through direct `prepare_upsert()` calls
 - invent an HXMP key/value API
 - execute live writes in deterministic CI
 
