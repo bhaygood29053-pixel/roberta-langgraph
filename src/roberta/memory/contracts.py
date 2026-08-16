@@ -41,6 +41,29 @@ FRESHNESS_SENSITIVE_CATEGORIES = frozenset(
         "tokenomics_snapshot",
     }
 )
+ALL_MEMORY_CATEGORIES = DURABLE_MEMORY_CATEGORIES | FRESHNESS_SENSITIVE_CATEGORIES
+
+
+def _validate_memory_fields(
+    *,
+    key: str,
+    category: str,
+    content: str,
+    topics: tuple[str, ...],
+    source: str,
+) -> None:
+    if not isinstance(key, str) or not key.strip():
+        raise ValueError("memory key must be a non-empty string")
+    if category not in ALL_MEMORY_CATEGORIES:
+        raise ValueError(f"unsupported memory category: {category!r}")
+    if not isinstance(content, str) or not content.strip():
+        raise ValueError("memory content must be a non-empty string")
+    if not isinstance(topics, tuple) or any(
+        not isinstance(topic, str) or not topic.strip() for topic in topics
+    ):
+        raise ValueError("memory topics must be a tuple of non-empty strings")
+    if not isinstance(source, str) or not source.strip():
+        raise ValueError("memory source must be a non-empty string")
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,10 +78,13 @@ class MemoryCandidate:
     rationale: str | None = None
 
     def __post_init__(self) -> None:
-        if not isinstance(self.key, str) or not self.key.strip():
-            raise ValueError("memory key must be a non-empty string")
-        if not isinstance(self.content, str) or not self.content.strip():
-            raise ValueError("memory content must be a non-empty string")
+        _validate_memory_fields(
+            key=self.key,
+            category=self.category,
+            content=self.content,
+            topics=self.topics,
+            source=self.source,
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -76,10 +102,13 @@ class MemoryRecord:
     updated_at: str | None = None
 
     def __post_init__(self) -> None:
-        if not isinstance(self.key, str) or not self.key.strip():
-            raise ValueError("memory key must be a non-empty string")
-        if not isinstance(self.content, str) or not self.content.strip():
-            raise ValueError("memory content must be a non-empty string")
+        _validate_memory_fields(
+            key=self.key,
+            category=self.category,
+            content=self.content,
+            topics=self.topics,
+            source=self.source,
+        )
         if self.authority not in {"durable", "historical_context"}:
             raise ValueError(f"unsupported memory authority: {self.authority!r}")
 
