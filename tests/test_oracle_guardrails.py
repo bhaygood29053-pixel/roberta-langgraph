@@ -42,3 +42,12 @@ def test_oracle_uses_deterministic_risk_help_for_tooltip_meanings() -> None:
     assert "ⓘ what this means" in prompt
     assert "never describe it as the probability that an asset is safe" in prompt
     assert "never infer or manufacture a numeric score" in prompt
+
+
+def test_oracle_keeps_multistep_scout_investigations_separate() -> None:
+    prompt = ORACLE_SYSTEM_PROMPT.lower()
+    assert "`investigations` array" in prompt
+    assert "each item as a separate authoritative cmis investigation" in prompt
+    assert "do not blend statuses" in prompt
+    assert "`plan.warnings` are orchestration/planner diagnostics" in prompt
+    assert "not market facts" in prompt
