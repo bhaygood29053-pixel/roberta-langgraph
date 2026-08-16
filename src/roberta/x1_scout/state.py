@@ -18,6 +18,38 @@ class X1ScoutRequest(TypedDict):
     amount_usd: NotRequired[float]
 
 
+class X1ScoutPlanProposal(TypedDict):
+    """Untrusted operation proposal returned by the Scout planner model."""
+
+    operations: list[str]
+
+
+class X1ScoutPlan(TypedDict):
+    """Deterministically enforced X1 Scout investigation plan."""
+
+    operations: list[CMISOperation]
+    source: Literal["explicit", "model", "deterministic"]
+    warnings: list[str]
+
+
+class X1ScoutInvestigation(TypedDict):
+    """One CMIS result preserved inside a multi-step Scout report."""
+
+    operation: str
+    cmis_status: CMISStatus
+    cmis_status_help: dict[str, object] | None
+    observed_at: object | None
+    observed_at_iso: str | None
+    observed_at_display: str | None
+    findings: dict[str, object]
+    confidence: dict[str, object]
+    risk_help: dict[str, object] | None
+    component_status_table: str | None
+    sources: list[object]
+    warnings: list[object]
+    errors: list[object]
+
+
 class X1ScoutReport(TypedDict):
     specialist: Literal["x1_scout"]
     chain: Literal["x1"]
@@ -25,6 +57,8 @@ class X1ScoutReport(TypedDict):
     asset: dict[str, object]
     objective: str
     status: Literal["complete", "error"]
+    plan: X1ScoutPlan
+    investigations: list[X1ScoutInvestigation]
     cmis_status: CMISStatus
     cmis_status_help: dict[str, object] | None
     observed_at: object | None
@@ -43,5 +77,9 @@ class X1ScoutReport(TypedDict):
 class X1ScoutState(TypedDict):
     request: X1ScoutRequest
     status: Literal["running", "complete", "error"]
+    plan_proposal: NotRequired[X1ScoutPlanProposal | None]
+    planner_error: NotRequired[str | None]
+    plan: NotRequired[X1ScoutPlan]
+    cmis_results: NotRequired[list[CMISEnvelope]]
     cmis_result: NotRequired[CMISEnvelope]
     report: NotRequired[X1ScoutReport]

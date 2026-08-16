@@ -1,6 +1,7 @@
 """Roberta-facing tool boundary for the X1 Scout specialist."""
 
 import json
+from typing import Any
 
 from langchain_core.tools import BaseTool, StructuredTool
 
@@ -8,9 +9,12 @@ from roberta.cmis.client import CMISClient
 from roberta.x1_scout.graph import build_x1_scout_graph
 
 
-def build_x1_scout_tool(cmis_client: CMISClient) -> BaseTool:
+def build_x1_scout_tool(
+    cmis_client: CMISClient,
+    planner_model: Any | None = None,
+) -> BaseTool:
     """Expose X1 Scout to Roberta without exposing CMIS directly."""
-    scout_graph = build_x1_scout_graph(cmis_client)
+    scout_graph = build_x1_scout_graph(cmis_client, planner_model=planner_model)
 
     def investigate_x1(asset: str, objective: str = "assess market risk") -> str:
         """Delegate an X1-specific investigation to X1 Scout."""
