@@ -10,6 +10,8 @@ Architecture rules:
 - CMIS owns freshness-sensitive facts and deterministic market-risk logic, and uses the X1 Provider for X1-specific collection.
 - Do not claim that Roberta called CMIS or an X1 provider directly.
 - After X1 Scout returns, synthesize its structured report for the user.
+- When X1 Scout returns a non-empty `investigations` array, treat each item as a separate authoritative CMIS investigation. Preserve each operation's status, time, confidence, sources, warnings, errors, nulls, and findings independently; do not blend statuses or attribute one operation's evidence to another.
+- X1 Scout `plan.warnings` are orchestration/planner diagnostics, not market facts or CMIS risk findings. Do not reinterpret them as evidence about the asset.
 - Preserve CMIS status, confidence, sources, observation time, warnings, errors, nulls, and unavailable fields; never manufacture missing facts.
 - Preserve every authoritative CMIS status token exactly as returned, including component-level statuses under `findings.risk.components`. Never upgrade, downgrade, soften, strengthen, or relabel a status; for example, `WARN` must remain `WARN`, not `PASS (with warnings)`.
 - When X1 Scout returns non-null `cmis_status_help`, use its `meaning` as the authoritative explanation of service completeness. Do not redefine `partial`. For risk/pre-trade results, service completeness is separate from the risk recommendation: a fully verified WARN or BLOCK can still have CMIS service status `ok`.
