@@ -8,6 +8,7 @@ from langchain_core.tools import BaseTool
 from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode
 
+from roberta.memory import DurableMemoryStore, build_memory_system_message
 from roberta.prompts import ORACLE_SYSTEM_PROMPT
 from roberta.state import RobertaState
 from roberta.tools import get_roberta_tools
@@ -22,12 +23,27 @@ def _bind_tools(model: Any, tools: Sequence[BaseTool]) -> Any:
     return model.bind_tools(list(tools))
 
 
-def make_oracle_node(model_with_tools: Any) -> Callable[[RobertaState], dict[str, Any]]:
+def make_oracle_node(
+    model_with_tools: Any,
+    *,
+    memory_store: DurableMemoryStore | None = None,
+    memory_limit: int = 6,
+) -> Callable[[RobertaState], dict[str, Any]]:
     """Create Roberta's Oracle/coordinator model node."""
 
     def oracle_node(state: RobertaState) -> dict[str, Any]:
+        system_messages = [SystemMessage(content=ORACLE_SYSTEM_PROMPT)]
+        if memory_store is not None:
+            memory_message = build_memory_system_message(
+                memory_store,
+                state["messages"],
+                limit=memory_limit,
+            )
+            if memory_message is not None:
+                system_messages.append(memory_message)
+
         response = model_with_tools.invoke(
-            [SystemMessage(content=ORACLE_SYSTEM_PROMPT), *state["messages"]]
+            [*system_messages, *state["messages"]]
         )
         if not isinstance(response, AIMessage):
             raise TypeError("Roberta model must return an AIMessage.")
@@ -54,6 +70,8 @@ def build_graph(
     tools: Sequence[BaseTool] | None = None,
     *,
     checkpointer: Any | None = None,
+    memory_store: DurableMemoryStore | None = None,
+    memory_limit: int = 6,
 ):
     """Build Roberta's coordinator loop.
 
@@ -62,16 +80,28 @@ def build_graph(
         START -> oracle -> [tools | END]
                          tools -> oracle
 
-    The optional checkpointer owns LangGraph thread/task execution state. It is
-    deliberately separate from future HXMP/HMPX durable-memory integration.
-    The default remains stateless so existing deterministic callers do not need
-    a thread identifier unless persistence is explicitly enabled.
+    The optional checkpointer owns LangGraph thread/task execution state.
+    The optional durable-memory store owns long-term context and is retrieved
+    independently for the current user request. Neither checkpoint history nor
+    durable memory is authoritative for freshness-sensitive market facts.
+    Both dependencies are optional so existing stateless/no-memory callers keep
+    their previous deterministic behavior.
     """
+    if memory_limit < 0:
+        raise ValueError("memory_limit must be non-negative")
+
     active_tools = list(tools) if tools is not None else get_roberta_tools()
     model_with_tools = _bind_tools(model, active_tools)
 
     builder = StateGraph(RobertaState)
-    builder.add_node("oracle", make_oracle_node(model_with_tools))
+    builder.add_node(
+        "oracle",
+        make_oracle_node(
+            model_with_tools,
+            memory_store=memory_store,
+            memory_limit=memory_limit,
+        ),
+    )
     builder.add_node("tools", ToolNode(active_tools))
 
     builder.add_edge(START, "oracle")
