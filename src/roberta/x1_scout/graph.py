@@ -11,49 +11,25 @@ from typing import Any, Literal
 from langgraph.graph import END, START, StateGraph
 
 from roberta.cmis.client import CMISClient
-from roberta.cmis.contracts import CMISOperation
+from roberta.cmis.contracts import CMISEnvelope, CMISOperation
 from roberta.presentation import format_component_status_table
 from roberta.risk_help import build_risk_help
 from roberta.status_help import build_cmis_status_help
 from roberta.time_utils import format_observed_at_utc, normalize_observed_at
-from roberta.x1_scout.state import X1ScoutReport, X1ScoutState
-
-_RISK_TERMS = (
-    "risk",
-    "risky",
-    "safety",
-    "safe",
-    "danger",
-    "rug",
+from roberta.x1_scout.planner import (
+    enforce_plan,
+    propose_plan,
+    select_cmis_operation,
 )
-_TOKENOMICS_TERMS = (
-    "tokenomics",
-    "supply",
-    "mint authority",
-    "freeze authority",
-    "minting",
+from roberta.x1_scout.state import (
+    X1ScoutInvestigation,
+    X1ScoutReport,
+    X1ScoutState,
 )
-
-
-def select_cmis_operation(objective: str) -> CMISOperation:
-    """Select the minimum deterministic CMIS operation required by an objective.
-
-    This is a safety policy boundary, not market analysis. Risk objectives must
-    use ``risk_check`` so an LLM never derives a categorical risk conclusion
-    from raw ``market_report`` facts. Explicit operations supplied by internal
-    callers remain authoritative and bypass this selector.
-    """
-
-    normalized = " ".join(str(objective or "").strip().lower().split())
-    if any(term in normalized for term in _RISK_TERMS):
-        return "risk_check"
-    if any(term in normalized for term in _TOKENOMICS_TERMS):
-        return "tokenomics"
-    return "market_report"
 
 
 def plan_cmis_operation(state: X1ScoutState) -> dict[str, Any]:
-    """Populate an operation when the caller supplied only an investigation goal."""
+    """Backward-compatible deterministic single-operation planning helper."""
 
     request = dict(state["request"])
     if "operation" not in request:
@@ -61,48 +37,112 @@ def plan_cmis_operation(state: X1ScoutState) -> dict[str, Any]:
     return {"request": request, "status": "running"}
 
 
+def make_plan_proposal_node(
+    planner_model: Any | None,
+) -> Callable[[X1ScoutState], dict[str, Any]]:
+    """Create the optional model-driven proposal node.
+
+    Explicit operations and planner-less graphs bypass model planning. Planner
+    failures are recorded and repaired by deterministic enforcement instead of
+    blocking the investigation.
+    """
+
+    def propose_plan_node(state: X1ScoutState) -> dict[str, Any]:
+        request = state["request"]
+        if "operation" in request or planner_model is None:
+            return {
+                "plan_proposal": None,
+                "planner_error": None,
+                "status": "running",
+            }
+        try:
+            proposal = propose_plan(planner_model, request)
+        except Exception as exc:
+            return {
+                "plan_proposal": None,
+                "planner_error": f"{type(exc).__name__}: {exc}",
+                "status": "running",
+            }
+        return {
+            "plan_proposal": proposal,
+            "planner_error": None,
+            "status": "running",
+        }
+
+    return propose_plan_node
+
+
+def enforce_plan_node(state: X1ScoutState) -> dict[str, Any]:
+    """Apply deterministic safety policy to the planner proposal."""
+
+    plan = enforce_plan(
+        state["request"],
+        state.get("plan_proposal"),
+        planner_error=state.get("planner_error"),
+    )
+    return {"plan": plan, "status": "running"}
+
+
+def _dispatch_cmis_operation(
+    cmis_client: CMISClient,
+    request: dict[str, Any],
+    operation: CMISOperation,
+) -> CMISEnvelope:
+    asset = request["asset"]
+    if operation == "market_report":
+        return cmis_client.market_report(chain="x1", asset=asset)
+    if operation == "tokenomics":
+        return cmis_client.tokenomics(chain="x1", asset=asset)
+    if operation == "risk_check":
+        return cmis_client.risk_check(chain="x1", asset=asset)
+    if operation == "pre_trade_check":
+        action = request.get("action")
+        amount_usd = request.get("amount_usd")
+        if action is None or amount_usd is None:
+            raise ValueError(
+                "pre_trade_check requires action and amount_usd in X1 Scout state"
+            )
+        return cmis_client.pre_trade_check(
+            chain="x1",
+            asset=asset,
+            action=action,
+            amount_usd=amount_usd,
+        )
+    raise ValueError(f"Unsupported CMIS operation: {operation!r}")  # pragma: no cover
+
+
+def make_cmis_calls_node(
+    cmis_client: CMISClient,
+) -> Callable[[X1ScoutState], dict[str, Any]]:
+    """Create the deterministic X1-scoped sequential CMIS dispatch node."""
+
+    def cmis_calls_node(state: X1ScoutState) -> dict[str, Any]:
+        request = dict(state["request"])
+        operations = state["plan"]["operations"]
+        results = [
+            _dispatch_cmis_operation(cmis_client, request, operation)
+            for operation in operations
+        ]
+        if not results:  # pragma: no cover - enforce_plan always supplies one
+            raise RuntimeError("X1 Scout plan completed without a CMIS operation.")
+        return {
+            "cmis_results": results,
+            "cmis_result": results[-1],
+            "status": "running",
+        }
+
+    return cmis_calls_node
+
+
 def make_cmis_call_node(
     cmis_client: CMISClient,
 ) -> Callable[[X1ScoutState], dict[str, Any]]:
-    """Create the deterministic X1-scoped CMIS dispatch node."""
+    """Backward-compatible alias for the sequential CMIS dispatch node."""
 
-    def cmis_call_node(state: X1ScoutState) -> dict[str, Any]:
-        request = state["request"]
-        operation: CMISOperation = request["operation"]
-        asset = request["asset"]
-
-        if operation == "market_report":
-            result = cmis_client.market_report(chain="x1", asset=asset)
-        elif operation == "tokenomics":
-            result = cmis_client.tokenomics(chain="x1", asset=asset)
-        elif operation == "risk_check":
-            result = cmis_client.risk_check(chain="x1", asset=asset)
-        elif operation == "pre_trade_check":
-            action = request.get("action")
-            amount_usd = request.get("amount_usd")
-            if action is None or amount_usd is None:
-                raise ValueError(
-                    "pre_trade_check requires action and amount_usd in X1 Scout state"
-                )
-            result = cmis_client.pre_trade_check(
-                chain="x1",
-                asset=asset,
-                action=action,
-                amount_usd=amount_usd,
-            )
-        else:  # pragma: no cover
-            raise ValueError(f"Unsupported CMIS operation: {operation!r}")
-
-        return {"cmis_result": result, "status": "running"}
-
-    return cmis_call_node
+    return make_cmis_calls_node(cmis_client)
 
 
-def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
-    """Preserve CMIS facts and attach deterministic user-facing presentation."""
-
-    request = state["request"]
-    result = state["cmis_result"]
+def _summarize_cmis_result(result: CMISEnvelope) -> X1ScoutInvestigation:
     service = result["service"]
     cmis_status = result["status"]
     observed_at = result["observed_at"]
@@ -111,16 +151,8 @@ def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
     confidence = dict(result["confidence"])
     risk_help = build_risk_help(risk, confidence)
 
-    report_status: Literal["complete", "error"] = (
-        "error" if cmis_status in {"unavailable", "error"} else "complete"
-    )
-    report: X1ScoutReport = {
-        "specialist": "x1_scout",
-        "chain": "x1",
-        "requested_asset": request["asset"],
-        "asset": dict(result["asset"]),
-        "objective": request["objective"],
-        "status": report_status,
+    return {
+        "operation": service,
         "cmis_status": cmis_status,
         "cmis_status_help": build_cmis_status_help(
             service,
@@ -137,31 +169,82 @@ def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
         "confidence": confidence,
         "risk_help": risk_help,
         "component_status_table": format_component_status_table(risk_help),
-        "source": {
-            "service": "cmis",
-            "operation": service,
-        },
         "sources": list(result["sources"]),
         "warnings": list(result["warnings"]),
         "errors": list(result["errors"]),
     }
+
+
+def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
+    """Preserve every CMIS result and attach deterministic presentation."""
+
+    request = state["request"]
+    results = state.get("cmis_results")
+    if not results:
+        results = [state["cmis_result"]]
+
+    investigations = [_summarize_cmis_result(result) for result in results]
+    primary_result = results[-1]
+    primary = investigations[-1]
+
+    report_status: Literal["complete", "error"] = (
+        "error"
+        if any(
+            investigation["cmis_status"] in {"unavailable", "error"}
+            for investigation in investigations
+        )
+        else "complete"
+    )
+
+    report: X1ScoutReport = {
+        "specialist": "x1_scout",
+        "chain": "x1",
+        "requested_asset": request["asset"],
+        "asset": dict(primary_result["asset"]),
+        "objective": request["objective"],
+        "status": report_status,
+        "plan": dict(state["plan"]),
+        "investigations": investigations,
+        "cmis_status": primary["cmis_status"],
+        "cmis_status_help": primary["cmis_status_help"],
+        "observed_at": primary["observed_at"],
+        "observed_at_iso": primary["observed_at_iso"],
+        "observed_at_display": primary["observed_at_display"],
+        "findings": dict(primary["findings"]),
+        "confidence": dict(primary["confidence"]),
+        "risk_help": primary["risk_help"],
+        "component_status_table": primary["component_status_table"],
+        "source": {
+            "service": "cmis",
+            "operation": primary["operation"],
+        },
+        "sources": list(primary["sources"]),
+        "warnings": list(primary["warnings"]),
+        "errors": list(primary["errors"]),
+    }
     return {"report": report, "status": report_status}
 
 
-def build_x1_scout_graph(cmis_client: CMISClient):
-    """Compile X1 Scout's objective-planning and CMIS dispatch subgraph.
+def build_x1_scout_graph(cmis_client: CMISClient, planner_model: Any | None = None):
+    """Compile X1 Scout's constrained agentic planning subgraph.
 
     Flow::
 
-        START -> plan -> cmis_call -> interpret -> END
+        START -> propose_plan -> enforce_plan -> cmis_calls -> interpret -> END
+
+    When ``planner_model`` is omitted, enforcement falls back to the existing
+    deterministic single-operation selector. Explicit operations bypass model
+    planning and remain authoritative.
     """
 
     builder = StateGraph(X1ScoutState)
-    builder.add_node("plan", plan_cmis_operation)
-    builder.add_node("cmis_call", make_cmis_call_node(cmis_client))
+    builder.add_node("propose_plan", make_plan_proposal_node(planner_model))
+    builder.add_node("enforce_plan", enforce_plan_node)
+    builder.add_node("cmis_calls", make_cmis_calls_node(cmis_client))
     builder.add_node("interpret", interpret_cmis_result)
-    builder.add_edge(START, "plan")
-    builder.add_edge("plan", "cmis_call")
-    builder.add_edge("cmis_call", "interpret")
+    builder.add_edge(START, "propose_plan")
+    builder.add_edge("propose_plan", "enforce_plan")
+    builder.add_edge("enforce_plan", "cmis_calls")
+    builder.add_edge("cmis_calls", "interpret")
     builder.add_edge("interpret", END)
     return builder.compile()
