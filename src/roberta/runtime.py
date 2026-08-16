@@ -1,7 +1,14 @@
-"""Runtime helpers for explicit LangGraph thread invocation."""
+"""Runtime helpers for explicit thread invocation and durable-memory writes."""
 
 from collections.abc import Mapping
 from typing import Any
+
+from roberta.memory import (
+    DurableMemoryStore,
+    MemoryCandidate,
+    MemoryWriteResult,
+    remember,
+)
 
 
 def build_thread_config(thread_id: str) -> dict[str, dict[str, str]]:
@@ -24,3 +31,14 @@ def invoke_thread(
     if not isinstance(result, dict):
         raise TypeError("Roberta graph must return a state mapping")
     return result
+
+
+def write_durable_memory(
+    memory_store: DurableMemoryStore,
+    candidate: MemoryCandidate,
+    *,
+    observed_at: str | None = None,
+) -> MemoryWriteResult:
+    """Apply Roberta's deterministic permanent-memory policy before writing."""
+
+    return remember(memory_store, candidate, observed_at=observed_at)
