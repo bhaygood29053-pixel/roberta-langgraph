@@ -51,3 +51,11 @@ def test_oracle_keeps_multistep_scout_investigations_separate() -> None:
     assert "do not blend statuses" in prompt
     assert "`plan.warnings` are orchestration/planner diagnostics" in prompt
     assert "not market facts" in prompt
+
+
+def test_oracle_does_not_treat_checkpointed_market_snapshots_as_fresh() -> None:
+    prompt = ORACLE_SYSTEM_PROMPT.lower()
+    assert "checkpoint history may contain earlier live-market snapshots" in prompt
+    assert "historical context only" in prompt
+    assert "delegate to x1 scout again" in prompt
+    assert "newly returned cmis/provider evidence" in prompt
