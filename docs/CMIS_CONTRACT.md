@@ -23,7 +23,7 @@ The Roberta-side typed client currently defines:
 - `risk_check(chain, asset)`
 - `pre_trade_check(chain, asset, action, amount_usd)`
 
-Every operation names its target chain explicitly. Roberta/X1 Scout may have a narrower callable surface than CMIS itself; internal CMIS capability does not automatically become Roberta runtime eligibility.
+Every operation names its target chain explicitly. Roberta/X1 Scout may have a narrower callable surface than CMIS itself; accepted CMIS runtime capability does not automatically become Roberta client eligibility.
 
 `pre_trade_check` is analysis only. It does not authorize signing, broadcasting, or value movement.
 
@@ -53,8 +53,9 @@ The provider-backed X1 runtime path is established through the separate Liquidit
 Roberta
   -> X1 Scout
     -> CMISHTTPClient
-      -> CMISGateway
-        -> X1 Provider
+      -> CMIS HTTP runtime
+        -> CMISGateway
+          -> X1 Provider
 ```
 
 `MockCMISClient` remains a deterministic test adapter, not the production provider path.
@@ -63,21 +64,33 @@ Roberta must still preserve fact-level evidence limits. X1 Scout availability do
 
 ## Verification evidence status
 
-CMIS has accepted the internal trust stack for persisted verification evidence:
+CMIS has accepted the persisted verification-evidence trust and runtime stack:
 
 ```text
 fact-specific verifier
   -> fail-closed verification_evidence wrapper
   -> sanitized content-addressed evidence ledger
   -> exact read-only lookup
+  -> verification_evidence gateway
+  -> composed CMIS HTTP runtime
 ```
 
-Accepted internal lookup selectors are:
+CMIS PR #87 accepted the exact gateway boundary. CMIS PR #88 accepted the production HTTP runtime composition. The post-merge CMIS `main` test run for #88 passed on exact merge SHA `08ac97810163168048192665d314cce90f5b89fa`.
+
+The CMIS HTTP runtime now advertises `verification_evidence`. Selection is limited to exactly one of:
 
 1. stable `evidence_id`; or
 2. exact `fact_type + subject_id` for the latest stored record.
 
-This internal acceptance does **not** yet make `verification_evidence` a production Roberta-callable operation. CMIS pull request #87 is the current draft gateway-eligibility slice. Until that slice is accepted, deployed, and reflected in Roberta runtime eligibility, Roberta must not call internal evidence helpers directly or submit raw provider/verifier objects.
+The HTTP caller cannot choose the SQLite path, inject a ledger, submit raw verifier/provider observations, or use a free-form asset selector. CMIS owns storage validation, content-address verification, fact/chain identity checks, timestamps, quality, and promotion state.
+
+Runtime availability does not guarantee that a requested evidence record exists. CMIS does not invent or backfill evidence; an empty ledger or missing exact record remains explicit `unavailable`.
+
+### Roberta client eligibility
+
+Roberta's typed client has **not yet been extended** to expose `verification_evidence`. Therefore Roberta must not bypass the typed client or call internal CMIS evidence helpers directly merely because the CMIS HTTP server supports the service.
+
+A separate Roberta-side eligibility/client slice must add the exact selector contract and preserve the existing authority path through X1 Scout. Until that slice is accepted, `verification_evidence` is **CMIS-runtime available but Roberta-client unavailable**.
 
 Roberta must preserve `AGREEMENT`, `CONFLICT`, `INSUFFICIENT_EVIDENCE`, data-quality reasons, freshness/semantics/identity state, warnings/errors, and `cmis_promotable` exactly as returned by CMIS.
 
@@ -102,13 +115,13 @@ Fresh accepted CMIS/provider evidence overrides remembered or conversational mar
 
 ## Development coordination
 
-Roberta can advance provider-neutral orchestration before every CMIS provider is live, but runtime capability must remain gated by accepted CMIS contracts.
+Roberta can advance provider-neutral orchestration before every CMIS provider is live, but runtime capability must remain gated by accepted CMIS contracts and Roberta client eligibility.
 
 Near-term coordination is:
 
 ```text
-CMIS: finish X1 trust gaps -> provenance-aware history -> provider maturity
-Roberta: Phase 10 specialist registry -> Solana Scout skeleton -> live eligibility after CMIS acceptance
+CMIS: evidence runtime accepted -> connect fact producers -> finish X1 trust gaps -> provenance-aware history
+Roberta: Phase 10 specialist registry -> exact verification_evidence client eligibility -> Solana Scout skeleton
 ```
 
 Do not duplicate CMIS per chain. Add chain providers beneath shared deterministic contracts and add a Chain Scout only for chain-specific planning and interpretation.
