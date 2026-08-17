@@ -14,6 +14,7 @@ from roberta.policy.contracts import (
 )
 
 POLICY_DOCUMENT_VERSION = 1
+POLICY_MEMORY_TOPICS = frozenset({"oracle_policy", "policy_rule"})
 _POLICY_MEMORY_CATEGORIES = frozenset(
     {"user_risk_policy", "stable_preference", "approval_rule"}
 )
@@ -35,13 +36,33 @@ def _default_effect(kind: str) -> str:
     }.get(kind, "")
 
 
+def is_explicit_policy_memory(record: MemoryRecord) -> bool:
+    """Return whether a durable record explicitly opts into policy compilation.
+
+    Existing Phase 7B free-form preference/risk memories remain conversational
+    context. A record opts in either through a policy topic marker or by carrying
+    a JSON object with an explicit ``policy_version`` field.
+    """
+
+    if record.category not in _POLICY_MEMORY_CATEGORIES:
+        return False
+    topics = {str(topic).strip().casefold() for topic in record.topics}
+    if topics & POLICY_MEMORY_TOPICS:
+        return True
+    try:
+        parsed = json.loads(record.content)
+    except (json.JSONDecodeError, TypeError):
+        return False
+    return isinstance(parsed, Mapping) and "policy_version" in parsed
+
+
 def _parse_policy_document(record: MemoryRecord) -> Mapping[str, Any]:
     try:
         parsed = json.loads(record.content)
     except json.JSONDecodeError as exc:
-        raise ValueError("policy memory content must be valid JSON") from exc
+        raise ValueError("explicit policy memory content must be valid JSON") from exc
     if not isinstance(parsed, Mapping):
-        raise ValueError("policy memory content must be a JSON object")
+        raise ValueError("explicit policy memory content must be a JSON object")
     if parsed.get("policy_version") != POLICY_DOCUMENT_VERSION:
         raise ValueError(
             f"policy_version must equal {POLICY_DOCUMENT_VERSION}"
@@ -84,9 +105,10 @@ def _compile_record(record: MemoryRecord) -> PolicyRule:
 def compile_policy_memories(records: Iterable[MemoryRecord]) -> PolicyCompilation:
     """Compile only explicit, durable structured policy documents.
 
-    Free-form memory is never converted into an enforceable rule. Invalid records
-    are returned as issues while valid independent records continue compiling.
-    Duplicate rule ids fail closed for every duplicate after the first.
+    Free-form Phase 7B memories remain context and are skipped. Once a record
+    explicitly opts into the policy schema, invalid structure fails closed as a
+    compile issue. Duplicate rule ids fail closed for every duplicate after the
+    first.
     """
 
     rules: list[PolicyRule] = []
@@ -94,7 +116,7 @@ def compile_policy_memories(records: Iterable[MemoryRecord]) -> PolicyCompilatio
     seen_rule_ids: set[str] = set()
 
     for record in records:
-        if record.category not in _POLICY_MEMORY_CATEGORIES:
+        if not is_explicit_policy_memory(record):
             continue
         try:
             rule = _compile_record(record)

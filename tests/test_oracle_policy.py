@@ -27,7 +27,7 @@ def _memory(
         key=key,
         category=category,
         content=json.dumps(document, sort_keys=True),
-        topics=("policy",),
+        topics=("oracle_policy",),
         source="test",
         authority=authority,
     )
@@ -61,11 +61,27 @@ def test_compile_explicit_hard_constraint_from_durable_risk_policy():
     assert rule.source_memory_key == record.key
 
 
-def test_free_form_policy_memory_is_not_silently_inferred_into_rule():
+def test_free_form_phase7_memory_remains_context_not_enforceable_policy():
     record = MemoryRecord(
         key="risk:freeform",
         category="user_risk_policy",
         content="I prefer conservative trades.",
+        source="test",
+        authority="durable",
+    )
+
+    compiled = compile_policy_memories([record])
+
+    assert compiled.rules == ()
+    assert compiled.issues == ()
+
+
+def test_explicitly_marked_malformed_policy_fails_closed():
+    record = MemoryRecord(
+        key="risk:malformed",
+        category="user_risk_policy",
+        content="not-json",
+        topics=("oracle_policy",),
         source="test",
         authority="durable",
     )

@@ -6,6 +6,7 @@ from collections.abc import Callable, Mapping, Sequence
 from typing import Protocol
 
 from roberta.memory import DurableMemoryStore, MemoryRecord
+from roberta.policy.compiler import compile_policy_memories
 from roberta.policy.contracts import PolicyFact, PolicyRule
 from roberta.policy.runtime import PolicyRuntimeContext, evaluate_policy_records
 from roberta.state import RobertaState
@@ -75,9 +76,10 @@ def build_policy_context_provider(
 ) -> Callable[[RobertaState], PolicyRuntimeContext | None]:
     """Bind HXMP/other durable memory and explicit fact supply to the Oracle graph.
 
-    No policy records means no-policy behavior is preserved and the fact provider
-    is not called. Store/fact-provider failures intentionally propagate so the
-    graph's policy boundary can fail closed rather than silently disable policy.
+    Free-form Phase 7B risk/preference memories remain ordinary context: when the
+    loaded category records contain no explicit policy rules/issues, this returns
+    ``None`` and preserves existing no-policy behavior. Store/fact-provider
+    failures intentionally propagate so the graph can fail closed.
     """
 
     def provide(state: RobertaState) -> PolicyRuntimeContext | None:
@@ -88,10 +90,9 @@ def build_policy_context_provider(
         if not records:
             return None
 
-        # First compilation determines exactly which fact keys are requested.
-        from roberta.policy.compiler import compile_policy_memories
-
         compilation = compile_policy_memories(records)
+        if not compilation.rules and not compilation.issues:
+            return None
         facts = fact_provider(state, compilation.rules)
         if not isinstance(facts, Mapping):
             raise TypeError("policy fact provider must return a mapping")
