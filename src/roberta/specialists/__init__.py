@@ -1,5 +1,6 @@
-"""Provider-neutral specialist registry, planning, and policy helpers."""
+"""Provider-neutral specialist registry, planning, dispatch, and policy helpers."""
 
+from roberta.specialists.dispatch import ChainSpecialistDispatch, route_chain_objective
 from roberta.specialists.planning import (
     AUTONOMOUS_OPERATIONS,
     MAX_PLAN_OPERATIONS,
@@ -17,6 +18,7 @@ from roberta.specialists.registry import (
 
 __all__ = [
     "AUTONOMOUS_OPERATIONS",
+    "ChainSpecialistDispatch",
     "DEFAULT_SPECIALIST_REGISTRY",
     "MAX_PLAN_OPERATIONS",
     "chain_policy_facts_from_state",
@@ -24,6 +26,7 @@ __all__ = [
     "parse_plan_proposal",
     "propose_plan",
     "required_operations",
+    "route_chain_objective",
     "select_chain_specialist",
     "select_cmis_operation",
 ]
