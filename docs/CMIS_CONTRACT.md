@@ -103,6 +103,32 @@ The capability remains intentionally constrained:
 
 Roberta must preserve `AGREEMENT`, `CONFLICT`, `INSUFFICIENT_EVIDENCE`, data-quality reasons, freshness/semantics/identity state, warnings/errors, and `cmis_promotable` exactly as returned by CMIS.
 
+## CMIS bounded pre-trade completion checkpoint
+
+CMIS PRs #120-#124 completed the deterministic pre-trade analysis boundary that is supportable by currently verified evidence. The implementation checkpoint is CMIS main SHA `d4ac9044d087641f94eff3f0a6e693c89b878ca2`; its exact post-merge test run #408 (`32061851080`) passed. The source-of-truth integration contract refresh was subsequently accepted on CMIS main SHA `27b4be7ac1e1c7d52894a07a4d3537599aac81e9`, with exact post-merge run #410 (`32062177186`) passing.
+
+CMIS now deterministically supplies, when the required evidence exists:
+
+- the proposed USD notional;
+- verified asset-wide liquidity used by the risk result;
+- `notional_to_liquidity_ratio`;
+- explicit warning/block notional thresholds when an explicit CMIS pre-trade policy supplies the corresponding ratios;
+- explicit risk-evidence age analysis when an explicit freshness policy is configured;
+- machine-readable execution-capability records for slippage, price impact, route quality, bridge dependency, fees, and transaction simulation;
+- stable public projection fields under `data.market`, `data.trade_size`, `data.route_analysis`, and `data.execution_capabilities`.
+
+CMIS does **not** invent universal trade-size thresholds or freshness windows. Verified stale evidence may produce deterministic `WARN`/`BLOCK`; missing required size/liquidity/timestamp evidence remains fail-closed and may make the service `partial`.
+
+The current advanced execution capabilities are explicit `unavailable`/`null` until verified producers exist. Roberta must preserve that state. In particular, it must not turn missing slippage, price-impact, route, fee, bridge, or simulation evidence into zero or into an LLM estimate.
+
+A CMIS pre-trade `PASS` remains analysis-only. CMIS returns `execution_authorized = false`; Roberta must not reinterpret it as permission to prepare, sign, broadcast, or autonomously execute a transaction.
+
+### Current Roberta policy-pass-through caveat
+
+Roberta's current typed `pre_trade_check(chain, asset, action, amount_usd)` path benefits automatically from the completed CMIS default analysis because it supplies the proposed notional and consumes the returned projection.
+
+CMIS runtime also accepts a separate explicit `params.pre_trade_policy`, distinct from risk `params.policy`, for configurable trade-size/freshness/capability requirements. **Roberta's current typed client does not yet expose that custom `pre_trade_policy` mapping.** That is a future Roberta policy-integration task. Roberta must not synthesize threshold values locally to compensate.
+
 ## Solana boundary
 
 Solana Provider work is in CMIS development, but Solana is not yet a production Roberta market-data path.
@@ -129,8 +155,8 @@ Roberta can advance provider-neutral orchestration before every CMIS provider is
 Near-term coordination is:
 
 ```text
-CMIS: evidence runtime accepted -> connect fact producers -> finish X1 trust gaps -> provenance-aware history
-Roberta: Phase 10 specialist registry -> Solana Scout skeleton -> live Solana eligibility after CMIS acceptance
+CMIS: bounded pre-trade analysis accepted -> verified advanced execution producers remain future -> continue trust/history work
+Roberta: consume completed pre-trade projection without recomputation -> custom pre_trade_policy pass-through only when deliberately integrated -> continue specialist orchestration
 ```
 
 Do not duplicate CMIS per chain. Add chain providers beneath shared deterministic contracts and add a Chain Scout only for chain-specific planning and interpretation.
