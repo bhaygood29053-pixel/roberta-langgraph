@@ -4,6 +4,7 @@ from roberta.policy.compiler import POLICY_DOCUMENT_VERSION, compile_policy_memo
 from roberta.policy.context import (
     build_policy_system_message,
     deterministic_policy_message,
+    deterministic_policy_notes,
     format_policy_context,
 )
 from roberta.policy.contracts import (
@@ -78,6 +79,7 @@ __all__ = [
     "build_policy_system_message",
     "compile_policy_memories",
     "deterministic_policy_message",
+    "deterministic_policy_notes",
     "evaluate_policy",
     "evaluate_policy_records",
     "evaluate_policy_rule",

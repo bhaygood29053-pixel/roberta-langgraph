@@ -59,3 +59,18 @@ def deterministic_policy_message(decision: PolicyDecision) -> str:
         reasons = "; ".join(result.description for result in decision.material_results)
         return f"Policy requires explicit user approval before the consequential action can proceed. {reasons}".strip()
     return "Policy evaluation allows the analysis/recommendation to proceed."
+
+
+def deterministic_policy_notes(decision: PolicyDecision) -> tuple[str, ...]:
+    """Return material warning/preference notes that final synthesis cannot omit."""
+
+    notes: list[str] = []
+    for result in decision.warnings:
+        notes.append(f"Policy warning — {result.description}: {result.reason}")
+    for result in decision.preferences:
+        if result.outcome == "preference_met":
+            label = "Preference matched"
+        else:
+            label = "Preference not matched"
+        notes.append(f"{label} — {result.description}")
+    return tuple(notes)

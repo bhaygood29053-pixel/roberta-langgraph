@@ -13,6 +13,7 @@ from roberta.policy import (
     PolicyRuntimeContext,
     build_policy_system_message,
     deterministic_policy_message,
+    deterministic_policy_notes,
 )
 from roberta.prompts import ORACLE_SYSTEM_PROMPT
 from roberta.state import RobertaState
@@ -39,6 +40,16 @@ def _policy_provider_failure(exc: Exception) -> AIMessage:
     )
 
 
+def _append_policy_notes(response: AIMessage, policy: PolicyRuntimeContext) -> AIMessage:
+    notes = deterministic_policy_notes(policy.decision)
+    if not notes:
+        return response
+    content = response.content
+    base = content if isinstance(content, str) else str(content)
+    suffix = "\n".join(f"- {note}" for note in notes)
+    return AIMessage(content=f"{base}\n\nDeterministic policy factors:\n{suffix}".strip())
+
+
 def _approval_wrapped_response(response: AIMessage, policy: PolicyRuntimeContext) -> AIMessage:
     """Preserve analysis while structurally keeping approval non-authorizing."""
 
@@ -48,7 +59,7 @@ def _approval_wrapped_response(response: AIMessage, policy: PolicyRuntimeContext
         wrapped = f"{notice}\n\nNon-authorizing analysis:\n{content}"
     else:
         wrapped = notice
-    return AIMessage(content=wrapped)
+    return _append_policy_notes(AIMessage(content=wrapped), policy)
 
 
 def make_oracle_node(
@@ -64,7 +75,8 @@ def make_oracle_node(
     before the model runs. ``needs_evidence`` may still use read-only specialist
     tools, but a final model answer cannot bypass unresolved evidence. Approval
     states preserve non-authorizing analysis while keeping the approval notice
-    structurally attached to the final answer.
+    structurally attached to the final answer. Material warnings/preferences are
+    also appended deterministically so the model cannot omit them.
     """
 
     def oracle_node(state: RobertaState) -> dict[str, Any]:
@@ -104,6 +116,8 @@ def make_oracle_node(
                 response = AIMessage(content=deterministic_policy_message(policy.decision))
             elif policy.decision.status == "approval_required":
                 response = _approval_wrapped_response(response, policy)
+            else:
+                response = _append_policy_notes(response, policy)
 
         return {
             "messages": [response],
