@@ -25,6 +25,7 @@ from roberta.policy.decision import (
     PolicyDecisionStatus,
     resolve_policy_decision,
 )
+from roberta.policy.document import build_policy_memory_candidate, policy_rule_document
 from roberta.policy.evaluator import evaluate_policy, evaluate_policy_rule
 from roberta.policy.facts import (
     EvidenceFrame,
@@ -73,6 +74,7 @@ __all__ = [
     "SpecialistRoute",
     "SpecialistRoutingPolicy",
     "build_policy_context_provider",
+    "build_policy_memory_candidate",
     "build_policy_system_message",
     "compile_policy_memories",
     "deterministic_policy_message",
@@ -83,6 +85,7 @@ __all__ = [
     "format_policy_context",
     "load_policy_records",
     "merge_policy_facts",
+    "policy_rule_document",
     "resolve_policy_decision",
     "select_specialist",
 ]
