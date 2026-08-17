@@ -3,6 +3,7 @@
 from typing import Literal
 
 from roberta.cmis.contracts import CMISEnvelope, CMISOperation, TradeAction
+from roberta.cmis.verification import normalize_verification_evidence_selector
 
 MockScenario = Literal["test_only", "warning", "unavailable", "error"]
 
@@ -21,11 +22,16 @@ class MockCMISClient:
         self.calls: list[dict[str, object]] = []
 
     @staticmethod
-    def _identity(chain: str, asset: str) -> tuple[str, str]:
+    def _chain(chain: str) -> str:
         chain = str(chain or "").strip().lower()
-        asset = str(asset or "").strip().upper()
         if not chain:
             raise ValueError("chain must not be empty")
+        return chain
+
+    @classmethod
+    def _identity(cls, chain: str, asset: str) -> tuple[str, str]:
+        chain = cls._chain(chain)
+        asset = str(asset or "").strip().upper()
         if not asset:
             raise ValueError("asset must not be empty")
         return chain, asset
@@ -170,3 +176,52 @@ class MockCMISClient:
                 else {"outcome": "TEST_ONLY", "score": None, "flags": ["NOT_LIVE_DATA"]}
             ),
         )
+
+    def verification_evidence(
+        self,
+        *,
+        chain: str,
+        evidence_id: str | None = None,
+        fact_type: str | None = None,
+        subject_id: str | None = None,
+    ) -> CMISEnvelope:
+        chain = self._chain(chain)
+        selector = normalize_verification_evidence_selector(
+            evidence_id=evidence_id,
+            fact_type=fact_type,
+            subject_id=subject_id,
+        )
+        self.calls.append(
+            {
+                "operation": "verification_evidence",
+                "chain": chain,
+                **selector,
+            }
+        )
+        evidence_ref = {
+            "evidence_id": selector.get("evidence_id", "TEST_ONLY"),
+            "recorded_at": None,
+        }
+        return {
+            "service": "verification_evidence",
+            "chain": chain,
+            "status": self._status(),  # type: ignore[typeddict-item]
+            "asset": {},
+            "data": {
+                "fact": {
+                    "fact_type": selector.get("fact_type"),
+                    "subject_id": selector.get("subject_id"),
+                    "normalized_value": None,
+                    "unit": None,
+                },
+                "verification": {"status": "INSUFFICIENT_EVIDENCE"},
+                "evidence_ref": evidence_ref,
+                "cmis_promotable": False,
+            },
+            "risk": None,
+            "confidence": {"level": "TEST_ONLY"},
+            "sources": [{"source": "mock_cmis", "role": "test"}],
+            "observed_at": self.observed_at,
+            "warnings": self._warnings(),
+            "errors": self._errors(),
+        }
