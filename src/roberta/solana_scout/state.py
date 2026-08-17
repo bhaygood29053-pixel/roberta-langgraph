@@ -69,6 +69,7 @@ class SolanaScoutState(TypedDict):
     plan_proposal: NotRequired[SolanaScoutPlanProposal | None]
     planner_error: NotRequired[str | None]
     plan: NotRequired[SolanaScoutPlan]
+    provider_configured: NotRequired[bool]
     cmis_results: NotRequired[list[CMISEnvelope]]
     cmis_result: NotRequired[CMISEnvelope]
     report: NotRequired[SolanaScoutReport]
