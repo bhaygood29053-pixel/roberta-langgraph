@@ -104,3 +104,37 @@ roberta-live "On X1, check AGI market risk"
 
 For that objective, X1 Scout must call CMIS `risk_check`, not `market_report`.
 See `docs/X1_PROVIDER_CMIS_HTTP.md` for the current runtime boundary.
+
+## Local MoltGrid / Signal bridge
+
+Roberta exposes a small local HTTP bridge so an existing transport such as the
+Liquidity Scout MoltGrid/Signal listener can hand a user message to the normal
+Roberta graph without importing Roberta internals or bypassing X1 Scout/CMIS.
+
+Start CMIS first, export `DEEPSEEK_API_KEY`, then start Roberta:
+
+```bash
+roberta-serve
+```
+
+The bridge defaults to:
+
+```text
+ROBERTA_HOST=127.0.0.1
+ROBERTA_PORT=8766
+```
+
+Health check:
+
+```bash
+curl -s http://127.0.0.1:8766/healthz
+```
+
+The message endpoint is `POST /v1/roberta` and accepts only a non-empty
+`message` string. The caller cannot provide tool names, CMIS operations, risk
+values, or execution controls. A non-loopback bind requires `ROBERTA_API_KEY`;
+when configured, callers must use the same value as a Bearer token.
+
+The Liquidity Scout side intentionally enables the first bridge slice only for
+explicit pre-trade questions. Other MoltGrid behavior remains on the existing
+listener until it is migrated deliberately.
