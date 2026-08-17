@@ -1,8 +1,8 @@
 """X1 Scout LangGraph specialist subgraph.
 
 X1 Scout owns X1-specific investigation planning and interpretation. CMIS owns
-deterministic current market/tokenomics/risk services and the X1 Provider
-beneath them.
+deterministic current market/tokenomics/risk/verification services and the X1
+Provider beneath them.
 """
 
 from collections.abc import Callable
@@ -95,6 +95,13 @@ def _dispatch_cmis_operation(
         return cmis_client.tokenomics(chain="x1", asset=asset)
     if operation == "risk_check":
         return cmis_client.risk_check(chain="x1", asset=asset)
+    if operation == "verification_evidence":
+        return cmis_client.verification_evidence(
+            chain="x1",
+            evidence_id=request.get("evidence_id"),
+            fact_type=request.get("fact_type"),
+            subject_id=request.get("subject_id"),
+        )
     if operation == "pre_trade_check":
         action = request.get("action")
         amount_usd = request.get("amount_usd")
