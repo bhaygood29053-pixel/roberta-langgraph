@@ -32,6 +32,7 @@ from roberta.policy.facts import (
     extract_policy_facts,
     merge_policy_facts,
 )
+from roberta.policy.runtime import PolicyRuntimeContext, evaluate_policy_records
 
 __all__ = [
     "EvidenceFrame",
@@ -51,10 +52,12 @@ __all__ = [
     "PolicyOperator",
     "PolicyOutcome",
     "PolicyRule",
+    "PolicyRuntimeContext",
     "build_policy_system_message",
     "compile_policy_memories",
     "deterministic_policy_message",
     "evaluate_policy",
+    "evaluate_policy_records",
     "evaluate_policy_rule",
     "extract_policy_facts",
     "format_policy_context",
