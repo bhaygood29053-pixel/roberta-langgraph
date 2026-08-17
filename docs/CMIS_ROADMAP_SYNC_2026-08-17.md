@@ -18,15 +18,17 @@ Verified information flows upward in the reverse direction.
 
 CMIS Phase 1, the X1 deterministic foundation, is advanced and mostly established.
 
-CMIS Phase 2, trust/provenance/independent verification, is the current active CMIS phase. The trust architecture is now materially ahead of the original roadmap baseline:
+CMIS Phase 2, trust/provenance/independent verification, remains the active CMIS phase. The trust architecture is materially ahead of the original roadmap baseline:
 
 - the fail-closed `verification_evidence` wrapper is accepted on CMIS `main`;
 - the sanitized content-addressed SQLite evidence ledger is accepted on CMIS `main`;
 - exact read-only evidence lookup by stable `evidence_id` or exact `fact_type + subject_id` is accepted on CMIS `main`;
-- deterministic data-quality state preserves identity, semantics, freshness, source-agreement, and promotion requirements;
+- the exact `verification_evidence` gateway is accepted on CMIS `main`;
+- the production CMIS HTTP runtime now composes and advertises `verification_evidence` alongside the existing runtime services;
+- deterministic data-quality state preserves identity, semantics, freshness, source agreement, and promotion requirements;
 - CMIS does not expose a promoted fact value when evidence is non-promotable.
 
-The accepted internal flow is:
+The accepted runtime flow is:
 
 ```text
 fact-specific verifier
@@ -36,31 +38,40 @@ verification_evidence wrapper
 sanitized content-addressed ledger
         ↓
 exact read-only lookup
+        ↓
+verification_evidence gateway
+        ↓
+CMIS HTTP runtime
 ```
 
-## Runtime eligibility boundary
+CMIS PR #87 accepted the gateway boundary. CMIS PR #88 accepted the HTTP runtime composition. The #88 post-merge test run passed on exact CMIS `main` SHA `08ac97810163168048192665d314cce90f5b89fa`.
 
-Internal CMIS acceptance is not the same as Roberta runtime eligibility.
+## Runtime and Roberta eligibility boundary
 
-CMIS pull request #87 (`Expose exact verification evidence through CMIS gateway`) is the current draft gateway-eligibility slice. It is not accepted merely because the wrapper/ledger/lookup are accepted.
+The CMIS HTTP runtime now supports `verification_evidence`, but Roberta's typed client does not yet expose that operation.
 
-Until that gateway slice is tested, merged, deployed, and reflected in the Roberta integration contract:
-
-- Roberta must not call internal CMIS Python evidence helpers directly;
-- Roberta must not submit raw verifier/provider observations;
-- Roberta must not infer evidence from a free-form asset name;
-- Roberta must not choose verification status, confidence, or `cmis_promotable` state;
-- `verification_evidence` should be treated as unavailable for production Roberta invocation.
-
-The intended future selector boundary is exactly one of:
+The accepted CMIS selector boundary is exactly one of:
 
 1. stable `evidence_id`; or
 2. exact `fact_type + subject_id` for the latest stored evidence for that fact.
+
+CMIS rejects free-form asset selection, raw verifier/provider payloads, and request-controlled database paths. CMIS owns ledger selection/configuration, stored-envelope revalidation, content-address checking, fact/chain identity validation, timestamps, verification state, data quality, and `cmis_promotable`.
+
+A callable route is not proof that an evidence record exists. CMIS does not invent or backfill evidence. Missing records or an empty ledger remain explicit `unavailable`.
+
+Until a separate Roberta client/X1 Scout eligibility slice is accepted:
+
+- Roberta must not bypass its typed client to call `verification_evidence`;
+- Roberta must not call internal CMIS Python evidence helpers directly;
+- Roberta must not submit raw verifier/provider observations;
+- Roberta must not infer evidence from a free-form asset name;
+- Roberta must not choose verification status, confidence, or `cmis_promotable` state.
 
 ## Remaining X1 trust gaps
 
 The X1 trust layer is not complete. Important open or not-yet-accepted areas include:
 
+- connecting accepted fact-producing verification workflows to the persistent evidence ledger without bypassing their fact-specific gates;
 - common provider/RPC observation-scope and freshness rules for reserve promotion;
 - X1.Ninja holder semantics and coverage;
 - empirical SSE trade-stream behavior and access;
@@ -100,17 +111,19 @@ Phase 9 approval remains non-executing. CMIS `pre_trade_check` remains analysis 
 
 ## Near-term coordination rule
 
-The two projects may advance in parallel only where boundaries remain explicit:
+The projects may advance in parallel only where boundaries remain explicit:
 
 ```text
 CMIS
-  finish X1 trust gaps
+  connect accepted fact producers to persistent evidence
+  -> finish X1 trust gaps
   -> provenance-aware history
   -> provider maturity
   -> accepted Solana provider capabilities
 
 Roberta
   Phase 10 provider-neutral specialist registry
+  -> exact verification_evidence client/X1 Scout eligibility
   -> Solana Scout skeleton with fake/unavailable CMIS
   -> live Solana eligibility only after CMIS acceptance
 ```
