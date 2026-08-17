@@ -78,7 +78,7 @@ def completed_cmis_projection():
     }
 
 
-def test_roberta_copies_completed_cmis_size_and_liquidity_without_recalculation():
+def test_roberta_preserves_completed_cmis_size_and_liquidity_while_humanizing_display():
     payload = completed_cmis_projection()
     presentation = build_pretrade_presentation(payload)
 
@@ -87,8 +87,12 @@ def test_roberta_copies_completed_cmis_size_and_liquidity_without_recalculation(
     assert presentation["facts"]["market"] == payload["data"]["market"]
     assert presentation["facts"]["trade_size"] == payload["data"]["trade_size"]
     assert presentation["facts"]["route_analysis"] == payload["data"]["route_analysis"]
-    assert "Verified liquidity returned for this analysis is $100,000." in presentation["user_text"]
-    assert "The returned notional-to-liquidity ratio is 0.025." in presentation["user_text"]
+    text = presentation["user_text"]
+    assert "AGI has about $100,000 in verified liquidity" in text
+    assert "2.5%" in text
+    assert "trade size passed" in text.lower()
+    assert "0.025" not in text
+    assert "PASS" not in text
 
 
 def test_roberta_preserves_unavailable_execution_estimates_instead_of_inventing_values():
@@ -102,8 +106,9 @@ def test_roberta_preserves_unavailable_execution_estimates_instead_of_inventing_
     ]
     text = presentation["user_text"]
     assert "not fully evaluated" in text
-    assert "price-impact estimate" in text
-    assert "slippage estimate" in text
+    assert "price impact" in text
+    assert "slippage" in text
+    assert "fees" in text
     assert "0%" not in text
     assert "0.0%" not in text
 
@@ -115,10 +120,12 @@ def test_roberta_does_not_treat_pretrade_pass_as_execution_authorization():
     assert presentation is not None
     assert payload["data"]["execution_authorized"] is False
     assert payload["risk"]["execution_authorized"] is False
-    assert "only covers the evidence that was actually verified" in presentation["user_text"]
+    text = presentation["user_text"]
+    assert "did not block the trade" in text
+    assert "execution risk is not fully evaluated yet" in text
 
 
-def test_technical_mode_preserves_null_route_values_exactly():
+def test_technical_mode_preserves_null_route_values_and_raw_ratio_exactly():
     payload = completed_cmis_projection()
     presentation = build_pretrade_presentation(
         payload,
@@ -128,6 +135,7 @@ def test_technical_mode_preserves_null_route_values_exactly():
     assert presentation is not None
     assert presentation["mode"] == "technical"
     technical = presentation["technical_text"]
+    assert '"assessment": "PASS"' in technical
     assert '"notional_to_liquidity_ratio": 0.025' in technical
     assert '"estimated_price_impact_percent": null' in technical
     assert '"estimated_slippage_percent": null' in technical
