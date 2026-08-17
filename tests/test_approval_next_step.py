@@ -2,7 +2,13 @@
 
 from langgraph.checkpoint.memory import InMemorySaver
 
-from roberta.approval import ApprovalRequest, build_approval_graph, resume_approval, start_approval
+from roberta.approval import (
+    ApprovalRequest,
+    build_approval_graph,
+    build_approval_resume_payload,
+    resume_approval,
+    start_approval,
+)
 
 
 def _request(request_id: str):
@@ -17,12 +23,16 @@ def _request(request_id: str):
 
 
 def _resume(request, decision, **extra):
-    return {
-        "request_id": request.request_id,
-        "proposal_sha256": request.proposal_sha256,
-        "decision": decision,
-        **extra,
-    }
+    feedback = extra.pop("feedback", None)
+    edited = extra.pop("edited_proposal", None)
+    payload = build_approval_resume_payload(
+        request,
+        decision,
+        feedback=feedback,
+        edited_proposal=edited,
+    )
+    payload.update(extra)
+    return payload
 
 
 def test_approved_review_marks_proceed_without_executing():

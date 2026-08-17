@@ -9,6 +9,7 @@ from roberta.approval import (
     ApprovalDecision,
     ApprovalRequest,
     build_approval_graph,
+    build_approval_resume_payload,
     canonical_proposal_sha256,
     resolve_approval_decision,
     resume_approval,
@@ -38,12 +39,16 @@ def _request(
 
 
 def _decision(request: ApprovalRequest, decision: str, **extra):
-    return {
-        "request_id": request.request_id,
-        "proposal_sha256": request.proposal_sha256,
-        "decision": decision,
-        **extra,
-    }
+    feedback = extra.pop("feedback", None)
+    edited = extra.pop("edited_proposal", None)
+    payload = build_approval_resume_payload(
+        request,
+        decision,
+        feedback=feedback,
+        edited_proposal=edited,
+    )
+    payload.update(extra)
+    return payload
 
 
 def _interrupt_value(result):
@@ -70,6 +75,7 @@ def test_request_interrupt_payload_binds_id_hash_scope_and_allowed_decisions():
 
     assert payload["request_id"] == request.request_id
     assert payload["proposal_sha256"] == request.proposal_sha256
+    assert payload["binding_sha256"] == request.binding_sha256
     assert payload["scope"] == list(request.scope)
     assert payload["allowed_decisions"] == [
         "approve",
@@ -88,7 +94,7 @@ def test_boolean_or_yes_string_can_never_mean_approve():
             ApprovalDecision.from_resume(resume, request=request)
 
 
-def test_approve_must_match_exact_request_and_proposal_hash():
+def test_approve_must_match_exact_request_proposal_and_scope_binding():
     request = _request()
 
     with pytest.raises(ValueError, match="request_id does not match"):
@@ -96,6 +102,7 @@ def test_approve_must_match_exact_request_and_proposal_hash():
             {
                 "request_id": "different-request",
                 "proposal_sha256": request.proposal_sha256,
+                "binding_sha256": request.binding_sha256,
                 "decision": "approve",
             },
             request=request,
@@ -106,6 +113,18 @@ def test_approve_must_match_exact_request_and_proposal_hash():
             {
                 "request_id": request.request_id,
                 "proposal_sha256": "0" * 64,
+                "binding_sha256": request.binding_sha256,
+                "decision": "approve",
+            },
+            request=request,
+        )
+
+    with pytest.raises(ValueError, match="binding hash does not match"):
+        ApprovalDecision.from_resume(
+            {
+                "request_id": request.request_id,
+                "proposal_sha256": request.proposal_sha256,
+                "binding_sha256": "0" * 64,
                 "decision": "approve",
             },
             request=request,
@@ -134,6 +153,7 @@ def test_edit_requires_new_proposal_and_never_resolves_as_approved():
     assert outcome.status == "edited"
     assert outcome.reviewed_proposal["amount"] == "0.5"
     assert outcome.reviewed_proposal_sha256 != request.proposal_sha256
+    assert outcome.approval_binding_sha256 == request.binding_sha256
     assert outcome.scope == request.scope
 
 
@@ -161,6 +181,7 @@ def test_graph_pauses_then_approve_resumes_same_thread():
 
     assert payload["request_id"] == request.request_id
     assert payload["proposal_sha256"] == request.proposal_sha256
+    assert payload["binding_sha256"] == request.binding_sha256
     assert "outcome" not in paused
 
     resumed = resume_approval(
@@ -172,6 +193,7 @@ def test_graph_pauses_then_approve_resumes_same_thread():
     assert resumed["status"] == "approved"
     assert resumed["outcome"]["request_id"] == request.request_id
     assert resumed["outcome"]["reviewed_proposal_sha256"] == request.proposal_sha256
+    assert resumed["outcome"]["approval_binding_sha256"] == request.binding_sha256
 
 
 def test_reject_ends_safely_without_approved_status():

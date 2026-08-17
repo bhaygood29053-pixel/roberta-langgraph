@@ -26,9 +26,9 @@ validated ApprovalOutcome
 deterministic next-step class
 ```
 
-`approved` means the human reviewed one exact proposal. It is not a reusable signing credential, wallet permission, execution token, or blanket future authorization.
+`approved` means the human reviewed one exact request/proposal/scope binding. It is not a reusable signing credential, wallet permission, execution token, or blanket future authorization.
 
-## Exact proposal binding
+## Exact proposal and scope binding
 
 Every request carries:
 
@@ -40,9 +40,24 @@ Every request carries:
 - deterministic policy reasons
 - optional evidence summary
 
-The proposal is canonicalized as sorted compact JSON and bound to a SHA-256 digest. An approval response must repeat both the exact `request_id` and proposal hash.
+The proposal is canonicalized as sorted compact JSON and bound to `proposal_sha256`.
 
-Changing the proposal changes the hash. Reusing a request id cannot make a changed proposal equivalent to the original.
+A second `binding_sha256` binds together:
+
+```text
+request_id
++ action_type
++ declared scope
++ proposal_sha256
+```
+
+An approval response must carry the exact request id, proposal hash, and binding hash. Changing the proposal changes both hashes. Changing only the declared scope leaves the proposal hash unchanged but changes the binding hash, so approval cannot silently widen scope.
+
+Proposal JSON is recursively frozen after request construction. Checkpoint/interrupt payloads receive detached ordinary JSON copies, so mutating a source dict or UI payload cannot change the in-memory request behind an established hash.
+
+## Canonical resume payload
+
+`build_approval_resume_payload()` copies the exact request/proposal/binding identifiers into a resume mapping while the caller supplies the human decision. This avoids UI/runtime layers independently rebuilding security-sensitive identifiers.
 
 ## Explicit decisions only
 
@@ -55,7 +70,7 @@ Supported decisions:
 
 Approval resume input must be an explicit mapping. Booleans and yes-like strings do not count as approval. Unknown resume fields fail closed.
 
-An `edit` must include a new proposal. The result is `edited`, not `approved`, and the changed proposal receives a new hash and new review request before it can be approved.
+An `edit` must include a new proposal. The result is `edited`, not `approved`, and the changed proposal receives a new proposal hash, new binding hash, and new review request before it can be approved.
 
 ## LangGraph interrupt contract
 
@@ -63,15 +78,21 @@ The approval node uses dynamic `interrupt()` and an injected checkpointer. Resum
 
 LangGraph restarts an interrupted node from the beginning after resume. For that reason, everything before `interrupt()` in Roberta's approval node is deterministic validation/serialization only. There are no writes, transaction-preparation side effects, signatures, broadcasts, or value movement before the interrupt.
 
-A fresh graph instance can resume a paused approval when it uses the same checkpointer backend and thread id. Invalid/mismatched resume input fails without granting approval; the paused request can still be resumed later with a valid response.
+The public `resume_approval()` helper pre-validates a decision against the paused checkpoint before sending `Command(resume=...)`. This is important because a resume value belongs to the interrupted task; malformed/mismatched input must not be delivered to that task and poison a later retry.
 
-## Thread isolation
+A fresh graph instance can resume a paused approval when it uses the same checkpointer backend and thread id. Invalid/mismatched input is rejected before delivery, and the paused request remains available for a later valid response.
 
-Checkpoint state is thread-scoped. An approval response for request A cannot be borrowed by request B in another thread because the resumed node validates the paused request id and proposal hash from that thread's checkpoint.
+## Single-request thread isolation
+
+Checkpoint state is thread-scoped. An approval response for request A cannot be borrowed by request B in another thread because the runtime and resumed node both validate the paused request id, proposal hash, and binding hash.
+
+An approval thread is single-request context. A pending or completed approval thread cannot be overwritten/reused for another request; a new request receives a new thread id.
+
+A completed approval cannot be resumed again through the runtime helper.
 
 ## Secret handling
 
-Approval proposals and checkpoint/interrupt payloads reject common secret-bearing fields such as:
+Approval proposals and checkpoint/interrupt payloads reject common secret-bearing field names, including nested variants of:
 
 - private keys
 - seed phrases / mnemonics
@@ -80,8 +101,9 @@ Approval proposals and checkpoint/interrupt payloads reject common secret-bearin
 - encryption keys
 - passwords
 - credentials / API keys
+- secrets
 
-Public transaction/proposal data may be reviewed; signing secrets must remain outside approval checkpoint payloads.
+Public transaction/proposal data may be reviewed; signing secrets must remain outside approval checkpoint payloads. Do not put secrets in free-text feedback either.
 
 ## Deterministic next step
 
@@ -94,7 +116,7 @@ edited        → re_review
 more_evidence → research
 ```
 
-This routing function has no execution behavior. `proceed` means only that a later phase may consider the exact approved proposal. Phase 11 must independently revalidate the proposal hash/scope and implement one-time controlled execution semantics before any signing/broadcasting exists.
+This routing has no execution behavior. `proceed` means only that a later phase may consider the exact approved proposal. Phase 11 must independently revalidate and consume the exact approval binding before signing/broadcasting exists.
 
 ## Phase 8 bridge
 
@@ -107,10 +129,11 @@ Policy does not manufacture the proposal or scope. The application must explicit
 An edited proposal:
 
 1. must belong to the previous request,
-2. must bind to the previous original hash,
+2. must bind to the previous proposal and approval-scope binding,
 3. must differ from the previous proposal hash,
 4. receives a new request id,
-5. preserves the previous declared scope/policy/evidence context unless the application deliberately constructs a different request.
+5. therefore receives a new binding hash,
+6. preserves previous scope/policy/evidence context unless the application deliberately constructs a different request.
 
 No approval carries over automatically from the previous proposal.
 
@@ -126,12 +149,13 @@ Tests use `InMemorySaver`. Production checkpointer storage remains an injected r
 
 ## Phase 11 contract
 
-When controlled execution is eventually introduced, it must not treat an `ApprovalOutcome(status="approved")` as sufficient by itself. The execution layer must at minimum revalidate:
+When controlled execution is eventually introduced, it must not treat `ApprovalOutcome(status="approved")` as sufficient by itself. The execution layer must at minimum revalidate:
 
-- exact request/proposal identity
-- proposal hash
+- exact request identity
+- exact proposal hash
+- exact approval binding hash
 - declared approved scope
 - current execution preconditions/freshness where required
-- that the approval is being used only for the intended action
+- that the approval is being consumed only for the intended action
 
 No broad wallet authority is created by Phase 9.

@@ -2,7 +2,13 @@
 
 from langgraph.checkpoint.memory import InMemorySaver
 
-from roberta.approval import ApprovalRequest, build_approval_graph, resume_approval, start_approval
+from roberta.approval import (
+    ApprovalRequest,
+    build_approval_graph,
+    build_approval_resume_payload,
+    resume_approval,
+    start_approval,
+)
 
 
 def _request(request_id="resilience-approval"):
@@ -17,11 +23,7 @@ def _request(request_id="resilience-approval"):
 
 
 def _approve(request):
-    return {
-        "request_id": request.request_id,
-        "proposal_sha256": request.proposal_sha256,
-        "decision": "approve",
-    }
+    return build_approval_resume_payload(request, "approve")
 
 
 def test_invalid_resume_does_not_destroy_paused_request():
@@ -36,6 +38,7 @@ def test_invalid_resume_does_not_destroy_paused_request():
             {
                 "request_id": request.request_id,
                 "proposal_sha256": "0" * 64,
+                "binding_sha256": request.binding_sha256,
                 "decision": "approve",
             },
             thread_id="retry-thread",
@@ -70,9 +73,10 @@ def test_fresh_graph_instance_can_resume_same_paused_approval_backend():
 
     assert resumed["status"] == "approved"
     assert resumed["outcome"]["reviewed_proposal_sha256"] == request.proposal_sha256
+    assert resumed["outcome"]["approval_binding_sha256"] == request.binding_sha256
 
 
-def test_same_request_id_with_changed_proposal_requires_changed_hash():
+def test_same_request_id_with_changed_proposal_changes_proposal_and_binding_hash():
     first = _request("same-id")
     second = ApprovalRequest(
         request_id="same-id",
@@ -84,6 +88,7 @@ def test_same_request_id_with_changed_proposal_requires_changed_hash():
     )
 
     assert first.proposal_sha256 != second.proposal_sha256
+    assert first.binding_sha256 != second.binding_sha256
 
 
 def test_approved_outcome_contains_no_execution_credential_or_signature():

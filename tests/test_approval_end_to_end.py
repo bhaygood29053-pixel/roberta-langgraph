@@ -3,13 +3,14 @@
 from langgraph.checkpoint.memory import InMemorySaver
 
 from roberta.approval import (
+    ApprovalOutcome,
     approval_request_from_policy,
     build_approval_graph,
+    build_approval_resume_payload,
     rereview_request_from_edit,
     resume_approval,
     start_approval,
 )
-from roberta.approval.contracts import ApprovalOutcome
 from roberta.policy import (
     PolicyCompilation,
     PolicyDecision,
@@ -51,12 +52,16 @@ def _request(request_id="review-1"):
 
 
 def _decision(request, decision, **extra):
-    return {
-        "request_id": request.request_id,
-        "proposal_sha256": request.proposal_sha256,
-        "decision": decision,
-        **extra,
-    }
+    feedback = extra.pop("feedback", None)
+    edited = extra.pop("edited_proposal", None)
+    payload = build_approval_resume_payload(
+        request,
+        decision,
+        feedback=feedback,
+        edited_proposal=edited,
+    )
+    payload.update(extra)
+    return payload
 
 
 def _outcome_from_state(payload) -> ApprovalOutcome:
@@ -64,6 +69,7 @@ def _outcome_from_state(payload) -> ApprovalOutcome:
         status=payload["status"],
         request_id=payload["request_id"],
         original_proposal_sha256=payload["original_proposal_sha256"],
+        approval_binding_sha256=payload["approval_binding_sha256"],
         reviewed_proposal=payload["reviewed_proposal"],
         reviewed_proposal_sha256=payload["reviewed_proposal_sha256"],
         scope=tuple(payload["scope"]),
@@ -78,6 +84,7 @@ def test_policy_required_review_pauses_and_exact_approval_proceeds():
 
     interrupt_payload = paused["__interrupt__"][0].value
     assert interrupt_payload["proposal_sha256"] == request.proposal_sha256
+    assert interrupt_payload["binding_sha256"] == request.binding_sha256
     assert interrupt_payload["policy_reasons"] == list(request.policy_reasons)
 
     finished = resume_approval(
@@ -89,6 +96,7 @@ def test_policy_required_review_pauses_and_exact_approval_proceeds():
     assert finished["status"] == "approved"
     assert finished["next_step"] == "proceed"
     assert finished["outcome"]["reviewed_proposal_sha256"] == request.proposal_sha256
+    assert finished["outcome"]["approval_binding_sha256"] == request.binding_sha256
 
 
 def test_edit_requires_new_request_and_second_human_review_before_proceed():
@@ -116,6 +124,7 @@ def test_edit_requires_new_request_and_second_human_review_before_proceed():
         new_request_id="review-edited",
     )
     assert second.proposal_sha256 != first.proposal_sha256
+    assert second.binding_sha256 != first.binding_sha256
 
     start_approval(graph, second, thread_id="edit-second-thread")
     approved = resume_approval(
@@ -127,6 +136,7 @@ def test_edit_requires_new_request_and_second_human_review_before_proceed():
     assert approved["status"] == "approved"
     assert approved["next_step"] == "proceed"
     assert approved["outcome"]["reviewed_proposal_sha256"] == second.proposal_sha256
+    assert approved["outcome"]["approval_binding_sha256"] == second.binding_sha256
     assert approved["outcome"]["reviewed_proposal_sha256"] != first.proposal_sha256
 
 
@@ -148,3 +158,4 @@ def test_more_evidence_keeps_same_proposal_unapproved_for_research():
     assert result["status"] == "more_evidence"
     assert result["next_step"] == "research"
     assert result["outcome"]["reviewed_proposal_sha256"] == request.proposal_sha256
+    assert result["outcome"]["approval_binding_sha256"] == request.binding_sha256
