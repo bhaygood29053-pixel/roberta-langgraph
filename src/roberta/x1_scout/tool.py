@@ -26,6 +26,10 @@ def build_x1_scout_tool(
     ) -> str:
         """Delegate an X1-specific investigation to X1 Scout.
 
+        Ordinary read-only objectives may cover current market data, tokenomics,
+        risk, XDEX rankings, and historical comparisons. For a global XDEX
+        ranking with no single asset, use ``asset='XDEX'`` as the scope label.
+
         Pre-trade analysis is explicit-request-only. ``action`` and
         ``amount_usd`` may be supplied only with ``operation=pre_trade_check``;
         Roberta must copy those values from the user's request rather than
@@ -73,11 +77,15 @@ def build_x1_scout_tool(
         func=investigate_x1,
         name="x1_scout_investigate",
         description=(
-            "Delegate an X1-chain market or market-risk investigation to X1 Scout. "
-            "For an explicit user pre-trade question such as buying or selling a "
-            "stated USD amount, call with operation='pre_trade_check' and copy the "
-            "user's exact BUY/SELL action and amount_usd. Never invent a trade side "
-            "or amount. Ordinary X1 investigations omit those optional fields. X1 "
-            "Scout owns X1-specific investigation and obtains structured facts from CMIS."
+            "Delegate an X1-chain market investigation to X1 Scout. This includes "
+            "current market data, tokenomics, deterministic risk, XDEX rankings, "
+            "and historical comparisons. For a global XDEX ranking with no one "
+            "asset, use asset='XDEX' as the scope label and copy the user's ranking "
+            "request into objective. For an explicit user pre-trade question such "
+            "as buying or selling a stated USD amount, call with "
+            "operation='pre_trade_check' and copy the user's exact BUY/SELL action "
+            "and amount_usd. Never invent a trade side or amount. Ordinary X1 "
+            "investigations omit those optional fields. X1 Scout obtains structured "
+            "facts from CMIS and does not authorize execution."
         ),
     )
