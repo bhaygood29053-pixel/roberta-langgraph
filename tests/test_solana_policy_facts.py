@@ -2,10 +2,13 @@
 
 import json
 
-from langchain_core.messages import ToolMessage
+from langchain_core.messages import HumanMessage, ToolMessage
 
 from roberta.policy import PolicyRule
-from roberta.solana_scout.policy_facts import extract_solana_policy_facts
+from roberta.solana_scout.policy_facts import (
+    extract_solana_policy_facts,
+    solana_policy_facts_from_state,
+)
 from roberta.specialists.policy_facts import chain_policy_facts_from_state
 
 
@@ -73,7 +76,7 @@ def test_partial_solana_evidence_cannot_become_verified_fresh() -> None:
     assert facts["market.liquidity"].freshness == "unknown"
 
 
-def test_cross_chain_dispatch_uses_latest_chain_scout_only() -> None:
+def test_cross_chain_dispatch_uses_latest_scout_within_current_user_turn_only() -> None:
     x1 = _tool(
         "x1_scout_investigate",
         _report("x1_scout", "x1", 111),
@@ -85,13 +88,16 @@ def test_cross_chain_dispatch_uses_latest_chain_scout_only() -> None:
         "sol-new",
     )
 
-    facts = chain_policy_facts_from_state({"messages": [x1, solana]}, [_rule()])
+    facts = chain_policy_facts_from_state(
+        {"messages": [HumanMessage(content="Current request"), x1, solana]},
+        [_rule()],
+    )
 
     assert facts["market.liquidity"].value == 999
     assert facts["market.liquidity"].source.startswith("solana_scout/")
 
 
-def test_unconfigured_latest_solana_does_not_fall_back_to_stale_x1_fact() -> None:
+def test_unconfigured_latest_solana_does_not_fall_back_to_same_turn_x1_fact() -> None:
     x1 = _tool(
         "x1_scout_investigate",
         _report("x1_scout", "x1", 111),
@@ -104,14 +110,20 @@ def test_unconfigured_latest_solana_does_not_fall_back_to_stale_x1_fact() -> Non
     )
 
     facts = chain_policy_facts_from_state(
-        {"messages": [x1, solana_unconfigured]},
+        {
+            "messages": [
+                HumanMessage(content="Current request"),
+                x1,
+                solana_unconfigured,
+            ]
+        },
         [_rule()],
     )
 
     assert facts == {}
 
 
-def test_latest_x1_still_uses_existing_x1_adapter() -> None:
+def test_latest_x1_within_current_turn_still_uses_existing_x1_adapter() -> None:
     solana = _tool(
         "solana_scout_investigate",
         _report("solana_scout", "solana", 999),
@@ -123,7 +135,63 @@ def test_latest_x1_still_uses_existing_x1_adapter() -> None:
         "x1-new",
     )
 
-    facts = chain_policy_facts_from_state({"messages": [solana, x1]}, [_rule()])
+    facts = chain_policy_facts_from_state(
+        {"messages": [HumanMessage(content="Current request"), solana, x1]},
+        [_rule()],
+    )
 
     assert facts["market.liquidity"].value == 222
     assert facts["market.liquidity"].source.startswith("x1_scout/")
+
+
+def test_prior_turn_solana_fact_cannot_satisfy_new_x1_or_unspecified_request() -> None:
+    old_solana = _tool(
+        "solana_scout_investigate",
+        _report("solana_scout", "solana", 999999),
+        "sol-old",
+    )
+
+    facts = chain_policy_facts_from_state(
+        {
+            "messages": [
+                HumanMessage(content="Old Solana request"),
+                old_solana,
+                HumanMessage(content="New request"),
+            ]
+        },
+        [_rule()],
+    )
+
+    assert facts == {}
+
+
+def test_current_turn_solana_state_provider_ignores_prior_turn_result() -> None:
+    old_solana = _tool(
+        "solana_scout_investigate",
+        _report("solana_scout", "solana", 500),
+        "sol-old",
+    )
+
+    facts = solana_policy_facts_from_state(
+        {
+            "messages": [
+                HumanMessage(content="Old Solana request"),
+                old_solana,
+                HumanMessage(content="New Solana request"),
+            ]
+        },
+        [_rule()],
+    )
+
+    assert facts == {}
+
+
+def test_bare_tool_history_without_user_marker_is_not_current_evidence() -> None:
+    solana = _tool(
+        "solana_scout_investigate",
+        _report("solana_scout", "solana", 500),
+        "sol-only",
+    )
+
+    assert chain_policy_facts_from_state({"messages": [solana]}, [_rule()]) == {}
+    assert solana_policy_facts_from_state({"messages": [solana]}, [_rule()]) == {}
