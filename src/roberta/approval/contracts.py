@@ -44,6 +44,7 @@ _ALLOWED_RESUME_KEYS = frozenset(
     {
         "request_id",
         "proposal_sha256",
+        "binding_sha256",
         "decision",
         "feedback",
         "edited_proposal",
@@ -95,8 +96,6 @@ def _freeze_json(value: Any, *, path: str = "payload") -> Any:
 
 
 def _thaw_json(value: Any) -> Any:
-    """Return ordinary JSON containers for checkpoint/interrupt serialization."""
-
     if isinstance(value, Mapping):
         return {key: _thaw_json(nested) for key, nested in value.items()}
     if isinstance(value, tuple):
@@ -139,6 +138,31 @@ def canonical_proposal_sha256(proposal: Mapping[str, Any]) -> str:
     return hashlib.sha256(_canonical_json(frozen).encode("utf-8")).hexdigest()
 
 
+def canonical_approval_binding_sha256(
+    *,
+    request_id: str,
+    action_type: str,
+    scope: tuple[str, ...],
+    proposal_sha256: str,
+) -> str:
+    """Bind approval to exact request identity, action class, scope, and proposal."""
+
+    if not isinstance(request_id, str) or not request_id.strip():
+        raise ValueError("request_id must be non-empty for approval binding")
+    if not isinstance(action_type, str) or not action_type.strip():
+        raise ValueError("action_type must be non-empty for approval binding")
+    if not isinstance(scope, tuple) or not scope:
+        raise ValueError("scope must be non-empty for approval binding")
+    digest = _validate_sha256(proposal_sha256, field="proposal_sha256")
+    payload = {
+        "request_id": request_id,
+        "action_type": action_type,
+        "scope": list(scope),
+        "proposal_sha256": digest,
+    }
+    return hashlib.sha256(_canonical_json(payload).encode("utf-8")).hexdigest()
+
+
 @dataclass(frozen=True, slots=True)
 class ApprovalRequest:
     """One exact consequential proposal requiring explicit human review."""
@@ -178,17 +202,23 @@ class ApprovalRequest:
             if any(not isinstance(item, str) or not item.strip() for item in values):
                 raise ValueError(f"{name} values must be non-empty strings")
         _assert_no_secret_fields(self.proposal, path="proposal")
-        frozen = _freeze_json(self.proposal, path="proposal")
-        object.__setattr__(self, "proposal", frozen)
+        object.__setattr__(self, "proposal", _freeze_json(self.proposal, path="proposal"))
         _canonical_json(self.to_state_payload())
 
     @property
     def proposal_sha256(self) -> str:
         return canonical_proposal_sha256(self.proposal)
 
-    def to_state_payload(self) -> dict[str, Any]:
-        """Return JSON-safe checkpoint state; never include signing secrets."""
+    @property
+    def binding_sha256(self) -> str:
+        return canonical_approval_binding_sha256(
+            request_id=self.request_id,
+            action_type=self.action_type,
+            scope=self.scope,
+            proposal_sha256=self.proposal_sha256,
+        )
 
+    def to_state_payload(self) -> dict[str, Any]:
         return {
             "request_id": self.request_id,
             "action_type": self.action_type,
@@ -200,8 +230,6 @@ class ApprovalRequest:
         }
 
     def to_interrupt_payload(self) -> dict[str, Any]:
-        """Return the exact review payload surfaced by LangGraph interrupt()."""
-
         return {
             "schema": "roberta.approval-request",
             "version": 1,
@@ -211,6 +239,7 @@ class ApprovalRequest:
             "scope": list(self.scope),
             "proposal": _thaw_json(self.proposal),
             "proposal_sha256": self.proposal_sha256,
+            "binding_sha256": self.binding_sha256,
             "policy_reasons": list(self.policy_reasons),
             "evidence_summary": list(self.evidence_summary),
             "allowed_decisions": [
@@ -242,6 +271,7 @@ class ApprovalDecision:
 
     request_id: str
     proposal_sha256: str
+    binding_sha256: str
     decision: ApprovalDecisionType
     feedback: str | None = None
     edited_proposal: Mapping[str, Any] | None = None
@@ -253,6 +283,11 @@ class ApprovalDecision:
             self,
             "proposal_sha256",
             _validate_sha256(self.proposal_sha256, field="proposal_sha256"),
+        )
+        object.__setattr__(
+            self,
+            "binding_sha256",
+            _validate_sha256(self.binding_sha256, field="binding_sha256"),
         )
         if self.decision not in _DECISIONS:
             raise ValueError(f"unsupported approval decision: {self.decision!r}")
@@ -273,14 +308,7 @@ class ApprovalDecision:
             raise ValueError("edited_proposal is only valid for an edit decision")
 
     @classmethod
-    def from_resume(
-        cls,
-        value: Any,
-        *,
-        request: ApprovalRequest,
-    ) -> "ApprovalDecision":
-        """Parse a resume value; booleans/yes-like strings are never approvals."""
-
+    def from_resume(cls, value: Any, *, request: ApprovalRequest) -> "ApprovalDecision":
         if not isinstance(value, Mapping):
             raise ValueError("approval resume value must be an explicit mapping")
         unknown = set(value) - _ALLOWED_RESUME_KEYS
@@ -289,6 +317,7 @@ class ApprovalDecision:
         decision = cls(
             request_id=value.get("request_id"),
             proposal_sha256=value.get("proposal_sha256"),
+            binding_sha256=value.get("binding_sha256"),
             decision=value.get("decision"),
             feedback=value.get("feedback"),
             edited_proposal=value.get("edited_proposal"),
@@ -297,6 +326,8 @@ class ApprovalDecision:
             raise ValueError("approval request_id does not match the paused request")
         if decision.proposal_sha256 != request.proposal_sha256:
             raise ValueError("approval proposal hash does not match the paused proposal")
+        if decision.binding_sha256 != request.binding_sha256:
+            raise ValueError("approval binding hash does not match the paused request scope")
         return decision
 
 
@@ -307,6 +338,7 @@ class ApprovalOutcome:
     status: ApprovalStatus
     request_id: str
     original_proposal_sha256: str
+    approval_binding_sha256: str
     reviewed_proposal: Mapping[str, Any]
     reviewed_proposal_sha256: str
     scope: tuple[str, ...]
@@ -321,6 +353,10 @@ class ApprovalOutcome:
             self.original_proposal_sha256,
             field="original_proposal_sha256",
         )
+        binding = _validate_sha256(
+            self.approval_binding_sha256,
+            field="approval_binding_sha256",
+        )
         reviewed_hash = _validate_sha256(
             self.reviewed_proposal_sha256,
             field="reviewed_proposal_sha256",
@@ -331,6 +367,7 @@ class ApprovalOutcome:
         if canonical_proposal_sha256(frozen) != reviewed_hash:
             raise ValueError("reviewed proposal hash does not match reviewed proposal")
         object.__setattr__(self, "original_proposal_sha256", original)
+        object.__setattr__(self, "approval_binding_sha256", binding)
         object.__setattr__(self, "reviewed_proposal_sha256", reviewed_hash)
         object.__setattr__(self, "reviewed_proposal", frozen)
 
@@ -339,6 +376,7 @@ class ApprovalOutcome:
             "status": self.status,
             "request_id": self.request_id,
             "original_proposal_sha256": self.original_proposal_sha256,
+            "approval_binding_sha256": self.approval_binding_sha256,
             "reviewed_proposal": _thaw_json(self.reviewed_proposal),
             "reviewed_proposal_sha256": self.reviewed_proposal_sha256,
             "scope": list(self.scope),
@@ -356,6 +394,8 @@ def resolve_approval_decision(
         raise ValueError("approval decision is not bound to this request")
     if decision.proposal_sha256 != request.proposal_sha256:
         raise ValueError("approval decision is not bound to this proposal")
+    if decision.binding_sha256 != request.binding_sha256:
+        raise ValueError("approval decision is not bound to this request scope")
 
     if decision.decision == "approve":
         status: ApprovalStatus = "approved"
@@ -375,6 +415,7 @@ def resolve_approval_decision(
         status=status,
         request_id=request.request_id,
         original_proposal_sha256=request.proposal_sha256,
+        approval_binding_sha256=request.binding_sha256,
         reviewed_proposal=reviewed,
         reviewed_proposal_sha256=canonical_proposal_sha256(reviewed),
         scope=request.scope,

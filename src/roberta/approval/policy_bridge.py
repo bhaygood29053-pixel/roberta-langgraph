@@ -61,6 +61,8 @@ def rereview_request_from_edit(
         raise ValueError("edited outcome does not belong to the previous request")
     if outcome.original_proposal_sha256 != previous.proposal_sha256:
         raise ValueError("edited outcome is not bound to the previous proposal")
+    if outcome.approval_binding_sha256 != previous.binding_sha256:
+        raise ValueError("edited outcome is not bound to the previous approval scope")
     if outcome.reviewed_proposal_sha256 == previous.proposal_sha256:
         raise ValueError("edited proposal must differ from the previous proposal")
     if new_request_id == previous.request_id:

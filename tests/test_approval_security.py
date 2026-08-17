@@ -3,7 +3,13 @@
 import pytest
 from langgraph.checkpoint.memory import InMemorySaver
 
-from roberta.approval import ApprovalRequest, build_approval_graph, resume_approval, start_approval
+from roberta.approval import (
+    ApprovalRequest,
+    build_approval_graph,
+    build_approval_resume_payload,
+    resume_approval,
+    start_approval,
+)
 
 
 def _request(request_id: str, proposal=None):
@@ -18,11 +24,7 @@ def _request(request_id: str, proposal=None):
 
 
 def _approve(request):
-    return {
-        "request_id": request.request_id,
-        "proposal_sha256": request.proposal_sha256,
-        "decision": "approve",
-    }
+    return build_approval_resume_payload(request, "approve")
 
 
 def test_nested_secret_like_field_name_is_refused():

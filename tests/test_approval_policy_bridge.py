@@ -2,9 +2,9 @@
 
 from roberta.approval import (
     ApprovalDecision,
-    ApprovalRequest,
     approval_next_step,
     approval_request_from_policy,
+    build_approval_resume_payload,
     rereview_request_from_edit,
     resolve_approval_decision,
 )
@@ -88,13 +88,12 @@ def test_edit_creates_new_request_and_does_not_inherit_approval():
     edited = dict(previous.proposal)
     edited["amount"] = "0.5"
     decision = ApprovalDecision.from_resume(
-        {
-            "request_id": previous.request_id,
-            "proposal_sha256": previous.proposal_sha256,
-            "decision": "edit",
-            "edited_proposal": edited,
-            "feedback": "Reduce amount.",
-        },
+        build_approval_resume_payload(
+            previous,
+            "edit",
+            edited_proposal=edited,
+            feedback="Reduce amount.",
+        ),
         request=previous,
     )
     outcome = resolve_approval_decision(previous, decision)
@@ -110,6 +109,7 @@ def test_edit_creates_new_request_and_does_not_inherit_approval():
     assert rereview.request_id == "review-2"
     assert rereview.proposal_sha256 == outcome.reviewed_proposal_sha256
     assert rereview.proposal_sha256 != previous.proposal_sha256
+    assert rereview.binding_sha256 != previous.binding_sha256
     assert rereview.scope == previous.scope
 
 
@@ -120,12 +120,11 @@ def test_edit_re_review_refuses_same_request_id():
     outcome = resolve_approval_decision(
         previous,
         ApprovalDecision.from_resume(
-            {
-                "request_id": previous.request_id,
-                "proposal_sha256": previous.proposal_sha256,
-                "decision": "edit",
-                "edited_proposal": edited,
-            },
+            build_approval_resume_payload(
+                previous,
+                "edit",
+                edited_proposal=edited,
+            ),
             request=previous,
         ),
     )
