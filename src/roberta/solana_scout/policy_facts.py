@@ -16,6 +16,7 @@ from roberta.policy import (
     extract_policy_facts,
     merge_policy_facts,
 )
+from roberta.specialists.turn_scope import current_user_turn_messages
 
 _OPERATION_FACT_SPECS: dict[str, tuple[FactPathSpec, ...]] = {
     "market_report": (
@@ -116,10 +117,10 @@ def solana_policy_facts_from_state(
     state: Mapping[str, Any],
     rules: Sequence[PolicyRule],
 ) -> Mapping[str, PolicyFact]:
-    """PolicyFactProvider-compatible adapter over the latest Solana Scout message."""
+    """Use only a Solana Scout ToolMessage from the current user turn."""
 
     requested = {rule.fact_key for rule in rules}
-    messages = state.get("messages", [])
+    messages = current_user_turn_messages(state.get("messages", []))
     for message in reversed(messages):
         if not isinstance(message, ToolMessage) or message.name != "solana_scout_investigate":
             continue
