@@ -16,6 +16,7 @@ from roberta.policy import (
     extract_policy_facts,
     merge_policy_facts,
 )
+from roberta.specialists.turn_scope import current_user_turn_messages
 
 _OPERATION_FACT_SPECS: dict[str, tuple[FactPathSpec, ...]] = {
     "market_report": (
@@ -119,16 +120,16 @@ def x1_policy_facts_from_state(
     state: Mapping[str, Any],
     rules: Sequence[PolicyRule],
 ) -> Mapping[str, PolicyFact]:
-    """PolicyFactProvider-compatible adapter over the latest X1 Scout ToolMessage.
+    """Use only an X1 Scout result from the current user turn.
 
-    Before a Scout tool has run, this returns no market facts so fresh/evidence
-    rules become ``needs_evidence`` and the Oracle can delegate. After the tool
-    runs, the latest structured X1 Scout report is used. Malformed Scout JSON
-    fails closed by raising rather than being treated as usable evidence.
+    Before the current turn's Scout tool has run, this returns no market facts so
+    fresh/evidence rules become ``needs_evidence`` and the Oracle can delegate.
+    ToolMessages retained from earlier turns are historical thread context and
+    cannot satisfy the current freshness-sensitive policy decision.
     """
 
     requested = {rule.fact_key for rule in rules}
-    messages = state.get("messages", [])
+    messages = current_user_turn_messages(state.get("messages", []))
     for message in reversed(messages):
         if not isinstance(message, ToolMessage) or message.name != "x1_scout_investigate":
             continue
