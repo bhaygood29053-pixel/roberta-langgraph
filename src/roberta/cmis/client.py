@@ -30,3 +30,13 @@ class CMISClient(Protocol):
         amount_usd: float,
     ) -> CMISEnvelope:
         ...
+
+    def verification_evidence(
+        self,
+        *,
+        chain: str,
+        evidence_id: str | None = None,
+        fact_type: str | None = None,
+        subject_id: str | None = None,
+    ) -> CMISEnvelope:
+        ...
