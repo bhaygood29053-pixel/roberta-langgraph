@@ -20,6 +20,8 @@ from roberta.time_utils import format_observed_at_utc, normalize_observed_at
 from roberta.x1_scout.planner import (
     enforce_plan,
     propose_plan,
+    rank_limit_from_objective,
+    rank_metric_from_objective,
     select_cmis_operation,
 )
 from roberta.x1_scout.state import (
@@ -90,8 +92,21 @@ def _dispatch_cmis_operation(
     operation: CMISOperation,
 ) -> CMISEnvelope:
     asset = request["asset"]
+    objective = request["objective"]
     if operation == "market_report":
         return cmis_client.market_report(chain="x1", asset=asset)
+    if operation == "rank":
+        return cmis_client.rank(
+            chain="x1",
+            metric=rank_metric_from_objective(objective),
+            limit=rank_limit_from_objective(objective),
+        )
+    if operation == "historical_compare":
+        return cmis_client.historical_compare(
+            chain="x1",
+            asset=asset,
+            question=str(objective),
+        )
     if operation == "tokenomics":
         return cmis_client.tokenomics(chain="x1", asset=asset)
     if operation == "risk_check":
