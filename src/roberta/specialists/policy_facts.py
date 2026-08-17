@@ -10,6 +10,7 @@ from langchain_core.messages import ToolMessage
 
 from roberta.policy import PolicyFact, PolicyRule
 from roberta.solana_scout.policy_facts import extract_solana_policy_facts
+from roberta.specialists.turn_scope import current_user_turn_messages
 from roberta.x1_scout.policy_facts import extract_x1_policy_facts
 
 _TOOL_ADAPTERS = {
@@ -22,15 +23,15 @@ def chain_policy_facts_from_state(
     state: Mapping[str, Any],
     rules: Sequence[PolicyRule],
 ) -> Mapping[str, PolicyFact]:
-    """Use the latest chain-Scout result as the current policy evidence frame.
+    """Use the latest chain-Scout result from the current user turn only.
 
     The dispatcher intentionally does not merge reports from different chain
-    Scouts. A later Solana investigation must not inherit an older X1 market fact
-    (or vice versa) merely because both ToolMessages remain in thread history.
+    Scouts. It also ignores ToolMessages retained from prior user turns. A new
+    request starts with no current market evidence until a Scout runs again.
     """
 
     requested = {rule.fact_key for rule in rules}
-    messages = state.get("messages", [])
+    messages = current_user_turn_messages(state.get("messages", []))
     for message in reversed(messages):
         if not isinstance(message, ToolMessage):
             continue
