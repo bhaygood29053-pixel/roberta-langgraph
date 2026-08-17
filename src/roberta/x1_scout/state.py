@@ -16,6 +16,9 @@ class X1ScoutRequest(TypedDict):
     operation: NotRequired[CMISOperation]
     action: NotRequired[TradeAction]
     amount_usd: NotRequired[float]
+    evidence_id: NotRequired[str]
+    fact_type: NotRequired[str]
+    subject_id: NotRequired[str]
 
 
 class X1ScoutPlanProposal(TypedDict):
