@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from roberta.cmis.contracts import CMISEnvelope, CMISOperation, TradeAction
+from roberta.cmis.contracts import CMISEnvelope, CMISOperation, RankMetric, TradeAction
 from roberta.cmis.verification import normalize_verification_evidence_selector
 
 MockScenario = Literal["test_only", "warning", "unavailable", "error"]
@@ -81,7 +81,7 @@ class MockCMISClient:
             "service": service,
             "chain": chain,
             "status": self._status(),  # type: ignore[typeddict-item]
-            "asset": {"symbol": asset},
+            "asset": {"symbol": asset} if asset else {},
             "data": data,
             "risk": risk,
             "confidence": {"level": "TEST_ONLY"},
@@ -105,6 +105,62 @@ class MockCMISClient:
                 "volume_24h": None,
             },
             risk=None,
+        )
+
+    def rank(
+        self,
+        *,
+        chain: str,
+        metric: RankMetric = "volume",
+        limit: int = 10,
+    ) -> CMISEnvelope:
+        chain = self._chain(chain)
+        normalized_metric = str(metric or "").strip().lower()
+        if isinstance(limit, bool) or not isinstance(limit, int) or limit <= 0:
+            raise ValueError("limit must be a positive integer")
+        self.calls.append(
+            {
+                "operation": "rank",
+                "chain": chain,
+                "metric": normalized_metric,
+                "limit": limit,
+            }
+        )
+        return self._response(
+            service="rank",
+            chain=chain,
+            asset="",
+            data={
+                "metric": normalized_metric,
+                "limit": limit,
+                "rankings": [],
+            },
+        )
+
+    def historical_compare(
+        self,
+        *,
+        chain: str,
+        asset: str,
+        question: str,
+    ) -> CMISEnvelope:
+        chain, asset = self._identity(chain, asset)
+        normalized_question = str(question or "").strip()
+        if not normalized_question:
+            raise ValueError("question must not be empty")
+        self.calls.append(
+            {
+                "operation": "historical_compare",
+                "chain": chain,
+                "asset": asset,
+                "question": normalized_question,
+            }
+        )
+        return self._response(
+            service="historical_compare",
+            chain=chain,
+            asset=asset,
+            data={"question": normalized_question, "comparison": None},
         )
 
     def tokenomics(self, *, chain: str, asset: str) -> CMISEnvelope:
