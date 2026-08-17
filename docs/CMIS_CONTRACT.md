@@ -22,6 +22,8 @@ The Roberta-side typed client currently defines:
 - `tokenomics(chain, asset)`
 - `risk_check(chain, asset)`
 - `pre_trade_check(chain, asset, action, amount_usd)`
+- `verification_evidence(chain, evidence_id=...)`
+- `verification_evidence(chain, fact_type=..., subject_id=...)`
 
 Every operation names its target chain explicitly. Roberta/X1 Scout may have a narrower callable surface than CMIS itself; accepted CMIS runtime capability does not automatically become Roberta client eligibility.
 
@@ -77,7 +79,7 @@ fact-specific verifier
 
 CMIS PR #87 accepted the exact gateway boundary. CMIS PR #88 accepted the production HTTP runtime composition. The post-merge CMIS `main` test run for #88 passed on exact merge SHA `08ac97810163168048192665d314cce90f5b89fa`.
 
-The CMIS HTTP runtime now advertises `verification_evidence`. Selection is limited to exactly one of:
+The CMIS HTTP runtime advertises `verification_evidence`. Selection is limited to exactly one of:
 
 1. stable `evidence_id`; or
 2. exact `fact_type + subject_id` for the latest stored record.
@@ -88,9 +90,16 @@ Runtime availability does not guarantee that a requested evidence record exists.
 
 ### Roberta client eligibility
 
-Roberta's typed client has **not yet been extended** to expose `verification_evidence`. Therefore Roberta must not bypass the typed client or call internal CMIS evidence helpers directly merely because the CMIS HTTP server supports the service.
+Roberta PR #32 accepted the typed-client/X1 Scout eligibility boundary for `verification_evidence`. The post-merge Roberta `main` test run #100 passed on exact merge SHA `18b2b5bf499b23ee26b293c30442cd0dd762c6cb`.
 
-A separate Roberta-side eligibility/client slice must add the exact selector contract and preserve the existing authority path through X1 Scout. Until that slice is accepted, `verification_evidence` is **CMIS-runtime available but Roberta-client unavailable**.
+The capability remains intentionally constrained:
+
+- evidence lookup is an **explicit-only** X1 Scout operation;
+- the autonomous X1 Scout planner allowlist remains `market_report`, `tokenomics`, and `risk_check`;
+- model-proposed `verification_evidence` is rejected;
+- the X1 Scout display/request asset is not sent to CMIS as evidence identity;
+- the typed HTTP client sends only `service`, `chain`, and the exact evidence selector;
+- Roberta must not bypass X1 Scout or call internal CMIS evidence helpers directly.
 
 Roberta must preserve `AGREEMENT`, `CONFLICT`, `INSUFFICIENT_EVIDENCE`, data-quality reasons, freshness/semantics/identity state, warnings/errors, and `cmis_promotable` exactly as returned by CMIS.
 
@@ -121,7 +130,7 @@ Near-term coordination is:
 
 ```text
 CMIS: evidence runtime accepted -> connect fact producers -> finish X1 trust gaps -> provenance-aware history
-Roberta: Phase 10 specialist registry -> exact verification_evidence client eligibility -> Solana Scout skeleton
+Roberta: Phase 10 specialist registry -> Solana Scout skeleton -> live Solana eligibility after CMIS acceptance
 ```
 
 Do not duplicate CMIS per chain. Add chain providers beneath shared deterministic contracts and add a Chain Scout only for chain-specific planning and interpretation.
