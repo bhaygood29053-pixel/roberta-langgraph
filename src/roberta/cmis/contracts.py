@@ -19,6 +19,8 @@ CMISService: TypeAlias = Literal[
 ]
 CMISOperation: TypeAlias = Literal[
     "market_report",
+    "rank",
+    "historical_compare",
     "tokenomics",
     "risk_check",
     "pre_trade_check",
@@ -32,6 +34,15 @@ CMISStatus: TypeAlias = Literal[
     "error",
 ]
 TradeAction: TypeAlias = Literal["BUY", "SELL"]
+RankMetric: TypeAlias = Literal[
+    "volume",
+    "liquidity",
+    "holders",
+    "safety",
+    "gainers",
+    "losers",
+    "trending",
+]
 
 
 class CMISEnvelope(TypedDict):
@@ -52,6 +63,8 @@ class CMISEnvelope(TypedDict):
 
 CMISResult: TypeAlias = CMISEnvelope
 CMISMarketReport: TypeAlias = CMISEnvelope
+CMISRankReport: TypeAlias = CMISEnvelope
+CMISHistoricalCompare: TypeAlias = CMISEnvelope
 CMISTokenomicsReport: TypeAlias = CMISEnvelope
 CMISRiskCheck: TypeAlias = CMISEnvelope
 CMISPreTradeCheck: TypeAlias = CMISEnvelope
