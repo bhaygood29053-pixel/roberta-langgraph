@@ -13,6 +13,7 @@ from langgraph.graph import END, START, StateGraph
 from roberta.cmis.client import CMISClient
 from roberta.cmis.contracts import CMISEnvelope, CMISOperation
 from roberta.presentation import format_component_status_table
+from roberta.pretrade_ux import build_pretrade_presentation
 from roberta.risk_help import build_risk_help
 from roberta.status_help import build_cmis_status_help
 from roberta.time_utils import format_observed_at_utc, normalize_observed_at
@@ -149,7 +150,11 @@ def make_cmis_call_node(
     return make_cmis_calls_node(cmis_client)
 
 
-def _summarize_cmis_result(result: CMISEnvelope) -> X1ScoutInvestigation:
+def _summarize_cmis_result(
+    result: CMISEnvelope,
+    *,
+    objective: object = None,
+) -> X1ScoutInvestigation:
     service = result["service"]
     cmis_status = result["status"]
     observed_at = result["observed_at"]
@@ -176,6 +181,10 @@ def _summarize_cmis_result(result: CMISEnvelope) -> X1ScoutInvestigation:
         "confidence": confidence,
         "risk_help": risk_help,
         "component_status_table": format_component_status_table(risk_help),
+        "pretrade_presentation": build_pretrade_presentation(
+            result,
+            objective=objective,
+        ),
         "sources": list(result["sources"]),
         "warnings": list(result["warnings"]),
         "errors": list(result["errors"]),
@@ -190,7 +199,10 @@ def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
     if not results:
         results = [state["cmis_result"]]
 
-    investigations = [_summarize_cmis_result(result) for result in results]
+    investigations = [
+        _summarize_cmis_result(result, objective=request["objective"])
+        for result in results
+    ]
     primary_result = results[-1]
     primary = investigations[-1]
 
@@ -221,6 +233,7 @@ def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
         "confidence": dict(primary["confidence"]),
         "risk_help": primary["risk_help"],
         "component_status_table": primary["component_status_table"],
+        "pretrade_presentation": primary["pretrade_presentation"],
         "source": {
             "service": "cmis",
             "operation": primary["operation"],

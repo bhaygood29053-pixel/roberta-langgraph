@@ -1,9 +1,10 @@
 """Roberta LangGraph coordinator/model-tool loop."""
 
-from collections.abc import Callable, Sequence
+import json
+from collections.abc import Callable, Mapping, Sequence
 from typing import Any, Literal
 
-from langchain_core.messages import AIMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.tools import BaseTool
 from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode
@@ -15,11 +16,13 @@ from roberta.policy import (
     deterministic_policy_message,
     deterministic_policy_notes,
 )
+from roberta.pretrade_ux import technical_pretrade_details_requested
 from roberta.prompts import ORACLE_SYSTEM_PROMPT
 from roberta.state import RobertaState
 from roberta.tools import get_roberta_tools
 
 Route = Literal["tools", "__end__"]
+PostToolRoute = Literal["oracle", "pretrade_synthesis"]
 PolicyContextProvider = Callable[[RobertaState], PolicyRuntimeContext | None]
 
 
@@ -136,6 +139,125 @@ def route_after_oracle(state: RobertaState) -> Route:
     return END
 
 
+def _validated_pretrade_presentation(
+    state: RobertaState,
+) -> Mapping[str, Any] | None:
+    """Return one trusted deterministic X1 Scout pre-trade presentation.
+
+    Multiple simultaneous tool calls stay on the normal Oracle synthesis path;
+    this finalizer is intentionally limited to one X1 Scout pre-trade result so
+    it cannot accidentally discard another specialist result.
+    """
+
+    trailing_tools: list[ToolMessage] = []
+    for message in reversed(state["messages"]):
+        if isinstance(message, ToolMessage):
+            trailing_tools.append(message)
+            continue
+        break
+    if len(trailing_tools) != 1:
+        return None
+
+    tool_message = trailing_tools[0]
+    if tool_message.name != "x1_scout_investigate":
+        return None
+    content = tool_message.content
+    if not isinstance(content, str) or not content.strip():
+        return None
+    try:
+        report = json.loads(content)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(report, Mapping):
+        return None
+    if report.get("specialist") != "x1_scout" or report.get("chain") != "x1":
+        return None
+
+    source = report.get("source")
+    if not isinstance(source, Mapping):
+        return None
+    if source.get("service") != "cmis" or source.get("operation") != "pre_trade_check":
+        return None
+
+    presentation = report.get("pretrade_presentation")
+    if not isinstance(presentation, Mapping):
+        return None
+    if presentation.get("voice") != "roberta":
+        return None
+    if presentation.get("cmis_status") != report.get("cmis_status"):
+        return None
+    conversational = presentation.get("conversational_text")
+    technical = presentation.get("technical_text")
+    if not isinstance(conversational, str) or not conversational.strip():
+        return None
+    if not isinstance(technical, str) or not technical.strip():
+        return None
+    return presentation
+
+
+def _latest_user_content(state: RobertaState) -> object:
+    for message in reversed(state["messages"]):
+        if isinstance(message, HumanMessage):
+            return message.content
+    return ""
+
+
+def _pretrade_user_text(state: RobertaState) -> str | None:
+    presentation = _validated_pretrade_presentation(state)
+    if presentation is None:
+        return None
+    technical = technical_pretrade_details_requested(_latest_user_content(state))
+    key = "technical_text" if technical else "conversational_text"
+    text = presentation.get(key)
+    return text.strip() if isinstance(text, str) and text.strip() else None
+
+
+def route_after_tools(state: RobertaState) -> PostToolRoute:
+    """Use deterministic synthesis only for a validated pre-trade presentation."""
+
+    return "pretrade_synthesis" if _pretrade_user_text(state) is not None else "oracle"
+
+
+def make_pretrade_synthesis_node(
+    *,
+    policy_context_provider: PolicyContextProvider | None = None,
+) -> Callable[[RobertaState], dict[str, Any]]:
+    """Create Roberta's deterministic post-Scout pre-trade finalizer.
+
+    The presentation text comes from X1 Scout's deterministic CMIS-preserving
+    formatter, but the conversational/technical mode is chosen from the user's
+    actual message and policy is evaluated again after the tool result. This
+    keeps Phase 8/9 hard blocks, unresolved-evidence handling, and human-approval
+    wrappers structurally authoritative without a second free-form model rewrite.
+    """
+
+    def pretrade_synthesis_node(state: RobertaState) -> dict[str, Any]:
+        text = _pretrade_user_text(state)
+        if text is None:  # defensive; routing should prevent this path
+            raise RuntimeError("Validated pre-trade presentation is unavailable.")
+        response = AIMessage(content=text)
+
+        if policy_context_provider is not None:
+            try:
+                policy = policy_context_provider(state)
+            except Exception as exc:
+                return {"messages": [_policy_provider_failure(exc)], "status": "error"}
+
+            if policy is not None:
+                if policy.decision.status == "blocked":
+                    response = AIMessage(content=deterministic_policy_message(policy.decision))
+                elif policy.decision.status == "needs_evidence":
+                    response = AIMessage(content=deterministic_policy_message(policy.decision))
+                elif policy.decision.status == "approval_required":
+                    response = _approval_wrapped_response(response, policy)
+                else:
+                    response = _append_policy_notes(response, policy)
+
+        return {"messages": [response], "status": "complete"}
+
+    return pretrade_synthesis_node
+
+
 def build_graph(
     model: Any,
     tools: Sequence[BaseTool] | None = None,
@@ -150,7 +272,13 @@ def build_graph(
     Flow::
 
         START -> oracle -> [tools | END]
-                         tools -> oracle
+                         tools -> [pretrade_synthesis | oracle]
+                         pretrade_synthesis -> END
+
+    Ordinary specialist results return to the Oracle exactly as before. A
+    validated single X1 Scout ``pre_trade_check`` result takes the deterministic
+    Roberta presentation path so internal service diagnostics are not rewritten
+    into the normal user-facing voice by a free-form second model call.
 
     The optional checkpointer owns LangGraph thread/task execution state.
     The optional durable-memory store owns long-term context and is retrieved
@@ -181,6 +309,12 @@ def build_graph(
         ),
     )
     builder.add_node("tools", ToolNode(active_tools))
+    builder.add_node(
+        "pretrade_synthesis",
+        make_pretrade_synthesis_node(
+            policy_context_provider=policy_context_provider,
+        ),
+    )
 
     builder.add_edge(START, "oracle")
     builder.add_conditional_edges(
@@ -191,6 +325,14 @@ def build_graph(
             END: END,
         },
     )
-    builder.add_edge("tools", "oracle")
+    builder.add_conditional_edges(
+        "tools",
+        route_after_tools,
+        {
+            "pretrade_synthesis": "pretrade_synthesis",
+            "oracle": "oracle",
+        },
+    )
+    builder.add_edge("pretrade_synthesis", END)
 
     return builder.compile(checkpointer=checkpointer)

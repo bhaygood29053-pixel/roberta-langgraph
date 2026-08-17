@@ -48,6 +48,7 @@ class X1ScoutInvestigation(TypedDict):
     confidence: dict[str, object]
     risk_help: dict[str, object] | None
     component_status_table: str | None
+    pretrade_presentation: dict[str, object] | None
     sources: list[object]
     warnings: list[object]
     errors: list[object]
@@ -71,6 +72,7 @@ class X1ScoutReport(TypedDict):
     confidence: dict[str, object]
     risk_help: dict[str, object] | None
     component_status_table: str | None
+    pretrade_presentation: dict[str, object] | None
     source: dict[str, str]
     sources: list[object]
     warnings: list[object]

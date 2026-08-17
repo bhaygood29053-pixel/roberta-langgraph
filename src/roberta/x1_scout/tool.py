@@ -1,11 +1,12 @@
 """Roberta-facing tool boundary for the X1 Scout specialist."""
 
 import json
-from typing import Any
+from typing import Any, Literal
 
 from langchain_core.tools import BaseTool, StructuredTool
 
 from roberta.cmis.client import CMISClient
+from roberta.cmis.contracts import TradeAction
 from roberta.x1_scout.graph import build_x1_scout_graph
 
 
@@ -16,14 +17,50 @@ def build_x1_scout_tool(
     """Expose X1 Scout to Roberta without exposing CMIS directly."""
     scout_graph = build_x1_scout_graph(cmis_client, planner_model=planner_model)
 
-    def investigate_x1(asset: str, objective: str = "assess market risk") -> str:
-        """Delegate an X1-specific investigation to X1 Scout."""
+    def investigate_x1(
+        asset: str,
+        objective: str = "assess market risk",
+        operation: Literal["pre_trade_check"] | None = None,
+        action: TradeAction | None = None,
+        amount_usd: float | None = None,
+    ) -> str:
+        """Delegate an X1-specific investigation to X1 Scout.
+
+        Pre-trade analysis is explicit-request-only. ``action`` and
+        ``amount_usd`` may be supplied only with ``operation=pre_trade_check``;
+        Roberta must copy those values from the user's request rather than
+        inventing them.
+        """
+
+        request: dict[str, object] = {
+            "asset": asset,
+            "objective": objective,
+        }
+        if operation is None:
+            if action is not None or amount_usd is not None:
+                raise ValueError(
+                    "action/amount_usd require operation='pre_trade_check'"
+                )
+        else:
+            if operation != "pre_trade_check":  # runtime fail-closed guard
+                raise ValueError("Only explicit pre_trade_check is exposed here")
+            if action is None or amount_usd is None:
+                raise ValueError(
+                    "pre_trade_check requires the user-supplied action and amount_usd"
+                )
+            if isinstance(amount_usd, bool) or amount_usd <= 0:
+                raise ValueError("amount_usd must be greater than zero")
+            request.update(
+                {
+                    "operation": "pre_trade_check",
+                    "action": action,
+                    "amount_usd": amount_usd,
+                }
+            )
+
         result = scout_graph.invoke(
             {
-                "request": {
-                    "asset": asset,
-                    "objective": objective,
-                },
+                "request": request,
                 "status": "running",
             }
         )
@@ -37,8 +74,10 @@ def build_x1_scout_tool(
         name="x1_scout_investigate",
         description=(
             "Delegate an X1-chain market or market-risk investigation to X1 Scout. "
-            "Use this for X1 assets when current market facts or market-risk context "
-            "would be needed. X1 Scout owns X1-specific investigation and obtains "
-            "structured facts from CMIS."
+            "For an explicit user pre-trade question such as buying or selling a "
+            "stated USD amount, call with operation='pre_trade_check' and copy the "
+            "user's exact BUY/SELL action and amount_usd. Never invent a trade side "
+            "or amount. Ordinary X1 investigations omit those optional fields. X1 "
+            "Scout owns X1-specific investigation and obtains structured facts from CMIS."
         ),
     )
