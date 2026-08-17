@@ -11,13 +11,27 @@ from roberta.approval.contracts import ApprovalDecision, ApprovalRequest
 from roberta.runtime import build_thread_config
 
 
+def _snapshot_values(graph: Any, *, thread_id: str) -> Mapping[str, Any]:
+    snapshot = graph.get_state(build_thread_config(thread_id))
+    values = getattr(snapshot, "values", None)
+    return values if isinstance(values, Mapping) else {}
+
+
 def start_approval(
     graph: Any,
     request: ApprovalRequest,
     *,
     thread_id: str,
 ) -> Mapping[str, Any]:
-    """Start one checkpointed approval request and run until interrupt."""
+    """Start one checkpointed approval request and run until interrupt.
+
+    An approval thread is single-request context. Existing approval state cannot
+    be overwritten/reused for a new proposal; callers must allocate a new thread.
+    """
+
+    existing = _snapshot_values(graph, thread_id=thread_id)
+    if existing.get("request") is not None or existing.get("status") is not None:
+        raise ValueError("approval thread already contains review state; use a new thread_id")
 
     result = graph.invoke(
         {"request": request.to_state_payload(), "status": "pending"},

@@ -21,10 +21,8 @@ ApprovalStatus = Literal[
     "more_evidence",
 ]
 
-_DECISIONS = frozenset(
-    {"approve", "reject", "edit", "request_more_evidence"}
-)
-_SECRET_KEY_TOKENS = frozenset(
+_DECISIONS = frozenset({"approve", "reject", "edit", "request_more_evidence"})
+_SECRET_KEY_MARKERS = frozenset(
     {
         "api_key",
         "credential",
@@ -55,13 +53,18 @@ def _normalized_key(value: object) -> str:
     return re.sub(r"[^a-zA-Z0-9]+", "_", str(value)).strip("_").lower()
 
 
+def _looks_secret_bearing(normalized: str) -> bool:
+    padded = f"_{normalized}_"
+    return any(f"_{marker}_" in padded for marker in _SECRET_KEY_MARKERS)
+
+
 def _assert_no_secret_fields(value: Any, *, path: str = "payload") -> None:
     """Reject common secret-bearing key names from checkpoint/interrupt payloads."""
 
     if isinstance(value, Mapping):
         for key, nested in value.items():
             normalized = _normalized_key(key)
-            if normalized in _SECRET_KEY_TOKENS:
+            if _looks_secret_bearing(normalized):
                 raise ValueError(f"secret-bearing field is not allowed at {path}.{key}")
             _assert_no_secret_fields(nested, path=f"{path}.{key}")
     elif isinstance(value, (list, tuple)):
