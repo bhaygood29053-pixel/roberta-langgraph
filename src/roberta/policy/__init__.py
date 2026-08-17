@@ -32,6 +32,12 @@ from roberta.policy.facts import (
     extract_policy_facts,
     merge_policy_facts,
 )
+from roberta.policy.provider import (
+    PolicyFactProvider,
+    PolicyLoadError,
+    build_policy_context_provider,
+    load_policy_records,
+)
 from roberta.policy.routing import (
     RoutingStatus,
     SpecialistCapability,
@@ -55,7 +61,9 @@ __all__ = [
     "PolicyEvaluation",
     "PolicyEvaluationSummary",
     "PolicyFact",
+    "PolicyFactProvider",
     "PolicyKind",
+    "PolicyLoadError",
     "PolicyOperator",
     "PolicyOutcome",
     "PolicyRule",
@@ -64,6 +72,7 @@ __all__ = [
     "SpecialistCapability",
     "SpecialistRoute",
     "SpecialistRoutingPolicy",
+    "build_policy_context_provider",
     "build_policy_system_message",
     "compile_policy_memories",
     "deterministic_policy_message",
@@ -72,6 +81,7 @@ __all__ = [
     "evaluate_policy_rule",
     "extract_policy_facts",
     "format_policy_context",
+    "load_policy_records",
     "merge_policy_facts",
     "resolve_policy_decision",
     "select_specialist",
