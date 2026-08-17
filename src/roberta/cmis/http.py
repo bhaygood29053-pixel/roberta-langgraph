@@ -8,7 +8,13 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-from roberta.cmis.contracts import CMISEnvelope, CMISOperation, CMISStatus, TradeAction
+from roberta.cmis.contracts import (
+    CMISEnvelope,
+    CMISOperation,
+    CMISStatus,
+    RankMetric,
+    TradeAction,
+)
 from roberta.cmis.verification import normalize_verification_evidence_selector
 
 DEFAULT_CMIS_BASE_URL = "http://127.0.0.1:8765"
@@ -27,6 +33,15 @@ _REQUIRED_ENVELOPE_FIELDS = {
     "errors",
 }
 _ALLOWED_STATUSES: set[str] = {"ok", "partial", "unavailable", "ambiguous", "error"}
+_ALLOWED_RANK_METRICS: set[str] = {
+    "volume",
+    "liquidity",
+    "holders",
+    "safety",
+    "gainers",
+    "losers",
+    "trending",
+}
 
 
 class CMISHTTPClient:
@@ -249,6 +264,50 @@ class CMISHTTPClient:
 
     def market_report(self, *, chain: str, asset: str) -> CMISEnvelope:
         return self._request(service="market_report", chain=chain, asset=asset)
+
+    def rank(
+        self,
+        *,
+        chain: str,
+        metric: RankMetric = "volume",
+        limit: int = 10,
+    ) -> CMISEnvelope:
+        normalized_chain = self._chain(chain)
+        normalized_metric = str(metric or "").strip().lower()
+        if normalized_metric not in _ALLOWED_RANK_METRICS:
+            raise ValueError("unsupported rank metric")
+        if isinstance(limit, bool) or not isinstance(limit, int) or limit <= 0:
+            raise ValueError("limit must be a positive integer")
+        return self._send_payload(
+            service="rank",
+            chain=normalized_chain,
+            error_context="XDEX",
+            payload={
+                "service": "rank",
+                "chain": normalized_chain,
+                "params": {
+                    "metric": normalized_metric,
+                    "limit": limit,
+                },
+            },
+        )
+
+    def historical_compare(
+        self,
+        *,
+        chain: str,
+        asset: str,
+        question: str,
+    ) -> CMISEnvelope:
+        normalized_question = str(question or "").strip()
+        if not normalized_question:
+            raise ValueError("question must not be empty")
+        return self._request(
+            service="historical_compare",
+            chain=chain,
+            asset=asset,
+            params={"question": normalized_question},
+        )
 
     def tokenomics(self, *, chain: str, asset: str) -> CMISEnvelope:
         return self._request(service="tokenomics", chain=chain, asset=asset)
