@@ -1,4 +1,4 @@
-"""Roberta Oracle policy contracts, compiler, evaluator, adapters, and decision layer."""
+"""Roberta Oracle policy contracts, compiler, evaluator, adapters, routing, and decision layer."""
 
 from roberta.policy.compiler import POLICY_DOCUMENT_VERSION, compile_policy_memories
 from roberta.policy.context import (
@@ -32,6 +32,13 @@ from roberta.policy.facts import (
     extract_policy_facts,
     merge_policy_facts,
 )
+from roberta.policy.routing import (
+    RoutingStatus,
+    SpecialistCapability,
+    SpecialistRoute,
+    SpecialistRoutingPolicy,
+    select_specialist,
+)
 from roberta.policy.runtime import PolicyRuntimeContext, evaluate_policy_records
 
 __all__ = [
@@ -53,6 +60,10 @@ __all__ = [
     "PolicyOutcome",
     "PolicyRule",
     "PolicyRuntimeContext",
+    "RoutingStatus",
+    "SpecialistCapability",
+    "SpecialistRoute",
+    "SpecialistRoutingPolicy",
     "build_policy_system_message",
     "compile_policy_memories",
     "deterministic_policy_message",
@@ -63,4 +74,5 @@ __all__ = [
     "format_policy_context",
     "merge_policy_facts",
     "resolve_policy_decision",
+    "select_specialist",
 ]
