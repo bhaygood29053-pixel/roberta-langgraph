@@ -1,6 +1,11 @@
-"""Roberta Oracle policy contracts, compiler, and deterministic evaluator."""
+"""Roberta Oracle policy contracts, compiler, evaluator, and decision layer."""
 
 from roberta.policy.compiler import POLICY_DOCUMENT_VERSION, compile_policy_memories
+from roberta.policy.context import (
+    build_policy_system_message,
+    deterministic_policy_message,
+    format_policy_context,
+)
 from roberta.policy.contracts import (
     EvidenceStatus,
     FreshnessStatus,
@@ -15,6 +20,11 @@ from roberta.policy.contracts import (
     PolicyOutcome,
     PolicyRule,
 )
+from roberta.policy.decision import (
+    PolicyDecision,
+    PolicyDecisionStatus,
+    resolve_policy_decision,
+)
 from roberta.policy.evaluator import evaluate_policy, evaluate_policy_rule
 
 __all__ = [
@@ -23,6 +33,8 @@ __all__ = [
     "POLICY_DOCUMENT_VERSION",
     "PolicyCompilation",
     "PolicyCompileIssue",
+    "PolicyDecision",
+    "PolicyDecisionStatus",
     "PolicyEffect",
     "PolicyEvaluation",
     "PolicyEvaluationSummary",
@@ -31,7 +43,11 @@ __all__ = [
     "PolicyOperator",
     "PolicyOutcome",
     "PolicyRule",
+    "build_policy_system_message",
     "compile_policy_memories",
+    "deterministic_policy_message",
     "evaluate_policy",
     "evaluate_policy_rule",
+    "format_policy_context",
+    "resolve_policy_decision",
 ]
