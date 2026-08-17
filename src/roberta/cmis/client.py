@@ -2,7 +2,7 @@
 
 from typing import Protocol
 
-from roberta.cmis.contracts import CMISEnvelope, TradeAction
+from roberta.cmis.contracts import CMISEnvelope, RankMetric, TradeAction
 
 
 class CMISClient(Protocol):
@@ -13,6 +13,24 @@ class CMISClient(Protocol):
     """
 
     def market_report(self, *, chain: str, asset: str) -> CMISEnvelope:
+        ...
+
+    def rank(
+        self,
+        *,
+        chain: str,
+        metric: RankMetric = "volume",
+        limit: int = 10,
+    ) -> CMISEnvelope:
+        ...
+
+    def historical_compare(
+        self,
+        *,
+        chain: str,
+        asset: str,
+        question: str,
+    ) -> CMISEnvelope:
         ...
 
     def tokenomics(self, *, chain: str, asset: str) -> CMISEnvelope:
