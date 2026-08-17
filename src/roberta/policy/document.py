@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict
 
 from roberta.memory import MemoryCandidate, MemoryCategory
 from roberta.policy.compiler import POLICY_DOCUMENT_VERSION
