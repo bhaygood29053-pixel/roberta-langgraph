@@ -9,6 +9,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from roberta.cmis.contracts import CMISEnvelope, CMISOperation, CMISStatus, TradeAction
+from roberta.cmis.verification import normalize_verification_evidence_selector
 
 DEFAULT_CMIS_BASE_URL = "http://127.0.0.1:8765"
 DEFAULT_CMIS_TIMEOUT_SECONDS = 30.0
@@ -64,11 +65,16 @@ class CMISHTTPClient:
         )
 
     @staticmethod
-    def _identity(chain: str, asset: str) -> tuple[str, str]:
+    def _chain(chain: str) -> str:
         normalized_chain = str(chain or "").strip().lower()
-        normalized_asset = str(asset or "").strip()
         if not normalized_chain:
             raise ValueError("chain must not be empty")
+        return normalized_chain
+
+    @classmethod
+    def _identity(cls, chain: str, asset: str) -> tuple[str, str]:
+        normalized_chain = cls._chain(chain)
+        normalized_asset = str(asset or "").strip()
         if not normalized_asset:
             raise ValueError("asset must not be empty")
         return normalized_chain, normalized_asset
@@ -151,21 +157,14 @@ class CMISHTTPClient:
             )
         return value  # type: ignore[return-value]
 
-    def _request(
+    def _send_payload(
         self,
         *,
         service: CMISOperation,
         chain: str,
-        asset: str,
-        params: dict[str, object] | None = None,
+        error_context: str,
+        payload: dict[str, object],
     ) -> CMISEnvelope:
-        chain, asset = self._identity(chain, asset)
-        payload = {
-            "service": service,
-            "chain": chain,
-            "asset": asset,
-            "params": params or {},
-        }
         headers = {"Content-Type": "application/json"}
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
@@ -192,7 +191,7 @@ class CMISHTTPClient:
             return self._error_envelope(
                 service=service,
                 chain=chain,
-                asset=asset,
+                asset=error_context,
                 status="error",
                 code=f"cmis_http_{exc.code}",
                 message=detail,
@@ -201,7 +200,7 @@ class CMISHTTPClient:
             return self._error_envelope(
                 service=service,
                 chain=chain,
-                asset=asset,
+                asset=error_context,
                 status="unavailable",
                 code="cmis_transport_unavailable",
                 message=f"CMIS transport unavailable: {exc}",
@@ -214,7 +213,7 @@ class CMISHTTPClient:
             return self._error_envelope(
                 service=service,
                 chain=chain,
-                asset=asset,
+                asset=error_context,
                 status="error",
                 code="invalid_cmis_json",
                 message="CMIS returned invalid JSON.",
@@ -223,7 +222,29 @@ class CMISHTTPClient:
             decoded,
             service=service,
             chain=chain,
-            asset=asset,
+            asset=error_context,
+        )
+
+    def _request(
+        self,
+        *,
+        service: CMISOperation,
+        chain: str,
+        asset: str,
+        params: dict[str, object] | None = None,
+    ) -> CMISEnvelope:
+        chain, asset = self._identity(chain, asset)
+        payload: dict[str, object] = {
+            "service": service,
+            "chain": chain,
+            "asset": asset,
+            "params": params or {},
+        }
+        return self._send_payload(
+            service=service,
+            chain=chain,
+            error_context=asset,
+            payload=payload,
         )
 
     def market_report(self, *, chain: str, asset: str) -> CMISEnvelope:
@@ -257,5 +278,33 @@ class CMISHTTPClient:
                     "side": normalized_action.lower(),
                     "notional_usd": float(amount_usd),
                 }
+            },
+        )
+
+    def verification_evidence(
+        self,
+        *,
+        chain: str,
+        evidence_id: str | None = None,
+        fact_type: str | None = None,
+        subject_id: str | None = None,
+    ) -> CMISEnvelope:
+        normalized_chain = self._chain(chain)
+        params = normalize_verification_evidence_selector(
+            evidence_id=evidence_id,
+            fact_type=fact_type,
+            subject_id=subject_id,
+        )
+        error_context = params.get("evidence_id") or (
+            f"{params['fact_type']}:{params['subject_id']}"
+        )
+        return self._send_payload(
+            service="verification_evidence",
+            chain=normalized_chain,
+            error_context=error_context,
+            payload={
+                "service": "verification_evidence",
+                "chain": normalized_chain,
+                "params": params,
             },
         )
