@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal, NotRequired, TypedDict
+from typing import Any, Literal, TypedDict
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import interrupt
@@ -12,6 +12,7 @@ from roberta.approval.contracts import (
     ApprovalRequest,
     resolve_approval_decision,
 )
+from roberta.approval.routing import ApprovalNextStep, approval_next_step
 
 ApprovalGraphStatus = Literal[
     "pending",
@@ -28,10 +29,11 @@ class ApprovalState(TypedDict, total=False):
     request: dict[str, Any]
     outcome: dict[str, Any]
     status: ApprovalGraphStatus
+    next_step: ApprovalNextStep
 
 
 def approval_node(state: ApprovalState) -> dict[str, Any]:
-    """Pause for an explicit review and return only a validated decision outcome.
+    """Pause for explicit review and return a validated, non-executing outcome.
 
     LangGraph re-executes this node from the beginning after resume. Everything
     before ``interrupt`` is therefore deterministic validation/serialization only;
@@ -44,9 +46,11 @@ def approval_node(state: ApprovalState) -> dict[str, Any]:
     resume_value = interrupt(request.to_interrupt_payload())
     decision = ApprovalDecision.from_resume(resume_value, request=request)
     outcome = resolve_approval_decision(request, decision)
+    payload = outcome.to_state_payload()
     return {
-        "outcome": outcome.to_state_payload(),
+        "outcome": payload,
         "status": outcome.status,
+        "next_step": approval_next_step(payload),
     }
 
 
