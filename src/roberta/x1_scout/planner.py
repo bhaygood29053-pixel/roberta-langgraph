@@ -260,6 +260,8 @@ def enforce_plan(
     if "operation" in request:
         return _validate_explicit_request(request)
 
+    objective = request["objective"]
+    rank_objective = is_rank_objective(objective)
     warnings: list[str] = []
     if planner_error:
         warnings.append(f"planner_fallback: {planner_error}")
@@ -272,6 +274,11 @@ def enforce_plan(
             if operation:
                 warnings.append(f"planner_operation_rejected: {operation}")
             continue
+        if rank_objective and operation != "rank":
+            warnings.append(
+                f"planner_operation_rejected_for_rank_objective: {operation}"
+            )
+            continue
         typed_operation: CMISOperation = operation  # type: ignore[assignment]
         if typed_operation in accepted:
             continue
@@ -281,14 +288,14 @@ def enforce_plan(
 
     source: str = "model" if proposal is not None else "deterministic"
     if not accepted:
-        accepted = [select_cmis_operation(request["objective"])]
+        accepted = [select_cmis_operation(objective)]
         source = "deterministic"
         if proposal is not None and not planner_error:
             warnings.append("planner_fallback: no allowed operations were proposed")
 
     # Required operations are always executed and moved to the end so the
     # objective-critical deterministic result remains the top-level report.
-    for required in required_operations(request["objective"]):
+    for required in required_operations(objective):
         if required in accepted:
             accepted.remove(required)
         accepted.append(required)
