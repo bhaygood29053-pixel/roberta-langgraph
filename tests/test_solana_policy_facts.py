@@ -6,7 +6,7 @@ from langchain_core.messages import ToolMessage
 
 from roberta.policy import PolicyRule
 from roberta.solana_scout.policy_facts import extract_solana_policy_facts
-from roberta.specialists import chain_policy_facts_from_state
+from roberta.specialists.policy_facts import chain_policy_facts_from_state
 
 
 def _rule():
