@@ -81,12 +81,51 @@ def test_missing_analysis_remains_explicit_and_is_not_fabricated():
     ]
     text = presentation["user_text"]
     assert "not fully evaluated" in text
-    assert "price-impact estimate" in text
-    assert "slippage estimate" in text
+    assert "price impact" in text
+    assert "slippage" in text
+    assert "fill quality" in text
     assert "0%" not in text
 
 
-def test_returned_trade_size_and_route_values_are_copied_exactly():
+def test_realistic_pass_is_human_readable_but_preserves_exact_facts():
+    raw_liquidity = 3456.9783303628446
+    raw_ratio = 0.1446349824089062
+    result = _result(
+        status="ok",
+        recommendation="PASS",
+        data_extra={
+            "market": {"verified_liquidity_usd": raw_liquidity},
+            "trade_size": {
+                "assessment": "PASS",
+                "notional_to_liquidity_ratio": raw_ratio,
+                "assessment_complete": True,
+            },
+            "route_analysis": {
+                "status": "unavailable",
+                "route_scope": None,
+                "estimated_price_impact_percent": None,
+                "estimated_slippage_percent": None,
+                "estimated_fees": None,
+            },
+        },
+    )
+
+    presentation = build_pretrade_presentation(result)
+
+    assert presentation is not None
+    text = presentation["user_text"]
+    assert "$3,457" in text
+    assert "14.5%" in text
+    assert "trade size passed" in text.lower()
+    assert "execution risk is not fully evaluated yet" in text
+    assert "PASS" not in text
+    assert str(raw_ratio) not in text
+    assert str(raw_liquidity) not in text
+    assert presentation["facts"]["market"]["verified_liquidity_usd"] == raw_liquidity
+    assert presentation["facts"]["trade_size"]["notional_to_liquidity_ratio"] == raw_ratio
+
+
+def test_returned_values_are_preserved_while_conversation_is_humanized():
     result = _result(
         amount=2000.0,
         data_extra={
@@ -114,13 +153,15 @@ def test_returned_trade_size_and_route_values_are_copied_exactly():
 
     assert presentation is not None
     text = presentation["user_text"]
-    assert "$3380.125" in text
+    assert "$3,380" in text
     assert "$124.50" in text
-    assert "HIGH" in text
-    assert "0.5916942847741605" in text
-    assert "3.75" in text
-    assert "1.25" in text
-    assert "0.30" in text
+    assert "59.2%" in text
+    assert "result that needs review" in text
+    assert "3.75%" in text
+    assert "1.25%" in text
+    assert "Estimated fees are 0.3" in text
+    assert "HIGH" not in text
+    assert "0.5916942847741605" not in text
     assert presentation["facts"]["trade_size"] == result["data"]["trade_size"]
     assert presentation["facts"]["route_analysis"] == result["data"]["route_analysis"]
     assert presentation["missing_evidence"] == []
@@ -145,6 +186,41 @@ def test_technical_mode_preserves_structured_status_warnings_and_conflict():
     assert "MARKET_EVIDENCE_CONFLICT" in text
     assert "Two sources disagree; no value was promoted." in text
     assert "Liquidity Scout reply:" not in text
+
+
+def test_technical_mode_keeps_exact_values_hidden_from_normal_mode():
+    raw_ratio = "0.1446349824089062"
+    raw_liquidity = "3456.9783303628446"
+    result = _result(
+        status="ok",
+        recommendation="PASS",
+        data_extra={
+            "market": {"verified_liquidity_usd": raw_liquidity},
+            "trade_size": {
+                "assessment": "PASS",
+                "notional_to_liquidity_ratio": raw_ratio,
+            },
+            "route_analysis": {
+                "status": "unavailable",
+                "estimated_price_impact_percent": None,
+                "estimated_slippage_percent": None,
+                "estimated_fees": None,
+            },
+        },
+    )
+
+    conversational = build_pretrade_presentation(result)
+    technical = build_pretrade_presentation(
+        result,
+        objective="Show me the technical details.",
+    )
+
+    assert conversational is not None and technical is not None
+    assert raw_ratio not in conversational["user_text"]
+    assert raw_liquidity not in conversational["user_text"]
+    assert raw_ratio in technical["user_text"]
+    assert raw_liquidity in technical["user_text"]
+    assert '"assessment": "PASS"' in technical["user_text"]
 
 
 def test_non_pretrade_result_has_no_pretrade_presentation():
