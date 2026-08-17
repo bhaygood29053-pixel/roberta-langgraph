@@ -2,7 +2,7 @@
 
 The model may propose read-only CMIS investigations, but deterministic code
 remains authoritative for what actually runs. The planner cannot grant itself
-execution authority or autonomous pre-trade access.
+execution authority or autonomous pre-trade or verification-evidence access.
 """
 
 from __future__ import annotations
@@ -14,6 +14,7 @@ from typing import Any
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from roberta.cmis.contracts import CMISOperation
+from roberta.cmis.verification import normalize_verification_evidence_selector
 from roberta.x1_scout.state import X1ScoutPlan, X1ScoutPlanProposal, X1ScoutRequest
 
 AUTONOMOUS_OPERATIONS: tuple[CMISOperation, ...] = (
@@ -48,8 +49,8 @@ the user's X1 objective. Return JSON only, with exactly this shape:
 Rules:
 - You may use only: market_report, tokenomics, risk_check.
 - Use the smallest useful plan, with no duplicates and at most three operations.
-- Never propose pre_trade_check, transaction preparation, signing, broadcasting,
-  wallet permissions, or any value-moving action.
+- Never propose pre_trade_check, verification_evidence, transaction preparation,
+  signing, broadcasting, wallet permissions, or any value-moving action.
 - Do not invent market facts. You are selecting investigations, not answering
   the market question.
 - Risk questions should include risk_check.
@@ -147,6 +148,12 @@ def _validate_explicit_request(request: X1ScoutRequest) -> X1ScoutPlan:
             raise ValueError(
                 "pre_trade_check requires action and amount_usd in X1 Scout state"
             )
+    if operation == "verification_evidence":
+        normalize_verification_evidence_selector(
+            evidence_id=request.get("evidence_id"),
+            fact_type=request.get("fact_type"),
+            subject_id=request.get("subject_id"),
+        )
     return {
         "operations": [operation],
         "source": "explicit",
