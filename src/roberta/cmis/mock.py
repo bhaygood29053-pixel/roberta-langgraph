@@ -37,10 +37,7 @@ def _mock_capability_manifest() -> CMISCapabilities:
         "verified_asset_activity",
         "verification_evidence",
     ]
-    x1 = {
-        service: _capability("supported")
-        for service in services
-    }
+    x1 = {service: _capability("supported") for service in services}
     x1["pre_trade_check"] = _capability(
         "bounded",
         limitations=["analysis_only", "execution_authorized_false"],
@@ -52,26 +49,27 @@ def _mock_capability_manifest() -> CMISCapabilities:
         requirements=["exact_evidence_id_or_fact_type_subject_id"],
     )
 
-    solana = {
-        service: _capability("unavailable")
-        for service in services
-    }
+    solana = {service: _capability("unavailable") for service in services}
     solana["asset_lookup"] = _capability(
         "bounded",
         requirements=["exact_mint", "solana_rpc_provider_configured"],
     )
     for service in ("market_report", "historical_compare", "tokenomics", "risk_check"):
-        solana[service] = _capability(
-            "partial",
-            requirements=["exact_mint"],
-        )
+        solana[service] = _capability("partial", requirements=["exact_mint"])
 
     return {
         "service": "cmis_gateway",
         "version": 1,
         "schema_version": 1,
-        "contract_version": "1.6.0",
+        "contract_version": "1.7.1",
         "request_path": "/v1/cmis",
+        "evidence_quality": {
+            "evidence_receipt_schema_version": 1,
+            "proof_score_schema_version": 1,
+            "proof_strength_values": ["STRONG", "MODERATE", "WEAK"],
+            "risk_separate_from_proof": True,
+            "missing_evidence_is_unknown": True,
+        },
         "supported_services": services,
         "supported_chains": ["x1"],
         "known_chains": ["x1", "solana"],
@@ -85,11 +83,84 @@ def _mock_capability_manifest() -> CMISCapabilities:
             "solana": {
                 "services": solana,  # type: ignore[typeddict-item]
                 "callable_services": [
-                    service
-                    for service in services
-                    if solana[service]["callable"] is True
+                    service for service in services if solana[service]["callable"] is True
                 ],
             },
+        },
+    }
+
+
+def _mock_evidence_metadata(
+    *,
+    service: str,
+    chain: str,
+    observed_at: str,
+) -> dict[str, object]:
+    categories = {
+        name: {
+            "state": "UNKNOWN",
+            "score": None,
+            "reasons": ["deterministic mock does not supply live proof"],
+            "evidence_paths": [],
+        }
+        for name in (
+            "identity",
+            "semantics",
+            "freshness",
+            "source_independence",
+            "agreement",
+            "scope",
+            "historical_coverage",
+            "source_traceability",
+        )
+    }
+    return {
+        "evidence_receipt": {
+            "receipt_id": f"er_mock_{chain}_{service}",
+            "schema_version": 1,
+            "chain": chain,
+            "service": service,
+            "service_status": "partial",
+            "asset": {},
+            "observation": {
+                "envelope_observed_at": observed_at,
+                "observed_times": [observed_at],
+                "chain_positions": [],
+            },
+            "verification": {
+                "status": "UNVERIFIED",
+                "code": None,
+                "independently_verified": False,
+                "provider_assertion_promoted": False,
+            },
+            "evidence_scope": {"claims": [], "explicit_scope_available": False},
+            "freshness": {"verified": None, "flags": {}},
+            "sources": [
+                {
+                    "evidence_class": "source_record",
+                    "source": "mock_cmis",
+                    "role": "test",
+                    "observed_at": observed_at,
+                }
+            ],
+            "evidence_flags": {},
+            "disagreements": [],
+            "limitations": [
+                {"code": "NOT_LIVE_DATA", "message": "Mock evidence only."}
+            ],
+            "unresolved_fields": ["live_evidence"],
+            "risk_included_in_proof": False,
+        },
+        "proof_score": {
+            "schema_version": 1,
+            "proof_strength": "WEAK",
+            "proof_percent": 0,
+            "category_coverage_percent": 0,
+            "categories": categories,
+            "unknown_categories": list(categories),
+            "risk_considered": False,
+            "risk_separate": True,
+            "method": "deterministic_mock_v1",
         },
     }
 
@@ -153,10 +224,7 @@ class MockCMISClient:
         if self.scenario != "error":
             return []
         return [
-            {
-                "code": "CMIS_PROVIDER_UNAVAILABLE",
-                "message": "Mock provider unavailable.",
-            }
+            {"code": "CMIS_PROVIDER_UNAVAILABLE", "message": "Mock provider unavailable."}
         ]
 
     def _response(
@@ -180,7 +248,12 @@ class MockCMISClient:
             "observed_at": self.observed_at,
             "warnings": self._warnings(),
             "errors": self._errors(),
-        }
+            **_mock_evidence_metadata(
+                service=service,
+                chain=chain,
+                observed_at=self.observed_at,
+            ),
+        }  # type: ignore[return-value]
 
     def market_report(self, *, chain: str, asset: str) -> CMISEnvelope:
         chain, asset = self._identity(chain, asset)
@@ -189,13 +262,7 @@ class MockCMISClient:
             service="market_report",
             chain=chain,
             asset=asset,
-            data={
-                "price": None,
-                "liquidity": None,
-                "#LPs": None,
-                "volume_24h": None,
-            },
-            risk=None,
+            data={"price": None, "liquidity": None, "#LPs": None, "volume_24h": None},
         )
 
     def rank(
@@ -210,22 +277,13 @@ class MockCMISClient:
         if isinstance(limit, bool) or not isinstance(limit, int) or limit <= 0:
             raise ValueError("limit must be a positive integer")
         self.calls.append(
-            {
-                "operation": "rank",
-                "chain": chain,
-                "metric": normalized_metric,
-                "limit": limit,
-            }
+            {"operation": "rank", "chain": chain, "metric": normalized_metric, "limit": limit}
         )
         return self._response(
             service="rank",
             chain=chain,
             asset="",
-            data={
-                "metric": normalized_metric,
-                "limit": limit,
-                "rankings": [],
-            },
+            data={"metric": normalized_metric, "limit": limit, "rankings": []},
         )
 
     def historical_compare(
@@ -261,11 +319,7 @@ class MockCMISClient:
             service="tokenomics",
             chain=chain,
             asset=asset,
-            data={
-                "total_supply": None,
-                "mint_authority": None,
-                "freeze_authority": None,
-            },
+            data={"total_supply": None, "mint_authority": None, "freeze_authority": None},
         )
 
     def risk_check(self, *, chain: str, asset: str) -> CMISEnvelope:
@@ -276,13 +330,7 @@ class MockCMISClient:
             if self.scenario in {"unavailable", "error"}
             else {"outcome": "TEST_ONLY", "score": None, "flags": ["NOT_LIVE_DATA"]}
         )
-        return self._response(
-            service="risk_check",
-            chain=chain,
-            asset=asset,
-            data={},
-            risk=risk,
-        )
+        return self._response(service="risk_check", chain=chain, asset=asset, data={}, risk=risk)
 
     def pre_trade_check(
         self,
@@ -338,21 +386,15 @@ class MockCMISClient:
             fact_type=fact_type,
             subject_id=subject_id,
         )
-        self.calls.append(
-            {
-                "operation": "verification_evidence",
-                "chain": chain,
-                **selector,
-            }
-        )
+        self.calls.append({"operation": "verification_evidence", "chain": chain, **selector})
         evidence_ref = {
             "evidence_id": selector.get("evidence_id", "TEST_ONLY"),
             "recorded_at": None,
         }
-        return {
+        result = {
             "service": "verification_evidence",
             "chain": chain,
-            "status": self._status(),  # type: ignore[typeddict-item]
+            "status": self._status(),
             "asset": {},
             "data": {
                 "fact": {
@@ -371,4 +413,10 @@ class MockCMISClient:
             "observed_at": self.observed_at,
             "warnings": self._warnings(),
             "errors": self._errors(),
+            **_mock_evidence_metadata(
+                service="verification_evidence",
+                chain=chain,
+                observed_at=self.observed_at,
+            ),
         }
+        return result  # type: ignore[return-value]

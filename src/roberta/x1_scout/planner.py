@@ -3,6 +3,9 @@
 The model may propose read-only CMIS investigations, but deterministic code
 remains authoritative for what actually runs. The planner cannot grant itself
 execution authority or autonomous pre-trade or verification-evidence access.
+Recommendation-style questions are expanded through the deterministic Roberta
+evidence-needs policy so required market/risk/history facts are not omitted by
+model prose.
 """
 
 from __future__ import annotations
@@ -16,6 +19,9 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from roberta.cmis.contracts import CMISOperation, RankMetric
 from roberta.cmis.verification import normalize_verification_evidence_selector
+from roberta.recommendation_policy import (
+    autonomous_x1_operations_for_recommendation,
+)
 from roberta.x1_scout.state import X1ScoutPlan, X1ScoutPlanProposal, X1ScoutRequest
 
 AUTONOMOUS_OPERATIONS: tuple[CMISOperation, ...] = (
@@ -143,20 +149,28 @@ def rank_limit_from_objective(objective: object, *, default: int = 10) -> int:
 
 
 def required_operations(objective: object) -> list[CMISOperation]:
-    """Return objective-required operations in deterministic priority order."""
+    """Return objective-required operations in deterministic priority order.
+
+    Recommendation-style evidence requirements are deterministic and therefore
+    cannot be omitted by the Scout planning model. Explicit pre-trade itself is
+    still excluded here and remains guarded by `_validate_explicit_request`.
+    """
 
     normalized = _normalize_objective(objective)
     if is_rank_objective(normalized):
         return ["rank"]
 
     required: list[CMISOperation] = []
-    if any(term in normalized for term in _TOKENOMICS_TERMS):
+    for operation in autonomous_x1_operations_for_recommendation(normalized):
+        if operation not in required:
+            required.append(operation)
+    if any(term in normalized for term in _TOKENOMICS_TERMS) and "tokenomics" not in required:
         required.append("tokenomics")
-    if any(term in normalized for term in _RISK_TERMS):
+    if any(term in normalized for term in _RISK_TERMS) and "risk_check" not in required:
         required.append("risk_check")
-    if is_historical_objective(normalized):
+    if is_historical_objective(normalized) and "historical_compare" not in required:
         required.append("historical_compare")
-    return required
+    return required[-MAX_PLAN_OPERATIONS:]
 
 
 def select_cmis_operation(objective: object) -> CMISOperation:
@@ -171,6 +185,8 @@ def select_cmis_operation(objective: object) -> CMISOperation:
         return "risk_check"
     if "tokenomics" in required:
         return "tokenomics"
+    if "market_report" in required:
+        return "market_report"
     return "market_report"
 
 
@@ -293,8 +309,8 @@ def enforce_plan(
         if proposal is not None and not planner_error:
             warnings.append("planner_fallback: no allowed operations were proposed")
 
-    # Required operations are always executed and moved to the end so the
-    # objective-critical deterministic result remains the top-level report.
+    # Objective-required operations are always executed and moved to the end so
+    # the objective-critical deterministic result remains the top-level report.
     for required in required_operations(objective):
         if required in accepted:
             accepted.remove(required)

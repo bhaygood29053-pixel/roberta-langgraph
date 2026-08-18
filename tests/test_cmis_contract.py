@@ -14,6 +14,8 @@ EXPECTED_KEYS = {
     "observed_at",
     "warnings",
     "errors",
+    "evidence_receipt",
+    "proof_score",
 }
 
 
@@ -46,6 +48,9 @@ def test_mock_cmis_matches_external_envelope_for_initial_operations() -> None:
         assert result["confidence"] == {"level": "TEST_ONLY"}
         assert result["observed_at"] == "2026-08-15T21:45:00Z"
         assert result["errors"] == []
+        assert result["evidence_receipt"]["schema_version"] == 1
+        assert result["proof_score"]["schema_version"] == 1
+        assert result["proof_score"]["risk_separate"] is True
 
 
 def test_mock_cmis_preserves_unavailable_state_without_fabrication() -> None:
@@ -61,6 +66,7 @@ def test_mock_cmis_preserves_unavailable_state_without_fabrication() -> None:
         for item in result["warnings"]
     )
     assert result["errors"] == []
+    assert result["proof_score"]["proof_strength"] == "WEAK"
 
 
 def test_mock_cmis_preserves_warning_state() -> None:
