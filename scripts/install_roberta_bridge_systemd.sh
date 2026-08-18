@@ -16,6 +16,7 @@ PYTHON="$REPO_ROOT/.venv/bin/python"
 ENV_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/roberta"
 ENV_FILE="$ENV_DIR/roberta.env"
 UNIT_FILE="/etc/systemd/system/roberta-bridge.service"
+HEALTH_URL="http://127.0.0.1:8766/healthz"
 
 [[ -x "$PYTHON" ]] || fail "Roberta virtualenv Python was not found at $PYTHON"
 
@@ -90,17 +91,33 @@ sudo systemctl daemon-reload
 sudo systemctl enable roberta-bridge.service >/dev/null
 sudo systemctl restart roberta-bridge.service
 
-sleep 2
+health_ready=0
+if command -v curl >/dev/null 2>&1; then
+  printf '\n=== WAITING FOR ROBERTA HEALTH ===\n'
+  for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do
+    if curl -fsS --max-time 2 "$HEALTH_URL" >/dev/null 2>&1; then
+      health_ready=1
+      break
+    fi
+    sleep 1
+  done
+fi
 
 printf '\n=== ROBERTA BRIDGE SERVICE ===\n'
 sudo systemctl --no-pager --full status roberta-bridge.service | sed -n '1,18p'
 
 printf '\n=== ROBERTA HEALTH ===\n'
 if command -v curl >/dev/null 2>&1; then
-  curl -fsS --max-time 5 http://127.0.0.1:8766/healthz
+  if [[ "$health_ready" -ne 1 ]]; then
+    printf 'Roberta did not become healthy within 30 seconds.\n' >&2
+    printf '\n=== ROBERTA RECENT LOG ===\n' >&2
+    sudo journalctl -u roberta-bridge.service -n 50 --no-pager >&2 || true
+    exit 1
+  fi
+  curl -fsS --max-time 5 "$HEALTH_URL"
   printf '\n'
 else
-  printf 'curl is not installed; check http://127.0.0.1:8766/healthz manually.\n'
+  printf 'curl is not installed; check %s manually.\n' "$HEALTH_URL"
 fi
 
 printf '\nRoberta bridge is enabled to start automatically and restart after failures.\n'
