@@ -233,7 +233,7 @@ def _reason_sentences(
     *,
     asset: str,
 ) -> list[str]:
-    """Return at most four user-relevant reasons from already-returned facts."""
+    """Return at most four compact reasons while preserving returned estimates."""
 
     market = _mapping(data.get("market"))
     trade_size = _mapping(data.get("trade_size"))
@@ -246,20 +246,28 @@ def _reason_sentences(
 
     liquidity = _friendly_money(market.get("verified_liquidity_usd"))
     volume = _friendly_money(market.get("verified_volume_24h_usd"))
-    if liquidity is not None:
+    if liquidity is not None and volume is not None:
+        reasons.append(
+            f"{asset} has about {liquidity} in verified liquidity for this analysis, "
+            f"with about {volume} in verified 24-hour volume."
+        )
+    elif liquidity is not None:
         reasons.append(f"{asset} has about {liquidity} in verified liquidity for this analysis.")
-    if volume is not None:
+    elif volume is not None:
         reasons.append(f"Verified 24-hour volume is about {volume}.")
 
     impact = _friendly_percent_value(route.get("estimated_price_impact_percent"))
     slippage = _friendly_percent_value(route.get("estimated_slippage_percent"))
     fees = _friendly_scalar(route.get("estimated_fees"))
+    execution_parts: list[str] = []
     if impact is not None:
-        reasons.append(f"Estimated price impact is {impact}.")
+        execution_parts.append(f"price impact {impact}")
     if slippage is not None:
-        reasons.append(f"Estimated slippage is {slippage}.")
+        execution_parts.append(f"slippage {slippage}")
     if fees is not None:
-        reasons.append(f"Estimated fees are {fees}.")
+        execution_parts.append(f"fees {fees}")
+    if execution_parts:
+        reasons.append("Returned execution estimates: " + ", ".join(execution_parts) + ".")
 
     for reason in _string_list(risk.get("reasons")):
         if reason not in reasons:
