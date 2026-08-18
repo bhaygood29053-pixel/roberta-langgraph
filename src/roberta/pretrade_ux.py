@@ -1,12 +1,9 @@
-"""Deterministic user-facing presentation for CMIS pre-trade results.
+"""Deterministic answer-first presentation for CMIS pre-trade results.
 
-Roberta owns the conversation, but not the underlying trade analysis. This
-module therefore formats only values already returned by CMIS. It never
-calculates trade-size risk, slippage, price impact, route quality, fees, or a
-replacement risk recommendation.
-
-Conversational mode may round or relabel returned values for readability, but
-the exact CMIS values remain untouched in ``facts`` and technical mode.
+Roberta owns the conversation, not the market calculation. This formatter uses
+only values and statuses already returned by CMIS. Risk, proof strength, and
+missing evidence remain separate. The normal response is concise; exact
+technical evidence is available only on explicit request.
 """
 
 from __future__ import annotations
@@ -15,6 +12,8 @@ import json
 from collections.abc import Mapping
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from typing import Any
+
+from roberta.evidence_aware import evidence_context
 
 
 _TECHNICAL_TERMS = (
@@ -36,6 +35,16 @@ _PLAIN_MISSING_LABELS = {
     "route analysis": "route quality",
     "fee estimate": "fees",
 }
+_EVIDENCE_CATEGORY_LABELS = {
+    "identity": "asset identity proof",
+    "semantics": "field semantics",
+    "freshness": "freshness",
+    "source_independence": "independent-source verification",
+    "agreement": "independent-source agreement",
+    "scope": "evidence scope",
+    "historical_coverage": "historical coverage",
+    "source_traceability": "source traceability",
+}
 
 
 def _mapping(value: object) -> Mapping[str, Any]:
@@ -49,8 +58,6 @@ def _string_list(value: object) -> list[str]:
 
 
 def technical_pretrade_details_requested(value: object) -> bool:
-    """Return true only for an explicit technical/diagnostic detail request."""
-
     normalized = " ".join(str(value or "").strip().lower().split())
     return any(term in normalized for term in _TECHNICAL_TERMS)
 
@@ -65,8 +72,6 @@ def _asset_label(result: Mapping[str, Any]) -> str:
 
 
 def _decimal(value: object) -> Decimal | None:
-    """Read one returned numeric value for display formatting only."""
-
     if isinstance(value, bool) or value is None:
         return None
     if isinstance(value, Decimal):
@@ -92,8 +97,6 @@ def _decimal(value: object) -> Decimal | None:
 
 
 def _money(value: object) -> str | None:
-    """Format one returned USD notional without changing its meaning."""
-
     number = _decimal(value)
     if number is None:
         return None
@@ -104,8 +107,6 @@ def _money(value: object) -> str | None:
 
 
 def _friendly_money(value: object) -> str | None:
-    """Round a returned USD value for normal conversational display."""
-
     number = _decimal(value)
     if number is None:
         return None
@@ -124,8 +125,6 @@ def _friendly_money(value: object) -> str | None:
 
 
 def _friendly_fraction_percent(value: object) -> str | None:
-    """Display a returned ratio as a percentage without re-evaluating it."""
-
     ratio = _decimal(value)
     if ratio is None:
         return None
@@ -137,13 +136,10 @@ def _friendly_fraction_percent(value: object) -> str | None:
 
 
 def _friendly_percent_value(value: object) -> str | None:
-    """Display a CMIS field whose unit is already percentage points."""
-
     percent = _decimal(value)
     if percent is None:
         return None
-    quantum = Decimal("0.01") if abs(percent) < Decimal("1") else Decimal("0.01")
-    rounded = percent.quantize(quantum, rounding=ROUND_HALF_UP)
+    rounded = percent.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
     text = format(rounded, "f").rstrip("0").rstrip(".") or "0"
     return f"{text}%"
 
@@ -157,13 +153,10 @@ def _friendly_scalar(value: object) -> str | None:
 
 
 def _trade_phrase(asset: str, trade: Mapping[str, Any]) -> str:
-    side = trade.get("side")
-    side_text = str(side or "").strip().upper()
+    side_text = str(trade.get("side") or "").strip().upper()
     verb = {"BUY": "buying", "SELL": "selling"}.get(side_text, "making this trade in")
     notional = _money(trade.get("notional_usd"))
-    if notional:
-        return f"{verb} {notional} of {asset}"
-    return f"{verb} {asset}"
+    return f"{verb} {notional} of {asset}" if notional else f"{verb} {asset}"
 
 
 def _recommendation(risk: Mapping[str, Any]) -> object:
@@ -171,7 +164,7 @@ def _recommendation(risk: Mapping[str, Any]) -> object:
     return value if value is not None else risk.get("outcome")
 
 
-def _lead(recommendation: object, trade_phrase: str) -> str:
+def _lead(recommendation: object, trade_phrase: str, *, proof_strength: str) -> str:
     token = str(recommendation or "").strip().upper()
     if token == "BLOCK":
         return f"I would not proceed with {trade_phrase} based on the checks I have."
@@ -182,6 +175,8 @@ def _lead(recommendation: object, trade_phrase: str) -> str:
             f"Based on the checks I can currently verify, I don't see a warning or block "
             f"for {trade_phrase}."
         )
+    if proof_strength == "WEAK":
+        return f"I can't judge {trade_phrase} reliably yet because the evidence is too weak."
     return f"I can't give a reliable go-ahead for {trade_phrase} from the evidence I have."
 
 
@@ -189,7 +184,6 @@ def _missing_evidence(data: Mapping[str, Any]) -> list[str]:
     trade_size = _mapping(data.get("trade_size"))
     route = _mapping(data.get("route_analysis"))
     missing: list[str] = []
-
     if trade_size.get("assessment") is None:
         missing.append("trade-size assessment")
     if route.get("estimated_price_impact_percent") is None:
@@ -203,10 +197,21 @@ def _missing_evidence(data: Mapping[str, Any]) -> list[str]:
     return missing
 
 
+def _evidence_missing(context: Mapping[str, Any]) -> list[str]:
+    categories = context.get("unknown_categories")
+    if not isinstance(categories, list):
+        return []
+    result: list[str] = []
+    for category in categories:
+        label = _EVIDENCE_CATEGORY_LABELS.get(str(category), str(category).replace("_", " "))
+        if label not in result:
+            result.append(label)
+    return result[:3]
+
+
 def _trade_size_sentence(trade_size: Mapping[str, Any]) -> str | None:
     assessment = str(trade_size.get("assessment") or "").strip().upper()
     ratio = _friendly_fraction_percent(trade_size.get("notional_to_liquidity_ratio"))
-
     sentence = ""
     if assessment == "PASS":
         sentence = "The trade size passed the current trade-size check."
@@ -216,45 +221,54 @@ def _trade_size_sentence(trade_size: Mapping[str, Any]) -> str | None:
         sentence = "The current trade-size check returned a block."
     elif assessment:
         sentence = "The trade-size check returned a result that needs review."
-
     if ratio:
-        ratio_sentence = (
-            f"The order is about {ratio} of the verified liquidity used in this analysis."
-        )
+        ratio_sentence = f"The order is about {ratio} of the verified liquidity used in this analysis."
         return f"{sentence} {ratio_sentence}".strip()
     return sentence or None
 
 
-def _fact_sentences(data: Mapping[str, Any], *, asset: str) -> list[str]:
-    """Render human-readable views of fields already supplied by CMIS."""
+def _reason_sentences(
+    data: Mapping[str, Any],
+    risk: Mapping[str, Any],
+    *,
+    asset: str,
+) -> list[str]:
+    """Return at most four user-relevant reasons from already-returned facts."""
 
-    sentences: list[str] = []
     market = _mapping(data.get("market"))
     trade_size = _mapping(data.get("trade_size"))
     route = _mapping(data.get("route_analysis"))
+    reasons: list[str] = []
+
+    trade_size_text = _trade_size_sentence(trade_size)
+    if trade_size_text:
+        reasons.append(trade_size_text)
 
     liquidity = _friendly_money(market.get("verified_liquidity_usd"))
     volume = _friendly_money(market.get("verified_volume_24h_usd"))
     if liquidity is not None:
-        sentences.append(f"{asset} has about {liquidity} in verified liquidity for this analysis.")
+        reasons.append(f"{asset} has about {liquidity} in verified liquidity for this analysis.")
     if volume is not None:
-        sentences.append(f"Verified 24-hour volume is about {volume}.")
-
-    trade_size_text = _trade_size_sentence(trade_size)
-    if trade_size_text:
-        sentences.append(trade_size_text)
+        reasons.append(f"Verified 24-hour volume is about {volume}.")
 
     impact = _friendly_percent_value(route.get("estimated_price_impact_percent"))
     slippage = _friendly_percent_value(route.get("estimated_slippage_percent"))
     fees = _friendly_scalar(route.get("estimated_fees"))
     if impact is not None:
-        sentences.append(f"Estimated price impact is {impact}.")
+        reasons.append(f"Estimated price impact is {impact}.")
     if slippage is not None:
-        sentences.append(f"Estimated slippage is {slippage}.")
+        reasons.append(f"Estimated slippage is {slippage}.")
     if fees is not None:
-        sentences.append(f"Estimated fees are {fees}.")
+        reasons.append(f"Estimated fees are {fees}.")
 
-    return sentences
+    # Returned human-readable reasons may fill an otherwise sparse explanation,
+    # but are never used to change the deterministic recommendation.
+    for reason in _string_list(risk.get("reasons")):
+        if reason not in reasons:
+            reasons.append(reason)
+        if len(reasons) >= 4:
+            break
+    return reasons[:4]
 
 
 def _plain_list(values: list[str]) -> str:
@@ -268,39 +282,40 @@ def _plain_list(values: list[str]) -> str:
     return ", ".join(labels[:-1]) + f", and {labels[-1]}"
 
 
-def _missing_paragraph(missing: list[str]) -> str | None:
-    if not missing:
-        return None
-    details = _plain_list(missing)
-    return (
-        f"I still don't have verified information for {details}, so I would treat the trade "
-        "as not fully evaluated. That means I can't reliably tell you the final execution "
-        "price or fill quality yet."
-    )
+def _missing_paragraph(missing: list[str], evidence_missing: list[str]) -> str | None:
+    parts: list[str] = []
+    if missing:
+        details = _plain_list(missing)
+        parts.append(
+            f"I still don't have verified information for {details}, so I would treat the trade "
+            "as not fully evaluated. That means I can't reliably tell you the final execution "
+            "price or fill quality yet."
+        )
+    if evidence_missing:
+        parts.append("Evidence still missing or unproven: " + _plain_list(evidence_missing) + ".")
+    return " ".join(parts) if parts else None
 
 
 def _bottom_line(recommendation: object, *, missing: list[str]) -> str:
     token = str(recommendation or "").strip().upper()
     if token == "BLOCK":
-        return "Bottom line: based on the current checks, I would not proceed with this trade."
+        return "Execution recommendation: do not proceed based on the current deterministic checks."
     if token == "WARN":
-        if missing:
-            return (
-                "Bottom line: the current checks call for caution, and some execution risk is "
-                "still not fully evaluated."
-            )
-        return "Bottom line: the current checks call for caution."
+        return (
+            "Execution recommendation: do not treat this trade as cleared for execution yet. "
+            "The current checks call for caution."
+        )
     if token == "PASS":
         if missing:
             return (
                 "Bottom line: the currently available checks did not block the trade, but "
-                "execution risk is not fully evaluated yet."
+                "execution risk is not fully evaluated yet. Analysis only; no execution authority."
             )
         return (
             "Bottom line: the currently available checks did not flag a warning or block. "
             "This is still analysis, not an automatic trade or execution authorization."
         )
-    return "Bottom line: I do not have enough verified evidence to give a reliable go-ahead."
+    return "Execution recommendation: no go-ahead; the available evidence is not sufficient."
 
 
 def _technical_text(
@@ -308,6 +323,7 @@ def _technical_text(
     *,
     recommendation: object,
     missing: list[str],
+    context: Mapping[str, Any],
 ) -> str:
     data = _mapping(result.get("data"))
     payload = {
@@ -322,6 +338,9 @@ def _technical_text(
         "risk_recommendation": recommendation,
         "risk": dict(_mapping(result.get("risk"))),
         "confidence": dict(_mapping(result.get("confidence"))),
+        "evidence_context": dict(context),
+        "evidence_receipt": dict(_mapping(result.get("evidence_receipt"))),
+        "proof_score": dict(_mapping(result.get("proof_score"))),
         "warnings": list(result.get("warnings")) if isinstance(result.get("warnings"), list) else [],
         "errors": list(result.get("errors")) if isinstance(result.get("errors"), list) else [],
         "missing_analysis": list(missing),
@@ -339,13 +358,7 @@ def build_pretrade_presentation(
     *,
     objective: object = None,
 ) -> dict[str, object] | None:
-    """Build Roberta's deterministic conversational/technical pre-trade view.
-
-    ``None`` is returned for non-pre-trade CMIS envelopes so ordinary Scout
-    reports keep their existing Oracle synthesis path. Direct Scout callers may
-    select technical mode from ``objective``; the top-level Roberta graph makes
-    the final mode choice from the user's actual message instead.
-    """
+    """Build Roberta's deterministic answer-first pre-trade presentation."""
 
     if result.get("service") != "pre_trade_check":
         return None
@@ -355,25 +368,31 @@ def build_pretrade_presentation(
     risk = _mapping(result.get("risk"))
     recommendation = _recommendation(risk)
     asset = _asset_label(result)
+    context = evidence_context(result)
+    proof_strength = str(context.get("proof_strength") or "WEAK")
     phrase = _trade_phrase(asset, trade)
     missing = _missing_evidence(data)
+    evidence_missing = _evidence_missing(context)
 
-    paragraphs = [_lead(recommendation, phrase)]
-    facts = _fact_sentences(data, asset=asset)
-    if facts:
-        paragraphs.append(" ".join(facts))
+    paragraphs = [_lead(recommendation, phrase, proof_strength=proof_strength)]
+    reasons = _reason_sentences(data, risk, asset=asset)
+    if reasons:
+        paragraphs.append("Why:\n" + "\n".join(f"• {reason}" for reason in reasons))
 
-    missing_text = _missing_paragraph(missing)
+    risk_level = str(context.get("risk_level") or "UNKNOWN")
+    paragraphs.append(f"Risk: {risk_level}\nEvidence quality: {proof_strength}")
+
+    missing_text = _missing_paragraph(missing, evidence_missing)
     if missing_text:
         paragraphs.append(missing_text)
 
     paragraphs.append(_bottom_line(recommendation, missing=missing))
-
     conversational = "\n\n".join(part for part in paragraphs if part).strip()
     technical = _technical_text(
         result,
         recommendation=recommendation,
         missing=missing,
+        context=context,
     )
     technical_mode = technical_pretrade_details_requested(objective)
 
@@ -385,6 +404,9 @@ def build_pretrade_presentation(
         "technical_text": technical,
         "cmis_status": result.get("status"),
         "recommendation": recommendation,
+        "risk_level": risk_level,
+        "evidence_quality": proof_strength,
+        "verification_status": context.get("verification_status"),
         "reasons": _string_list(risk.get("reasons")),
         "flags": _string_list(risk.get("flags")),
         "facts": {
@@ -395,6 +417,8 @@ def build_pretrade_presentation(
             "route_analysis": dict(_mapping(data.get("route_analysis"))),
         },
         "missing_evidence": missing,
+        "proof_missing_evidence": evidence_missing,
+        "evidence_context": dict(context),
     }
 
 
