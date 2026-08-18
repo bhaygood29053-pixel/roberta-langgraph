@@ -51,6 +51,10 @@ def _envelope(service: str = "verification_evidence") -> dict[str, object]:
     }
 
 
+def _capabilities_response() -> _Response:
+    return _Response(MockCMISClient().capabilities())
+
+
 def test_selector_accepts_only_one_exact_mode() -> None:
     assert normalize_verification_evidence_selector(evidence_id=" ve_abc ") == {
         "evidence_id": "ve_abc"
@@ -82,6 +86,8 @@ def test_http_client_posts_evidence_id_without_asset(monkeypatch) -> None:
 
     def fake_urlopen(request, *, timeout):
         captured["timeout"] = timeout
+        if request.data is None:
+            return _capabilities_response()
         captured["payload"] = json.loads(request.data.decode("utf-8"))
         return _Response(_envelope())
 
@@ -104,6 +110,8 @@ def test_http_client_posts_exact_fact_selector_without_asset(monkeypatch) -> Non
     captured: dict[str, object] = {}
 
     def fake_urlopen(request, *, timeout):
+        if request.data is None:
+            return _capabilities_response()
         captured["payload"] = json.loads(request.data.decode("utf-8"))
         return _Response(_envelope())
 

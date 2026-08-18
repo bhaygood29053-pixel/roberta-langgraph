@@ -1,11 +1,97 @@
 """Deterministic CMIS test adapter matching the external service envelope."""
 
+from copy import deepcopy
 from typing import Literal
 
+from roberta.cmis.capabilities import CMISCapabilities
 from roberta.cmis.contracts import CMISEnvelope, CMISOperation, RankMetric, TradeAction
 from roberta.cmis.verification import normalize_verification_evidence_selector
 
 MockScenario = Literal["test_only", "warning", "unavailable", "error"]
+
+
+def _capability(
+    state: str,
+    *,
+    requirements: list[str] | None = None,
+    limitations: list[str] | None = None,
+) -> dict[str, object]:
+    return {
+        "state": state,
+        "callable": state != "unavailable",
+        "requirements": list(requirements or []),
+        "limitations": list(limitations or []),
+    }
+
+
+def _mock_capability_manifest() -> CMISCapabilities:
+    services = [
+        "asset_lookup",
+        "market_report",
+        "rank",
+        "historical_compare",
+        "tokenomics",
+        "risk_check",
+        "pre_trade_check",
+        "trade_verification",
+        "verified_asset_activity",
+        "verification_evidence",
+    ]
+    x1 = {
+        service: _capability("supported")
+        for service in services
+    }
+    x1["pre_trade_check"] = _capability(
+        "bounded",
+        limitations=["analysis_only", "execution_authorized_false"],
+    )
+    x1["trade_verification"] = _capability("bounded")
+    x1["verified_asset_activity"] = _capability("bounded")
+    x1["verification_evidence"] = _capability(
+        "bounded",
+        requirements=["exact_evidence_id_or_fact_type_subject_id"],
+    )
+
+    solana = {
+        service: _capability("unavailable")
+        for service in services
+    }
+    solana["asset_lookup"] = _capability(
+        "bounded",
+        requirements=["exact_mint", "solana_rpc_provider_configured"],
+    )
+    for service in ("market_report", "historical_compare", "tokenomics", "risk_check"):
+        solana[service] = _capability(
+            "partial",
+            requirements=["exact_mint"],
+        )
+
+    return {
+        "service": "cmis_gateway",
+        "version": 1,
+        "schema_version": 1,
+        "contract_version": "1.6.0",
+        "request_path": "/v1/cmis",
+        "supported_services": services,
+        "supported_chains": ["x1"],
+        "known_chains": ["x1", "solana"],
+        "chains": {
+            "x1": {
+                "services": x1,  # type: ignore[typeddict-item]
+                "callable_services": [
+                    service for service in services if x1[service]["callable"] is True
+                ],
+            },
+            "solana": {
+                "services": solana,  # type: ignore[typeddict-item]
+                "callable_services": [
+                    service
+                    for service in services
+                    if solana[service]["callable"] is True
+                ],
+            },
+        },
+    }
 
 
 class MockCMISClient:
@@ -20,6 +106,11 @@ class MockCMISClient:
         self.scenario = scenario
         self.observed_at = observed_at
         self.calls: list[dict[str, object]] = []
+        self.capability_calls = 0
+
+    def capabilities(self) -> CMISCapabilities:
+        self.capability_calls += 1
+        return deepcopy(_mock_capability_manifest())
 
     @staticmethod
     def _chain(chain: str) -> str:

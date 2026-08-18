@@ -44,6 +44,10 @@ def _envelope(service: str, *, asset=None):
     }
 
 
+def _capabilities_response() -> _FakeResponse:
+    return _FakeResponse(MockCMISClient().capabilities())
+
+
 def test_deterministic_selector_recognizes_rank_and_history() -> None:
     assert select_cmis_operation("Top 10 XDEX tokens by volume") == "rank"
     assert (
@@ -144,6 +148,8 @@ def test_http_rank_uses_rank_service_without_fabricated_asset() -> None:
     response = _envelope("rank")
 
     def fake_urlopen(request, timeout):
+        if request.data is None:
+            return _capabilities_response()
         seen["payload"] = json.loads(request.data.decode("utf-8"))
         seen["timeout"] = timeout
         return _FakeResponse(response)
@@ -170,6 +176,8 @@ def test_http_history_preserves_asset_and_exact_question() -> None:
     question = "Has AGI liquidity fallen since last week?"
 
     def fake_urlopen(request, timeout):
+        if request.data is None:
+            return _capabilities_response()
         seen["payload"] = json.loads(request.data.decode("utf-8"))
         return _FakeResponse(response)
 
