@@ -5,7 +5,7 @@ Roberta is the top-level Oracle, policy-aware coordinator, and normal user-facin
 Current accepted hierarchy:
 
 ```text
-User / MoltGrid Signal
+User / transport
   -> Roberta
     -> Chain Scout
       -> CMIS
@@ -22,7 +22,19 @@ Roberta
         -> CMIS -> Solana providers
 ```
 
-Roberta does not call provider APIs directly and does not reproduce CMIS market, risk, verification, evidence-receipt, or proof-score calculations.
+Roberta does not call provider APIs directly and does not reproduce CMIS market, risk, verification, evidence-receipt, proof-score, or deterministic pre-trade calculations.
+
+## Repository boundary
+
+CMIS is maintained in the separate GitHub repository:
+
+```text
+bhaygood29053-pixel/cmis
+```
+
+That repository was historically named `liquidity-scout`. The canonical project identity is now **CMIS — Cross-Chain Market Intelligence Service**.
+
+The CMIS implementation still uses the internal Python namespace `liquidity_scout` for compatibility. Repository identity and Python package identity are intentionally separate during the staged migration.
 
 ## Current roadmap status
 
@@ -40,11 +52,13 @@ Roberta does not call provider APIs directly and does not reproduce CMIS market,
 - Post-Phase-10 Evidence-Aware Intelligence & User Experience — complete
 - Phase 11 Controlled Execution — **locked / not started**
 
-See [`docs/LANGGRAPH_ROADMAP.md`](./docs/LANGGRAPH_ROADMAP.md) for the authoritative roadmap.
+See [`docs/LANGGRAPH_ROADMAP.md`](./docs/LANGGRAPH_ROADMAP.md) for the authoritative Roberta roadmap.
+
+CMIS has its own execution-phase numbering. CMIS Phase 11 refers to its completed **read-only Verified Intelligence foundation**; that is separate from Roberta Phase 11 Controlled Execution.
 
 ## Evidence-aware intelligence
 
-Roberta consumes the CMIS evidence-quality contract introduced in CMIS `>=1.7.0`.
+Roberta consumes the CMIS evidence-quality and capability contracts.
 
 Chain Scout reports preserve CMIS evidence context including, where available:
 
@@ -58,7 +72,7 @@ Chain Scout reports preserve CMIS evidence context including, where available:
 - source provenance;
 - risk separately from proof strength.
 
-Roberta requires the CMIS capability manifest to advertise evidence receipt schema 1, proof score schema 1, `risk_separate_from_proof=true`, and `missing_evidence_is_unknown=true`.
+Roberta requires the CMIS capability manifest to advertise the accepted evidence receipt/proof-score contract and the read-only intelligence-foundation boundary required by the current Scout client.
 
 Provider-reported information remains provider-reported until CMIS records independent verification. Missing evidence remains unknown/unproven.
 
@@ -66,7 +80,7 @@ Detailed behavior is documented in [`docs/EVIDENCE_AWARE_INTELLIGENCE.md`](./doc
 
 ## Answer-first user experience
 
-Recommendation-style responses are designed to prioritize:
+Recommendation-style responses prioritize:
 
 1. conclusion / recommendation / blocker;
 2. the most important evidence-backed reasons;
@@ -75,9 +89,9 @@ Recommendation-style responses are designed to prioritize:
 5. important missing evidence;
 6. deeper technical evidence on request.
 
-Pre-trade responses use a deterministic finalizer instead of passing the result through a second free-form LLM rewrite.
+Pre-trade responses use deterministic finalization rather than passing the structured result through a second free-form rewrite.
 
-`PASS`, `WARN`, and `BLOCK` are not automatically HIGH/MEDIUM/LOW risk levels. If CMIS does not provide a dedicated risk level, Roberta keeps the risk level unknown instead of inventing one.
+`PASS`, `WARN`, and `BLOCK` are not automatically HIGH/MEDIUM/LOW risk levels. If CMIS does not provide a dedicated risk level, Roberta keeps risk unknown rather than inventing one.
 
 ## Recommendation evidence planning
 
@@ -91,26 +105,25 @@ Roberta deterministically identifies evidence needs for common questions such as
 - LP questions;
 - price-move questions.
 
-X1 Scout incorporates the allowed read-only evidence requirements into its deterministic planning. Recommendation wording cannot silently enable explicit `pre_trade_check` or any execution capability.
+Chain Scouts incorporate allowed read-only evidence requirements into their deterministic planning. Recommendation wording cannot silently enable execution capability.
 
 ## X1 evidence capability boundary
 
 Remaining X1 provider limitations are explicit CMIS capability states rather than facts Roberta may guess.
 
-Examples include:
+Examples include facts that are:
 
-- canonical native-XNT translation: verified;
-- token-account concentration: bounded and not equivalent to wallet/holder concentration;
-- direct XDEX history semantics: unavailable until proven;
-- direct XDEX quote semantics: unavailable until proven;
-- X1.Ninja SSE access handshake: bounded, while live-event semantics remain unavailable;
-- bridge candidate-URL provenance: bounded, while current bridge operational/route/fee/capacity/lifecycle facts remain unavailable without an accepted machine-readable contract.
+- independently verified;
+- bounded to a narrower evidence scope;
+- unavailable until semantics are proven.
 
-Roberta preserves these boundaries and does not upgrade them through model interpretation.
+Roberta preserves those boundaries and does not upgrade missing or partial provider evidence through model interpretation.
 
-## Wallet / whale safety boundary
+## Wallet / behavioral safety boundary
 
-Roberta may consume future deterministic wallet primitives from CMIS, but it may not label a wallet as an insider, whale, bot, accumulator, distributor, market maker, manipulator, dumper, or equivalent until CMIS supplies accepted primitives and a later classification contract explicitly permits the label.
+CMIS now has a read-only Verified Intelligence foundation for neutral wallet-activity and concentration primitives. Those primitives are not automatically promoted into public Scout services.
+
+Roberta may not label a wallet as an insider, whale, bot, accumulator, distributor, market maker, manipulator, dumper, common owner, or equivalent unless a later accepted CMIS classification contract explicitly permits the label from proven evidence.
 
 Facts and interpretations remain separate.
 
@@ -118,7 +131,7 @@ Facts and interpretations remain separate.
 
 X1 and Solana Scout reports preserve separate chain-specific evidence contexts.
 
-Roberta may compare the evidence returned by each chain, but it may not:
+Roberta may compare evidence returned by each chain, but it may not:
 
 - merge source lists into one synthetic source set;
 - apply one chain's scope/freshness to another chain;
@@ -148,7 +161,7 @@ An approval means a human reviewed one exact proposal. It is not a reusable sign
 
 ## Controlled execution boundary
 
-Phase 11 has **not started**.
+Roberta Phase 11 has **not started**.
 
 Roberta currently has no authority for:
 
@@ -161,7 +174,7 @@ Roberta currently has no authority for:
 - autonomous value movement;
 - broad delegated wallet authority.
 
-Research, recommendations, deterministic policy, human review, pre-trade analysis, and future simulation must not be interpreted as execution authorization.
+Research, recommendations, deterministic policy, human review, and CMIS pre-trade analysis must not be interpreted as execution authorization.
 
 ## Install
 
@@ -182,9 +195,9 @@ The deterministic suite covers the Oracle/tool loop, provider-neutral model inje
 
 ## Provider-backed CMIS
 
-The CMIS implementation remains in the separate `liquidity-scout` repository.
+The CMIS implementation is maintained in the separate `bhaygood29053-pixel/cmis` repository.
 
-Start CMIS there:
+Start CMIS there with its current compatibility module path:
 
 ```bash
 python -m liquidity_scout.cmis.http
@@ -205,7 +218,7 @@ CMIS_API_KEY=...
 
 A non-loopback CMIS deployment should require Bearer authentication.
 
-Run the explicit CMIS integration tests while CMIS is running:
+Run explicit CMIS integration tests while CMIS is running:
 
 ```bash
 RUN_LIVE_CMIS_TESTS=1 python -m pytest -v -m cmis_live
@@ -266,8 +279,8 @@ Roberta is the normal conversational voice. The transport layer owns admission/r
 
 If Roberta is unavailable, the normal user-facing transport should report availability failure rather than exposing raw CMIS output as the conversational response.
 
-## Near-term work
+## Near-term boundary
 
-The most important current dependency is CMIS deterministic pre-trade trade-size/impact analysis (Liquidity Scout Issue #99). Roberta should consume that structured evidence and explain it; it should not duplicate the CMIS calculations.
+The deterministic pre-trade trade-size milestone previously tracked as CMIS Issue #99 is complete. Roberta consumes CMIS's structured result and explains it; it does not duplicate the calculation.
 
-After the evidence/pre-trade foundation is mature, wallet activity primitives and verified wallet/whale intelligence can be added under explicit evidence contracts.
+Future wallet/behavioral interpretation, early-warning intelligence, additional cross-chain expansion, and any eventual controlled execution must each be promoted through explicit evidence and safety contracts rather than inferred from the existing read-only foundation.
