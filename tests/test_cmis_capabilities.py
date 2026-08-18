@@ -5,6 +5,7 @@ import pytest
 from roberta.cmis.capabilities import (
     CMISCapabilityContractError,
     CMISCapabilityUnavailable,
+    INTELLIGENCE_FOUNDATION_CAPABILITIES,
     MIN_CMIS_CONTRACT_VERSION,
     require_service_capability,
     validate_capability_manifest,
@@ -15,6 +16,17 @@ def _capability(state: str) -> dict[str, object]:
     return {
         "state": state,
         "callable": state != "unavailable",
+        "requirements": [],
+        "limitations": [],
+    }
+
+
+def _intelligence_capability() -> dict[str, object]:
+    return {
+        "state": "bounded",
+        "read_only": True,
+        "public_service_promoted": False,
+        "scout_reliance_promoted": False,
         "requirements": [],
         "limitations": [],
     }
@@ -59,6 +71,19 @@ def _manifest() -> dict[str, object]:
             "risk_separate_from_proof": True,
             "missing_evidence_is_unknown": True,
         },
+        "intelligence_foundation": {
+            "schema_version": 1,
+            "phase": "phase_11_verified_intelligence_foundation",
+            "read_only": True,
+            "public_service_promoted": False,
+            "scout_reliance_promoted": False,
+            "promotion_rule": "new_accepted_public_service_contract_required",
+            "intelligence_evidence_schema_version": 1,
+            "capabilities": {
+                name: _intelligence_capability()
+                for name in INTELLIGENCE_FOUNDATION_CAPABILITIES
+            },
+        },
         "supported_services": services,
         "supported_chains": ["x1"],
         "known_chains": ["x1", "solana"],
@@ -79,13 +104,19 @@ def _manifest() -> dict[str, object]:
     }
 
 
-def test_valid_manifest_preserves_chain_specific_capability_states() -> None:
+def test_valid_manifest_preserves_chain_and_intelligence_boundaries() -> None:
     manifest = validate_capability_manifest(_manifest())
 
     assert manifest["contract_version"] == MIN_CMIS_CONTRACT_VERSION
-    assert MIN_CMIS_CONTRACT_VERSION == "1.7.0"
+    assert MIN_CMIS_CONTRACT_VERSION == "1.8.0"
     assert manifest["evidence_quality"]["risk_separate_from_proof"] is True
     assert manifest["evidence_quality"]["missing_evidence_is_unknown"] is True
+    assert manifest["intelligence_foundation"]["read_only"] is True
+    assert manifest["intelligence_foundation"]["public_service_promoted"] is False
+    assert manifest["intelligence_foundation"]["scout_reliance_promoted"] is False
+    assert set(manifest["intelligence_foundation"]["capabilities"]) == set(
+        INTELLIGENCE_FOUNDATION_CAPABILITIES
+    )
     assert manifest["chains"]["x1"]["services"]["risk_check"]["state"] == "supported"
     assert manifest["chains"]["solana"]["services"]["risk_check"]["state"] == "partial"
     assert manifest["chains"]["solana"]["services"]["pre_trade_check"]["state"] == "unavailable"
@@ -93,7 +124,7 @@ def test_valid_manifest_preserves_chain_specific_capability_states() -> None:
 
 def test_stale_contract_version_fails_closed() -> None:
     manifest = deepcopy(_manifest())
-    manifest["contract_version"] = "1.6.9"
+    manifest["contract_version"] = "1.7.9"
 
     with pytest.raises(CMISCapabilityContractError, match="older than the minimum"):
         validate_capability_manifest(manifest)
@@ -109,6 +140,57 @@ def test_missing_or_weakened_evidence_contract_fails_closed() -> None:
     weakened["evidence_quality"]["risk_separate_from_proof"] = False
     with pytest.raises(CMISCapabilityContractError, match="separate from proof"):
         validate_capability_manifest(weakened)
+
+
+def test_missing_or_promoted_intelligence_foundation_fails_closed() -> None:
+    missing = deepcopy(_manifest())
+    del missing["intelligence_foundation"]
+    with pytest.raises(CMISCapabilityContractError, match="intelligence_foundation"):
+        validate_capability_manifest(missing)
+
+    public = deepcopy(_manifest())
+    public["intelligence_foundation"]["public_service_promoted"] = True
+    with pytest.raises(CMISCapabilityContractError, match="public service"):
+        validate_capability_manifest(public)
+
+    relied_on = deepcopy(_manifest())
+    relied_on["intelligence_foundation"]["scout_reliance_promoted"] = True
+    with pytest.raises(CMISCapabilityContractError, match="Scout reliance"):
+        validate_capability_manifest(relied_on)
+
+
+def test_intelligence_capability_drift_or_promotion_fails_closed() -> None:
+    missing = deepcopy(_manifest())
+    del missing["intelligence_foundation"]["capabilities"]["wallet_activity_facts"]
+    with pytest.raises(CMISCapabilityContractError, match="classification drift"):
+        validate_capability_manifest(missing)
+
+    extra = deepcopy(_manifest())
+    extra["intelligence_foundation"]["capabilities"]["future_behavior_label"] = (
+        _intelligence_capability()
+    )
+    with pytest.raises(CMISCapabilityContractError, match="classification drift"):
+        validate_capability_manifest(extra)
+
+    promoted = deepcopy(_manifest())
+    promoted["intelligence_foundation"]["capabilities"]["top_account_concentration"][
+        "scout_reliance_promoted"
+    ] = True
+    with pytest.raises(CMISCapabilityContractError, match="Scout-reliance promoted"):
+        validate_capability_manifest(promoted)
+
+
+def test_intelligence_foundation_cannot_become_supported_service_silently() -> None:
+    manifest = deepcopy(_manifest())
+    manifest["supported_services"].append("top_account_concentration")
+    for chain in ("x1", "solana"):
+        manifest["chains"][chain]["services"]["top_account_concentration"] = _capability(
+            "bounded"
+        )
+        manifest["chains"][chain]["callable_services"].append("top_account_concentration")
+
+    with pytest.raises(CMISCapabilityContractError, match="outside supported_services"):
+        validate_capability_manifest(manifest)
 
 
 def test_missing_service_classification_fails_closed() -> None:
