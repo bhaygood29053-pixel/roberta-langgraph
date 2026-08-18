@@ -1,6 +1,6 @@
 # Roberta LangGraph Roadmap
 
-Last updated: 2026-08-15
+Last updated: 2026-08-17
 
 ## Status legend
 
@@ -10,9 +10,9 @@ Last updated: 2026-08-15
 
 ## Current position
 
-Roberta has completed the core Oracle runtime, provider-neutral model/tool loop, X1 Scout boundary, CMIS/X1 Provider integration, constrained agentic X1 Scout planning, LangGraph thread/checkpoint persistence, and the HXMP durable-memory boundary including real read-only live verification.
+Roberta has completed the core Oracle runtime, provider-neutral model/tool loop, X1 Scout boundary, CMIS/X1 Provider integration, constrained X1 Scout planning, LangGraph checkpoint persistence, verified HXMP durable memory, deterministic Oracle policy, and resumable human approval.
 
-The active milestone is **Phase 8 — Oracle Policy**.
+The active milestone is **Phase 10 — More Specialists / Providers**, beginning with the Solana Scout and a provider-neutral Solana CMIS path. The Solana Scout architecture is being built and tested with deterministic fixtures while the live Solana provider remains disabled until its provider contract and live evidence are verified.
 
 ```text
 FOUNDATION
@@ -24,12 +24,12 @@ FOUNDATION
 ████████████████████  Phase 6  Agentic X1 Scout Planning       ✅
 ████████████████████  Phase 7A Thread / Checkpoint Persistence ✅
 ████████████████████  Phase 7B HXMP Durable Memory             ✅
-████░░░░░░░░░░░░░░░░  Phase 8  Oracle Policy                  🟡 CURRENT
+████████████████████  Phase 8  Oracle Policy                   ✅
+████████████████████  Phase 9  Human in the Loop               ✅
+████████░░░░░░░░░░░░  Phase 10 More Specialists / Providers   🟡 CURRENT
 
 NEXT
-░░░░░░░░░░░░░░░░░░░░  Phase 9  Human in the Loop             ⬜
-░░░░░░░░░░░░░░░░░░░░  Phase 10 More Specialists / Providers  ⬜
-░░░░░░░░░░░░░░░░░░░░  Phase 11 Controlled Execution         ⬜
+░░░░░░░░░░░░░░░░░░░░  Phase 11 Controlled Execution          ⬜
 ```
 
 ---
@@ -134,6 +134,9 @@ Improve deterministic X1 evidence coverage without inventing unavailable market 
 - exact public-address identity rule for non-native token assets
 - native XNT kept separate from wrapped-token assumptions
 - fail-closed XDEX schema and error handling
+- X1.Ninja trade-history contract testing
+- X1.Ninja OHLCV contract testing
+- pool-specific X1.Ninja reserve ↔ X1 RPC cross-check orchestration
 
 ### Still open
 - verify live XDEX chart/history response semantics against a real current non-XNT pool
@@ -141,11 +144,12 @@ Improve deterministic X1 evidence coverage without inventing unavailable market 
 - promote verified XDEX history into CMIS `historical_compare` only after semantics are proven
 - promote verified quote evidence into `pre_trade_check` only after its contract is proven
 - verify provider-specific native XNT quote/market translation without substituting WXNT
+- remaining provider gaps such as holder verification, streaming/SSE coverage, archival redundancy, and X1 bridge intelligence where tracked by CMIS/provider issues
 
 ### Current blocker
-The public XDEX X1 pool surface currently exposes no usable non-XNT pool pair. Provider groundwork is merged, but history/quote promotion is intentionally gated until a real market exists.
+The public XDEX X1 pool surface has not provided the non-XNT live market needed to prove history/quote semantics. Provider groundwork is merged, but those data paths remain intentionally gated.
 
-Tracking: Liquidity Scout issue #28.
+Tracking: Liquidity Scout issue #28 and provider-gap trackers.
 
 ### Rule
 An unavailable market is an explicit deterministic state, not permission to fabricate a pair, wrapped asset, quote, or historical series.
@@ -286,103 +290,78 @@ Fresh verified CMIS/provider data always overrides remembered or conversational 
 
 ---
 
-## Phase 8 — Oracle Policy 🟡 Active
+## Phase 8 — Oracle Policy ✅ Complete
 
-Tracking: Roberta issue #24.
+Tracking: Roberta issue #24 — completed.
 
 ### Goal
-Turn Roberta from a capable coordinator into a policy-aware Oracle that applies durable user context across specialist findings.
+Make Roberta a policy-aware Oracle that deterministically applies durable user context to specialist evidence.
 
-### Existing foundation
-- final Oracle synthesis
-- X1 specialist delegation
-- CMIS status/provenance guardrails
-- planner-diagnostic vs market-fact separation
-- fresh-data override prompt guardrails
-- durable HXMP retrieval for stable user context
-
-### Active milestone scope
+### Delivered
 - typed Oracle policy contracts separate from memory and market evidence
-- durable user risk policy compilation
-- portfolio / exposure rules
-- user-specific thresholds and constraints
-- hard-constraint vs soft-preference distinction
-- deterministic threshold evaluation where possible
-- explicit `insufficient_evidence` state when required fresh inputs are missing
-- specialist-selection/routing policy hooks
-- cross-chain-ready policy interfaces without inventing Solana behavior before Solana Scout exists
-- explainable rule-level policy results
-- final synthesis that identifies which user constraints materially affected the recommendation
+- explicit policy-document compiler from durable memory
+- hard constraints, soft preferences, threshold rules, evidence requirements, and approval rules
+- deterministic rule evaluation and decision precedence
+- explicit `insufficient_evidence` / `needs_evidence` behavior
+- structural hard-block enforcement before model synthesis
+- material policy warnings/preferences appended deterministically to final synthesis
+- provider-neutral policy fact/evidence frame contract
+- durable policy loader with bounded/fail-closed retrieval
+- specialist-selection/routing hooks
+- standardized X1 Scout policy facts
+- full missing-evidence → X1 Scout research → deterministic re-evaluation loop
+- policy document builder for owner-supplied rules without inventing user thresholds
 
-### First implementation slice
+### Authority rule
 
 ```text
-Durable HXMP memory
-  ↓
-relevant user policy records
-  ↓
-policy compiler
-  ↓
-typed deterministic rules
-  ↓
-policy evaluator
-  ↓
-structured rule outcomes
-  ↓
-Oracle synthesis
+HXMP/Memory -> stable user policy
+CMIS        -> current verified facts
+Policy code -> deterministic rule result
+LLM         -> explanation/synthesis, never override
 ```
 
-Initial rule model:
-- **hard constraint** — cannot be overridden by the LLM
-- **preference** — influences synthesis but does not override hard constraints
-- **threshold rule** — compares verified input to a user-defined bound
-- **evidence requirement** — refuses pass/fail when required fresh evidence is unavailable
-- **approval rule** — records that later user approval would be required; Phase 8 does not execute anything
+Free-form memory is context, not automatically executable policy. Only explicit policy documents activate deterministic enforcement.
+
+---
+
+## Phase 9 — Human in the Loop ✅ Complete
+
+Tracking: Roberta issue #27 — closed completed.
+
+### Goal
+Add a resumable human-review boundary before consequential blockchain actions without creating execution authority.
+
+### Delivered
+- typed `ApprovalRequest`, `ApprovalDecision`, and `ApprovalOutcome`
+- explicit decisions: `approve`, `reject`, `edit`, `request_more_evidence`
+- dynamic LangGraph `interrupt()` + `Command(resume=...)`
+- same-thread/checkpointer resume behavior
+- deterministic pre-validation of resume input before it reaches the interrupted task
+- cross-thread approval isolation
+- completed-thread replay/refuse safeguards
+- immutable reviewed proposal data
+- canonical proposal SHA-256
+- approval binding SHA-256 over request id + action type + declared scope + proposal hash
+- edits create a new proposal/hash/request and require re-review
+- deterministic next-step classes: `proceed`, `stop`, `re_review`, `research`
+- Phase 8 `approval_required` → exact Phase 9 review request bridge
+- common secret-bearing fields rejected from approval checkpoint/interrupt payloads
+- no signing, broadcast, value movement, or wallet authority introduced
 
 ### Rule
-User policy belongs to Roberta, not CMIS and not chain providers. A policy result may use current facts only when those facts come from fresh verified specialists/CMIS/providers.
+`approved` means a human reviewed one exact proposal/scope. It is not a reusable signing credential or broad future authorization. Phase 11 must revalidate and consume an approval under its own execution safeguards.
 
 ---
 
-## Phase 9 — Human in the Loop ⬜ Planned
+## Phase 10 — More Specialists / Providers 🟡 Active
+
+Tracking: Roberta issue #29 and PR #30.
 
 ### Goal
-Introduce LangGraph interrupt/resume approval flow before consequential blockchain actions.
+Expand Roberta beyond one chain specialist while preserving the hierarchy and one shared CMIS service layer.
 
-### Planned
-- LangGraph interrupt boundary
-- proposed-action summary
-- approve / edit / reject
-- durable approval record where appropriate
-- safe resume after approval
-- cancellation without side effects
-
-### Human approval required before
-- signing transactions
-- broadcasting value-moving transactions
-- transferring assets
-- changing wallet permissions
-- granting execution authority
-- HXMP durable-memory writes that spend gas
-- other consequential blockchain actions
-
-### Automatic actions remain allowed
-- research
-- read-only analysis
-- memory retrieval
-- specialist calls
-- deterministic CMIS checks
-- transaction simulation
-- preparation of proposed transactions or HXMP write previews
-
----
-
-## Phase 10 — More Specialists / Providers ⬜ Planned
-
-### Goal
-Expand Roberta using the same hierarchy instead of duplicating full intelligence stacks.
-
-### First cross-chain expansion
+### Target architecture
 
 ```text
 Roberta
@@ -395,26 +374,62 @@ Roberta
        CMIS → Solana Provider
 ```
 
-### Planned specialists
-- Solana Scout
+### Implemented on the active Phase 10 branch
+- stable provider-neutral specialist capability registry for X1 + Solana
+- deterministic chain/capability → Scout dispatch metadata
+- Solana Scout LangGraph specialist subgraph
+- Roberta-facing `solana_scout_investigate` tool
+- one shared CMIS client with explicit `chain="solana"` dispatch
+- bounded Solana Scout planning limited to `market_report`, `tokenomics`, and `risk_check` autonomously
+- explicit rejection of autonomous `pre_trade_check`
+- Solana provider/configuration gate disabled by default
+- disabled Scout makes zero CMIS calls and returns `SOLANA_PROVIDER_NOT_CONFIGURED`
+- standardized Solana Scout → policy fact adapter
+- cross-chain policy fact dispatch that never falls back to stale evidence from another chain
+- deterministic mock Solana CMIS tests only; no live-fact claims
+- end-to-end Oracle policy → Solana Scout → policy re-evaluation tests
+- Solana provider requirements/promotion-gate documentation based on current primary-source contracts
+
+### Provider promotion boundary
+
+The live Solana provider implementation belongs beneath CMIS, currently in the `liquidity-scout` migration codebase. Roberta's Solana provider gate must remain disabled until the provider has deterministic contract tests and read-only live acceptance evidence.
+
+The provider should be layered rather than monolithic:
+
+```text
+Solana Provider
+  |- canonical Solana RPC
+  |- indexed token/account source
+  |- aggregate market/price source
+  |- venue-specific pool adapters
+  `- CMIS normalization / cross-check logic
+```
+
+Candidate source classes documented for implementation include canonical Solana RPC, Jupiter market/token APIs, indexed Solana data such as Helius DAS/RPC, and venue-specific pool APIs such as Raydium, Orca, and Meteora. Candidate status is not live verification.
+
+### Remaining Phase 10 acceptance work
+- full deterministic CI on the final PR head
+- PR-wide review / regression check
+- confirm no unresolved review threads
+- merge the Solana Scout skeleton
+- create/advance the cross-repo CMIS Solana Provider implementation workstream
+- implement and live-verify Solana provider services incrementally before enabling runtime live data
+
+### Future specialists after the chain boundary is proven
 - Wallet Sentinel
 - Security Agent
 - Treasury Agent
 - Launch Scout
 
-### Planned provider expansion
-- Solana Provider beneath the existing CMIS contracts
-- future chains follow the same provider model
-
 ### Rule
-Do not duplicate CMIS per chain. Add chain providers beneath shared deterministic service contracts, and add a chain Scout only when chain-specific reasoning justifies one.
+Do not duplicate CMIS per chain. Add chain providers beneath shared deterministic service contracts, and add a chain Scout when chain-specific reasoning justifies one.
 
 ---
 
 ## Phase 11 — Controlled Execution ⬜ Planned
 
 ### Goal
-Add a tightly scoped Execution Agent only after policy and human-approval boundaries are proven.
+Add a tightly scoped Execution Agent only after policy, provider verification, and human-approval boundaries are proven.
 
 ### Target flow
 
@@ -427,6 +442,8 @@ prepare proposed transaction
   ↓
 human approval
   ↓
+revalidate exact approval + current preconditions
+  ↓
 sign / broadcast within approved scope
 ```
 
@@ -434,6 +451,7 @@ sign / broadcast within approved scope
 - route selection
 - transaction simulation
 - transaction preparation
+- exact approval consumption/revalidation
 - execution only after required approval
 
 ### XDEX boundary
@@ -450,7 +468,7 @@ USER
   ↓
 ROBERTA — Oracle / Coordinator
   ↓
-CHAIN SCOUTS
+CHAIN SCOUTS / SPECIALISTS
   ↓
 CROSS-CHAIN MARKET INTELLIGENCE SERVICE (CMIS)
   ↓
@@ -495,20 +513,13 @@ CMIS → fresh verified facts    → Roberta
 
 # Current next action
 
-**Phase 8 — Oracle Policy**
+**Phase 10 — complete and merge the Solana Scout skeleton, then begin the CMIS Solana Provider implementation workstream.**
 
 Active tracker:
 
 ```text
-roberta-langgraph issue #24
+roberta-langgraph issue #29
+roberta-langgraph PR #30
 ```
 
-First coding target:
-
-```text
-typed policy contracts
-  + deterministic evaluator
-  + durable-memory-derived risk-policy tests
-```
-
-Do not change X1 Scout, CMIS, provider behavior, or transaction execution in the first Phase 8 slice.
+The Solana live-provider gate remains **off** until the CMIS/provider contract is implemented and read-only live evidence is verified.
