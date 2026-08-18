@@ -74,8 +74,15 @@ def _capabilities() -> dict[str, object]:
         "service": "cmis_gateway",
         "version": 1,
         "schema_version": 1,
-        "contract_version": "1.6.0",
+        "contract_version": "1.7.1",
         "request_path": "/v1/cmis",
+        "evidence_quality": {
+            "evidence_receipt_schema_version": 1,
+            "proof_score_schema_version": 1,
+            "proof_strength_values": ["STRONG", "MODERATE", "WEAK"],
+            "risk_separate_from_proof": True,
+            "missing_evidence_is_unknown": True,
+        },
         "supported_services": services,
         "supported_chains": ["x1"],
         "known_chains": ["x1", "solana"],
@@ -89,9 +96,7 @@ def _capabilities() -> dict[str, object]:
             "solana": {
                 "services": solana,
                 "callable_services": [
-                    service
-                    for service in services
-                    if solana[service]["callable"] is True
+                    service for service in services if solana[service]["callable"] is True
                 ],
             },
         },
@@ -136,19 +141,13 @@ class _Server:
                 if not self._authorized():
                     self._write_json(
                         401,
-                        {
-                            "status": "error",
-                            "error": {"code": "unauthorized", "message": "bad token"},
-                        },
+                        {"status": "error", "error": {"code": "unauthorized", "message": "bad token"}},
                     )
                     return
                 if self.path != "/v1/cmis/capabilities":
                     self._write_json(
                         404,
-                        {
-                            "status": "error",
-                            "error": {"code": "not_found", "message": "not found"},
-                        },
+                        {"status": "error", "error": {"code": "not_found", "message": "not found"}},
                     )
                     return
                 self._write_json(200, capability_body)
@@ -160,10 +159,7 @@ class _Server:
                 if not self._authorized():
                     self._write_json(
                         401,
-                        {
-                            "status": "error",
-                            "error": {"code": "unauthorized", "message": "bad token"},
-                        },
+                        {"status": "error", "error": {"code": "unauthorized", "message": "bad token"}},
                     )
                     return
                 self._write_json(200, response_body)
@@ -197,12 +193,7 @@ def test_http_client_handshakes_then_posts_market_report_and_preserves_envelope(
     assert result == expected
     assert running.get_paths == ["/v1/cmis/capabilities"]
     assert running.requests == [
-        {
-            "service": "market_report",
-            "chain": "x1",
-            "asset": "AGI",
-            "params": {},
-        }
+        {"service": "market_report", "chain": "x1", "asset": "AGI", "params": {}}
     ]
 
 
@@ -222,10 +213,7 @@ def test_http_client_sends_bearer_auth_for_capabilities_and_pre_trade() -> None:
         )
 
     assert result["status"] == "ok"
-    assert running.auth_headers == [
-        ("GET", "Bearer secret"),
-        ("POST", "Bearer secret"),
-    ]
+    assert running.auth_headers == [("GET", "Bearer secret"), ("POST", "Bearer secret")]
     assert running.requests[0]["params"] == {
         "trade": {"side": "buy", "notional_usd": 25.0}
     }
@@ -259,12 +247,11 @@ def test_http_client_turns_capability_transport_failure_into_unavailable_envelop
 
 def test_http_client_fails_closed_on_stale_capability_contract_before_post() -> None:
     capabilities = deepcopy(_capabilities())
-    capabilities["contract_version"] = "1.5.9"
+    capabilities["contract_version"] = "1.6.9"
     with _Server(_envelope("market_report"), capabilities=capabilities) as running:
-        result = CMISHTTPClient(
-            base_url=running.base_url,
-            timeout_seconds=2,
-        ).market_report(chain="x1", asset="AGI")
+        result = CMISHTTPClient(base_url=running.base_url, timeout_seconds=2).market_report(
+            chain="x1", asset="AGI"
+        )
 
     assert result["status"] == "unavailable"
     assert result["warnings"][0]["code"] == "cmis_capability_contract_unavailable"
@@ -274,10 +261,7 @@ def test_http_client_fails_closed_on_stale_capability_contract_before_post() -> 
 
 def test_http_client_blocks_unadvertised_solana_pretrade_before_post() -> None:
     with _Server(_envelope("pre_trade_check", chain="solana")) as running:
-        result = CMISHTTPClient(
-            base_url=running.base_url,
-            timeout_seconds=2,
-        ).pre_trade_check(
+        result = CMISHTTPClient(base_url=running.base_url, timeout_seconds=2).pre_trade_check(
             chain="solana",
             asset="So11111111111111111111111111111111111111112",
             action="BUY",
@@ -293,10 +277,9 @@ def test_http_client_blocks_unadvertised_solana_pretrade_before_post() -> None:
 def test_http_client_fails_closed_on_response_identity_mismatch() -> None:
     bad = _envelope("market_report", chain="solana")
     with _Server(bad) as running:
-        result = CMISHTTPClient(
-            base_url=running.base_url,
-            timeout_seconds=2,
-        ).market_report(chain="x1", asset="AGI")
+        result = CMISHTTPClient(base_url=running.base_url, timeout_seconds=2).market_report(
+            chain="x1", asset="AGI"
+        )
 
     assert result["status"] == "error"
     assert result["errors"][0]["code"] == "cmis_identity_mismatch"
