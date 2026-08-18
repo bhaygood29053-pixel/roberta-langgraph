@@ -2,15 +2,20 @@
 
 from typing import Protocol
 
+from roberta.cmis.capabilities import CMISCapabilities
 from roberta.cmis.contracts import CMISEnvelope, RankMetric, TradeAction
 
 
 class CMISClient(Protocol):
-    """CMIS operations currently required by X1 Scout.
+    """CMIS operations currently required by Chain Scouts.
 
     Every call names its target chain explicitly. Provider and transport details
-    stay beneath this interface.
+    stay beneath this interface. Capability discovery is consumed by Scouts, not
+    by Roberta directly.
     """
+
+    def capabilities(self) -> CMISCapabilities:
+        ...
 
     def market_report(self, *, chain: str, asset: str) -> CMISEnvelope:
         ...
