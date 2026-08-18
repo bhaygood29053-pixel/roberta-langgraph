@@ -1,9 +1,9 @@
 """Scout-side validation for the CMIS machine-readable capability contract.
 
 The capability contract belongs to the Chain Scout <-> CMIS boundary. Roberta
-does not call provider endpoints directly, but this milestone requires the
-CMIS evidence-receipt/proof contract so Scouts can safely project proof metadata
-upward for Roberta's synthesis.
+does not call provider endpoints directly. The validator also understands the
+CMIS 1.8 read-only intelligence foundation so a Scout cannot silently promote
+internal deterministic primitives into public services or automatic reliance.
 """
 
 from __future__ import annotations
@@ -15,7 +15,18 @@ from roberta.cmis.contracts import CMISOperation
 
 
 CAPABILITY_SCHEMA_VERSION = 1
-MIN_CMIS_CONTRACT_VERSION = "1.7.0"
+MIN_CMIS_CONTRACT_VERSION = "1.8.0"
+INTELLIGENCE_FOUNDATION_SCHEMA_VERSION = 1
+INTELLIGENCE_EVIDENCE_SCHEMA_VERSION = 1
+INTELLIGENCE_FOUNDATION_PHASE = "phase_11_verified_intelligence_foundation"
+INTELLIGENCE_PROMOTION_RULE = "new_accepted_public_service_contract_required"
+INTELLIGENCE_FOUNDATION_CAPABILITIES = (
+    "top_account_concentration",
+    "wallet_activity_facts",
+    "sanitized_intelligence_history",
+    "evidence_bound_conclusions",
+)
+
 CMISCapabilityState: TypeAlias = Literal[
     "supported",
     "bounded",
@@ -45,6 +56,26 @@ class CMISEvidenceQualityCapabilities(TypedDict):
     missing_evidence_is_unknown: bool
 
 
+class CMISIntelligenceCapability(TypedDict):
+    state: Literal["bounded"]
+    read_only: bool
+    public_service_promoted: bool
+    scout_reliance_promoted: bool
+    requirements: list[str]
+    limitations: list[str]
+
+
+class CMISIntelligenceFoundation(TypedDict):
+    schema_version: int
+    phase: str
+    read_only: bool
+    public_service_promoted: bool
+    scout_reliance_promoted: bool
+    promotion_rule: str
+    intelligence_evidence_schema_version: int
+    capabilities: dict[str, CMISIntelligenceCapability]
+
+
 class CMISCapabilities(TypedDict):
     service: str
     version: int
@@ -52,6 +83,7 @@ class CMISCapabilities(TypedDict):
     contract_version: str
     request_path: str
     evidence_quality: CMISEvidenceQualityCapabilities
+    intelligence_foundation: CMISIntelligenceFoundation
     supported_services: list[str]
     supported_chains: list[str]
     known_chains: list[str]
@@ -139,6 +171,113 @@ def _validate_evidence_quality(value: object) -> CMISEvidenceQualityCapabilities
     }
 
 
+def _validate_intelligence_foundation(
+    value: object,
+    *,
+    supported_services: list[str],
+) -> CMISIntelligenceFoundation:
+    if not isinstance(value, Mapping):
+        raise CMISCapabilityContractError(
+            "CMIS intelligence_foundation contract is required for contract 1.8.0+."
+        )
+    if value.get("schema_version") != INTELLIGENCE_FOUNDATION_SCHEMA_VERSION:
+        raise CMISCapabilityContractError(
+            "Unsupported CMIS intelligence_foundation schema version."
+        )
+    if value.get("phase") != INTELLIGENCE_FOUNDATION_PHASE:
+        raise CMISCapabilityContractError("CMIS intelligence_foundation phase mismatch.")
+    if value.get("read_only") is not True:
+        raise CMISCapabilityContractError("CMIS intelligence foundation must remain read-only.")
+    if value.get("public_service_promoted") is not False:
+        raise CMISCapabilityContractError(
+            "CMIS intelligence foundation must not be promoted as a public service."
+        )
+    if value.get("scout_reliance_promoted") is not False:
+        raise CMISCapabilityContractError(
+            "CMIS intelligence foundation must not be promoted for Scout reliance."
+        )
+    if value.get("promotion_rule") != INTELLIGENCE_PROMOTION_RULE:
+        raise CMISCapabilityContractError("CMIS intelligence promotion rule mismatch.")
+    if value.get("intelligence_evidence_schema_version") != INTELLIGENCE_EVIDENCE_SCHEMA_VERSION:
+        raise CMISCapabilityContractError(
+            "Unsupported CMIS intelligence evidence schema version."
+        )
+
+    capabilities_raw = value.get("capabilities")
+    if not isinstance(capabilities_raw, Mapping):
+        raise CMISCapabilityContractError(
+            "CMIS intelligence_foundation capabilities must be an object."
+        )
+
+    expected = set(INTELLIGENCE_FOUNDATION_CAPABILITIES)
+    actual = set(capabilities_raw)
+    missing = sorted(expected - actual)
+    extra = sorted(actual - expected)
+    if missing or extra:
+        raise CMISCapabilityContractError(
+            "CMIS intelligence foundation capability classification drift: "
+            f"missing={missing!r}, extra={extra!r}."
+        )
+
+    overlap = sorted(expected.intersection(supported_services))
+    if overlap:
+        raise CMISCapabilityContractError(
+            "CMIS intelligence foundation primitives must remain outside supported_services: "
+            f"{overlap!r}."
+        )
+
+    normalized: dict[str, CMISIntelligenceCapability] = {}
+    for name in INTELLIGENCE_FOUNDATION_CAPABILITIES:
+        capability_raw = capabilities_raw.get(name)
+        if not isinstance(capability_raw, Mapping):
+            raise CMISCapabilityContractError(
+                f"CMIS intelligence capability {name!r} must be an object."
+            )
+        if capability_raw.get("state") != "bounded":
+            raise CMISCapabilityContractError(
+                f"CMIS intelligence capability {name!r} must remain bounded."
+            )
+        if capability_raw.get("read_only") is not True:
+            raise CMISCapabilityContractError(
+                f"CMIS intelligence capability {name!r} must remain read-only."
+            )
+        if capability_raw.get("public_service_promoted") is not False:
+            raise CMISCapabilityContractError(
+                f"CMIS intelligence capability {name!r} must not be public-service promoted."
+            )
+        if capability_raw.get("scout_reliance_promoted") is not False:
+            raise CMISCapabilityContractError(
+                f"CMIS intelligence capability {name!r} must not be Scout-reliance promoted."
+            )
+        requirements = _string_list(
+            capability_raw.get("requirements"),
+            field=f"intelligence_foundation.capabilities.{name}.requirements",
+        )
+        limitations = _string_list(
+            capability_raw.get("limitations"),
+            field=f"intelligence_foundation.capabilities.{name}.limitations",
+        )
+        normalized[name] = {
+            "state": "bounded",
+            "read_only": True,
+            "public_service_promoted": False,
+            "scout_reliance_promoted": False,
+            "requirements": requirements,
+            "limitations": limitations,
+        }
+
+    return {
+        "schema_version": INTELLIGENCE_FOUNDATION_SCHEMA_VERSION,
+        "phase": INTELLIGENCE_FOUNDATION_PHASE,
+        "read_only": True,
+        "public_service_promoted": False,
+        "scout_reliance_promoted": False,
+        "promotion_rule": INTELLIGENCE_PROMOTION_RULE,
+        "intelligence_evidence_schema_version": INTELLIGENCE_EVIDENCE_SCHEMA_VERSION,
+        "capabilities": normalized,
+    }
+
+
 def validate_capability_manifest(value: Any) -> CMISCapabilities:
     """Validate a CMIS capability response without inventing missing defaults."""
 
@@ -169,6 +308,10 @@ def validate_capability_manifest(value: Any) -> CMISCapabilities:
     evidence_quality = _validate_evidence_quality(value.get("evidence_quality"))
 
     supported_services = _string_list(value.get("supported_services"), field="supported_services")
+    intelligence_foundation = _validate_intelligence_foundation(
+        value.get("intelligence_foundation"),
+        supported_services=supported_services,
+    )
     supported_chains = _string_list(value.get("supported_chains"), field="supported_chains")
     known_chains = _string_list(value.get("known_chains"), field="known_chains")
 
@@ -257,6 +400,7 @@ def validate_capability_manifest(value: Any) -> CMISCapabilities:
         "contract_version": str(contract_version),
         "request_path": "/v1/cmis",
         "evidence_quality": evidence_quality,
+        "intelligence_foundation": intelligence_foundation,
         "supported_services": supported_services,
         "supported_chains": supported_chains,
         "known_chains": known_chains,
@@ -322,7 +466,14 @@ __all__ = [
     "CMISCapabilityUnavailable",
     "CMISChainCapabilities",
     "CMISEvidenceQualityCapabilities",
+    "CMISIntelligenceCapability",
+    "CMISIntelligenceFoundation",
     "CMISServiceCapability",
+    "INTELLIGENCE_EVIDENCE_SCHEMA_VERSION",
+    "INTELLIGENCE_FOUNDATION_CAPABILITIES",
+    "INTELLIGENCE_FOUNDATION_PHASE",
+    "INTELLIGENCE_FOUNDATION_SCHEMA_VERSION",
+    "INTELLIGENCE_PROMOTION_RULE",
     "MIN_CMIS_CONTRACT_VERSION",
     "require_service_capability",
     "service_capability",
