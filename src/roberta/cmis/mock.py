@@ -250,61 +250,49 @@ class MockCMISClient:
             )
         return warnings
 
-    def _envelope(
+    def _errors(self) -> list[object]:
+        if self.scenario != "error":
+            return []
+        return [
+            {"code": "CMIS_PROVIDER_UNAVAILABLE", "message": "Mock provider unavailable."}
+        ]
+
+    def _response(
         self,
         *,
-        service: str,
+        service: CMISOperation,
         chain: str,
-        asset: dict[str, object] | None = None,
-        data: dict[str, object] | None = None,
-        risk: object = None,
+        asset: str,
+        data: dict[str, object],
+        risk: dict[str, object] | None = None,
     ) -> CMISEnvelope:
-        status = self._status()
-        envelope: CMISEnvelope = {
+        return {
             "service": service,
             "chain": chain,
-            "status": status,  # type: ignore[typeddict-item]
-            "asset": asset or {},
-            "data": data or {},
+            "status": self._status(),  # type: ignore[typeddict-item]
+            "asset": {"symbol": asset} if asset else {},
+            "data": data,
             "risk": risk,
-            "confidence": {"level": "LOW", "reason": "deterministic mock only"},
-            "sources": [{"source": "mock_cmis", "test_only": True}],
+            "confidence": {"level": "TEST_ONLY"},
+            "sources": [{"source": "mock_cmis", "role": "test"}],
             "observed_at": self.observed_at,
             "warnings": self._warnings(),
-            "errors": (
-                [{"code": "MOCK_ERROR", "message": "Deterministic mock error."}]
-                if status == "error"
-                else []
+            "errors": self._errors(),
+            **_mock_evidence_metadata(
+                service=service,
+                chain=chain,
+                observed_at=self.observed_at,
             ),
-        }
-        if status in {"partial", "ok"}:
-            envelope.update(
-                _mock_evidence_metadata(
-                    service=service,
-                    chain=chain,
-                    observed_at=self.observed_at,
-                )
-            )
-        return envelope
-
-    def asset_lookup(self, *, chain: str, asset: str) -> CMISEnvelope:
-        chain, asset = self._identity(chain, asset)
-        self.calls.append({"operation": "asset_lookup", "chain": chain, "asset": asset})
-        return self._envelope(
-            service="asset_lookup",
-            chain=chain,
-            asset={"symbol": asset, "public_address": f"mock:{chain}:{asset}"},
-            data={"identity_verified": False, "test_only": True},
-        )
+        }  # type: ignore[return-value]
 
     def market_report(self, *, chain: str, asset: str) -> CMISEnvelope:
         chain, asset = self._identity(chain, asset)
         self.calls.append({"operation": "market_report", "chain": chain, "asset": asset})
-        return self._envelope(
+        return self._response(
             service="market_report",
             chain=chain,
-            asset={"symbol": asset, "public_address": f"mock:{chain}:{asset}"},
-            data={"test_only": True},
+            asset=asset,
+            data={"price": None, "liquidity": None, "#LPs": None, "volume_24h": None},
         )
 
     def rank(
@@ -316,21 +304,16 @@ class MockCMISClient:
     ) -> CMISEnvelope:
         chain = self._chain(chain)
         normalized_metric = str(metric or "").strip().lower()
-        if normalized_metric not in {"volume", "liquidity", "gainers", "trending", "safest"}:
-            raise ValueError("metric must be a supported rank metric")
-        normalized_limit = max(1, min(50, int(limit)))
+        if isinstance(limit, bool) or not isinstance(limit, int) or limit <= 0:
+            raise ValueError("limit must be a positive integer")
         self.calls.append(
-            {
-                "operation": "rank",
-                "chain": chain,
-                "metric": normalized_metric,
-                "limit": normalized_limit,
-            }
+            {"operation": "rank", "chain": chain, "metric": normalized_metric, "limit": limit}
         )
-        return self._envelope(
+        return self._response(
             service="rank",
             chain=chain,
-            data={"metric": normalized_metric, "limit": normalized_limit, "test_only": True},
+            asset="",
+            data={"metric": normalized_metric, "limit": limit, "rankings": []},
         )
 
     def historical_compare(
@@ -352,33 +335,32 @@ class MockCMISClient:
                 "question": normalized_question,
             }
         )
-        return self._envelope(
+        return self._response(
             service="historical_compare",
             chain=chain,
-            asset={"symbol": asset, "public_address": f"mock:{chain}:{asset}"},
-            data={"question": normalized_question, "test_only": True},
+            asset=asset,
+            data={"question": normalized_question, "comparison": None},
         )
 
     def tokenomics(self, *, chain: str, asset: str) -> CMISEnvelope:
         chain, asset = self._identity(chain, asset)
         self.calls.append({"operation": "tokenomics", "chain": chain, "asset": asset})
-        return self._envelope(
+        return self._response(
             service="tokenomics",
             chain=chain,
-            asset={"symbol": asset, "public_address": f"mock:{chain}:{asset}"},
-            data={"test_only": True},
+            asset=asset,
+            data={"total_supply": None, "mint_authority": None, "freeze_authority": None},
         )
 
     def risk_check(self, *, chain: str, asset: str) -> CMISEnvelope:
         chain, asset = self._identity(chain, asset)
         self.calls.append({"operation": "risk_check", "chain": chain, "asset": asset})
-        return self._envelope(
-            service="risk_check",
-            chain=chain,
-            asset={"symbol": asset, "public_address": f"mock:{chain}:{asset}"},
-            data={"test_only": True},
-            risk={"level": "UNKNOWN", "reasons": ["Mock data is not a risk verdict."]},
+        risk = (
+            None
+            if self.scenario in {"unavailable", "error"}
+            else {"outcome": "TEST_ONLY", "score": None, "flags": ["NOT_LIVE_DATA"]}
         )
+        return self._response(service="risk_check", chain=chain, asset=asset, data={}, risk=risk)
 
     def pre_trade_check(
         self,
@@ -389,56 +371,35 @@ class MockCMISClient:
         amount_usd: float,
     ) -> CMISEnvelope:
         chain, asset = self._identity(chain, asset)
-        action = str(action or "").strip().upper()
-        if action not in {"BUY", "SELL"}:
+        normalized_action = str(action or "").strip().upper()
+        if normalized_action not in {"BUY", "SELL"}:
             raise ValueError("action must be BUY or SELL")
-        amount_usd = float(amount_usd)
         if amount_usd <= 0:
-            raise ValueError("amount_usd must be positive")
+            raise ValueError("amount_usd must be greater than zero")
         self.calls.append(
             {
                 "operation": "pre_trade_check",
                 "chain": chain,
                 "asset": asset,
-                "action": action,
-                "amount_usd": amount_usd,
+                "action": normalized_action,
+                "amount_usd": float(amount_usd),
             }
         )
-        return self._envelope(
+        return self._response(
             service="pre_trade_check",
             chain=chain,
-            asset={"symbol": asset, "public_address": f"mock:{chain}:{asset}"},
+            asset=asset,
             data={
-                "trade": {"action": action, "amount_usd": amount_usd},
-                "execution_authorized": False,
-                "test_only": True,
+                "trade": {
+                    "side": normalized_action.lower(),
+                    "notional_usd": float(amount_usd),
+                }
             },
-        )
-
-    def trade_verification(self, *, chain: str, tx_hash: str) -> CMISEnvelope:
-        chain = self._chain(chain)
-        tx_hash = str(tx_hash or "").strip()
-        if not tx_hash:
-            raise ValueError("tx_hash must not be empty")
-        self.calls.append(
-            {"operation": "trade_verification", "chain": chain, "tx_hash": tx_hash}
-        )
-        return self._envelope(
-            service="trade_verification",
-            chain=chain,
-            data={"tx_hash": tx_hash, "test_only": True},
-        )
-
-    def verified_asset_activity(self, *, chain: str, asset: str) -> CMISEnvelope:
-        chain, asset = self._identity(chain, asset)
-        self.calls.append(
-            {"operation": "verified_asset_activity", "chain": chain, "asset": asset}
-        )
-        return self._envelope(
-            service="verified_asset_activity",
-            chain=chain,
-            asset={"symbol": asset, "public_address": f"mock:{chain}:{asset}"},
-            data={"test_only": True},
+            risk=(
+                None
+                if self.scenario in {"unavailable", "error"}
+                else {"outcome": "TEST_ONLY", "score": None, "flags": ["NOT_LIVE_DATA"]}
+            ),
         )
 
     def verification_evidence(
@@ -455,31 +416,37 @@ class MockCMISClient:
             fact_type=fact_type,
             subject_id=subject_id,
         )
-        call = {"operation": "verification_evidence", "chain": chain, **selector}
-        self.calls.append(call)
-        return self._envelope(
-            service="verification_evidence",
-            chain=chain,
-            data={
+        self.calls.append({"operation": "verification_evidence", "chain": chain, **selector})
+        evidence_ref = {
+            "evidence_id": selector.get("evidence_id", "TEST_ONLY"),
+            "recorded_at": None,
+        }
+        result = {
+            "service": "verification_evidence",
+            "chain": chain,
+            "status": self._status(),
+            "asset": {},
+            "data": {
                 "fact": {
-                    "fact_type": selector.get("fact_type", "mock_fact"),
-                    "subject_id": selector.get("subject_id", "mock_subject"),
+                    "fact_type": selector.get("fact_type"),
+                    "subject_id": selector.get("subject_id"),
                     "normalized_value": None,
                     "unit": None,
                 },
                 "verification": {"status": "INSUFFICIENT_EVIDENCE"},
-                "evidence_ref": {
-                    "evidence_id": selector.get("evidence_id", "ve_mock"),
-                    "recorded_at": 1.0,
-                },
+                "evidence_ref": evidence_ref,
                 "cmis_promotable": False,
-                "test_only": True,
             },
-        )
-
-    def dispatch(self, operation: CMISOperation, *, chain: str, **kwargs: object) -> CMISEnvelope:
-        method = getattr(self, operation)
-        return method(chain=chain, **kwargs)
-
-
-__all__ = ["MockCMISClient", "MockScenario"]
+            "risk": None,
+            "confidence": {"level": "TEST_ONLY"},
+            "sources": [{"source": "mock_cmis", "role": "test"}],
+            "observed_at": self.observed_at,
+            "warnings": self._warnings(),
+            "errors": self._errors(),
+            **_mock_evidence_metadata(
+                service="verification_evidence",
+                chain=chain,
+                observed_at=self.observed_at,
+            ),
+        }
+        return result  # type: ignore[return-value]
