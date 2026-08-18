@@ -150,9 +150,13 @@ def autonomous_x1_operations_for_recommendation(objective: object) -> list[CMISO
     """Return only operations already allowed in X1 Scout autonomous planning.
 
     Explicit pre-trade remains outside the autonomous planner and cannot be
-    smuggled in through recommendation wording.
+    smuggled in through recommendation wording. If the ideal plan includes a
+    pre-trade check that cannot run autonomously, market_report is added so the
+    Scout still gathers current market evidence instead of silently skipping it.
     """
 
+    plan = recommendation_evidence_plan(objective)
+    raw_services = list(plan["required_services"])
     allowed = {
         "market_report",
         "rank",
@@ -160,11 +164,13 @@ def autonomous_x1_operations_for_recommendation(objective: object) -> list[CMISO
         "tokenomics",
         "risk_check",
     }
-    return [
-        operation
-        for operation in recommendation_evidence_plan(objective)["required_services"]
-        if operation in allowed
-    ]  # type: ignore[return-value]
+    result: list[CMISOperation] = []
+    if "pre_trade_check" in raw_services:
+        result.append("market_report")
+    for operation in raw_services:
+        if operation in allowed and operation not in result:
+            result.append(operation)  # type: ignore[arg-type]
+    return result[:3]
 
 
 __all__ = [
