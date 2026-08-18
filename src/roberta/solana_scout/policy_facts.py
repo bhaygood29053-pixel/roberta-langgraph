@@ -1,4 +1,4 @@
-"""X1 Scout adapter from structured CMIS reports to provider-neutral policy facts."""
+"""Solana Scout adapter from structured CMIS reports to provider-neutral policy facts."""
 
 from __future__ import annotations
 
@@ -53,30 +53,27 @@ def _evidence_status(cmis_status: object) -> str:
 
 
 def _freshness(investigation: Mapping[str, Any]) -> str:
-    # This adapter only calls an observation fresh when the current Scout call is
-    # fully OK and carries a normalized observation timestamp. Partial/unavailable
-    # output never becomes fresh merely because a timestamp exists.
     if investigation.get("cmis_status") == "ok" and investigation.get("observed_at_iso"):
         return "fresh"
     return "unknown"
 
 
-def extract_x1_policy_facts(
+def extract_solana_policy_facts(
     report: Mapping[str, Any],
     *,
     requested_fact_keys: set[str] | None = None,
 ) -> dict[str, PolicyFact]:
-    """Map an X1 Scout report to explicit policy facts without provider inference."""
+    """Map a Solana Scout report to explicit policy facts without provider inference."""
 
-    if report.get("specialist") != "x1_scout" or report.get("chain") != "x1":
-        raise ValueError("policy fact adapter requires an X1 Scout report")
+    if report.get("specialist") != "solana_scout" or report.get("chain") != "solana":
+        raise ValueError("policy fact adapter requires a Solana Scout report")
 
     facts: dict[str, PolicyFact] = {
         "asset.chain": PolicyFact(
-            value="x1",
+            value="solana",
             evidence_status="verified",
             freshness="unknown",
-            source="x1_scout",
+            source="solana_scout",
         )
     }
     asset = report.get("asset")
@@ -85,17 +82,17 @@ def extract_x1_policy_facts(
             value=asset.get("symbol"),
             evidence_status="verified",
             freshness="unknown",
-            source="x1_scout",
+            source="solana_scout",
         )
 
     investigations = report.get("investigations")
     if not isinstance(investigations, list):
-        raise ValueError("X1 Scout report investigations must be a list")
+        raise ValueError("Solana Scout report investigations must be a list")
 
     extracted_sets: list[Mapping[str, PolicyFact]] = [facts]
     for investigation in investigations:
         if not isinstance(investigation, Mapping):
-            raise ValueError("X1 Scout investigation must be a mapping")
+            raise ValueError("Solana Scout investigation must be a mapping")
         operation = str(investigation.get("operation") or "")
         specs = _OPERATION_FACT_SPECS.get(operation, ())
         if requested_fact_keys is not None:
@@ -106,7 +103,7 @@ def extract_x1_policy_facts(
             payload=investigation,
             evidence_status=_evidence_status(investigation.get("cmis_status")),
             freshness=_freshness(investigation),
-            source=f"x1_scout/cmis:{operation}",
+            source=f"solana_scout/cmis:{operation}",
         )
         extracted_sets.append(extract_policy_facts(frame, specs))
 
@@ -116,31 +113,25 @@ def extract_x1_policy_facts(
     return {key: fact for key, fact in merged.items() if key in requested_fact_keys}
 
 
-def x1_policy_facts_from_state(
+def solana_policy_facts_from_state(
     state: Mapping[str, Any],
     rules: Sequence[PolicyRule],
 ) -> Mapping[str, PolicyFact]:
-    """Use only an X1 Scout result from the current user turn.
-
-    Before the current turn's Scout tool has run, this returns no market facts so
-    fresh/evidence rules become ``needs_evidence`` and the Oracle can delegate.
-    ToolMessages retained from earlier turns are historical thread context and
-    cannot satisfy the current freshness-sensitive policy decision.
-    """
+    """Use only a Solana Scout ToolMessage from the current user turn."""
 
     requested = {rule.fact_key for rule in rules}
     messages = current_user_turn_messages(state.get("messages", []))
     for message in reversed(messages):
-        if not isinstance(message, ToolMessage) or message.name != "x1_scout_investigate":
+        if not isinstance(message, ToolMessage) or message.name != "solana_scout_investigate":
             continue
         content = message.content
         if not isinstance(content, str):
-            raise ValueError("X1 Scout ToolMessage content must be JSON text")
+            raise ValueError("Solana Scout ToolMessage content must be JSON text")
         try:
             report = json.loads(content)
         except json.JSONDecodeError as exc:
-            raise ValueError("X1 Scout ToolMessage returned invalid JSON") from exc
+            raise ValueError("Solana Scout ToolMessage returned invalid JSON") from exc
         if not isinstance(report, Mapping):
-            raise ValueError("X1 Scout ToolMessage JSON must be an object")
-        return extract_x1_policy_facts(report, requested_fact_keys=requested)
+            raise ValueError("Solana Scout ToolMessage JSON must be an object")
+        return extract_solana_policy_facts(report, requested_fact_keys=requested)
     return {}
