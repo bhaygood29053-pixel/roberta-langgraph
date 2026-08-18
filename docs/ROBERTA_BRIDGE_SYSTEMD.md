@@ -63,6 +63,13 @@ RestartSec=3
 
 so a failed bridge is restarted automatically.
 
+The installer does not assume the bridge will be ready after a fixed sleep. It
+polls `http://127.0.0.1:8766/healthz` for up to 30 seconds and only reports
+success after the health endpoint responds. This avoids false installation
+failures on slower Roberta graph/model initialization. If Roberta does not
+become healthy in that window, the installer prints recent service logs and
+exits with an error.
+
 ## Verification
 
 Check service state:
@@ -127,5 +134,7 @@ After=roberta-bridge.service
 ```
 
 This starts Roberta before the MoltGrid listener without tightly coupling their
-lifecycles. If Roberta is temporarily unavailable, the MoltGrid integration can
-return its concise availability response while systemd restarts the bridge.
+lifecycles. The current Liquidity Scout deployment helper additionally waits
+for the Roberta and CMIS health endpoints before allowing the listener to start.
+If Roberta is temporarily unavailable after startup, the MoltGrid integration
+can return its concise availability response while systemd restarts the bridge.
