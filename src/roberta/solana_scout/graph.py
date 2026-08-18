@@ -2,8 +2,8 @@
 
 Solana Scout owns Solana-specific investigation planning/interpretation. CMIS
 owns freshness-sensitive market/tokenomics/risk services and the Solana Provider
-beneath them once that provider is configured. Until then, this graph returns a
-structured unavailable result without making a CMIS call.
+beneath them once configured. Evidence quality remains chain-isolated and is
+never blended with X1 evidence.
 """
 
 from __future__ import annotations
@@ -15,6 +15,7 @@ from langgraph.graph import END, START, StateGraph
 
 from roberta.cmis.client import CMISClient
 from roberta.cmis.contracts import CMISEnvelope, CMISOperation
+from roberta.evidence_aware import evidence_context
 from roberta.presentation import format_component_status_table
 from roberta.risk_help import build_risk_help
 from roberta.specialists.planning import enforce_plan, propose_plan
@@ -27,19 +28,11 @@ from roberta.solana_scout.state import (
 )
 
 
-def make_plan_proposal_node(
-    planner_model: Any | None,
-) -> Callable[[SolanaScoutState], dict[str, Any]]:
-    """Create the optional model-driven read-only plan proposal node."""
-
+def make_plan_proposal_node(planner_model: Any | None) -> Callable[[SolanaScoutState], dict[str, Any]]:
     def propose_plan_node(state: SolanaScoutState) -> dict[str, Any]:
         request = state["request"]
         if "operation" in request or planner_model is None:
-            return {
-                "plan_proposal": None,
-                "planner_error": None,
-                "status": "running",
-            }
+            return {"plan_proposal": None, "planner_error": None, "status": "running"}
         try:
             proposal = propose_plan(
                 planner_model,
@@ -53,18 +46,12 @@ def make_plan_proposal_node(
                 "planner_error": f"{type(exc).__name__}: {exc}",
                 "status": "running",
             }
-        return {
-            "plan_proposal": proposal,
-            "planner_error": None,
-            "status": "running",
-        }
+        return {"plan_proposal": proposal, "planner_error": None, "status": "running"}
 
     return propose_plan_node
 
 
 def enforce_plan_node(state: SolanaScoutState) -> dict[str, Any]:
-    """Apply shared deterministic Scout safety policy to a Solana proposal."""
-
     plan = enforce_plan(
         state["request"],
         state.get("plan_proposal"),
@@ -89,9 +76,7 @@ def _dispatch_cmis_operation(
         action = request.get("action")
         amount_usd = request.get("amount_usd")
         if action is None or amount_usd is None:
-            raise ValueError(
-                "pre_trade_check requires action and amount_usd in Solana Scout state"
-            )
+            raise ValueError("pre_trade_check requires action and amount_usd in Solana Scout state")
         return cmis_client.pre_trade_check(
             chain="solana",
             asset=asset,
@@ -106,22 +91,16 @@ def make_cmis_calls_node(
     *,
     provider_enabled: bool,
 ) -> Callable[[SolanaScoutState], dict[str, Any]]:
-    """Create Solana-scoped CMIS dispatch with an explicit provider gate."""
-
     def cmis_calls_node(state: SolanaScoutState) -> dict[str, Any]:
         if not provider_enabled:
-            return {
-                "provider_configured": False,
-                "status": "running",
-            }
-
+            return {"provider_configured": False, "status": "running"}
         request = dict(state["request"])
         operations = state["plan"]["operations"]
         results = [
             _dispatch_cmis_operation(cmis_client, request, operation)
             for operation in operations
         ]
-        if not results:  # pragma: no cover - deterministic planner always supplies one
+        if not results:  # pragma: no cover
             raise RuntimeError("Solana Scout plan completed without a CMIS operation")
         return {
             "provider_configured": True,
@@ -141,7 +120,6 @@ def _summarize_cmis_result(result: CMISEnvelope) -> SolanaScoutInvestigation:
     risk = dict(result["risk"]) if result["risk"] is not None else None
     confidence = dict(result["confidence"])
     risk_help = build_risk_help(risk, confidence)
-
     return {
         "operation": service,
         "cmis_status": cmis_status,
@@ -149,11 +127,9 @@ def _summarize_cmis_result(result: CMISEnvelope) -> SolanaScoutInvestigation:
         "observed_at": observed_at,
         "observed_at_iso": observed_at_iso,
         "observed_at_display": format_observed_at_utc(observed_at_iso),
-        "findings": {
-            "data": dict(result["data"]),
-            "risk": risk,
-        },
+        "findings": {"data": dict(result["data"]), "risk": risk},
         "confidence": confidence,
+        "evidence_context": evidence_context(result),
         "risk_help": risk_help,
         "component_status_table": format_component_status_table(risk_help),
         "sources": list(result["sources"]),
@@ -172,6 +148,18 @@ def _unconfigured_report(state: SolanaScoutState) -> SolanaScoutReport:
             "Solana Scout is registered, but the Solana CMIS provider path is not "
             "enabled in this Roberta runtime. No live Solana market facts were requested."
         ),
+    }
+    unavailable_evidence = {
+        "available": False,
+        "chain": "solana",
+        "service": primary_operation,
+        "receipt_id": None,
+        "verification_status": "UNVERIFIED",
+        "proof_strength": "WEAK",
+        "risk_level": "UNKNOWN",
+        "risk_recommendation": "UNKNOWN",
+        "unresolved_fields": ["solana_provider_configuration", "evidence_receipt", "proof_score"],
+        "risk_separate_from_proof": True,
     }
     return {
         "specialist": "solana_scout",
@@ -192,12 +180,10 @@ def _unconfigured_report(state: SolanaScoutState) -> SolanaScoutReport:
             "level": "UNAVAILABLE",
             "reason": "Solana provider is not enabled in the Roberta runtime.",
         },
+        "evidence_context": unavailable_evidence,
         "risk_help": None,
         "component_status_table": None,
-        "source": {
-            "service": "roberta_configuration",
-            "operation": primary_operation,
-        },
+        "source": {"service": "roberta_configuration", "operation": primary_operation},
         "sources": [],
         "warnings": [warning],
         "errors": [],
@@ -205,8 +191,6 @@ def _unconfigured_report(state: SolanaScoutState) -> SolanaScoutReport:
 
 
 def interpret_cmis_result(state: SolanaScoutState) -> dict[str, Any]:
-    """Preserve CMIS output or return explicit provider-unconfigured state."""
-
     if state.get("provider_configured") is False:
         report = _unconfigured_report(state)
         return {"report": report, "status": "unavailable"}
@@ -246,12 +230,10 @@ def interpret_cmis_result(state: SolanaScoutState) -> dict[str, Any]:
         "observed_at_display": primary["observed_at_display"],
         "findings": dict(primary["findings"]),
         "confidence": dict(primary["confidence"]),
+        "evidence_context": dict(primary["evidence_context"]),
         "risk_help": primary["risk_help"],
         "component_status_table": primary["component_status_table"],
-        "source": {
-            "service": "cmis",
-            "operation": primary["operation"],
-        },
+        "source": {"service": "cmis", "operation": primary["operation"]},
         "sources": list(primary["sources"]),
         "warnings": list(primary["warnings"]),
         "errors": list(primary["errors"]),
@@ -265,14 +247,6 @@ def build_solana_scout_graph(
     *,
     provider_enabled: bool = False,
 ):
-    """Compile Solana Scout's bounded read-only specialist graph.
-
-    ``provider_enabled`` is a deterministic runtime configuration gate, not a
-    live health claim. When false, the graph never calls CMIS and returns an
-    explicit unavailable report. Once the Solana CMIS/provider path is verified,
-    the same graph can be enabled without changing Roberta's authority model.
-    """
-
     builder = StateGraph(SolanaScoutState)
     builder.add_node("propose_plan", make_plan_proposal_node(planner_model))
     builder.add_node("enforce_plan", enforce_plan_node)
