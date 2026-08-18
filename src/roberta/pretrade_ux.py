@@ -261,13 +261,13 @@ def _reason_sentences(
     fees = _friendly_scalar(route.get("estimated_fees"))
     execution_parts: list[str] = []
     if impact is not None:
-        execution_parts.append(f"price impact {impact}")
+        execution_parts.append(f"Estimated price impact is {impact}.")
     if slippage is not None:
-        execution_parts.append(f"slippage {slippage}")
+        execution_parts.append(f"Estimated slippage is {slippage}.")
     if fees is not None:
-        execution_parts.append(f"fees {fees}")
+        execution_parts.append(f"Estimated fees are {fees}.")
     if execution_parts:
-        reasons.append("Returned execution estimates: " + ", ".join(execution_parts) + ".")
+        reasons.append(" ".join(execution_parts))
 
     for reason in _string_list(risk.get("reasons")):
         if reason not in reasons:
