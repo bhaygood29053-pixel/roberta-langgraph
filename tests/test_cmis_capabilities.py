@@ -52,6 +52,13 @@ def _manifest() -> dict[str, object]:
         "schema_version": 1,
         "contract_version": MIN_CMIS_CONTRACT_VERSION,
         "request_path": "/v1/cmis",
+        "evidence_quality": {
+            "evidence_receipt_schema_version": 1,
+            "proof_score_schema_version": 1,
+            "proof_strength_values": ["STRONG", "MODERATE", "WEAK"],
+            "risk_separate_from_proof": True,
+            "missing_evidence_is_unknown": True,
+        },
         "supported_services": services,
         "supported_chains": ["x1"],
         "known_chains": ["x1", "solana"],
@@ -65,9 +72,7 @@ def _manifest() -> dict[str, object]:
             "solana": {
                 "services": solana,
                 "callable_services": [
-                    service
-                    for service in services
-                    if solana[service]["callable"] is True
+                    service for service in services if solana[service]["callable"] is True
                 ],
             },
         },
@@ -78,6 +83,9 @@ def test_valid_manifest_preserves_chain_specific_capability_states() -> None:
     manifest = validate_capability_manifest(_manifest())
 
     assert manifest["contract_version"] == MIN_CMIS_CONTRACT_VERSION
+    assert MIN_CMIS_CONTRACT_VERSION == "1.7.0"
+    assert manifest["evidence_quality"]["risk_separate_from_proof"] is True
+    assert manifest["evidence_quality"]["missing_evidence_is_unknown"] is True
     assert manifest["chains"]["x1"]["services"]["risk_check"]["state"] == "supported"
     assert manifest["chains"]["solana"]["services"]["risk_check"]["state"] == "partial"
     assert manifest["chains"]["solana"]["services"]["pre_trade_check"]["state"] == "unavailable"
@@ -85,10 +93,22 @@ def test_valid_manifest_preserves_chain_specific_capability_states() -> None:
 
 def test_stale_contract_version_fails_closed() -> None:
     manifest = deepcopy(_manifest())
-    manifest["contract_version"] = "1.5.9"
+    manifest["contract_version"] = "1.6.9"
 
     with pytest.raises(CMISCapabilityContractError, match="older than the minimum"):
         validate_capability_manifest(manifest)
+
+
+def test_missing_or_weakened_evidence_contract_fails_closed() -> None:
+    missing = deepcopy(_manifest())
+    del missing["evidence_quality"]
+    with pytest.raises(CMISCapabilityContractError, match="evidence_quality"):
+        validate_capability_manifest(missing)
+
+    weakened = deepcopy(_manifest())
+    weakened["evidence_quality"]["risk_separate_from_proof"] = False
+    with pytest.raises(CMISCapabilityContractError, match="separate from proof"):
+        validate_capability_manifest(weakened)
 
 
 def test_missing_service_classification_fails_closed() -> None:

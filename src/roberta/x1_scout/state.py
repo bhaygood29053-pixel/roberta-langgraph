@@ -22,14 +22,10 @@ class X1ScoutRequest(TypedDict):
 
 
 class X1ScoutPlanProposal(TypedDict):
-    """Untrusted operation proposal returned by the Scout planner model."""
-
     operations: list[str]
 
 
 class X1ScoutPlan(TypedDict):
-    """Deterministically enforced X1 Scout investigation plan."""
-
     operations: list[CMISOperation]
     source: Literal["explicit", "model", "deterministic"]
     warnings: list[str]
@@ -46,6 +42,7 @@ class X1ScoutInvestigation(TypedDict):
     observed_at_display: str | None
     findings: dict[str, object]
     confidence: dict[str, object]
+    evidence_context: dict[str, object]
     risk_help: dict[str, object] | None
     component_status_table: str | None
     pretrade_presentation: dict[str, object] | None
@@ -70,6 +67,7 @@ class X1ScoutReport(TypedDict):
     observed_at_display: str | None
     findings: dict[str, object]
     confidence: dict[str, object]
+    evidence_context: dict[str, object]
     risk_help: dict[str, object] | None
     component_status_table: str | None
     pretrade_presentation: dict[str, object] | None
