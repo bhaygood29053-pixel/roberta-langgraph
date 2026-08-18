@@ -1,7 +1,9 @@
 """Scout-side validation for the CMIS machine-readable capability contract.
 
-The capability contract belongs to the Chain Scout <-> CMIS boundary.  Roberta
-itself does not call CMIS or interpret provider/service capability details.
+The capability contract belongs to the Chain Scout <-> CMIS boundary. Roberta
+does not call provider endpoints directly, but this milestone requires the
+CMIS evidence-receipt/proof contract so Scouts can safely project proof metadata
+upward for Roberta's synthesis.
 """
 
 from __future__ import annotations
@@ -13,7 +15,7 @@ from roberta.cmis.contracts import CMISOperation
 
 
 CAPABILITY_SCHEMA_VERSION = 1
-MIN_CMIS_CONTRACT_VERSION = "1.6.0"
+MIN_CMIS_CONTRACT_VERSION = "1.7.0"
 CMISCapabilityState: TypeAlias = Literal[
     "supported",
     "bounded",
@@ -35,12 +37,21 @@ class CMISChainCapabilities(TypedDict):
     callable_services: list[str]
 
 
+class CMISEvidenceQualityCapabilities(TypedDict):
+    evidence_receipt_schema_version: int
+    proof_score_schema_version: int
+    proof_strength_values: list[str]
+    risk_separate_from_proof: bool
+    missing_evidence_is_unknown: bool
+
+
 class CMISCapabilities(TypedDict):
     service: str
     version: int
     schema_version: int
     contract_version: str
     request_path: str
+    evidence_quality: CMISEvidenceQualityCapabilities
     supported_services: list[str]
     supported_chains: list[str]
     known_chains: list[str]
@@ -98,6 +109,36 @@ def _string_list(value: object, *, field: str) -> list[str]:
     return result
 
 
+def _validate_evidence_quality(value: object) -> CMISEvidenceQualityCapabilities:
+    if not isinstance(value, Mapping):
+        raise CMISCapabilityContractError("CMIS evidence_quality contract is required.")
+    receipt_schema = value.get("evidence_receipt_schema_version")
+    proof_schema = value.get("proof_score_schema_version")
+    if receipt_schema != 1 or proof_schema != 1:
+        raise CMISCapabilityContractError(
+            "Unsupported CMIS evidence receipt/proof score schema version."
+        )
+    strengths = _string_list(
+        value.get("proof_strength_values"),
+        field="evidence_quality.proof_strength_values",
+    )
+    if strengths != ["STRONG", "MODERATE", "WEAK"]:
+        raise CMISCapabilityContractError(
+            "CMIS proof strength vocabulary does not match Roberta's accepted contract."
+        )
+    if value.get("risk_separate_from_proof") is not True:
+        raise CMISCapabilityContractError("CMIS must keep risk separate from proof.")
+    if value.get("missing_evidence_is_unknown") is not True:
+        raise CMISCapabilityContractError("CMIS must preserve missing evidence as unknown.")
+    return {
+        "evidence_receipt_schema_version": 1,
+        "proof_score_schema_version": 1,
+        "proof_strength_values": strengths,
+        "risk_separate_from_proof": True,
+        "missing_evidence_is_unknown": True,
+    }
+
+
 def validate_capability_manifest(value: Any) -> CMISCapabilities:
     """Validate a CMIS capability response without inventing missing defaults."""
 
@@ -125,15 +166,10 @@ def validate_capability_manifest(value: Any) -> CMISCapabilities:
         )
     if value.get("request_path") != "/v1/cmis":
         raise CMISCapabilityContractError("CMIS request_path must be /v1/cmis.")
+    evidence_quality = _validate_evidence_quality(value.get("evidence_quality"))
 
-    supported_services = _string_list(
-        value.get("supported_services"),
-        field="supported_services",
-    )
-    supported_chains = _string_list(
-        value.get("supported_chains"),
-        field="supported_chains",
-    )
+    supported_services = _string_list(value.get("supported_services"), field="supported_services")
+    supported_chains = _string_list(value.get("supported_chains"), field="supported_chains")
     known_chains = _string_list(value.get("known_chains"), field="known_chains")
 
     chains_raw = value.get("chains")
@@ -144,9 +180,7 @@ def validate_capability_manifest(value: Any) -> CMISCapabilities:
     for chain in known_chains:
         chain_raw = chains_raw.get(chain)
         if not isinstance(chain_raw, Mapping):
-            raise CMISCapabilityContractError(
-                f"CMIS capabilities are missing known chain {chain!r}."
-            )
+            raise CMISCapabilityContractError(f"CMIS capabilities are missing known chain {chain!r}.")
         services_raw = chain_raw.get("services")
         if not isinstance(services_raw, Mapping):
             raise CMISCapabilityContractError(
@@ -157,9 +191,7 @@ def validate_capability_manifest(value: Any) -> CMISCapabilities:
         for service in supported_services:
             capability_raw = services_raw.get(service)
             if not isinstance(capability_raw, Mapping):
-                raise CMISCapabilityContractError(
-                    f"CMIS capability {chain}/{service} is missing."
-                )
+                raise CMISCapabilityContractError(f"CMIS capability {chain}/{service} is missing.")
             state = capability_raw.get("state")
             callable_flag = capability_raw.get("callable")
             if state not in _ALLOWED_STATES:
@@ -201,9 +233,7 @@ def validate_capability_manifest(value: Any) -> CMISCapabilities:
             field=f"chains.{chain}.callable_services",
         )
         expected_callable_services = [
-            service
-            for service in supported_services
-            if normalized_services[service]["callable"]
+            service for service in supported_services if normalized_services[service]["callable"]
         ]
         if callable_services != expected_callable_services:
             raise CMISCapabilityContractError(
@@ -226,6 +256,7 @@ def validate_capability_manifest(value: Any) -> CMISCapabilities:
         "schema_version": CAPABILITY_SCHEMA_VERSION,
         "contract_version": str(contract_version),
         "request_path": "/v1/cmis",
+        "evidence_quality": evidence_quality,
         "supported_services": supported_services,
         "supported_chains": supported_chains,
         "known_chains": known_chains,
@@ -265,11 +296,7 @@ def require_service_capability(
     """Require one callable chain/service record before a Scout dispatches CMIS."""
 
     normalized_chain = str(chain or "").strip().lower()
-    capability = service_capability(
-        manifest,
-        chain=normalized_chain,
-        service=service,
-    )
+    capability = service_capability(manifest, chain=normalized_chain, service=service)
     if capability is None:
         raise CMISCapabilityUnavailable(
             chain=normalized_chain,
@@ -294,6 +321,7 @@ __all__ = [
     "CMISCapabilityState",
     "CMISCapabilityUnavailable",
     "CMISChainCapabilities",
+    "CMISEvidenceQualityCapabilities",
     "CMISServiceCapability",
     "MIN_CMIS_CONTRACT_VERSION",
     "require_service_capability",
