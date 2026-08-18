@@ -1,0 +1,19 @@
+[Unit]
+Description=Roberta Local Bridge
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=YOUR_USER
+WorkingDirectory=/path/to/roberta-langgraph
+Environment=PYTHONPATH=/path/to/roberta-langgraph/src
+EnvironmentFile=/home/YOUR_USER/.config/roberta/roberta.env
+ExecStart=/path/to/roberta-langgraph/.venv/bin/python -m roberta.bridge_http --host 127.0.0.1 --port 8766
+Restart=always
+RestartSec=3
+TimeoutStopSec=10
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
