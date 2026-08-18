@@ -3,7 +3,13 @@
 from copy import deepcopy
 from typing import Literal
 
-from roberta.cmis.capabilities import CMISCapabilities
+from roberta.cmis.capabilities import (
+    CMISCapabilities,
+    INTELLIGENCE_FOUNDATION_CAPABILITIES,
+    INTELLIGENCE_FOUNDATION_PHASE,
+    INTELLIGENCE_PROMOTION_RULE,
+    MIN_CMIS_CONTRACT_VERSION,
+)
 from roberta.cmis.contracts import CMISEnvelope, CMISOperation, RankMetric, TradeAction
 from roberta.cmis.verification import normalize_verification_evidence_selector
 
@@ -21,6 +27,17 @@ def _capability(
         "callable": state != "unavailable",
         "requirements": list(requirements or []),
         "limitations": list(limitations or []),
+    }
+
+
+def _intelligence_capability() -> dict[str, object]:
+    return {
+        "state": "bounded",
+        "read_only": True,
+        "public_service_promoted": False,
+        "scout_reliance_promoted": False,
+        "requirements": [],
+        "limitations": [],
     }
 
 
@@ -61,7 +78,7 @@ def _mock_capability_manifest() -> CMISCapabilities:
         "service": "cmis_gateway",
         "version": 1,
         "schema_version": 1,
-        "contract_version": "1.7.1",
+        "contract_version": MIN_CMIS_CONTRACT_VERSION,
         "request_path": "/v1/cmis",
         "evidence_quality": {
             "evidence_receipt_schema_version": 1,
@@ -69,6 +86,19 @@ def _mock_capability_manifest() -> CMISCapabilities:
             "proof_strength_values": ["STRONG", "MODERATE", "WEAK"],
             "risk_separate_from_proof": True,
             "missing_evidence_is_unknown": True,
+        },
+        "intelligence_foundation": {
+            "schema_version": 1,
+            "phase": INTELLIGENCE_FOUNDATION_PHASE,
+            "read_only": True,
+            "public_service_promoted": False,
+            "scout_reliance_promoted": False,
+            "promotion_rule": INTELLIGENCE_PROMOTION_RULE,
+            "intelligence_evidence_schema_version": 1,
+            "capabilities": {
+                name: _intelligence_capability()
+                for name in INTELLIGENCE_FOUNDATION_CAPABILITIES
+            },
         },
         "supported_services": services,
         "supported_chains": ["x1"],
@@ -87,7 +117,7 @@ def _mock_capability_manifest() -> CMISCapabilities:
                 ],
             },
         },
-    }
+    }  # type: ignore[return-value]
 
 
 def _mock_evidence_metadata(
