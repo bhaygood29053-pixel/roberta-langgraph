@@ -32,6 +32,7 @@ class SolanaScoutInvestigation(TypedDict):
     observed_at_display: str | None
     findings: dict[str, object]
     confidence: dict[str, object]
+    evidence_context: dict[str, object]
     risk_help: dict[str, object] | None
     component_status_table: str | None
     sources: list[object]
@@ -55,6 +56,7 @@ class SolanaScoutReport(TypedDict):
     observed_at_display: str | None
     findings: dict[str, object]
     confidence: dict[str, object]
+    evidence_context: dict[str, object]
     risk_help: dict[str, object] | None
     component_status_table: str | None
     source: dict[str, str]
