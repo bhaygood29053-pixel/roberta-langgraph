@@ -30,6 +30,26 @@ def _report(investigations):
     }
 
 
+def _liquidity_rule():
+    return PolicyRule(
+        rule_id="liquidity",
+        kind="threshold_rule",
+        effect="block",
+        description="liquidity",
+        fact_key="market.liquidity",
+        operator="gte",
+        expected=100,
+    )
+
+
+def _tool(report, call_id="call-1"):
+    return ToolMessage(
+        content=json.dumps(report),
+        tool_call_id=call_id,
+        name="x1_scout_investigate",
+    )
+
+
 def test_ok_market_report_maps_standard_fact_keys_as_verified_fresh():
     facts = extract_x1_policy_facts(
         _report(
@@ -147,56 +167,59 @@ def test_requested_fact_keys_prevent_unneeded_fact_injection():
 
 
 def test_state_provider_returns_empty_before_x1_scout_runs():
-    rule = PolicyRule(
-        rule_id="liquidity",
-        kind="threshold_rule",
-        effect="block",
-        description="liquidity",
-        fact_key="market.liquidity",
-        operator="gte",
-        expected=100,
-    )
-
     facts = x1_policy_facts_from_state(
         {"messages": [HumanMessage(content="Assess TEST")]},
-        [rule],
+        [_liquidity_rule()],
     )
 
     assert facts == {}
 
 
-def test_state_provider_uses_latest_structured_x1_scout_tool_message():
-    rule = PolicyRule(
-        rule_id="liquidity",
-        kind="threshold_rule",
-        effect="block",
-        description="liquidity",
-        fact_key="market.liquidity",
-        operator="gte",
-        expected=100,
-    )
+def test_state_provider_uses_current_turn_structured_x1_scout_tool_message():
     report = _report([_investigation("market_report", data={"liquidity": 500})])
-    tool = ToolMessage(
-        content=json.dumps(report),
-        tool_call_id="call-1",
-        name="x1_scout_investigate",
-    )
 
-    facts = x1_policy_facts_from_state({"messages": [tool]}, [rule])
+    facts = x1_policy_facts_from_state(
+        {
+            "messages": [
+                HumanMessage(content="Assess TEST now"),
+                _tool(report),
+            ]
+        },
+        [_liquidity_rule()],
+    )
 
     assert facts["market.liquidity"].value == 500
 
 
-def test_malformed_x1_scout_tool_json_fails_closed():
-    rule = PolicyRule(
-        rule_id="liquidity",
-        kind="threshold_rule",
-        effect="block",
-        description="liquidity",
-        fact_key="market.liquidity",
-        operator="gte",
-        expected=100,
+def test_prior_turn_x1_tool_message_cannot_satisfy_new_user_turn():
+    report = _report([_investigation("market_report", data={"liquidity": 999999})])
+
+    facts = x1_policy_facts_from_state(
+        {
+            "messages": [
+                HumanMessage(content="Old request"),
+                _tool(report, "old-call"),
+                HumanMessage(content="New request needs fresh evidence"),
+            ]
+        },
+        [_liquidity_rule()],
     )
+
+    assert facts == {}
+
+
+def test_bare_historical_tool_message_without_user_turn_is_not_current_evidence():
+    report = _report([_investigation("market_report", data={"liquidity": 500})])
+
+    facts = x1_policy_facts_from_state(
+        {"messages": [_tool(report)]},
+        [_liquidity_rule()],
+    )
+
+    assert facts == {}
+
+
+def test_malformed_current_turn_x1_scout_tool_json_fails_closed():
     tool = ToolMessage(
         content="not-json",
         tool_call_id="call-1",
@@ -204,4 +227,7 @@ def test_malformed_x1_scout_tool_json_fails_closed():
     )
 
     with pytest.raises(ValueError, match="invalid JSON"):
-        x1_policy_facts_from_state({"messages": [tool]}, [rule])
+        x1_policy_facts_from_state(
+            {"messages": [HumanMessage(content="Assess TEST"), tool]},
+            [_liquidity_rule()],
+        )
