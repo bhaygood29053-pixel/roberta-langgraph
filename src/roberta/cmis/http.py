@@ -8,6 +8,11 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from roberta.cmis.capabilities import (
+    CMISCapabilities,
+    CMISCapabilityContractError,
+    validate_capability_manifest,
+)
 from roberta.cmis.contracts import (
     CMISEnvelope,
     CMISOperation,
@@ -45,7 +50,12 @@ _ALLOWED_RANK_METRICS: set[str] = {
 
 
 class CMISHTTPClient:
-    """Call CMIS through its chain-aware JSON gateway."""
+    """Call CMIS through its chain-aware JSON gateway.
+
+    Chain Scouts use :meth:`capabilities` as a cached handshake before invoking
+    chain/service operations. Roberta never needs to consume this method
+    directly.
+    """
 
     def __init__(
         self,
@@ -62,6 +72,7 @@ class CMISHTTPClient:
         self.base_url = normalized
         self.api_key = str(api_key or "").strip()
         self.timeout_seconds = float(timeout_seconds)
+        self._capabilities_cache: CMISCapabilities | None = None
 
     @classmethod
     def from_env(cls) -> "CMISHTTPClient":
@@ -78,6 +89,55 @@ class CMISHTTPClient:
             api_key=os.getenv("CMIS_API_KEY", ""),
             timeout_seconds=timeout_seconds,
         )
+
+    def _headers(self, *, json_content: bool = False) -> dict[str, str]:
+        headers: dict[str, str] = {}
+        if json_content:
+            headers["Content-Type"] = "application/json"
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
+        return headers
+
+    def capabilities(self) -> CMISCapabilities:
+        """Fetch and validate the CMIS chain/service contract once per client."""
+
+        if self._capabilities_cache is not None:
+            return self._capabilities_cache
+
+        request = Request(
+            self.base_url + "/v1/cmis/capabilities",
+            headers=self._headers(),
+            method="GET",
+        )
+        try:
+            with urlopen(request, timeout=self.timeout_seconds) as response:
+                raw = response.read().decode("utf-8")
+        except HTTPError as exc:
+            detail = f"CMIS capabilities request failed with HTTP {exc.code}."
+            try:
+                body = json.loads(exc.read().decode("utf-8"))
+                if isinstance(body, dict):
+                    error = body.get("error")
+                    if isinstance(error, dict) and error.get("message"):
+                        detail = str(error["message"])
+            except (UnicodeDecodeError, json.JSONDecodeError):
+                pass
+            raise CMISCapabilityContractError(detail) from exc
+        except (URLError, TimeoutError, OSError) as exc:
+            raise CMISCapabilityContractError(
+                f"CMIS capability transport unavailable: {exc}"
+            ) from exc
+
+        try:
+            decoded = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise CMISCapabilityContractError(
+                "CMIS capabilities endpoint returned invalid JSON."
+            ) from exc
+
+        manifest = validate_capability_manifest(decoded)
+        self._capabilities_cache = manifest
+        return manifest
 
     @staticmethod
     def _chain(chain: str) -> str:
@@ -180,13 +240,10 @@ class CMISHTTPClient:
         error_context: str,
         payload: dict[str, object],
     ) -> CMISEnvelope:
-        headers = {"Content-Type": "application/json"}
-        if self.api_key:
-            headers["Authorization"] = f"Bearer {self.api_key}"
         request = Request(
             self.base_url + "/v1/cmis",
             data=json.dumps(payload, separators=(",", ":"), allow_nan=False).encode("utf-8"),
-            headers=headers,
+            headers=self._headers(json_content=True),
             method="POST",
         )
 
