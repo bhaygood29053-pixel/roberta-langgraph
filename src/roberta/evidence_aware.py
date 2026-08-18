@@ -2,7 +2,7 @@
 
 Roberta may explain CMIS evidence, but she may not recompute a CMIS proof score,
 change a verification status, merge cross-chain provenance, or convert missing
-evidence into a fact.  This module validates and projects the accepted CMIS
+evidence into a fact. This module validates and projects the accepted CMIS
 Evidence Receipt / Proof Score contract into a small read-only interpretation
 context for presentation and policy reasoning.
 """
@@ -49,15 +49,24 @@ def _mapping_list(value: object) -> list[dict[str, Any]]:
     return [deepcopy(dict(item)) for item in value if isinstance(item, Mapping)]
 
 
-def _risk_token(envelope: Mapping[str, Any]) -> str:
-    """Return only an authoritative CMIS risk/recommendation token, never infer one."""
+def _risk_fields(envelope: Mapping[str, Any]) -> tuple[str, str]:
+    """Return authoritative risk level and recommendation separately.
+
+    PASS/WARN/BLOCK-style recommendation tokens are never relabeled as a risk
+    level. If CMIS did not return a dedicated level, the level remains UNKNOWN.
+    """
 
     risk = _mapping(envelope.get("risk"))
-    for key in ("level", "recommendation", "outcome", "result"):
-        value = _text(risk.get(key))
-        if value:
-            return value.upper()
-    return "UNKNOWN"
+    level = _text(risk.get("level"))
+    recommendation = None
+    for key in ("recommendation", "outcome", "result"):
+        recommendation = _text(risk.get(key))
+        if recommendation:
+            break
+    return (
+        level.upper() if level else "UNKNOWN",
+        recommendation.upper() if recommendation else "UNKNOWN",
+    )
 
 
 def validate_evidence_metadata(
@@ -68,7 +77,7 @@ def validate_evidence_metadata(
     """Validate CMIS evidence receipt/proof metadata without changing it.
 
     ``required=False`` keeps deterministic legacy test adapters compatible.
-    Live CMIS HTTP responses are validated with ``required=True`` once the
+    Live CMIS responses can be validated with ``required=True`` after the
     capability handshake establishes the evidence-quality contract.
     """
 
@@ -158,6 +167,7 @@ def validate_evidence_metadata(
     if explicit_scope not in {True, False}:
         raise CMISEvidenceMetadataError("CMIS evidence scope flag is invalid.")
 
+    risk_level, risk_recommendation = _risk_fields(envelope)
     return {
         "available": True,
         "chain": chain,
@@ -177,7 +187,8 @@ def validate_evidence_metadata(
         "limitations": _mapping_list(receipt.get("limitations")),
         "unresolved_fields": _string_list(receipt.get("unresolved_fields")),
         "sources": _mapping_list(receipt.get("sources")),
-        "risk": _risk_token(envelope),
+        "risk_level": risk_level,
+        "risk_recommendation": risk_recommendation,
         "risk_separate_from_proof": True,
     }
 
@@ -188,6 +199,7 @@ def evidence_context(envelope: Mapping[str, Any]) -> dict[str, Any]:
     validated = validate_evidence_metadata(envelope, required=False)
     if validated is not None:
         return validated
+    risk_level, risk_recommendation = _risk_fields(envelope)
     return {
         "available": False,
         "chain": _text(envelope.get("chain")) or "unknown",
@@ -207,7 +219,8 @@ def evidence_context(envelope: Mapping[str, Any]) -> dict[str, Any]:
         "limitations": [],
         "unresolved_fields": ["evidence_receipt", "proof_score"],
         "sources": [],
-        "risk": _risk_token(envelope),
+        "risk_level": risk_level,
+        "risk_recommendation": risk_recommendation,
         "risk_separate_from_proof": True,
     }
 
