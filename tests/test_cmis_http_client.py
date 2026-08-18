@@ -7,6 +7,12 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.error import URLError
 from unittest.mock import patch
 
+from roberta.cmis.capabilities import (
+    INTELLIGENCE_FOUNDATION_CAPABILITIES,
+    INTELLIGENCE_FOUNDATION_PHASE,
+    INTELLIGENCE_PROMOTION_RULE,
+    MIN_CMIS_CONTRACT_VERSION,
+)
 from roberta.cmis.http import CMISHTTPClient
 
 
@@ -37,6 +43,17 @@ def _capability(
         "callable": state != "unavailable",
         "requirements": list(requirements or []),
         "limitations": list(limitations or []),
+    }
+
+
+def _intelligence_capability() -> dict[str, object]:
+    return {
+        "state": "bounded",
+        "read_only": True,
+        "public_service_promoted": False,
+        "scout_reliance_promoted": False,
+        "requirements": [],
+        "limitations": [],
     }
 
 
@@ -74,7 +91,7 @@ def _capabilities() -> dict[str, object]:
         "service": "cmis_gateway",
         "version": 1,
         "schema_version": 1,
-        "contract_version": "1.7.1",
+        "contract_version": MIN_CMIS_CONTRACT_VERSION,
         "request_path": "/v1/cmis",
         "evidence_quality": {
             "evidence_receipt_schema_version": 1,
@@ -82,6 +99,19 @@ def _capabilities() -> dict[str, object]:
             "proof_strength_values": ["STRONG", "MODERATE", "WEAK"],
             "risk_separate_from_proof": True,
             "missing_evidence_is_unknown": True,
+        },
+        "intelligence_foundation": {
+            "schema_version": 1,
+            "phase": INTELLIGENCE_FOUNDATION_PHASE,
+            "read_only": True,
+            "public_service_promoted": False,
+            "scout_reliance_promoted": False,
+            "promotion_rule": INTELLIGENCE_PROMOTION_RULE,
+            "intelligence_evidence_schema_version": 1,
+            "capabilities": {
+                name: _intelligence_capability()
+                for name in INTELLIGENCE_FOUNDATION_CAPABILITIES
+            },
         },
         "supported_services": services,
         "supported_chains": ["x1"],
@@ -247,7 +277,7 @@ def test_http_client_turns_capability_transport_failure_into_unavailable_envelop
 
 def test_http_client_fails_closed_on_stale_capability_contract_before_post() -> None:
     capabilities = deepcopy(_capabilities())
-    capabilities["contract_version"] = "1.6.9"
+    capabilities["contract_version"] = "1.7.9"
     with _Server(_envelope("market_report"), capabilities=capabilities) as running:
         result = CMISHTTPClient(base_url=running.base_url, timeout_seconds=2).market_report(
             chain="x1", asset="AGI"
