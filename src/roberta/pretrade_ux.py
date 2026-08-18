@@ -261,8 +261,6 @@ def _reason_sentences(
     if fees is not None:
         reasons.append(f"Estimated fees are {fees}.")
 
-    # Returned human-readable reasons may fill an otherwise sparse explanation,
-    # but are never used to change the deterministic recommendation.
     for reason in _string_list(risk.get("reasons")):
         if reason not in reasons:
             reasons.append(reason)
@@ -335,6 +333,7 @@ def _technical_text(
         "market": dict(_mapping(data.get("market"))),
         "trade_size": dict(_mapping(data.get("trade_size"))),
         "route_analysis": dict(_mapping(data.get("route_analysis"))),
+        "recommendation": recommendation,
         "risk_recommendation": recommendation,
         "risk": dict(_mapping(result.get("risk"))),
         "confidence": dict(_mapping(result.get("confidence"))),
