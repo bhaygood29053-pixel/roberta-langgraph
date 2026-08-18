@@ -11,6 +11,8 @@ from urllib.request import Request, urlopen
 from roberta.cmis.capabilities import (
     CMISCapabilities,
     CMISCapabilityContractError,
+    CMISCapabilityUnavailable,
+    require_service_capability,
     validate_capability_manifest,
 )
 from roberta.cmis.contracts import (
@@ -52,9 +54,10 @@ _ALLOWED_RANK_METRICS: set[str] = {
 class CMISHTTPClient:
     """Call CMIS through its chain-aware JSON gateway.
 
-    Chain Scouts use :meth:`capabilities` as a cached handshake before invoking
-    chain/service operations. Roberta never needs to consume this method
-    directly.
+    This client lives beneath Chain Scouts. Before the first service POST it
+    performs a cached capability handshake and refuses service/chain calls that
+    CMIS has not explicitly classified as callable. Roberta never needs to
+    consume provider/service capabilities directly.
     """
 
     def __init__(
@@ -240,6 +243,36 @@ class CMISHTTPClient:
         error_context: str,
         payload: dict[str, object],
     ) -> CMISEnvelope:
+        # This is the synchronization gate: a Scout never POSTs an operation
+        # that the live CMIS deployment has not explicitly classified as
+        # callable under a compatible contract version.
+        try:
+            require_service_capability(
+                self.capabilities(),
+                chain=chain,
+                service=service,
+            )
+        except CMISCapabilityUnavailable as exc:
+            return self._error_envelope(
+                service=service,
+                chain=chain,
+                asset=error_context,
+                status="unavailable",
+                code="cmis_capability_unavailable",
+                message=str(exc),
+                warning=True,
+            )
+        except CMISCapabilityContractError as exc:
+            return self._error_envelope(
+                service=service,
+                chain=chain,
+                asset=error_context,
+                status="unavailable",
+                code="cmis_capability_contract_unavailable",
+                message=f"CMIS capability contract unavailable: {exc}",
+                warning=True,
+            )
+
         request = Request(
             self.base_url + "/v1/cmis",
             data=json.dumps(payload, separators=(",", ":"), allow_nan=False).encode("utf-8"),
