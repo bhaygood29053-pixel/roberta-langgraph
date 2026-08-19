@@ -9,6 +9,7 @@ from langchain_core.tools import BaseTool
 from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode
 
+from roberta.decision_synthesis import build_decision_synthesis_system_message
 from roberta.memory import DurableMemoryStore, build_memory_system_message
 from roberta.policy import (
     PolicyRuntimeContext,
@@ -65,6 +66,22 @@ def _approval_wrapped_response(response: AIMessage, policy: PolicyRuntimeContext
     return _append_policy_notes(AIMessage(content=wrapped), policy)
 
 
+def _latest_user_content(state: RobertaState) -> object:
+    for message in reversed(state["messages"]):
+        if isinstance(message, HumanMessage):
+            return message.content
+    return ""
+
+
+def _post_specialist_decision_message(state: RobertaState) -> SystemMessage | None:
+    """Return a task-specific decision brief only after specialist evidence exists."""
+
+    if not any(isinstance(message, ToolMessage) for message in state["messages"]):
+        return None
+    content = build_decision_synthesis_system_message(_latest_user_content(state))
+    return SystemMessage(content=content) if content is not None else None
+
+
 def make_oracle_node(
     model_with_tools: Any,
     *,
@@ -80,6 +97,12 @@ def make_oracle_node(
     states preserve non-authorizing analysis while keeping the approval notice
     structurally attached to the final answer. Material warnings/preferences are
     also appended deterministically so the model cannot omit them.
+
+    After specialist evidence exists, recognized recommendation questions also
+    receive a deterministic, task-specific synthesis brief. This does not write
+    the recommendation or calculate facts; it carries the accepted answer-first,
+    risk/evidence-separation, uncertainty, and non-execution contract into the
+    actual post-tool model invocation.
     """
 
     def oracle_node(state: RobertaState) -> dict[str, Any]:
@@ -109,6 +132,9 @@ def make_oracle_node(
             system_messages.append(
                 build_policy_system_message(policy.compilation, policy.summary)
             )
+        decision_message = _post_specialist_decision_message(state)
+        if decision_message is not None:
+            system_messages.append(decision_message)
 
         response = model_with_tools.invoke([*system_messages, *state["messages"]])
         if not isinstance(response, AIMessage):
@@ -195,13 +221,6 @@ def _validated_pretrade_presentation(
     return presentation
 
 
-def _latest_user_content(state: RobertaState) -> object:
-    for message in reversed(state["messages"]):
-        if isinstance(message, HumanMessage):
-            return message.content
-    return ""
-
-
 def _pretrade_user_text(state: RobertaState) -> str | None:
     presentation = _validated_pretrade_presentation(state)
     if presentation is None:
@@ -275,10 +294,12 @@ def build_graph(
                          tools -> [pretrade_synthesis | oracle]
                          pretrade_synthesis -> END
 
-    Ordinary specialist results return to the Oracle exactly as before. A
-    validated single X1 Scout ``pre_trade_check`` result takes the deterministic
-    Roberta presentation path so internal service diagnostics are not rewritten
-    into the normal user-facing voice by a free-form second model call.
+    Ordinary specialist results return to the Oracle as before. Recognized
+    recommendation families receive a deterministic post-specialist synthesis
+    brief in that Oracle call. A validated single X1 Scout ``pre_trade_check``
+    result still takes the stricter deterministic Roberta presentation path so
+    internal service diagnostics are not rewritten into the normal user-facing
+    voice by a free-form second model call.
 
     The optional checkpointer owns LangGraph thread/task execution state.
     The optional durable-memory store owns long-term context and is retrieved
