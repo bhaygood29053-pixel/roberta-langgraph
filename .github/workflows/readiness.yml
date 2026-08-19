@@ -46,7 +46,7 @@ jobs:
         run: |
           mkdir -p artifacts/readiness
           if [[ -z "${DEEPSEEK_API_KEY:-}" ]]; then
-            python -c 'import json; from pathlib import Path; report={"schema_version":1,"authority":"historical_evaluation_snapshot","live_market_authority":False,"summary":{"deployment_blockers":["GitHub Actions secret DEEPSEEK_API_KEY is not configured for the readiness runner."]}}; Path("artifacts/readiness/replay-config-blocker.json").write_text(json.dumps(report, indent=2, sort_keys=True), encoding="utf-8")'
+            python -c 'import json; from pathlib import Path; report={"schema_version":1,"authority":"historical_evaluation_snapshot","live_market_authority":False,"summary":{"deployment_blockers":["DEEPSEEK_API_KEY is not available to this GitHub Actions readiness runner."]}}; Path("artifacts/readiness/replay-config-blocker.json").write_text(json.dumps(report, indent=2, sort_keys=True), encoding="utf-8")'
             exit 1
           fi
       - name: Run controlled replay
@@ -98,13 +98,13 @@ jobs:
         shell: bash
         run: |
           mkdir -p artifacts/readiness
-          missing=()
-          [[ -n "${DEEPSEEK_API_KEY:-}" ]] || missing+=("DEEPSEEK_API_KEY")
-          [[ -n "${CMIS_BASE_URL:-}" ]] || missing+=("CMIS_BASE_URL repository variable/secret")
-          if (( ${#missing[@]} )); then
-            MISSING="$(IFS=', '; echo "${missing[*]}")"
-            export MISSING
-            python -c 'import json, os; from pathlib import Path; report={"schema_version":1,"authority":"historical_evaluation_snapshot","live_market_authority":False,"summary":{"deployment_blockers":["Readiness live-path configuration missing: " + os.environ["MISSING"]]}}; Path("artifacts/readiness/live-config-blocker.json").write_text(json.dumps(report, indent=2, sort_keys=True), encoding="utf-8")'
+          unavailable=()
+          [[ -n "${DEEPSEEK_API_KEY:-}" ]] || unavailable+=("DEEPSEEK_API_KEY")
+          [[ -n "${CMIS_BASE_URL:-}" ]] || unavailable+=("CMIS_BASE_URL repository variable/secret")
+          if (( ${#unavailable[@]} )); then
+            UNAVAILABLE="$(IFS=', '; echo "${unavailable[*]}")"
+            export UNAVAILABLE
+            python -c 'import json, os; from pathlib import Path; report={"schema_version":1,"authority":"historical_evaluation_snapshot","live_market_authority":False,"summary":{"deployment_blockers":["Readiness live-path values unavailable to this GitHub Actions runner: " + os.environ["UNAVAILABLE"]]}}; Path("artifacts/readiness/live-config-blocker.json").write_text(json.dumps(report, indent=2, sort_keys=True), encoding="utf-8")'
             exit 1
           fi
       - name: Run configured live readiness corpus
