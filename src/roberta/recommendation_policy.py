@@ -219,6 +219,18 @@ def recommendation_intent(objective: object) -> RecommendationIntent:
     ) or bool(re.search(r"\bis\s+[a-z0-9._-]+\s+risky\b", text)):
         return "risk_assessment"
 
+    # Roberta may faithfully paraphrase a user risk question when delegating to a
+    # Chain Scout (for example, "assess market risk"). Preserve the same
+    # deterministic evidence requirement after that delegation boundary instead
+    # of collapsing the Scout plan to a single risk_check. More-specific trade,
+    # comparison, LP, liquidity, price-move, and market-change intents have
+    # already been classified above.
+    if re.search(
+        r"\b(?:risk|risky|riskiness|safe|safety|unsafe|danger|dangerous)\b",
+        text,
+    ):
+        return "risk_assessment"
+
     return "general"
 
 
