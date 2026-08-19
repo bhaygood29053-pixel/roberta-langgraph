@@ -46,23 +46,7 @@ jobs:
         run: |
           mkdir -p artifacts/readiness
           if [[ -z "${DEEPSEEK_API_KEY:-}" ]]; then
-            python - <<'PY'
-            import json
-            from pathlib import Path
-            report = {
-                "schema_version": 1,
-                "authority": "historical_evaluation_snapshot",
-                "live_market_authority": False,
-                "summary": {
-                    "deployment_blockers": [
-                        "GitHub Actions secret DEEPSEEK_API_KEY is not configured for the readiness runner."
-                    ]
-                },
-            }
-            Path("artifacts/readiness/replay-config-blocker.json").write_text(
-                json.dumps(report, indent=2, sort_keys=True), encoding="utf-8"
-            )
-            PY
+            python -c 'import json; from pathlib import Path; report={"schema_version":1,"authority":"historical_evaluation_snapshot","live_market_authority":False,"summary":{"deployment_blockers":["GitHub Actions secret DEEPSEEK_API_KEY is not configured for the readiness runner."]}}; Path("artifacts/readiness/replay-config-blocker.json").write_text(json.dumps(report, indent=2, sort_keys=True), encoding="utf-8")'
             exit 1
           fi
       - name: Run controlled replay
@@ -118,25 +102,9 @@ jobs:
           [[ -n "${DEEPSEEK_API_KEY:-}" ]] || missing+=("DEEPSEEK_API_KEY")
           [[ -n "${CMIS_BASE_URL:-}" ]] || missing+=("CMIS_BASE_URL repository variable/secret")
           if (( ${#missing[@]} )); then
-            MISSING="$(IFS=', '; echo "${missing[*]}")" python - <<'PY'
-            import json
-            import os
-            from pathlib import Path
-            missing = os.environ["MISSING"]
-            report = {
-                "schema_version": 1,
-                "authority": "historical_evaluation_snapshot",
-                "live_market_authority": False,
-                "summary": {
-                    "deployment_blockers": [
-                        "Readiness live-path configuration missing: " + missing
-                    ]
-                },
-            }
-            Path("artifacts/readiness/live-config-blocker.json").write_text(
-                json.dumps(report, indent=2, sort_keys=True), encoding="utf-8"
-            )
-            PY
+            MISSING="$(IFS=', '; echo "${missing[*]}")"
+            export MISSING
+            python -c 'import json, os; from pathlib import Path; report={"schema_version":1,"authority":"historical_evaluation_snapshot","live_market_authority":False,"summary":{"deployment_blockers":["Readiness live-path configuration missing: " + os.environ["MISSING"]]}}; Path("artifacts/readiness/live-config-blocker.json").write_text(json.dumps(report, indent=2, sort_keys=True), encoding="utf-8")'
             exit 1
           fi
       - name: Run configured live readiness corpus
