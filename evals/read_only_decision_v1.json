@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "name": "Roberta Read-Only Decision Readiness v1",
+  "authority": "evaluation_input_only",
+  "scenarios": [
+    {
+      "id": "x1-buy-decision",
+      "turns": ["On X1, should I buy AGI?"],
+      "expected_chains": ["x1"],
+      "expected_services": {"x1": ["market_report", "historical_compare", "risk_check"]},
+      "require_risk_evidence_labels": true
+    },
+    {
+      "id": "x1-sell-decision",
+      "turns": ["On X1, should I sell AGI?"],
+      "expected_chains": ["x1"],
+      "expected_services": {"x1": ["market_report", "historical_compare", "risk_check"]},
+      "require_risk_evidence_labels": true
+    },
+    {
+      "id": "x1-explicit-trade-size",
+      "turns": ["On X1, can I BUY $500 of AGI?"],
+      "expected_chains": ["x1"],
+      "expected_services": {"x1": ["pre_trade_check"]},
+      "require_risk_evidence_labels": true
+    },
+    {
+      "id": "x1-risk",
+      "turns": ["On X1, is AGI risky?"],
+      "expected_chains": ["x1"],
+      "expected_services": {"x1": ["risk_check", "market_report", "tokenomics"]},
+      "require_risk_evidence_labels": true
+    },
+    {
+      "id": "x1-safer-asset-comparison",
+      "turns": ["On X1, which looks safer right now: AGI or XNT?"],
+      "expected_chains": ["x1"],
+      "expected_services": {"x1": ["rank", "risk_check", "market_report"]},
+      "require_risk_evidence_labels": true
+    },
+    {
+      "id": "x1-liquidity-risk",
+      "turns": ["On X1, is AGI liquidity dangerously thin?"],
+      "expected_chains": ["x1"],
+      "expected_services": {"x1": ["market_report", "risk_check"]},
+      "require_risk_evidence_labels": true
+    },
+    {
+      "id": "x1-lp-decision",
+      "turns": ["On X1, should I provide liquidity to the AGI pool?"],
+      "expected_chains": ["x1"],
+      "expected_services": {"x1": ["market_report", "risk_check", "tokenomics"]},
+      "require_risk_evidence_labels": true
+    },
+    {
+      "id": "x1-market-change",
+      "turns": ["On X1, what changed with AGI since yesterday?"],
+      "expected_chains": ["x1"],
+      "expected_services": {"x1": ["historical_compare", "market_report"]},
+      "require_risk_evidence_labels": true
+    },
+    {
+      "id": "x1-price-move",
+      "turns": ["On X1, why is AGI's price falling?"],
+      "expected_chains": ["x1"],
+      "expected_services": {"x1": ["historical_compare", "market_report"]},
+      "require_risk_evidence_labels": true
+    },
+    {
+      "id": "x1-technical-followup",
+      "turns": [
+        "On X1, is AGI risky?",
+        "Show me the technical verification details, sources, and provenance behind that answer."
+      ],
+      "expected_chains": ["x1"],
+      "expected_services": {"x1": ["risk_check", "market_report", "tokenomics"]},
+      "technical_detail_expected": true
+    },
+    {
+      "id": "nonmarket-control",
+      "turns": ["Explain the difference between LangGraph checkpoint state and durable memory."],
+      "expected_chains": [],
+      "expected_services": {},
+      "control": true
+    },
+    {
+      "id": "cross-chain-risk-evidence",
+      "turns": ["Compare AGI on X1 with JUP on Solana. Which has stronger verified evidence and lower verified risk?"],
+      "expected_chains": ["x1", "solana"],
+      "expected_services": {
+        "x1": ["risk_check", "market_report"],
+        "solana": ["risk_check", "market_report"]
+      },
+      "requires_solana": true,
+      "require_risk_evidence_labels": true
+    }
+  ]
+}
