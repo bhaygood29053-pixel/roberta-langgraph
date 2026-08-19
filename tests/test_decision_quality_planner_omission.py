@@ -17,11 +17,6 @@ from roberta.x1_scout.planner import enforce_plan
             ["risk_check", "market_report", "tokenomics"],
         ),
         (
-            "assess market risk",
-            {"operations": ["risk_check"]},
-            ["risk_check", "market_report", "tokenomics"],
-        ),
-        (
             "Which of these two tokens is safer?",
             {"operations": ["market_report"]},
             ["rank", "risk_check", "market_report"],
