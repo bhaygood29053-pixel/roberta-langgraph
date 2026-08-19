@@ -58,7 +58,16 @@ def recommendation_intent(objective: object) -> RecommendationIntent:
     # Concrete amount/position questions are primarily sizing questions. Merely
     # recognizing the wording does not authorize pre_trade_check; the Scout's
     # explicit side+amount guard remains authoritative.
-    trade_words = ("buy", "buying", "purchase", "purchasing", "sell", "selling", "trade", "position")
+    trade_words = (
+        "buy",
+        "buying",
+        "purchase",
+        "purchasing",
+        "sell",
+        "selling",
+        "trade",
+        "position",
+    )
     size_words = (
         "too much",
         "too large",
@@ -69,7 +78,9 @@ def recommendation_intent(objective: object) -> RecommendationIntent:
         "size this",
         "size my",
     )
-    if _has_any(text, size_words) or (_has_amount_cue(text) and _has_any(text, trade_words)):
+    if _has_any(text, size_words) or (
+        _has_amount_cue(text) and _has_any(text, trade_words)
+    ):
         return "trade_size"
 
     trade_decision_patterns = (
@@ -92,7 +103,10 @@ def recommendation_intent(objective: object) -> RecommendationIntent:
     ):
         return "trade_decision"
 
-    if _has_any(
+    safer_comparison = bool(
+        re.search(r"\bwhich\b.*\b(?:safer|less risky|lower risk)\b", text)
+    )
+    if safer_comparison or _has_any(
         text,
         (
             "which token",
@@ -126,7 +140,16 @@ def recommendation_intent(objective: object) -> RecommendationIntent:
 
     if "liquidity" in text and _has_any(
         text,
-        ("danger", "dangerous", "risk", "risky", "safe", "thin", "shallow", "low liquidity"),
+        (
+            "danger",
+            "dangerous",
+            "risk",
+            "risky",
+            "safe",
+            "thin",
+            "shallow",
+            "low liquidity",
+        ),
     ):
         return "liquidity_risk"
 
@@ -143,7 +166,22 @@ def recommendation_intent(objective: object) -> RecommendationIntent:
         ),
     ) and _has_any(
         text,
-        ("fall", "falling", "fell", "drop", "dropping", "down", "rise", "rising", "rose", "up", "pump", "pumping", "move", "moving"),
+        (
+            "fall",
+            "falling",
+            "fell",
+            "drop",
+            "dropping",
+            "down",
+            "rise",
+            "rising",
+            "rose",
+            "up",
+            "pump",
+            "pumping",
+            "move",
+            "moving",
+        ),
     ):
         return "price_move_reason"
 
