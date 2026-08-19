@@ -24,12 +24,20 @@ from roberta.policy import (
 )
 from roberta.pretrade_ux import technical_pretrade_details_requested
 from roberta.prompts import ORACLE_SYSTEM_PROMPT
+from roberta.recommendation_policy import recommendation_evidence_plan
 from roberta.state import RobertaState
 from roberta.tools import get_roberta_tools
 
 Route = Literal["tools", "__end__"]
 PostToolRoute = Literal["oracle", "pretrade_synthesis"]
 PolicyContextProvider = Callable[[RobertaState], PolicyRuntimeContext | None]
+
+_SPECIALIST_OBJECTIVE_TOOLS = frozenset(
+    {
+        "x1_scout_investigate",
+        "solana_scout_investigate",
+    }
+)
 
 
 def _bind_tools(model: Any, tools: Sequence[BaseTool]) -> Any:
@@ -78,6 +86,43 @@ def _latest_user_content(state: RobertaState) -> object:
     return ""
 
 
+def _preserve_recommendation_objective_in_specialist_calls(
+    state: RobertaState,
+    response: AIMessage,
+) -> AIMessage:
+    """Prevent Oracle paraphrases from weakening deterministic evidence needs.
+
+    For recognized recommendation families, the user's actual current-turn
+    objective is the authority for deterministic evidence planning. The model may
+    still select the appropriate Chain Scout and asset, but it cannot narrow the
+    Scout objective in a way that silently drops required CMIS investigations.
+    General/non-recommendation delegation remains unchanged.
+    """
+
+    if not response.tool_calls:
+        return response
+    objective = _latest_user_content(state)
+    if not isinstance(objective, str) or not objective.strip():
+        return response
+    if recommendation_evidence_plan(objective)["intent"] == "general":
+        return response
+
+    rewritten_calls: list[dict[str, Any]] = []
+    changed = False
+    for tool_call in response.tool_calls:
+        rewritten = dict(tool_call)
+        if rewritten.get("name") in _SPECIALIST_OBJECTIVE_TOOLS:
+            args = rewritten.get("args")
+            if isinstance(args, Mapping):
+                rewritten["args"] = {**dict(args), "objective": objective}
+                changed = True
+        rewritten_calls.append(rewritten)
+
+    if not changed:
+        return response
+    return response.model_copy(update={"tool_calls": rewritten_calls})
+
+
 def _post_specialist_decision_message(state: RobertaState) -> SystemMessage | None:
     """Return a task-specific decision brief only after specialist evidence exists."""
 
@@ -116,10 +161,13 @@ def make_oracle_node(
     structurally attached to the final answer. Material warnings/preferences are
     also appended deterministically so the model cannot omit them.
 
-    After specialist evidence exists, recognized recommendation questions also
-    receive a deterministic, task-specific synthesis brief. An obvious raw-dump
-    or diagnostic-first final draft gets one constrained rewrite attempt; repeated
-    noncompliance fails closed rather than exposing internal service output.
+    For recognized recommendation questions, Chain Scout tool calls preserve the
+    original user objective before execution so model paraphrasing cannot weaken
+    deterministic evidence requirements. After specialist evidence exists, those
+    questions also receive a deterministic, task-specific synthesis brief. An
+    obvious raw-dump or diagnostic-first final draft gets one constrained rewrite
+    attempt; repeated noncompliance fails closed rather than exposing internal
+    service output.
     """
 
     def oracle_node(state: RobertaState) -> dict[str, Any]:
@@ -156,6 +204,7 @@ def make_oracle_node(
         response = model_with_tools.invoke([*system_messages, *state["messages"]])
         if not isinstance(response, AIMessage):
             raise TypeError("Roberta model must return an AIMessage.")
+        response = _preserve_recommendation_objective_in_specialist_calls(state, response)
 
         violation = _post_specialist_decision_violation(state, response)
         if violation is not None:
@@ -167,6 +216,10 @@ def make_oracle_node(
             )
             if not isinstance(retry_response, AIMessage):
                 raise TypeError("Roberta model must return an AIMessage.")
+            retry_response = _preserve_recommendation_objective_in_specialist_calls(
+                state,
+                retry_response,
+            )
             retry_violation = _post_specialist_decision_violation(state, retry_response)
             response = (
                 AIMessage(content=decision_synthesis_failure_text())
@@ -329,10 +382,11 @@ def build_graph(
                          pretrade_synthesis -> END
 
     Ordinary specialist results return to the Oracle as before. Recognized
-    recommendation families receive a deterministic post-specialist synthesis
-    brief in that Oracle call, with one constrained rewrite for obvious raw-dump
-    or diagnostic-first failures. A validated single X1 Scout ``pre_trade_check``
-    result still takes the stricter deterministic Roberta presentation path.
+    recommendation families preserve the original user objective when delegated
+    to Chain Scouts and receive a deterministic post-specialist synthesis brief,
+    with one constrained rewrite for obvious raw-dump or diagnostic-first
+    failures. A validated single X1 Scout ``pre_trade_check`` result still takes
+    the stricter deterministic Roberta presentation path.
 
     The optional checkpointer owns LangGraph thread/task execution state.
     The optional durable-memory store owns long-term context and is retrieved
