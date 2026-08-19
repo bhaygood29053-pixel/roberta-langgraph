@@ -9,7 +9,7 @@ from roberta.x1_scout.planner import enforce_plan
         (
             "Should I buy AGI?",
             {"operations": ["market_report"]},
-            ["market_report", "risk_check", "historical_compare"],
+            ["market_report", "historical_compare", "risk_check"],
         ),
         (
             "Is AGI risky?",
@@ -50,7 +50,7 @@ def test_planner_attempt_to_replace_required_evidence_with_pretrade_fails_closed
         {"operations": ["pre_trade_check"]},
     )
 
-    assert plan["operations"] == ["market_report", "risk_check", "historical_compare"]
+    assert plan["operations"] == ["market_report", "historical_compare", "risk_check"]
     assert "planner_operation_rejected: pre_trade_check" in plan["warnings"]
 
 
@@ -76,7 +76,7 @@ def test_empty_model_plan_falls_back_and_still_restores_required_evidence():
         {"operations": []},
     )
 
-    assert plan["operations"] == ["market_report", "risk_check", "historical_compare"]
+    assert plan["operations"] == ["market_report", "historical_compare", "risk_check"]
     assert "planner_fallback: no allowed operations were proposed" in plan["warnings"]
 
 
