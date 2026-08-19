@@ -9,7 +9,12 @@ from langchain_core.tools import BaseTool
 from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode
 
-from roberta.decision_synthesis import build_decision_synthesis_system_message
+from roberta.decision_synthesis import (
+    build_decision_retry_system_message,
+    build_decision_synthesis_system_message,
+    decision_response_violation,
+    decision_synthesis_failure_text,
+)
 from roberta.memory import DurableMemoryStore, build_memory_system_message
 from roberta.policy import (
     PolicyRuntimeContext,
@@ -82,6 +87,19 @@ def _post_specialist_decision_message(state: RobertaState) -> SystemMessage | No
     return SystemMessage(content=content) if content is not None else None
 
 
+def _post_specialist_decision_violation(
+    state: RobertaState,
+    response: AIMessage,
+) -> str | None:
+    """Return an obvious recommendation-presentation violation, if any."""
+
+    if response.tool_calls:
+        return None
+    if not any(isinstance(message, ToolMessage) for message in state["messages"]):
+        return None
+    return decision_response_violation(_latest_user_content(state), response.content)
+
+
 def make_oracle_node(
     model_with_tools: Any,
     *,
@@ -99,10 +117,9 @@ def make_oracle_node(
     also appended deterministically so the model cannot omit them.
 
     After specialist evidence exists, recognized recommendation questions also
-    receive a deterministic, task-specific synthesis brief. This does not write
-    the recommendation or calculate facts; it carries the accepted answer-first,
-    risk/evidence-separation, uncertainty, and non-execution contract into the
-    actual post-tool model invocation.
+    receive a deterministic, task-specific synthesis brief. An obvious raw-dump
+    or diagnostic-first final draft gets one constrained rewrite attempt; repeated
+    noncompliance fails closed rather than exposing internal service output.
     """
 
     def oracle_node(state: RobertaState) -> dict[str, Any]:
@@ -139,6 +156,23 @@ def make_oracle_node(
         response = model_with_tools.invoke([*system_messages, *state["messages"]])
         if not isinstance(response, AIMessage):
             raise TypeError("Roberta model must return an AIMessage.")
+
+        violation = _post_specialist_decision_violation(state, response)
+        if violation is not None:
+            retry_message = SystemMessage(
+                content=build_decision_retry_system_message(violation)
+            )
+            retry_response = model_with_tools.invoke(
+                [*system_messages, retry_message, *state["messages"]]
+            )
+            if not isinstance(retry_response, AIMessage):
+                raise TypeError("Roberta model must return an AIMessage.")
+            retry_violation = _post_specialist_decision_violation(state, retry_response)
+            response = (
+                AIMessage(content=decision_synthesis_failure_text())
+                if retry_violation is not None
+                else retry_response
+            )
 
         if policy is not None and not response.tool_calls:
             if policy.decision.status == "needs_evidence":
@@ -296,10 +330,9 @@ def build_graph(
 
     Ordinary specialist results return to the Oracle as before. Recognized
     recommendation families receive a deterministic post-specialist synthesis
-    brief in that Oracle call. A validated single X1 Scout ``pre_trade_check``
-    result still takes the stricter deterministic Roberta presentation path so
-    internal service diagnostics are not rewritten into the normal user-facing
-    voice by a free-form second model call.
+    brief in that Oracle call, with one constrained rewrite for obvious raw-dump
+    or diagnostic-first failures. A validated single X1 Scout ``pre_trade_check``
+    result still takes the stricter deterministic Roberta presentation path.
 
     The optional checkpointer owns LangGraph thread/task execution state.
     The optional durable-memory store owns long-term context and is retrieved

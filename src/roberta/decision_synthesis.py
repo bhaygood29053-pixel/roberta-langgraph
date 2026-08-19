@@ -1,9 +1,10 @@
-"""Deterministic runtime brief for recommendation-style Oracle synthesis.
+"""Deterministic runtime contracts for recommendation-style Oracle synthesis.
 
-The brief does not calculate market facts or write the user's recommendation.
-It carries the accepted decision-quality contract into the *post-specialist*
-Oracle call so ordinary recommendation families do not rely only on a global
-prompt. Chain Scouts/CMIS remain authoritative for every current fact.
+These helpers do not calculate market facts or write the user's recommendation.
+They carry the accepted decision-quality contract into the *post-specialist*
+Oracle call and reject only obvious presentation failures such as raw service
+dumps or orchestration-first prose. Chain Scouts/CMIS remain authoritative for
+every current fact and deterministic conclusion.
 """
 
 from __future__ import annotations
@@ -23,6 +24,22 @@ _TECHNICAL_DETAIL_CUES = (
     "receipt",
     "provenance",
     "mint address",
+)
+
+_DIAGNOSTIC_FIRST_PREFIXES = (
+    "cmis",
+    "x1 scout",
+    "solana scout",
+    "liquidity scout",
+    "market service:",
+    "service:",
+    "status:",
+    "verified price:",
+    "i have the results from",
+    "let me synthesize",
+    "the specialist report",
+    "the scout returned",
+    "```",
 )
 
 
@@ -85,7 +102,60 @@ def build_decision_synthesis_system_message(objective: object) -> str | None:
     )
 
 
+def decision_response_violation(objective: object, content: object) -> str | None:
+    """Detect only clear violations of the normal recommendation presentation contract.
+
+    This is intentionally conservative. It does not score writing quality or
+    decide whether a recommendation is substantively correct. Technical/raw
+    requests are exempt because the user explicitly asked for deeper diagnostics.
+    """
+
+    plan = recommendation_evidence_plan(objective)
+    if plan["intent"] == "general" or technical_decision_detail_requested(objective):
+        return None
+    if not isinstance(content, str) or not content.strip():
+        return "empty_decision_response"
+
+    stripped = content.lstrip()
+    if stripped.startswith(("{", "[")):
+        return "raw_service_dump"
+
+    first_line = next(
+        (line.strip().lower() for line in stripped.splitlines() if line.strip()),
+        "",
+    )
+    if any(first_line.startswith(prefix) for prefix in _DIAGNOSTIC_FIRST_PREFIXES):
+        return "diagnostic_or_orchestration_first"
+    return None
+
+
+def build_decision_retry_system_message(violation: str) -> str:
+    """Return one deterministic correction instruction for an obvious UX violation."""
+
+    return (
+        "The previous recommendation draft violated Roberta's deterministic decision-presentation "
+        f"contract ({violation}). Rewrite the answer once using the same specialist evidence. "
+        "Lead with the recommendation/conclusion/blocker, then 2-4 material reasons, keep Risk "
+        "separate from Evidence quality, surface important unknowns, and do not expose raw JSON, "
+        "service-envelope diagnostics, planner/orchestration narration, or execution authority. "
+        "Do not invent or recalculate any CMIS fact."
+    )
+
+
+def decision_synthesis_failure_text() -> str:
+    """Fail closed if two model drafts violate the deterministic presentation contract."""
+
+    return (
+        "I have specialist evidence, but I cannot present a recommendation safely because the "
+        "response synthesis did not satisfy the decision-quality contract. I will not expose a "
+        "raw service dump or invent a cleaner conclusion. No transaction or execution is authorized."
+    )
+
+
 __all__ = [
+    "build_decision_retry_system_message",
     "build_decision_synthesis_system_message",
+    "decision_response_violation",
+    "decision_synthesis_failure_text",
     "technical_decision_detail_requested",
 ]
