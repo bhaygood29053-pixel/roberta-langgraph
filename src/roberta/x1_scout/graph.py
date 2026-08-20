@@ -96,6 +96,17 @@ def _dispatch_cmis_operation(
             fact_type=request.get("fact_type"),
             subject_id=request.get("subject_id"),
         )
+    if operation == "concentration_change_intelligence":
+        intelligence_evidence_id = request.get("intelligence_evidence_id")
+        if intelligence_evidence_id is None:
+            raise ValueError(
+                "concentration_change_intelligence requires an exact intelligence_evidence_id"
+            )
+        return cmis_client.concentration_change_intelligence(
+            chain="x1",
+            asset=asset,
+            intelligence_evidence_id=intelligence_evidence_id,
+        )
     if operation == "pre_trade_check":
         action = request.get("action")
         amount_usd = request.get("amount_usd")
