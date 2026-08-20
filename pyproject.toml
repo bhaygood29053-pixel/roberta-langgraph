@@ -21,6 +21,7 @@ roberta-live = "roberta.live_demo:main"
 roberta-serve = "roberta.bridge_http:main"
 roberta-readiness = "roberta.readiness_cli:main"
 roberta-readiness-replay = "roberta.readiness_replay_cli:main"
+roberta-solana-readiness-replay = "roberta.readiness_solana_replay_cli:main"
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
