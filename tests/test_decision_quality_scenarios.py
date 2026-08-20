@@ -26,6 +26,8 @@ REAL_USER_DECISION_SCENARIOS = [
     ("Should I provide liquidity to this pool?", "lp_decision", {"market_report", "risk_check", "tokenomics"}),
     ("Do you think I should add liquidity?", "lp_decision", {"market_report", "risk_check", "tokenomics"}),
     ("Why is the price dropping?", "price_move_reason", {"historical_compare", "market_report"}),
+    ("On X1, why is AGI's price falling?", "price_move_reason", {"historical_compare", "market_report"}),
+    ("Why did AGI's price drop?", "price_move_reason", {"historical_compare", "market_report"}),
     ("What caused the price to rise?", "price_move_reason", {"historical_compare", "market_report"}),
     ("What's driving the price down?", "price_move_reason", {"historical_compare", "market_report"}),
     ("What changed since yesterday?", "market_change", {"historical_compare", "market_report"}),
