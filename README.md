@@ -50,11 +50,16 @@ The CMIS implementation still uses the internal Python namespace `liquidity_scou
 - Phase 9 Human in the Loop — complete
 - Phase 10 More Specialists / Providers — complete
 - Post-Phase-10 Evidence-Aware Intelligence & User Experience — complete
+- first promoted CMIS 1.9 X1 Verified Intelligence adoption/readiness — complete
+- Solana Read-Only Production Readiness — complete for the exact currently accepted Scout surface
+- CMIS deterministic descriptive classification foundation — complete, internal/non-promoted
+- CMIS deterministic wallet-relationship evidence foundation — complete, internal/non-promoted with explicit non-ownership semantics
+- next shared read-only intelligence milestone — evidence-backed alert contracts
 - Phase 11 Controlled Execution — **locked / not started**
 
 See [`docs/LANGGRAPH_ROADMAP.md`](./docs/LANGGRAPH_ROADMAP.md) for the authoritative Roberta roadmap.
 
-CMIS has its own execution-phase numbering. CMIS Phase 11 refers to its completed **read-only Verified Intelligence foundation**; that is separate from Roberta Phase 11 Controlled Execution.
+CMIS has its own phase numbering. CMIS Phase 11 refers to its completed **read-only Verified Intelligence foundation**; that is separate from Roberta Phase 11 Controlled Execution.
 
 ## Evidence-aware intelligence
 
@@ -121,11 +126,30 @@ Roberta preserves those boundaries and does not upgrade missing or partial provi
 
 ## Wallet / behavioral safety boundary
 
-CMIS now has a read-only Verified Intelligence foundation for neutral wallet-activity and concentration primitives. Those primitives are not automatically promoted into public Scout services.
+CMIS now has both the original neutral wallet-activity/concentration foundation and two newer accepted internal deterministic contracts:
 
-Roberta may not label a wallet as an insider, whale, bot, accumulator, distributor, market maker, manipulator, dumper, common owner, or equivalent unless a later accepted CMIS classification contract explicitly permits the label from proven evidence.
+- descriptive classification of the exact concentration direction proven by canonical CMIS evidence;
+- direct wallet-relationship evidence for verified observed token-transfer interactions between exact chain identities.
+
+Those newer contracts remain **internal/read-only/non-promoted**. They do not create Roberta/Scout operations and do not authorize behavioral or ownership interpretation.
+
+Roberta may not label a wallet as an insider, whale, bot, accumulator, distributor, market maker, manipulator, dumper, scammer, common owner, beneficial owner, or equivalent merely because the internal classification or relationship evidence exists. The wallet-relationship foundation proves only observed direct interaction and explicitly does not prove common ownership, beneficial ownership, coordinated control, intent, or complete graph/history coverage.
 
 Facts and interpretations remain separate.
+
+## Promoted Verified Intelligence boundary
+
+The current promoted CMIS intelligence service remains `concentration_change_intelligence/v1` on X1 under CMIS `1.9.0`. Roberta uses it only through X1 Scout after validating the exact service/promotion capability contract.
+
+The internal descriptive-classification and wallet-relationship foundations are separate from that promoted service and may not be called or relied upon through the public Scout boundary unless a later accepted promotion contract explicitly changes their status.
+
+## Early-warning boundary
+
+Evidence-backed alerts are the next shared read-only intelligence milestone. A future CMIS alert contract must define exact evidence scope, freshness, threshold/policy identity, persistence or repetition semantics, triggering observations, deterministic identity, limitations, and fail-closed behavior before any alert is eligible for public-service or Scout-reliance promotion.
+
+An alert may report only the condition actually proven. It may not silently imply whale/insider/bot/common-owner activity, manipulation, fraud/scam, coordinated behavior, intent, or execution authority.
+
+Roberta adoption of any future alert service requires a separate promotion/adoption/readiness step.
 
 ## Cross-chain evidence boundary
 
@@ -174,7 +198,7 @@ Roberta currently has no authority for:
 - autonomous value movement;
 - broad delegated wallet authority.
 
-Research, recommendations, deterministic policy, human review, and CMIS pre-trade analysis must not be interpreted as execution authorization.
+Research, recommendations, deterministic policy, human review, CMIS pre-trade analysis, deterministic intelligence classification, wallet-relationship evidence, and any future read-only alert contract must not be interpreted as execution authorization.
 
 ## Install
 
@@ -283,4 +307,4 @@ If Roberta is unavailable, the normal user-facing transport should report availa
 
 The deterministic pre-trade trade-size milestone previously tracked as CMIS Issue #99 is complete. Roberta consumes CMIS's structured result and explains it; it does not duplicate the calculation.
 
-Future wallet/behavioral interpretation, early-warning intelligence, additional cross-chain expansion, and any eventual controlled execution must each be promoted through explicit evidence and safety contracts rather than inferred from the existing read-only foundation.
+Deterministic descriptive classification and wallet-relationship evidence are also complete inside CMIS at non-promoted read-only boundaries. The next shared milestone is evidence-backed alert contracts; additional cross-chain expansion and any eventual controlled execution must each be promoted through explicit evidence and safety contracts rather than inferred from existing foundations.
