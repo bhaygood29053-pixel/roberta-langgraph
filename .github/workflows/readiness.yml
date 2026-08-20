@@ -57,6 +57,13 @@ jobs:
         run: |
           roberta-readiness-replay \
             --output artifacts/readiness/replay-${GITHUB_SHA}.json
+      - name: Run controlled Solana replay
+        id: solana_replay
+        if: steps.replay_preflight.outcome == 'success'
+        continue-on-error: true
+        run: |
+          roberta-solana-readiness-replay \
+            --output artifacts/readiness/solana-replay-${GITHUB_SHA}.json
       - name: Upload replay report
         if: always()
         uses: actions/upload-artifact@v4
@@ -71,6 +78,7 @@ jobs:
         run: |
           test "${{ steps.replay_preflight.outcome }}" = "success"
           test "${{ steps.replay.outcome }}" = "success"
+          test "${{ steps.solana_replay.outcome }}" = "success"
 
   configured-live-path:
     name: configured Scout -> CMIS live readiness
