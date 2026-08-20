@@ -102,12 +102,18 @@ def build_decision_synthesis_system_message(objective: object) -> str | None:
     )
 
 
-def decision_response_violation(objective: object, content: object) -> str | None:
-    """Detect only clear violations of the normal recommendation presentation contract.
+def _risk_evidence_dimensions_disclosed(content: str) -> bool:
+    normalized = " ".join(content.lower().split())
+    return "risk" in normalized and "evidence quality" in normalized
 
-    This is intentionally conservative. It does not score writing quality or
-    decide whether a recommendation is substantively correct. Technical/raw
-    requests are exempt because the user explicitly asked for deeper diagnostics.
+
+def decision_response_violation(objective: object, content: object) -> str | None:
+    """Detect clear violations of the normal recommendation presentation contract.
+
+    This remains conservative about writing style and substantive correctness. It
+    only enforces structural presentation requirements that are already part of
+    the accepted Decision Quality contract. Technical/raw requests are exempt
+    because the user explicitly asked for deeper diagnostics.
     """
 
     plan = recommendation_evidence_plan(objective)
@@ -126,6 +132,8 @@ def decision_response_violation(objective: object, content: object) -> str | Non
     )
     if any(first_line.startswith(prefix) for prefix in _DIAGNOSTIC_FIRST_PREFIXES):
         return "diagnostic_or_orchestration_first"
+    if not _risk_evidence_dimensions_disclosed(stripped):
+        return "risk_evidence_separation_not_disclosed"
     return None
 
 
@@ -139,6 +147,12 @@ def build_decision_retry_system_message(violation: str) -> str:
         if violation == "stale_evidence_not_disclosed"
         else ""
     )
+    separation_instruction = (
+        " Explicitly include the separate user-facing dimensions `Risk:` and `Evidence quality:`. "
+        "If either dimension is unavailable, say so without inferring a value from the other."
+        if violation == "risk_evidence_separation_not_disclosed"
+        else ""
+    )
     return (
         "The previous recommendation draft violated Roberta's deterministic decision-presentation "
         f"contract ({violation}). Rewrite the answer once using the same specialist evidence. "
@@ -146,7 +160,7 @@ def build_decision_retry_system_message(violation: str) -> str:
         "separate from Evidence quality, surface important unknowns, and do not expose raw JSON, "
         "service-envelope diagnostics, planner/orchestration narration, or execution authority. "
         "Do not invent or recalculate any CMIS fact."
-        f"{stale_instruction}"
+        f"{stale_instruction}{separation_instruction}"
     )
 
 
