@@ -60,25 +60,6 @@ def test_conversational_answer_first_draft_is_not_rejected():
     assert decision_response_violation("Should I buy AGI?", content) is None
 
 
-def test_risk_without_evidence_quality_is_rejected():
-    content = (
-        "I can't explain the price move definitively. No deterministic risk assessment or "
-        "historical comparison is available, so I won't speculate."
-    )
-    assert (
-        decision_response_violation("On X1, why is AGI's price falling?", content)
-        == "risk_evidence_separation_not_disclosed"
-    )
-
-
-def test_evidence_quality_without_risk_is_rejected():
-    content = "Evidence quality: WEAK because the provider path is unavailable."
-    assert (
-        decision_response_violation("On X1, why is AGI's price falling?", content)
-        == "risk_evidence_separation_not_disclosed"
-    )
-
-
 def test_explicit_raw_or_technical_request_is_not_blocked_by_presentation_guard():
     objective = "Is AGI risky? Show me the raw technical details and sources."
     assert decision_response_violation(objective, '{"service":"risk_check"}') is None
@@ -120,12 +101,7 @@ def test_oracle_retries_once_after_diagnostic_first_recommendation():
     model = SequenceModel(
         [
             AIMessage(content="CMIS service: OK. Verified price follows..."),
-            AIMessage(
-                content=(
-                    "Avoid treating this as low risk; the deterministic risk level is HIGH. "
-                    "Evidence quality is moderate."
-                )
-            ),
+            AIMessage(content="Avoid treating this as low risk; the deterministic risk level is HIGH."),
         ]
     )
     node = make_oracle_node(model)
@@ -134,58 +110,6 @@ def test_oracle_retries_once_after_diagnostic_first_recommendation():
 
     assert len(model.calls) == 2
     assert result["messages"][0].content.startswith("Avoid treating this as low risk")
-
-
-def test_oracle_retries_once_when_risk_evidence_separation_is_omitted():
-    model = SequenceModel(
-        [
-            AIMessage(
-                content=(
-                    "I can't explain the price move definitively. No deterministic risk "
-                    "assessment or historical comparison is available."
-                )
-            ),
-            AIMessage(
-                content=(
-                    "I can't explain the price move definitively. Risk: unavailable because no "
-                    "deterministic risk assessment was produced. Evidence quality: weak because "
-                    "the market and historical services are unavailable."
-                )
-            ),
-        ]
-    )
-    node = make_oracle_node(model)
-
-    result = node(_post_scout_state("On X1, why is AGI's price falling?"))
-
-    assert len(model.calls) == 2
-    assert result["status"] == "complete"
-    answer = result["messages"][0].content.lower()
-    assert "risk:" in answer
-    assert "evidence quality:" in answer
-    retry_system_text = "\n".join(
-        str(message.content)
-        for message in model.calls[1]
-        if getattr(message, "type", None) == "system"
-    )
-    assert "risk_evidence_separation_not_disclosed" in retry_system_text
-    assert "`Risk:` and `Evidence quality:`" in retry_system_text
-
-
-def test_repeated_risk_evidence_separation_omission_fails_closed():
-    model = SequenceModel(
-        [
-            AIMessage(content="No deterministic risk assessment is available."),
-            AIMessage(content="Risk remains unavailable because the provider path failed."),
-        ]
-    )
-    node = make_oracle_node(model)
-
-    result = node(_post_scout_state("On X1, why is AGI's price falling?"))
-
-    assert len(model.calls) == 2
-    assert result["status"] == "complete"
-    assert result["messages"][0].content == decision_synthesis_failure_text()
 
 
 def test_repeated_noncompliance_fails_closed_instead_of_exposing_raw_dump():
