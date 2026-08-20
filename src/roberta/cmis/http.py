@@ -15,6 +15,11 @@ from roberta.cmis.capabilities import (
     require_service_capability,
     validate_capability_manifest,
 )
+from roberta.cmis.concentration_intelligence import (
+    SERVICE as CONCENTRATION_INTELLIGENCE_SERVICE,
+    normalize_intelligence_evidence_id,
+    require_concentration_intelligence_promotion,
+)
 from roberta.cmis.contracts import (
     CMISEnvelope,
     CMISOperation,
@@ -76,6 +81,7 @@ class CMISHTTPClient:
         self.api_key = str(api_key or "").strip()
         self.timeout_seconds = float(timeout_seconds)
         self._capabilities_cache: CMISCapabilities | None = None
+        self._raw_capabilities_cache: dict[str, Any] | None = None
 
     @classmethod
     def from_env(cls) -> "CMISHTTPClient":
@@ -137,8 +143,13 @@ class CMISHTTPClient:
             raise CMISCapabilityContractError(
                 "CMIS capabilities endpoint returned invalid JSON."
             ) from exc
+        if not isinstance(decoded, dict):
+            raise CMISCapabilityContractError(
+                "CMIS capabilities endpoint returned a non-object JSON response."
+            )
 
         manifest = validate_capability_manifest(decoded)
+        self._raw_capabilities_cache = decoded
         self._capabilities_cache = manifest
         return manifest
 
@@ -456,4 +467,50 @@ class CMISHTTPClient:
                 "chain": normalized_chain,
                 "params": params,
             },
+        )
+
+    def concentration_change_intelligence(
+        self,
+        *,
+        chain: str,
+        asset: str,
+        intelligence_evidence_id: str,
+    ) -> CMISEnvelope:
+        normalized_chain, normalized_asset = self._identity(chain, asset)
+        evidence_id = normalize_intelligence_evidence_id(intelligence_evidence_id)
+        try:
+            self.capabilities()
+            raw_manifest = self._raw_capabilities_cache
+            if raw_manifest is None:  # pragma: no cover - defensive cache invariant
+                raise CMISCapabilityContractError("Raw CMIS capability manifest is unavailable.")
+            require_concentration_intelligence_promotion(
+                raw_manifest,
+                chain=normalized_chain,
+            )
+        except CMISCapabilityUnavailable as exc:
+            return self._error_envelope(
+                service=CONCENTRATION_INTELLIGENCE_SERVICE,
+                chain=normalized_chain,
+                asset=normalized_asset,
+                status="unavailable",
+                code="cmis_capability_unavailable",
+                message=str(exc),
+                warning=True,
+            )
+        except CMISCapabilityContractError as exc:
+            return self._error_envelope(
+                service=CONCENTRATION_INTELLIGENCE_SERVICE,
+                chain=normalized_chain,
+                asset=normalized_asset,
+                status="unavailable",
+                code="cmis_capability_contract_unavailable",
+                message=f"CMIS capability contract unavailable: {exc}",
+                warning=True,
+            )
+
+        return self._request(
+            service=CONCENTRATION_INTELLIGENCE_SERVICE,
+            chain=normalized_chain,
+            asset=normalized_asset,
+            params={"intelligence_evidence_id": evidence_id},
         )
