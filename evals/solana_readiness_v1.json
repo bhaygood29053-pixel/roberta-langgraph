@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "name": "Roberta Solana Read-Only Production Readiness v1",
+  "authority": "evaluation_input_only",
+  "scope": {
+    "chain": "solana",
+    "requires_provider_enabled": true,
+    "production_ready_claim": false,
+    "promoted_services_only": true,
+    "token_2022_live_case": "deferred_until_accepted_exact_mint_fixture",
+    "degraded_provider_replay": "tracked_separately_under_issue_78"
+  },
+  "scenarios": [
+    {
+      "id": "solana-market-report-exact-mint",
+      "turns": [
+        "On Solana, give me the current market report for exact mint JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN."
+      ],
+      "expected_chains": ["solana"],
+      "expected_services": {"solana": ["market_report"]},
+      "requires_solana": true
+    },
+    {
+      "id": "solana-tokenomics-exact-mint",
+      "turns": [
+        "On Solana, show the verified tokenomics and authority facts for exact mint JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN."
+      ],
+      "expected_chains": ["solana"],
+      "expected_services": {"solana": ["tokenomics"]},
+      "requires_solana": true
+    },
+    {
+      "id": "solana-risk-exact-mint",
+      "turns": [
+        "On Solana, what is the verified risk for exact mint JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN?"
+      ],
+      "expected_chains": ["solana"],
+      "expected_services": {"solana": ["risk_check"]},
+      "requires_solana": true,
+      "require_risk_evidence_labels": true
+    },
+    {
+      "id": "solana-symbol-only-identity-fails-closed",
+      "turns": [
+        "On Solana, what is the verified risk for JUP? Do not guess a mint if the symbol is insufficient."
+      ],
+      "expected_chains": ["solana"],
+      "expected_services": {"solana": ["risk_check"]},
+      "requires_solana": true,
+      "require_risk_evidence_labels": true
+    },
+    {
+      "id": "solana-cross-chain-isolation",
+      "turns": [
+        "Compare AGI on X1 with exact Solana mint JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN. Keep each chain's risk and evidence quality separate."
+      ],
+      "expected_chains": ["x1", "solana"],
+      "expected_services": {
+        "x1": ["risk_check", "market_report"],
+        "solana": ["risk_check", "market_report"]
+      },
+      "requires_solana": true,
+      "require_risk_evidence_labels": true
+    }
+  ]
+}
