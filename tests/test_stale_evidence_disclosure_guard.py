@@ -52,14 +52,14 @@ def test_oracle_retries_once_when_explicit_stale_evidence_is_not_disclosed():
         [
             AIMessage(
                 content=(
-                    "I can't give you a meaningful risk read. No live market data is available, "
-                    "so the risk level remains unknown."
+                    "I can't give you a meaningful risk read. Risk: unknown because no live market "
+                    "data is available. Evidence quality: weak."
                 )
             ),
             AIMessage(
                 content=(
                     "I can't give you a current risk read because the specialist evidence is stale. "
-                    "Risk remains unknown and evidence quality is weak."
+                    "Risk: unknown. Evidence quality: weak."
                 )
             ),
         ]
@@ -83,8 +83,18 @@ def test_oracle_retries_once_when_explicit_stale_evidence_is_not_disclosed():
 def test_repeated_stale_evidence_omission_fails_closed():
     model = SequenceModel(
         [
-            AIMessage(content="No live market facts are available, so risk is unknown."),
-            AIMessage(content="Current market facts are unavailable, so I cannot assess risk."),
+            AIMessage(
+                content=(
+                    "Risk: unknown because no live market facts are available. "
+                    "Evidence quality: weak."
+                )
+            ),
+            AIMessage(
+                content=(
+                    "Risk: unavailable because current market facts are unavailable. "
+                    "Evidence quality: weak."
+                )
+            ),
         ]
     )
     node = make_oracle_node(model)
@@ -119,7 +129,14 @@ def test_nonstale_specialist_evidence_does_not_trigger_freshness_retry():
         ]
     }
     model = SequenceModel(
-        [AIMessage(content="Risk is unknown because the deterministic risk field is unavailable.")]
+        [
+            AIMessage(
+                content=(
+                    "Risk: unknown because the deterministic risk field is unavailable. "
+                    "Evidence quality: unavailable."
+                )
+            )
+        ]
     )
     node = make_oracle_node(model)
 
