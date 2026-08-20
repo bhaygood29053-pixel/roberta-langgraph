@@ -23,6 +23,36 @@ from roberta.readiness import (
 from roberta.tools import get_roberta_tools
 
 
+def _apply_required_execution_gate(
+    report: dict[str, object],
+    *,
+    results: list[object],
+    require_no_skips: bool,
+) -> int:
+    """Record skipped scenarios as deployment blockers when execution is required."""
+
+    if not require_no_skips:
+        return 0
+    skipped = [result for result in results if getattr(result, "skipped", False)]
+    if not skipped:
+        return 0
+
+    summary = report.get("summary")
+    blockers = report.get("deployment_blockers")
+    if isinstance(summary, dict):
+        summary["required_execution_blockers"] = len(skipped)
+    if isinstance(blockers, list):
+        blockers.extend(
+            {
+                "scenario_id": str(getattr(result, "scenario_id", "unknown")),
+                "failed_checks": ["scenario_skipped"],
+                "reason": str(getattr(result, "skip_reason", "scenario was skipped")),
+            }
+            for result in skipped
+        )
+    return len(skipped)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=(
@@ -45,6 +75,15 @@ def main() -> None:
         action="append",
         default=[],
         help="Run only the named scenario id; may be repeated.",
+    )
+    parser.add_argument(
+        "--require-no-skips",
+        action="store_true",
+        help=(
+            "Fail the readiness command if any selected scenario is skipped. "
+            "Use this for chain-specific production-readiness gates so a disabled "
+            "provider cannot be mistaken for a passing evaluation."
+        ),
     )
     args = parser.parse_args()
 
@@ -123,8 +162,15 @@ def main() -> None:
             "cmis_base_url": cmis_delegate.base_url,
             "solana_provider_enabled": chain_settings.solana_provider_enabled,
             "corpus": str(args.corpus),
+            "require_no_skips": args.require_no_skips,
         },
     )
+    required_execution_blockers = _apply_required_execution_gate(
+        report,
+        results=results,
+        require_no_skips=args.require_no_skips,
+    )
+
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(report, indent=2, sort_keys=True), encoding="utf-8")
@@ -133,6 +179,8 @@ def main() -> None:
 
     if report["summary"]["failed"]:
         raise SystemExit(1)
+    if required_execution_blockers:
+        raise SystemExit(2)
 
 
 if __name__ == "__main__":
