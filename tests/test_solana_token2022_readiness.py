@@ -18,6 +18,9 @@ from roberta.readiness_solana_token2022 import (
 )
 
 
+ACCEPTED_PYUSD_TOKEN_2022_MINT = "2b1kV6DkPAnxd5ixfnxCpjxmKwqjjaYmCZfHsFu24GXo"
+
+
 class _Token2022Oracle:
     def bind_tools(self, tools):
         self.tools = list(tools)
@@ -100,19 +103,19 @@ def test_token_2022_case_runs_normal_solana_scout_path() -> None:
     assert result.checks["token_2022_disclosed"] is True
 
 
-def test_solana_corpus_declares_live_token_2022_blocker() -> None:
+def test_solana_corpus_records_accepted_live_token_2022_fixture() -> None:
     corpus = Path("evals/solana_readiness_v1.json")
     decoded = json.loads(corpus.read_text(encoding="utf-8"))
 
-    assert decoded["readiness_blockers"] == [
-        "accepted_token_2022_live_mint_required"
-    ]
-    assert decoded["scope"]["token_2022_live_case"] == (
-        "blocked_until_cmis_accepts_exact_live_mint"
+    assert decoded["readiness_blockers"] == []
+    assert decoded["scope"]["token_2022_live_case"] == "accepted_by_cmis_issue_244"
+    assert decoded["scope"]["accepted_token_2022_live_mint"] == (
+        ACCEPTED_PYUSD_TOKEN_2022_MINT
     )
-    assert _load_corpus_declared_blockers(corpus) == (
-        "accepted_token_2022_live_mint_required",
+    assert decoded["scope"]["token_2022_live_acceptance_scope"] == (
+        "read_only_exact_mint_rpc_contract"
     )
+    assert _load_corpus_declared_blockers(corpus) == ()
 
 
 def test_corpus_declared_blocker_is_promoted_into_readiness_report() -> None:
