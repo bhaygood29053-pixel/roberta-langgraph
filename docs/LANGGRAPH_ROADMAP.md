@@ -17,7 +17,9 @@ Roberta has completed:
 - Phase 9 — Human in the Loop;
 - Phase 10 — More Specialists / Providers;
 - Post-Phase-10 Evidence-Aware Intelligence & User Experience;
-- adoption/readiness of the first separately promoted CMIS 1.9 Verified Intelligence service through X1 Scout.
+- X1 Decision Production Readiness (#62);
+- adoption/readiness of the first separately promoted CMIS 1.9 Verified Intelligence service through X1 Scout (#73/#74);
+- Solana Read-Only Production Readiness (#78) for the exact currently promoted Roberta Solana Scout surface.
 
 Phase 5 — X1 Evidence Completeness remains deliberately **bounded**, with explicit verified/bounded/partial/unavailable/conflict/insufficient-evidence states.
 
@@ -62,6 +64,44 @@ Roberta
 The Scout -> CMIS boundary validates the live machine-readable capability manifest before dispatch. Missing, malformed, incompatible, or non-callable capability state fails closed. No unsupported chain silently falls back to another chain.
 
 Solana Phase 10 remains read-only, capability-specific, and not assumed to have X1 parity.
+
+## Completed readiness gates
+
+### X1 Decision Production Readiness (#62) ✅ Complete
+
+The X1 read-only decision-quality production gate is complete. Representative live/configured and degraded-evidence cases proved answer-first presentation, uncertainty preservation, risk/evidence separation, freshness handling, null-versus-zero preservation, provider-error handling, and read-only execution boundaries.
+
+### First promoted CMIS intelligence adoption (#73/#74) ✅ Complete
+
+Roberta adopted the first separately promoted CMIS 1.9 read-only intelligence service, `concentration_change_intelligence/v1`, through X1 Scout. The operation remains explicit-only and evidence-id-bound; it does not authorize broader intelligence promotion or execution.
+
+### Solana Read-Only Production Readiness (#78) ✅ Complete
+
+The configured production-model/provider path is accepted for the exact current Roberta Solana Scout surface:
+
+- `market_report`;
+- `tokenomics`;
+- `risk_check`;
+- exact-mint identity preservation and symbol-only fail-closed handling required by those services;
+- X1/Solana evidence isolation.
+
+The final configured operator run on 2026-08-20 executed all five corpus cases with `--require-no-skips` and recorded:
+
+```text
+total: 5
+completed: 5
+passed: 5
+failed: 0
+skipped: 0
+oracle_retry_calls: 1
+provider_error_events: 1
+```
+
+The nonzero provider-error count is preserved as an operational measurement rather than hidden; readiness blockers are based on failed deterministic scenario checks, and the accepted run had zero failures. The symbol-only case required one presentation retry after PR #94 and then passed with separate Risk/Evidence quality disclosure.
+
+This is **not** an X1/Solana parity claim. Solana `historical_compare`, `rank`, `pre_trade_check`, `concentration_change_intelligence`, broader Verified Intelligence primitives, and all execution capabilities remain outside the accepted Roberta Solana production-ready scope unless separately promoted and evaluated.
+
+The separately accepted live Token-2022 fixture from CMIS #244 proves only the exact-mint read-only RPC contract for that fixture; it does not promote a broader Token-2022 market or holder/ownership claim.
 
 ## Evidence-aware intelligence ✅ Complete
 
@@ -132,6 +172,8 @@ Roberta must preserve these unavailable/partial/insufficient states rather than 
 
 ## Pre-trade analysis ✅ Bounded analysis-only foundation complete
 
+The deterministic pre-trade trade-size milestone previously tracked as CMIS Issue #99 is complete and is no longer a current roadmap dependency.
+
 CMIS owns deterministic trade-size analysis. Roberta explains the returned structured result without recomputing replacement ratios, risk, proof, price impact, fees, slippage, route quality, or simulation.
 
 Advanced fields remain available only where exact semantics/evidence are independently proven. Missing advanced evidence is not zero-filled.
@@ -162,7 +204,7 @@ Phase 9 human approval is exact-proposal review. Approval is not a reusable sign
 
 ## Phase 11 — Controlled Execution ⬜ Locked / not started
 
-No current CMIS result, Chain Scout report, Roberta policy decision, or human approval authorizes:
+No current CMIS result, Chain Scout report, Roberta policy decision, readiness result, or human approval authorizes:
 
 - transaction preparation for execution;
 - wallet signing;
@@ -178,13 +220,13 @@ If Controlled Execution is ever promoted, it requires a separate accepted transa
 
 ## Next read-only intelligence boundary
 
-The first narrow CMIS 1.9 promotion/adoption is complete. The next shared intelligence work should proceed only through separately accepted deterministic contracts, especially:
+The first narrow CMIS 1.9 promotion/adoption and the current Solana read-only readiness gate are complete. The next shared intelligence work should proceed only through separately accepted deterministic contracts, especially:
 
 1. deterministic inference/classification contracts before behavioral/ownership labels;
 2. wallet relationship evidence with explicit non-ownership semantics;
 3. evidence-backed alerts with explicit scope/freshness/threshold/persistence rules;
 4. deeper X1 provider-gap and historical redundancy verification;
-5. field-by-field Solana maturity;
+5. field-by-field Solana maturity beyond the currently accepted Scout surface;
 6. future Ethereum support only under an explicit capability/verification plan.
 
 None of these items starts Controlled Execution.
