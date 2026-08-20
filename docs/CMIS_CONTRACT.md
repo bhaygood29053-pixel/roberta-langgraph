@@ -30,12 +30,14 @@ Accepted milestones include:
 - CMIS Evidence Receipts + Proof Score: complete;
 - CMIS deterministic pre-trade trade-size analysis: complete;
 - CMIS Phase 11 — read-only Verified Intelligence foundation: complete;
-- first CMIS Phase 11 public-service / Scout-reliance promotion: complete for one narrow X1 service;
-- Roberta adoption and readiness replay for that service: complete.
+- CMIS Phase 12 first narrow public-service / Scout-reliance promotion: complete for one X1 service;
+- Roberta adoption and readiness replay for that service: complete;
+- CMIS deterministic descriptive intelligence classification foundation: complete, internal/read-only/non-promoted;
+- CMIS deterministic wallet relationship evidence foundation: complete with explicit non-ownership semantics, internal/read-only/non-promoted.
 
 Roberta Phase 11 — Controlled Execution remains **locked / not started**.
 
-CMIS currently advertises capability contract **1.9.0**. Roberta keeps a global existing-service minimum of **1.8.0**, while the first promoted intelligence operation has a service-specific minimum of **1.9.0**.
+CMIS currently advertises capability contract **1.9.0**. Roberta keeps a global existing-service minimum of **1.8.0**, while the promoted concentration operation has a service-specific minimum of **1.9.0**.
 
 ## Shared public service surface
 
@@ -52,6 +54,8 @@ The shared CMIS contract includes, where the live chain capability manifest perm
 - `concentration_change_intelligence` — X1-only bounded promoted service under CMIS 1.9.0
 
 A CMIS runtime capability does not become an autonomous Scout action merely because the service exists. Every operation names its target chain explicitly. No unsupported-chain fallback is permitted.
+
+The accepted deterministic classification and wallet-relationship foundations are intentionally **not** listed as shared public operations because no public-service/Scout-reliance promotion has been accepted for them.
 
 ## Capability handshake
 
@@ -70,9 +74,9 @@ public_service_promoted = false
 scout_reliance_promoted = false
 ```
 
-The first promoted service is a separate wrapper and does not change that foundation-level state.
+The first promoted service is a separate wrapper and does not change that foundation-level state. The later internal descriptive-classification and wallet-relationship foundations also remain non-promoted and do not change the live public service surface.
 
-Roberta does not bypass the Scout boundary to perform provider calls directly.
+Roberta does not bypass the Scout boundary to perform provider calls or internal CMIS intelligence-helper calls directly.
 
 ## First promoted read-only intelligence service
 
@@ -134,11 +138,18 @@ Risk and proof quality are separate dimensions. Roberta may explain both but mus
 
 CMIS Phase 11 foundations include top-account concentration observations and compatible numeric changes, neutral wallet-activity facts, sanitized sparse intelligence history/comparison, and evidence-bound conclusions.
 
-The first promoted concentration-change wrapper does **not** establish or authorize:
+CMIS has also accepted:
+
+- a deterministic descriptive-classification foundation that may state only the exact concentration direction proven by canonical CMIS evidence;
+- a deterministic wallet-relationship foundation that may state only verified observed direct token-transfer interactions between exact chain identities within a compatible bounded evidence set.
+
+Those internal foundations preserve behavior, ownership, intent, fraud/manipulation, risk, public-service, Scout-reliance, and execution boundaries. The wallet-relationship contract specifically does not establish common ownership, beneficial ownership, coordinated control, or complete wallet/graph history.
+
+The promoted concentration-change wrapper and the internal foundations do **not** establish or authorize:
 
 - total unique-holder coverage;
 - beneficial-owner identity;
-- whale, insider, bot, accumulator, distributor, market-maker, manipulator, dumper, or common-owner labels;
+- whale, insider, bot, accumulator, distributor, market-maker, manipulator, dumper, scam, or common-owner labels;
 - intent or behavioral claims;
 - risk inferred from Proof Score alone.
 
@@ -181,7 +192,7 @@ Solana is not assumed to have X1 parity, and missing Solana capability may never
 
 `verification_evidence` is accepted where the manifest permits it. Evidence lookup remains selector-bound.
 
-Roberta must not bypass the typed Scout/client boundary, call internal CMIS verifier/ledger helpers directly, submit raw provider observations as verified evidence, infer evidence identity from a free-form label, or choose verification state/Proof Score/promotion state.
+Roberta must not bypass the typed Scout/client boundary, call internal CMIS verifier/ledger/intelligence helpers directly, submit raw provider observations as verified evidence, infer evidence identity from a free-form label, or choose verification state/Proof Score/promotion state.
 
 Only accepted verified/promotable agreement may expose a promoted fact. Conflict, stale/non-promotable agreement, insufficient evidence, and missing records remain explicit.
 
@@ -229,9 +240,11 @@ No current CMIS result, Chain Scout report, Roberta policy decision, or human ap
 
 ## Development coordination
 
-The first promoted read-only intelligence service and Roberta adoption/readiness gate are complete.
+The promoted read-only concentration service, Roberta adoption/readiness gate, deterministic descriptive classification foundation, and deterministic wallet-relationship evidence foundation are complete at their accepted boundaries.
 
-The next shared analytical boundary is deterministic inference/classification design before any behavioral or ownership labels. Wallet relationships and alerts require separate evidence contracts; X1 provider-gap verification and Solana coverage can deepen in parallel. Controlled Execution stays locked.
+The next shared analytical boundary is **evidence-backed alerts**. CMIS must first accept a deterministic alert contract covering exact evidence scope, freshness, threshold/policy identity, persistence/repetition semantics, triggering evidence, limitations, deterministic identity, and fail-closed behavior. Public-service/Scout-reliance promotion and Roberta adoption must remain separate later steps.
+
+X1 provider-gap verification and Solana coverage can deepen in parallel. Controlled Execution stays locked.
 
 ## Core rule
 
