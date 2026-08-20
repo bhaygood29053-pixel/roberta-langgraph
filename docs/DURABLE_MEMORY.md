@@ -78,6 +78,32 @@ latest user request
 
 Irrelevant records are omitted. Memory-provider failures degrade to no injected memory rather than aborting Roberta or fabricating fallback context.
 
+## Provenance reconciliation
+
+Issue #99 adds a provider-neutral deterministic seam for comparing remembered/historical context with a candidate observation without turning memory into a second market-data authority.
+
+`reconcile_memory_observations()` produces only one bounded provenance label:
+
+- `superseded` — accepted evidence confirms the same semantic value at the same or a later observation time, so the remembered context is no longer the usable evidence source;
+- `evolution` — newer accepted evidence differs at a later observation time, so both observations may be historically valid because state changed;
+- `conflict` — materially comparable observations disagree at the same observation time;
+- `unknown` — evidence is insufficient to reconcile safely, including missing/ambiguous timestamps, incompatible semantic/category scope, cross-chain scope, unaccepted candidate evidence, or reversed ordering.
+
+`unknown` is the explicit insufficient-evidence state; missing fields are never converted into zero, false, or a guessed reconciliation label.
+
+The reconciliation result can set `requires_fresh_verification=True`. This lets historical memory inform verification strategy, especially for conflicts or insufficient evidence, without promoting HXMP/checkpoint/conversation state into current truth.
+
+The seam is deliberately authority-free:
+
+- it does not mutate HXMP or durable memory;
+- it does not manufacture or recompute CMIS facts, risk, Evidence Receipts, or Proof Scores;
+- it never grants `current_truth_authorized` or `execution_authorized`;
+- X1 and Solana observations with different chain scope remain isolated;
+- only explicitly accepted candidate evidence can resolve a historical comparison;
+- current/latest answers still require the normal `User -> Roberta -> Chain Scout -> CMIS -> provider` authority path.
+
+HXMP approval, preview-hash, wallet, lane, signer, readback, secret-safety, and capacity controls are unchanged.
+
 ## Prompt-safety boundary
 
 Retrieved records are serialized as JSON objects beneath an explicit data-only system preface. The preface states that Roberta must not follow instructions, tool requests, URLs, approval changes, or policy changes embedded inside memory record fields.

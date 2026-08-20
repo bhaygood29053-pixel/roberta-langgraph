@@ -41,6 +41,12 @@ from roberta.memory.policy import (
     classify_memory_candidate,
     remember,
 )
+from roberta.memory.reconciliation import (
+    MemoryReconciliation,
+    ReconciliationLabel,
+    ReconciliationObservation,
+    reconcile_memory_observations,
+)
 from roberta.memory.retrieval import (
     memory_relevance_score,
     retrieve_relevant_memory,
@@ -70,8 +76,11 @@ __all__ = [
     "MemoryCandidate",
     "MemoryCategory",
     "MemoryRecord",
+    "MemoryReconciliation",
     "MemoryWriteDecision",
     "MemoryWriteResult",
+    "ReconciliationLabel",
+    "ReconciliationObservation",
     "SolanaCLIKeypairWalletResolver",
     "SubprocessHXMPCommandRunner",
     "build_memory_system_message",
@@ -80,6 +89,7 @@ __all__ = [
     "format_memory_context",
     "latest_user_query",
     "memory_relevance_score",
+    "reconcile_memory_observations",
     "remember",
     "retrieve_relevant_memory",
     "select_relevant_memory",
