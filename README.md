@@ -56,6 +56,12 @@ See [`docs/LANGGRAPH_ROADMAP.md`](./docs/LANGGRAPH_ROADMAP.md) for the authorita
 
 CMIS has its own execution-phase numbering. CMIS Phase 11 refers to its completed **read-only Verified Intelligence foundation**; that is separate from Roberta Phase 11 Controlled Execution.
 
+## Engineering workflow
+
+Meaningful Roberta changes follow the repository-authoritative workflow in [`docs/ENGINEERING_WORKFLOW.md`](./docs/ENGINEERING_WORKFLOW.md). It requires roadmap/issue gating, narrow tracer-bullet slices, behavior-first verification, exact-head deterministic testing, and independent **Spec**, **Code/Architecture**, and **Authority/Safety** review before merge.
+
+Green CI alone is not sufficient if a required review axis fails. The workflow preserves `User -> Roberta -> Chain Scout -> CMIS -> Provider` and does not widen Controlled Execution.
+
 ## Evidence-aware intelligence
 
 Roberta consumes the CMIS evidence-quality and capability contracts.
