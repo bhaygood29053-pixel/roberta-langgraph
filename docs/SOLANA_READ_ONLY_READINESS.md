@@ -1,6 +1,6 @@
 # Solana Read-Only Production Readiness
 
-Tracking: Roberta issue #78. Foundation slice: #79. Degraded-evidence slice: #82. Token-2022 slice: #84.
+Tracking: Roberta issue #78. Foundation slice: #79. Degraded-evidence slice: #82. Token-2022 slice: #84. Live Token-2022 blocker resolution: #89 after CMIS #244.
 
 ## Purpose
 
@@ -26,7 +26,7 @@ Unsupported or unconfigured services remain unavailable. In particular, Solana p
 
 ## Configured corpus
 
-`evals/solana_readiness_v1.json` is the first Solana-only configured-readiness corpus. It covers:
+`evals/solana_readiness_v1.json` is the Solana configured-readiness corpus. It covers:
 
 1. current market report for an exact Solana mint;
 2. tokenomics/authority facts for an exact Solana mint;
@@ -34,13 +34,13 @@ Unsupported or unconfigured services remain unavailable. In particular, Solana p
 4. symbol-only identity failing closed rather than silently guessing a mint;
 5. X1/Solana cross-chain evidence isolation.
 
-The corpus intentionally does not claim full #78 acceptance yet.
+The corpus still does not make a production-ready claim by itself. A production-ready claim requires a configured operator run with all selected cases executed, zero failures, and zero deployment blockers.
 
-It also carries corpus-level `readiness_blockers`. These are unresolved prerequisites for the production-readiness claim even if all executable scenarios pass. `roberta-readiness` writes them into `deployment_blockers` and exits non-zero.
+Corpus-level `readiness_blockers` remain available for unresolved prerequisites. `roberta-readiness` writes declared blockers into `deployment_blockers` and exits non-zero. After CMIS #244 acceptance, the previously declared `accepted_token_2022_live_mint_required` blocker is resolved and the corpus blocker list is empty.
 
 ## Token-2022 boundary
 
-CMIS already has accepted deterministic tests for:
+CMIS has accepted deterministic tests for:
 
 - canonical Token-2022 owner/program identity;
 - `program_kind=token_2022`;
@@ -48,17 +48,31 @@ CMIS already has accepted deterministic tests for:
 - tokenomics supply and authority preservation under Token-2022;
 - no silent equivalence with legacy SPL Token.
 
-Roberta mirrors that contract with the evaluation-only replay case:
+Roberta mirrors that deterministic contract with the evaluation-only replay case:
 
 `solana-token-2022-tokenomics-fixture`
 
-The fixture uses a synthetic, valid-shape, case-sensitive Solana pubkey solely as deterministic test identity. It is **not** a live asset claim. The case passes only if the normal Roberta -> Solana Scout -> CMIS path preserves Token-2022 program identity, `transferFeeConfig`, mint/freeze authority state, partial evidence, `risk=None`, and explicit evaluation-only scope.
+The replay fixture remains synthetic and evaluation-only. It is not a live asset claim and remains useful for degraded-evidence/model behavior tests.
 
-CMIS's accepted live RPC workflow currently defaults to Circle mainnet USDC and otherwise accepts an operator-supplied `SOLANA_LIVE_TEST_MINT`; the repository does not currently designate an approved exact live Token-2022 mint for readiness. Therefore the configured Solana corpus declares:
+CMIS #244 separately accepted a live read-only Token-2022 readiness fixture:
 
-`accepted_token_2022_live_mint_required`
+- asset: PYUSD on Solana;
+- exact mint: `2b1kV6DkPAnxd5ixfnxCpjxmKwqjjaYmCZfHsFu24GXo`;
+- program: Token-2022;
+- decimals: 6;
+- acceptance scope: exact-mint read-only RPC contract only.
 
-This blocker must remain until CMIS accepts a specific live Token-2022 mint/probe contract. Roberta must not choose or guess one independently.
+The final dedicated-RPC acceptance used QuickNode and passed `getTokenLargestAccounts` after CMIS PR #249 normalized provider-extended results to Solana's canonical top-20 scope. The accepted live observation preserved:
+
+- `account_count_observed=20`;
+- `provider_account_count_returned=100`;
+- `canonical_account_limit=20`;
+- `provider_extended_result_truncated=true`;
+- `counted_entity=token_accounts`;
+- `coverage=largest_token_accounts_only`;
+- `total_holder_count_verified=false`.
+
+This acceptance removes the earlier Token-2022 identity prerequisite. It does not make PYUSD a general market benchmark, does not establish holder or beneficial-owner counts, and does not by itself make the full Roberta Solana path production-ready.
 
 ## Controlled degraded-evidence replay
 
@@ -74,6 +88,8 @@ The replay covers:
 - null field versus verified zero;
 - exact case-sensitive Solana mint preservation;
 - deterministic Token-2022 tokenomics/program/extension preservation.
+
+Accepted operator evidence for #78 is 8/8 passing with zero deployment blockers. One stale-evidence case required one model retry, demonstrating the Decision Quality guard corrected an incomplete first draft rather than accepting it.
 
 Run it with:
 
@@ -99,6 +115,7 @@ A production-readiness claim requires:
 
 - `ROBERTA_SOLANA_PROVIDER_ENABLED=1`;
 - configured production model credentials;
+- a synchronized accepted CMIS deployment;
 - configured CMIS endpoint/auth where required;
 - all selected scenarios actually executed;
 - zero failed scenarios;
@@ -106,18 +123,17 @@ A production-readiness claim requires:
 - no cross-chain substitution;
 - preserved CMIS status, evidence quality, freshness, warnings, limitations, and unresolved fields.
 
-`--require-no-skips` exits non-zero when any selected scenario is skipped. Corpus-declared blockers also exit non-zero. This prevents either a disabled Solana provider or an unresolved identity prerequisite from being mistaken for a passing readiness run.
+`--require-no-skips` exits non-zero when any selected scenario is skipped. Corpus-declared blockers also exit non-zero. This prevents either a disabled Solana provider or a future unresolved prerequisite from being mistaken for a passing readiness run.
 
 ## Remaining #78 work
 
-The following remain explicit follow-up gates before Solana can be called production-ready for the full issue scope:
+The explicit remaining gates are:
 
-- CMIS acceptance of one exact live Token-2022 readiness mint/probe contract, followed by removal of `accepted_token_2022_live_mint_required` and addition of the configured live case;
-- technical/source follow-up coverage for only the Solana services actually promoted through Scout;
-- configured operator-run degraded replay evidence;
-- configured operator-run live corpus evidence and blocker report;
-- roadmap synchronization in `docs/LANGGRAPH_ROADMAP.md`;
-- final scope statement naming exactly which Solana capabilities were proven.
+- synchronize/restart the local CMIS deployment to a current accepted contract and verify its capability manifest;
+- run the configured live Solana corpus through the normal Roberta -> Solana Scout -> CMIS path with `--require-no-skips`;
+- record the live readiness report and exact proven capability scope;
+- synchronize `docs/LANGGRAPH_ROADMAP.md` with the completed #62/#73/#74 milestones and current #78 status;
+- close #78 only if the configured live report has zero failures and zero deployment blockers.
 
 ## Safety boundary
 
