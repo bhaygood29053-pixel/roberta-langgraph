@@ -8,6 +8,7 @@ on:
     paths:
       - ".github/workflows/readiness.yml"
       - "evals/read_only_decision_v1.json"
+      - "evals/solana_readiness_v1.json"
       - "src/roberta/readiness*.py"
       - "src/roberta/decision_synthesis.py"
       - "src/roberta/graph.py"
@@ -114,6 +115,26 @@ jobs:
         run: |
           roberta-readiness \
             --output artifacts/readiness/live-${GITHUB_SHA}.json
+      - name: Run configured Solana readiness corpus
+        id: solana_readiness
+        if: steps.live_preflight.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          normalized="$(printf '%s' "${ROBERTA_SOLANA_PROVIDER_ENABLED:-}" | tr '[:upper:]' '[:lower:]')"
+          case "$normalized" in
+            1|true|yes|on)
+              echo "enabled=true" >> "$GITHUB_OUTPUT"
+              roberta-readiness \
+                --corpus evals/solana_readiness_v1.json \
+                --require-no-skips \
+                --output artifacts/readiness/solana-live-${GITHUB_SHA}.json
+              ;;
+            *)
+              echo "enabled=false" >> "$GITHUB_OUTPUT"
+              echo "Solana readiness corpus not executed because ROBERTA_SOLANA_PROVIDER_ENABLED is not true."
+              ;;
+          esac
       - name: Upload live readiness report
         if: always()
         uses: actions/upload-artifact@v4
@@ -128,3 +149,6 @@ jobs:
         run: |
           test "${{ steps.live_preflight.outcome }}" = "success"
           test "${{ steps.live_readiness.outcome }}" = "success"
+          if [[ "${{ steps.solana_readiness.outputs.enabled }}" == "true" ]]; then
+            test "${{ steps.solana_readiness.outcome }}" = "success"
+          fi
