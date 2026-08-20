@@ -130,8 +130,15 @@ def decision_response_violation(objective: object, content: object) -> str | Non
 
 
 def build_decision_retry_system_message(violation: str) -> str:
-    """Return one deterministic correction instruction for an obvious UX violation."""
+    """Return one deterministic correction instruction for a decision-quality violation."""
 
+    stale_instruction = (
+        " The specialist evidence explicitly failed freshness verification. Explicitly tell the "
+        "user that the evidence is stale or not fresh; do not soften that into merely saying live "
+        "data is unavailable or that current facts are missing."
+        if violation == "stale_evidence_not_disclosed"
+        else ""
+    )
     return (
         "The previous recommendation draft violated Roberta's deterministic decision-presentation "
         f"contract ({violation}). Rewrite the answer once using the same specialist evidence. "
@@ -139,6 +146,7 @@ def build_decision_retry_system_message(violation: str) -> str:
         "separate from Evidence quality, surface important unknowns, and do not expose raw JSON, "
         "service-envelope diagnostics, planner/orchestration narration, or execution authority. "
         "Do not invent or recalculate any CMIS fact."
+        f"{stale_instruction}"
     )
 
 
@@ -147,8 +155,9 @@ def decision_synthesis_failure_text() -> str:
 
     return (
         "I have specialist evidence, but I cannot present a recommendation safely because the "
-        "response synthesis did not satisfy the decision-quality contract. I will not expose a "
-        "raw service dump or invent a cleaner conclusion. No transaction or execution is authorized."
+        "response synthesis did not satisfy the decision-quality contract. I will not hide a "
+        "material evidence limitation, expose a raw service dump, or invent a cleaner conclusion. "
+        "No transaction or execution is authorized."
     )
 
 
