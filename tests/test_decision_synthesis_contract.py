@@ -14,7 +14,12 @@ class CapturingModel:
 
     def invoke(self, messages):
         self.calls.append(list(messages))
-        return AIMessage(content="Recommendation first. Evidence follows.")
+        return AIMessage(
+            content=(
+                "Recommendation first. Risk: unavailable. "
+                "Evidence quality: unavailable. Evidence follows."
+            )
+        )
 
 
 def _system_contents(messages):
