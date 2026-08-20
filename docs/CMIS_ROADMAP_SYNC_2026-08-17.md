@@ -4,9 +4,7 @@ This document is Roberta's current integration snapshot of **CMIS — Cross-Chai
 
 ## Source-of-truth rule
 
-CMIS remains authoritative for freshness-sensitive market, liquidity, tokenomics, verification, provenance, proof-quality, deterministic risk, historical intelligence, and bounded pre-trade facts. Roberta may interpret accepted CMIS results but must not manufacture stronger facts, override fresher CMIS data, recompute CMIS proof/risk, or infer production capability from draft work.
-
-Authority continues to flow:
+CMIS remains authoritative for freshness-sensitive market, tokenomics, verification, provenance, proof quality, deterministic risk, historical intelligence, bounded pre-trade facts, and accepted read-only intelligence-service outputs. Roberta may interpret accepted results but must not manufacture stronger facts, recompute CMIS proof/risk, or infer capability from draft work.
 
 ```text
 User / transport
@@ -16,127 +14,100 @@ User / transport
         -> Chain Provider
 ```
 
-Verified information flows upward in the reverse direction.
-
 ## Current project position
-
-The earlier Phase-10/Solana draft assumptions in this snapshot are obsolete.
-
-Current accepted state:
 
 - **Roberta Phase 10 — More Specialists / Providers: complete.**
 - **Roberta Post-Phase-10 Evidence-Aware Intelligence & User Experience: complete.**
 - **CMIS Phase 10 — Solana read-only provider foundation: complete.**
-- **CMIS Evidence Receipts + Proof Score milestone: complete.**
+- **CMIS Evidence Receipts + Proof Score: complete.**
 - **CMIS X1 evidence-capability boundary: complete and fail-closed.**
 - **CMIS deterministic pre-trade trade-size analysis: complete.**
 - **CMIS Phase 11 — read-only Verified Intelligence foundation: complete.**
+- **CMIS Phase 12 — `concentration_change_intelligence/v1`: accepted as the first promoted X1-only read-only intelligence service.**
 - **Roberta Phase 11 — Controlled Execution: locked / not started.**
 
-CMIS and Roberta use different phase numbering. CMIS Phase 11 completion does **not** mean Roberta Controlled Execution has started.
+CMIS and Roberta use different phase numbering. CMIS Phase 12 does not imply Roberta Controlled Execution.
 
 ## Shared Scout / CMIS architecture
 
-Roberta now has two separate supported chain-specialist paths above the same deterministic CMIS layer:
-
 ```text
 Roberta
-  ├── X1 Scout
-  │     -> CMIS -> X1 / XDEX providers
-  └── Solana Scout
-        -> CMIS -> Solana providers
+  ├── X1 Scout -> CMIS -> X1 / XDEX providers
+  └── Solana Scout -> CMIS -> Solana providers
 ```
 
-The design rule remains: **do not duplicate CMIS per chain**. Chain-specific providers belong beneath shared CMIS contracts; a Chain Scout exists only where chain-specific planning and interpretation are justified.
+Do not duplicate CMIS per chain. The Scout → CMIS boundary is guarded by `GET /v1/cmis/capabilities`.
 
-The Scout -> CMIS boundary is guarded by the machine-readable capability manifest:
+The accepted boundary now requires capability schema `1` and **CMIS contract `1.9.0` or compatible newer**. Missing, malformed, incompatible, or non-callable state fails closed.
 
-```text
-GET /v1/cmis/capabilities
-```
+## Shared service contract
 
-A chain/service combination is callable only when the live manifest and accepted contract permit it. Missing, malformed, incompatible, or non-callable capability state fails closed.
+The CMIS public service surface includes, subject to per-chain capability state:
+
+- `asset_lookup`;
+- `market_report`;
+- `rank`;
+- `historical_compare`;
+- `tokenomics`;
+- `risk_check`;
+- `pre_trade_check`;
+- `verification_evidence`;
+- `concentration_change_intelligence`.
+
+A service appearing in the shared contract does not imply every chain supports it or that every Scout may invoke it autonomously.
 
 ## X1 status
 
-X1 is the more mature CMIS surface, but evidence completeness remains fact- and scope-specific. Roberta must preserve CMIS classifications such as verified, bounded, partial, unavailable, conflict, or insufficient evidence rather than treating Scout availability as proof that every X1 fact is globally complete.
+X1 is the more mature CMIS surface, but evidence completeness remains fact- and scope-specific. Roberta preserves verified/bounded/partial/unavailable/conflict/insufficient-evidence states rather than treating Scout availability as global completeness.
 
-Examples of deliberately bounded or unavailable areas may include holder/beneficial-owner semantics, archival completeness, selected direct XDEX quote/history semantics, streaming semantics, bridge operational facts, and other provider-specific gaps until CMIS promotes a tested contract.
+CMIS Phase 12 promotes for X1:
 
-Provider-reported information remains provider-reported until CMIS establishes the accepted independent-verification basis.
+```text
+service: concentration_change_intelligence
+contract: concentration_change_intelligence/v1
+accepted conclusion: top_account_concentration_change
+state: bounded
+callable: true
+read_only: true
+public_service_promoted: true
+scout_reliance_promoted: true
+execution_authorized: false
+```
+
+The trust root is canonical CMIS-owned intelligence evidence addressed by exact `intelligence_evidence_id`, not caller-supplied proof objects. The service preserves top-token-account scope and does not establish unique holders or beneficial owners. Optional explicit/versioned concentration-threshold policy is deterministic policy evaluation, not risk or behavioral interpretation.
 
 ## Solana status
 
-Solana is no longer a fake-only Scout skeleton or an unaccepted draft provider path.
+Solana Phase 10 is complete as a bounded read-only provider/Scout path with exact identity, SPL Token/Token-2022 handling, configured Jupiter/Helius/DEX Screener evidence, cross-source checks, provenance-safe history, and capability-gated services.
 
-Roberta Phase 10 and the CMIS Solana read-only foundation are complete. Accepted architecture includes:
-
-- a Solana Scout LangGraph specialist path;
-- shared typed CMIS client dispatch by explicit chain;
-- bounded read-only Scout planning for accepted research services;
-- strict runtime/provider configuration gates;
-- exact-mint identity where required;
-- canonical Solana RPC foundations including SPL Token and Token-2022 handling;
-- Jupiter, Helius, and pair-scoped DEX Screener adapters where configured;
-- deterministic cross-source checks;
-- provenance-safe observation history;
-- bounded/partial Solana market, tokenomics, risk, and historical capabilities where advertised.
-
-Solana remains fail-closed and capability-specific. It is not assumed to have X1 parity, and no Solana request may silently fall back to X1.
+Solana is not assumed to have X1 parity. The new `concentration_change_intelligence` service is explicitly **unavailable/non-callable on Solana** with public/Scout promotion false and `execution_authorized=false`. No Solana request may fall back to X1.
 
 ## Verification evidence and proof quality
 
-The old statement that Roberta's typed client does not expose `verification_evidence` is obsolete.
+Roberta has an accepted constrained `verification_evidence` path. Roberta and Chain Scouts preserve verification state, Evidence Receipt provenance, Proof Score, scope, freshness, disagreements, limitations, unresolved fields, data-quality reasons, and promotion state.
 
-Roberta has an accepted constrained `verification_evidence` path through the appropriate Scout/typed client boundary. Evidence lookup remains selector-bound and must not become a free-form verifier bypass.
+Risk and proof quality remain separate dimensions.
 
-Roberta and Chain Scouts preserve CMIS evidence context including, where available:
+## Phase 11 foundation vs Phase 12 promotion
 
-- verification state;
-- Evidence Receipt identity/provenance;
-- Proof Score / proof strength and category reasons;
-- scope;
-- freshness;
-- source disagreements;
-- limitations;
-- unresolved fields;
-- data-quality reasons;
-- promotion state.
+The Phase 11 `intelligence_foundation` remains read-only and **unpromoted as a whole**:
 
-Risk and proof quality remain separate dimensions. Roberta may explain both but must not recompute either into a new authoritative score.
+```text
+public_service_promoted = false
+scout_reliance_promoted = false
+```
+
+Phase 12 does not widen that foundation. It promotes exactly one separately contracted X1 service. Broader concentration snapshots, wallet activity, generic sanitized history, generic evidence-bound conclusions, public intelligence-evidence storage/upload, and generic `verified_intelligence` remain non-public/non-automatic.
+
+Roberta must not infer insider, whale, bot, accumulator, distributor, market-maker, manipulator, ownership, relationship, or intent labels from the Phase 11 foundation or the Phase 12 concentration-change service.
 
 ## Evidence-aware Roberta behavior
 
-The Post-Phase-10 Evidence-Aware Intelligence & User Experience milestone is complete.
-
-Roberta now preserves CMIS evidence context through Chain Scout reports and uses deterministic evidence planning for common recommendation/research questions. Normal answer-first synthesis prioritizes the conclusion, important evidence-backed reasons, actual CMIS risk when supplied, evidence quality, and important missing evidence.
-
-`PASS`, `WARN`, and `BLOCK` are not automatically HIGH/MEDIUM/LOW risk labels. If CMIS does not return a dedicated risk level, Roberta keeps risk unknown rather than inventing one.
-
-Cross-chain evidence may be compared, but X1 and Solana evidence contexts remain isolated. Roberta must not merge source lists, borrow one chain's freshness/scope for another, recompute a synthetic proof score, or manufacture a cross-chain safety grade.
-
-## CMIS Phase 11 — Verified Intelligence
-
-CMIS Phase 11 established a **read-only Verified Intelligence foundation**. Current accepted primitives include bounded deterministic support for areas such as:
-
-- exact top-account concentration observations and compatible numeric changes;
-- neutral verified wallet-activity facts;
-- sanitized sparse historical intelligence storage/comparison;
-- evidence-bound conclusions backed by Evidence Receipts and Proof Scores.
-
-These primitives are not automatically public Scout services merely because the foundation exists. The capability contract remains authoritative for what Scouts may call.
-
-Roberta must not label wallets/entities as insider, whale, bot, accumulator, distributor, market maker, manipulator, common owner, or equivalent unless a later accepted deterministic classification contract explicitly permits that conclusion from proven evidence.
+The Post-Phase-10 evidence-aware UX milestone remains complete. Roberta uses answer-first synthesis while preserving CMIS facts, proof, risk, policy observations, and missing evidence as separate concepts. Cross-chain evidence may be compared but not merged into a synthetic proof/risk/safety grade.
 
 ## Pre-trade analysis status
 
-The deterministic trade-size milestone previously tracked as CMIS Issue #99 is complete.
-
-CMIS can now provide bounded analysis-only pre-trade results using accepted evidence, including requested notional, verified liquidity, notional-to-liquidity ratio, versioned policy where supplied, evidence freshness handling, and explicit capability records for advanced execution-related estimates.
-
-Advanced fields such as expected slippage, price impact, route quality, fees, bridge dependency, fill quality, and simulation remain available only where their exact semantics and evidence gates are independently proven. Missing evidence remains unavailable; it is never converted into zero or an LLM estimate.
-
-Every current pre-trade result preserves the execution boundary equivalent to:
+The deterministic trade-size milestone previously tracked as CMIS Issue #99 is complete. Advanced execution-related fields remain evidence-gated. Missing evidence remains unavailable and is never converted into zero or an LLM estimate.
 
 ```text
 analysis_only = true
@@ -147,8 +118,6 @@ A CMIS `PASS` is not permission to trade.
 
 ## Memory, policy, and approval boundaries
 
-HXMP/LangGraph checkpoints are not authoritative sources for current market facts.
-
 ```text
 HXMP / durable memory -> stable context and explicit policy
 CMIS                  -> current verified facts and evidence
@@ -156,42 +125,25 @@ Policy code           -> deterministic rule result
 LLM                    -> explanation / synthesis only
 ```
 
-Fresh accepted CMIS/provider evidence overrides remembered or checkpointed live-market snapshots.
-
-Phase 9 human approval remains a review boundary. Approval of one exact proposal is not a reusable signing credential and does not create execution authority.
+Fresh accepted CMIS/provider evidence overrides remembered/checkpointed live-market snapshots. Human approval remains exact-proposal review, not a reusable signing credential.
 
 ## Controlled Execution remains locked
 
-Roberta Phase 11 Controlled Execution has **not started**.
-
-No current CMIS/Scout result, Roberta policy decision, or human-review state authorizes:
-
-- transaction construction as an execution path;
-- wallet signing;
-- transaction broadcasting;
-- custody;
-- live swap execution;
-- autonomous trading;
-- bridge/value transfer;
-- autonomous value movement;
-- broad delegated wallet authority.
-
-If Controlled Execution is ever promoted, it requires a separate accepted transaction-construction/simulation, exact approval-consumption/revalidation, signer/broadcast, replay-protection, precondition, and failure contract.
+Roberta Phase 11 Controlled Execution has **not started**. No current CMIS/Scout result—including Phase 12 concentration intelligence—Roberta policy decision, or human-review state authorizes transaction preparation as an execution path, wallet signing, broadcasting, custody, live swaps, autonomous trading, bridge/value transfer, or autonomous value movement.
 
 ## Current coordination rule
 
-Near-term work should deepen **read-only** intelligence and provider evidence rather than reopen completed Phase 10 architecture or silently cross into execution.
-
 ```text
 CMIS
-  -> deepen verified X1/Solana evidence and historical intelligence
-  -> promote only proven capability-specific contracts
-  -> keep Phase 11 intelligence primitives read-only
+  -> deepen verified X1/Solana evidence
+  -> promote future intelligence services only through explicit service-specific contracts
+  -> preserve Phase 11 foundation non-promotion
+  -> keep execution unauthorized
 
 Roberta
-  -> consume capability-gated X1 and Solana Scout results
-  -> preserve Evidence Receipts / Proof Scores / limitations
-  -> improve policy and user-facing synthesis without recomputation
+  -> consume capability-gated X1/Solana Scout results
+  -> preserve Evidence Receipts / Proof Scores / risk / policy distinctions
+  -> never infer cross-chain capability parity
   -> keep Controlled Execution locked
 ```
 
@@ -202,5 +154,3 @@ Roberta
 **Chain Scouts determine what those accepted CMIS facts mean within their respective chains.**
 
 **Roberta determines what those specialist findings mean for the user and across chains, subject to policy and approval boundaries.**
-
-The system becomes more capable by proving more—not by guessing more.
