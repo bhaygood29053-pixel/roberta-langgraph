@@ -197,12 +197,19 @@ def recommendation_intent(objective: object) -> RecommendationIntent:
     # A plain token/asset safety question deserves an explicit recommendation
     # evidence plan instead of relying only on the Scout's generic risk keyword
     # fallback. This still does not invent a risk level: only CMIS risk_check may
-    # provide the deterministic current risk assessment. Exact-mint wording is
-    # recognized explicitly so case-sensitive chain identities do not bypass the
-    # post-Scout Decision Quality contract.
+    # provide the deterministic current risk assessment. Exact-mint wording and
+    # ordinary "risk for/of <asset>" wording are recognized explicitly so symbol
+    # ambiguity cannot bypass the post-Scout Decision Quality contract.
     exact_asset_risk_question = bool(
         re.search(
             r"\bis\s+(?:exact\s+mint\s+)?[a-z0-9._-]+\s+(?:risky|safe)\b",
+            text,
+        )
+    )
+    named_asset_risk_question = bool(
+        re.search(
+            r"\b(?:what(?:'s|\s+is)\s+(?:the\s+)?(?:verified\s+)?|verified\s+)"
+            r"risk\s+(?:for|of)\s+[a-z0-9._-]+\b",
             text,
         )
     )
@@ -218,7 +225,7 @@ def recommendation_intent(objective: object) -> RecommendationIntent:
             "risk level",
             "rug risk",
         ),
-    ) or exact_asset_risk_question:
+    ) or exact_asset_risk_question or named_asset_risk_question:
         return "risk_assessment"
 
     return "general"
