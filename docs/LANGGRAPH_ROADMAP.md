@@ -49,6 +49,12 @@ Fresh accepted CMIS/provider evidence overrides remembered, checkpointed, or con
 
 The repository/project identity is CMIS, while working internal Python identifiers such as `liquidity_scout` may remain during incremental migration to avoid breaking imports, tests, entry points, and deployments. Compatibility identifiers do not create a second authority layer.
 
+## Engineering governance
+
+Meaningful Roberta changes are governed by [`ENGINEERING_WORKFLOW.md`](./ENGINEERING_WORKFLOW.md). That document is the repository authority for roadmap/issue gating, narrow tracer-bullet implementation, behavior-first verification, exact-head deterministic testing, and the independent three-axis PR gate: **Spec Fidelity**, **Code/Architecture Quality**, and **Authority/Safety Boundary**.
+
+A roadmap item being active does not waive those gates. A PR is not merge-ready if any required axis fails, and acceptance must be followed by roadmap/source-of-truth reconciliation. This governance does not start or widen Controlled Execution.
+
 ## Phase 10 — More Specialists / Providers ✅ Complete
 
 Roberta supports separate X1 Scout and Solana Scout paths above one shared CMIS layer:
