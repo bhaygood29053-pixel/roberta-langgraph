@@ -63,3 +63,12 @@ class CMISClient(Protocol):
         subject_id: str | None = None,
     ) -> CMISEnvelope:
         ...
+
+    def concentration_change_intelligence(
+        self,
+        *,
+        chain: str,
+        asset: str,
+        intelligence_evidence_id: str,
+    ) -> CMISEnvelope:
+        ...
