@@ -1,6 +1,6 @@
 # Solana Read-Only Production Readiness
 
-Tracking: Roberta issue #78. Foundation slice: #79. Degraded-evidence slice: #82. Token-2022 slice: #84. Live Token-2022 blocker resolution: #89 after CMIS #244.
+Tracking: Roberta issue #78. Foundation slice: #79. Degraded-evidence slice: #82. Token-2022 slice: #84. Live Token-2022 blocker resolution: #89 after CMIS #244. Final presentation fix: PR #94.
 
 ## Purpose
 
@@ -11,6 +11,45 @@ User -> Roberta -> Solana Scout -> CMIS -> Solana Provider
 ```
 
 It is a deployment/readiness gate, not a feature-parity milestone and not an execution milestone.
+
+## Accepted production-ready scope
+
+Issue #78 is accepted for the current configured **read-only** Solana Scout surface only:
+
+- `market_report`;
+- `tokenomics`;
+- `risk_check`;
+- exact-mint Solana identity preservation/fail-closed symbol handling needed by those services;
+- X1/Solana evidence isolation through Roberta.
+
+The accepted configured operator run on 2026-08-20 executed all five corpus scenarios with `--require-no-skips`:
+
+```text
+PASS solana-market-report-exact-mint
+PASS solana-tokenomics-exact-mint
+PASS solana-risk-exact-mint
+PASS solana-symbol-only-identity-fails-closed
+PASS solana-cross-chain-isolation
+```
+
+Final report summary:
+
+```text
+total: 5
+completed: 5
+passed: 5
+failed: 0
+skipped: 0
+oracle_retry_calls: 1
+fail_closed_count: 0
+provider_error_events: 1
+```
+
+The one Oracle retry occurred on the symbol-only risk case after PR #94 activated the existing Decision Quality guard for ordinary `verified risk for <asset>` wording. The corrected answer preserved separate `Risk:` and `Evidence quality:` dimensions. The final report had zero failed scenarios and therefore zero scenario-derived deployment blockers.
+
+`provider_error_events` is retained as an operational observation rather than hidden. The readiness reporter counts a CMIS event with `status=error` or a client exception in that metric, but provider-error frequency is not itself a deployment blocker when all required deterministic scenario invariants pass. The accepted run therefore records one such event while still preserving chain isolation, uncertainty disclosure, presentation, service coverage, and the execution boundary.
+
+The report authority remains `historical_evaluation_snapshot` and `live_market_authority=false`. It must never be used as a replacement for fresh CMIS/provider data.
 
 ## Current promoted Scout surface
 
@@ -34,7 +73,7 @@ Unsupported or unconfigured services remain unavailable. In particular, Solana p
 4. symbol-only identity failing closed rather than silently guessing a mint;
 5. X1/Solana cross-chain evidence isolation.
 
-The corpus still does not make a production-ready claim by itself. A production-ready claim requires a configured operator run with all selected cases executed, zero failures, and zero deployment blockers.
+The corpus is evaluation input only and does not make a production-ready claim by itself. The production-ready claim above depends on the accepted configured operator run with all selected cases executed, zero failures, and zero deployment blockers.
 
 Corpus-level `readiness_blockers` remain available for unresolved prerequisites. `roberta-readiness` writes declared blockers into `deployment_blockers` and exits non-zero. After CMIS #244 acceptance, the previously declared `accepted_token_2022_live_mint_required` blocker is resolved and the corpus blocker list is empty.
 
@@ -72,7 +111,7 @@ The final dedicated-RPC acceptance used QuickNode and passed `getTokenLargestAcc
 - `coverage=largest_token_accounts_only`;
 - `total_holder_count_verified=false`.
 
-This acceptance removes the earlier Token-2022 identity prerequisite. It does not make PYUSD a general market benchmark, does not establish holder or beneficial-owner counts, and does not by itself make the full Roberta Solana path production-ready.
+This acceptance removes the earlier Token-2022 identity prerequisite. It does not make PYUSD a general market benchmark, does not establish holder or beneficial-owner counts, and does not promote Token-2022 beyond the exact read-only RPC facts separately proven by CMIS.
 
 ## Controlled degraded-evidence replay
 
@@ -111,7 +150,7 @@ roberta-readiness \
   --output artifacts/readiness/solana-live.json
 ```
 
-A production-readiness claim requires:
+The accepted production-readiness profile requires:
 
 - `ROBERTA_SOLANA_PROVIDER_ENABLED=1`;
 - configured production model credentials;
@@ -125,15 +164,11 @@ A production-readiness claim requires:
 
 `--require-no-skips` exits non-zero when any selected scenario is skipped. Corpus-declared blockers also exit non-zero. This prevents either a disabled Solana provider or a future unresolved prerequisite from being mistaken for a passing readiness run.
 
-## Remaining #78 work
+## Explicit non-promotions
 
-The explicit remaining gates are:
+This milestone does **not** claim X1/Solana feature parity. It does not promote Solana `historical_compare`, `rank`, `pre_trade_check`, `concentration_change_intelligence`, generic Verified Intelligence primitives, or any other capability merely because CMIS may know about or advertise a lower-level service.
 
-- synchronize/restart the local CMIS deployment to a current accepted contract and verify its capability manifest;
-- run the configured live Solana corpus through the normal Roberta -> Solana Scout -> CMIS path with `--require-no-skips`;
-- record the live readiness report and exact proven capability scope;
-- synchronize `docs/LANGGRAPH_ROADMAP.md` with the completed #62/#73/#74 milestones and current #78 status;
-- close #78 only if the configured live report has zero failures and zero deployment blockers.
+Only the current Roberta Solana Scout surface proven above is production-ready.
 
 ## Safety boundary
 
