@@ -14,6 +14,7 @@ from roberta.decision_synthesis import (
     build_decision_synthesis_system_message,
     decision_response_violation,
     decision_synthesis_failure_text,
+    technical_decision_detail_requested,
 )
 from roberta.memory import DurableMemoryStore, build_memory_system_message
 from roberta.policy import (
@@ -37,6 +38,11 @@ _SPECIALIST_OBJECTIVE_TOOLS = frozenset(
         "x1_scout_investigate",
         "solana_scout_investigate",
     }
+)
+_STALE_EVIDENCE_DISCLOSURE_CUES = (
+    "stale",
+    "not fresh",
+    "freshness",
 )
 
 
@@ -132,17 +138,84 @@ def _post_specialist_decision_message(state: RobertaState) -> SystemMessage | No
     return SystemMessage(content=content) if content is not None else None
 
 
+def _trailing_specialist_reports(state: RobertaState) -> list[Mapping[str, Any]]:
+    """Return only current trailing Chain Scout reports from the active tool turn."""
+
+    reports: list[Mapping[str, Any]] = []
+    for message in reversed(state["messages"]):
+        if not isinstance(message, ToolMessage):
+            break
+        if message.name not in _SPECIALIST_OBJECTIVE_TOOLS:
+            continue
+        content = message.content
+        if not isinstance(content, str) or not content.strip():
+            continue
+        try:
+            report = json.loads(content)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(report, Mapping):
+            reports.append(report)
+    return reports
+
+
+def _report_has_explicit_stale_evidence(report: Mapping[str, Any]) -> bool:
+    """Read CMIS-projected freshness only; never infer freshness from timestamps."""
+
+    contexts: list[Mapping[str, Any]] = []
+    top_context = report.get("evidence_context")
+    if isinstance(top_context, Mapping):
+        contexts.append(top_context)
+
+    investigations = report.get("investigations")
+    if isinstance(investigations, Sequence) and not isinstance(
+        investigations,
+        (str, bytes),
+    ):
+        for investigation in investigations:
+            if not isinstance(investigation, Mapping):
+                continue
+            context = investigation.get("evidence_context")
+            if isinstance(context, Mapping):
+                contexts.append(context)
+
+    return any(context.get("freshness_verified") is False for context in contexts)
+
+
+def _stale_evidence_disclosed(content: object) -> bool:
+    if not isinstance(content, str):
+        return False
+    normalized = " ".join(content.lower().split())
+    return any(cue in normalized for cue in _STALE_EVIDENCE_DISCLOSURE_CUES)
+
+
 def _post_specialist_decision_violation(
     state: RobertaState,
     response: AIMessage,
 ) -> str | None:
-    """Return an obvious recommendation-presentation violation, if any."""
+    """Return a deterministic recommendation-presentation violation, if any."""
 
     if response.tool_calls:
         return None
     if not any(isinstance(message, ToolMessage) for message in state["messages"]):
         return None
-    return decision_response_violation(_latest_user_content(state), response.content)
+
+    objective = _latest_user_content(state)
+    violation = decision_response_violation(objective, response.content)
+    if violation is not None:
+        return violation
+
+    plan = recommendation_evidence_plan(objective)
+    if plan["intent"] == "general" or technical_decision_detail_requested(objective):
+        return None
+
+    reports = _trailing_specialist_reports(state)
+    if (
+        any(_report_has_explicit_stale_evidence(report) for report in reports)
+        and not _stale_evidence_disclosed(response.content)
+    ):
+        return "stale_evidence_not_disclosed"
+    return None
 
 
 def make_oracle_node(
@@ -165,9 +238,9 @@ def make_oracle_node(
     original user objective before execution so model paraphrasing cannot weaken
     deterministic evidence requirements. After specialist evidence exists, those
     questions also receive a deterministic, task-specific synthesis brief. An
-    obvious raw-dump or diagnostic-first final draft gets one constrained rewrite
-    attempt; repeated noncompliance fails closed rather than exposing internal
-    service output.
+    obvious raw-dump, diagnostic-first, or material stale-evidence omission gets
+    one constrained rewrite attempt; repeated noncompliance fails closed rather
+    than exposing internal service output or hiding a freshness limitation.
     """
 
     def oracle_node(state: RobertaState) -> dict[str, Any]:
@@ -384,9 +457,10 @@ def build_graph(
     Ordinary specialist results return to the Oracle as before. Recognized
     recommendation families preserve the original user objective when delegated
     to Chain Scouts and receive a deterministic post-specialist synthesis brief,
-    with one constrained rewrite for obvious raw-dump or diagnostic-first
-    failures. A validated single X1 Scout ``pre_trade_check`` result still takes
-    the stricter deterministic Roberta presentation path.
+    with one constrained rewrite for obvious raw-dump, diagnostic-first, or
+    material stale-evidence disclosure failures. A validated single X1 Scout
+    ``pre_trade_check`` result still takes the stricter deterministic Roberta
+    presentation path.
 
     The optional checkpointer owns LangGraph thread/task execution state.
     The optional durable-memory store owns long-term context and is retrieved
