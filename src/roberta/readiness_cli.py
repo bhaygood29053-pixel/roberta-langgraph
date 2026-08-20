@@ -46,6 +46,15 @@ def main() -> None:
         default=[],
         help="Run only the named scenario id; may be repeated.",
     )
+    parser.add_argument(
+        "--require-no-skips",
+        action="store_true",
+        help=(
+            "Fail the readiness command if any selected scenario is skipped. "
+            "Use this for chain-specific production-readiness gates so a disabled "
+            "provider cannot be mistaken for a passing evaluation."
+        ),
+    )
     args = parser.parse_args()
 
     model_settings = RobertaModelSettings.from_env()
@@ -123,6 +132,7 @@ def main() -> None:
             "cmis_base_url": cmis_delegate.base_url,
             "solana_provider_enabled": chain_settings.solana_provider_enabled,
             "corpus": str(args.corpus),
+            "require_no_skips": args.require_no_skips,
         },
     )
     output = Path(args.output)
@@ -133,6 +143,8 @@ def main() -> None:
 
     if report["summary"]["failed"]:
         raise SystemExit(1)
+    if args.require_no_skips and report["summary"]["skipped"]:
+        raise SystemExit(2)
 
 
 if __name__ == "__main__":
