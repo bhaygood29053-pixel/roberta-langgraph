@@ -153,18 +153,12 @@ def recommendation_intent(objective: object) -> RecommendationIntent:
     ):
         return "liquidity_risk"
 
-    if _has_any(
-        text,
-        (
-            "why is the price",
-            "why did the price",
-            "why has the price",
-            "why price",
-            "what caused the price",
-            "what's driving the price",
-            "what is driving the price",
-        ),
-    ) and _has_any(
+    price_reason_question = bool(
+        re.search(r"\bwhy\s+(?:is|did|has)\b.{0,80}\bprice\b", text)
+        or re.search(r"\bwhat\s+caused\b.{0,80}\bprice\b", text)
+        or re.search(r"\bwhat(?:'s|\s+is)\s+driving\b.{0,80}\bprice\b", text)
+    )
+    if price_reason_question and _has_any(
         text,
         (
             "fall",
