@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from roberta.readiness import (
@@ -11,6 +12,7 @@ from roberta.readiness_cli import _apply_required_execution_gate
 
 CORPUS = Path("evals/solana_readiness_v1.json")
 JUP_MINT = "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN"
+PYUSD_TOKEN_2022_MINT = "2b1kV6DkPAnxd5ixfnxCpjxmKwqjjaYmCZfHsFu24GXo"
 
 
 def test_solana_readiness_corpus_is_chain_scoped_and_versioned() -> None:
@@ -57,6 +59,17 @@ def test_solana_normal_cases_use_exact_mint_and_symbol_case_does_not_fake_one() 
     assert "Do not guess a mint" in symbol_only
 
 
+def test_token_2022_live_blocker_is_resolved_by_cmis_244_acceptance() -> None:
+    payload = json.loads(CORPUS.read_text())
+
+    assert payload["readiness_blockers"] == []
+    scope = payload["scope"]
+    assert scope["production_ready_claim"] is False
+    assert scope["token_2022_live_case"] == "accepted_by_cmis_issue_244"
+    assert scope["accepted_token_2022_live_mint"] == PYUSD_TOKEN_2022_MINT
+    assert scope["token_2022_live_acceptance_scope"] == "read_only_exact_mint_rpc_contract"
+
+
 def test_required_execution_gate_turns_skips_into_deployment_blockers() -> None:
     scenario = ReadinessScenario(
         scenario_id="solana-disabled",
@@ -95,6 +108,7 @@ def test_required_execution_gate_is_opt_in() -> None:
         scenario_id="solana-disabled",
         turns=("On Solana, assess this exact mint.",),
         expected_chains=("solana",),
+        expected_services={"solana": ("market_report",)},
         requires_solana=True,
     )
     skipped = skipped_readiness_result(scenario, reason="disabled")
