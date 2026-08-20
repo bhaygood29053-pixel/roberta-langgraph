@@ -23,6 +23,49 @@ from roberta.readiness import (
 from roberta.tools import get_roberta_tools
 
 
+def _load_corpus_declared_blockers(path: str | Path) -> tuple[str, ...]:
+    """Load optional corpus-level blockers without changing scenario semantics."""
+
+    decoded = json.loads(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(decoded, dict):
+        raise ValueError("readiness corpus must be a JSON object")
+    raw = decoded.get("readiness_blockers", [])
+    if not isinstance(raw, list):
+        raise ValueError("readiness corpus readiness_blockers must be a list")
+    blockers: list[str] = []
+    for value in raw:
+        if not isinstance(value, str) or not value.strip() or value != value.strip():
+            raise ValueError("readiness corpus readiness_blockers must contain normalized strings")
+        if value not in blockers:
+            blockers.append(value)
+    return tuple(blockers)
+
+
+def _apply_corpus_declared_blockers(
+    report: dict[str, object],
+    *,
+    blockers: tuple[str, ...],
+) -> int:
+    """Promote unresolved corpus prerequisites into the historical report."""
+
+    if not blockers:
+        return 0
+    summary = report.get("summary")
+    deployment = report.get("deployment_blockers")
+    if isinstance(summary, dict):
+        summary["corpus_declared_blockers"] = len(blockers)
+    if isinstance(deployment, list):
+        deployment.extend(
+            {
+                "scenario_id": "corpus_gate",
+                "failed_checks": ["corpus_declared_blocker"],
+                "reason": blocker,
+            }
+            for blocker in blockers
+        )
+    return len(blockers)
+
+
 def _apply_required_execution_gate(
     report: dict[str, object],
     *,
@@ -123,6 +166,7 @@ def main() -> None:
     graph = build_graph(model=oracle_model, tools=tools)
 
     scenarios = load_readiness_scenarios(args.corpus)
+    corpus_declared_blockers = _load_corpus_declared_blockers(args.corpus)
     selected = set(args.scenario)
     if selected:
         scenarios = [item for item in scenarios if item.scenario_id in selected]
@@ -163,12 +207,17 @@ def main() -> None:
             "solana_provider_enabled": chain_settings.solana_provider_enabled,
             "corpus": str(args.corpus),
             "require_no_skips": args.require_no_skips,
+            "corpus_declared_blockers": list(corpus_declared_blockers),
         },
     )
     required_execution_blockers = _apply_required_execution_gate(
         report,
         results=results,
         require_no_skips=args.require_no_skips,
+    )
+    declared_blocker_count = _apply_corpus_declared_blockers(
+        report,
+        blockers=corpus_declared_blockers,
     )
 
     output = Path(args.output)
@@ -181,6 +230,8 @@ def main() -> None:
         raise SystemExit(1)
     if required_execution_blockers:
         raise SystemExit(2)
+    if declared_blocker_count:
+        raise SystemExit(3)
 
 
 if __name__ == "__main__":
