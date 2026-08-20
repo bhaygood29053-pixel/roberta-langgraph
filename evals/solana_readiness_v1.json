@@ -2,13 +2,17 @@
   "schema_version": 1,
   "name": "Roberta Solana Read-Only Production Readiness v1",
   "authority": "evaluation_input_only",
+  "readiness_blockers": [
+    "accepted_token_2022_live_mint_required"
+  ],
   "scope": {
     "chain": "solana",
     "requires_provider_enabled": true,
     "production_ready_claim": false,
     "promoted_services_only": true,
-    "token_2022_live_case": "deferred_until_accepted_exact_mint_fixture",
-    "degraded_provider_replay": "tracked_separately_under_issue_78"
+    "token_2022_deterministic_contract": "covered_by_cmis_and_roberta_controlled_replay",
+    "token_2022_live_case": "blocked_until_cmis_accepts_exact_live_mint",
+    "degraded_provider_replay": "covered_by_roberta_solana_readiness_replay"
   },
   "scenarios": [
     {
