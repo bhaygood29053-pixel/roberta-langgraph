@@ -21,6 +21,8 @@ Roberta has completed:
 - adoption/readiness of the first separately promoted CMIS 1.9 Verified Intelligence service through X1 Scout (#73/#74);
 - Solana Read-Only Production Readiness (#78) for the exact currently promoted Roberta Solana Scout surface.
 
+CMIS has also completed the next two internal deterministic Verified Intelligence foundations: descriptive intelligence classification and wallet-relationship evidence with explicit non-ownership semantics. Neither is promoted to Roberta/Scout use.
+
 Phase 5 — X1 Evidence Completeness remains deliberately **bounded**, with explicit verified/bounded/partial/unavailable/conflict/insufficient-evidence states.
 
 Roberta Phase 11 — Controlled Execution remains **locked / not started**.
@@ -111,7 +113,7 @@ Roberta may explain those results but does not recompute CMIS proof/risk or upgr
 
 Cross-chain evidence may be compared but not merged into a synthetic source set, Proof Score, freshness state, deterministic risk result, or safety grade.
 
-Behavioral/ownership labels such as insider, whale, bot, accumulator, distributor, market maker, manipulator, common owner, or intent remain unavailable unless a separately accepted deterministic classification contract explicitly permits them.
+CMIS now has accepted deterministic descriptive-classification and direct wallet-relationship evidence foundations. Those foundations do not promote behavioral/ownership labels to Roberta. Insider, whale, bot, accumulator, distributor, market maker, manipulator, common owner, beneficial owner, intent, fraud/scam, and similar labels remain unavailable unless a future separately promoted deterministic contract explicitly authorizes the exact conclusion.
 
 ## CMIS Phase 11 foundation versus Phase 12 promotion
 
@@ -142,6 +144,24 @@ execution_authorized = false
 ```
 
 Solana is unavailable/non-callable/non-promoted for this service.
+
+## Post-Phase-12 internal deterministic foundations ✅ Complete in CMIS / not promoted to Roberta
+
+CMIS has accepted two additional internal deterministic contracts:
+
+1. **Descriptive intelligence classification** — classifies only the exact concentration direction supported by canonical CMIS evidence and preserves behavior, ownership, intent, fraud/manipulation, policy, and risk separation.
+2. **Wallet relationship evidence** — records only verified observed direct token-transfer interactions between exact chain identities, with bounded compatible aggregation, duplicate protection, and explicit non-ownership semantics.
+
+Both preserve equivalent boundaries:
+
+```text
+public_service_promoted = false
+scout_reliance_promoted = false
+cmis_promotable = false
+execution_authorized = false
+```
+
+Roberta and its Chain Scouts must not call those internal CMIS helpers, infer new operations from their existence, or use them as authority for behavioral/ownership claims.
 
 ## Roberta adoption of the Phase 12 service ✅ Complete
 
@@ -220,16 +240,17 @@ If Controlled Execution is ever promoted, it requires a separate accepted transa
 
 ## Next read-only intelligence boundary
 
-The first narrow CMIS 1.9 promotion/adoption and the current Solana read-only readiness gate are complete. The next shared intelligence work should proceed only through separately accepted deterministic contracts, especially:
+The first narrow CMIS 1.9 promotion/adoption, the current Solana read-only readiness gate, deterministic descriptive classification, and deterministic wallet-relationship evidence are complete at their accepted boundaries.
 
-1. deterministic inference/classification contracts before behavioral/ownership labels;
-2. wallet relationship evidence with explicit non-ownership semantics;
-3. evidence-backed alerts with explicit scope/freshness/threshold/persistence rules;
-4. deeper X1 provider-gap and historical redundancy verification;
-5. field-by-field Solana maturity beyond the currently accepted Scout surface;
-6. future Ethereum support only under an explicit capability/verification plan.
+The next shared intelligence work is:
 
-None of these items starts Controlled Execution.
+1. **evidence-backed alerts** with explicit scope, freshness, threshold/policy identity, persistence/repetition semantics, triggering evidence, limitations, and fail-closed behavior;
+2. deeper X1 provider-gap and historical redundancy verification;
+3. field-by-field Solana maturity beyond the currently accepted Scout surface;
+4. future Ethereum support only under an explicit capability/verification plan;
+5. investigation/evidence export and premium-access work only after deterministic services stabilize.
+
+An alert contract does not become a Roberta/Scout capability until CMIS separately promotes it and Roberta separately adopts/evaluates that exact service. None of this work starts Controlled Execution.
 
 ## Core rule
 
