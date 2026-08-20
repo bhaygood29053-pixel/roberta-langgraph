@@ -19,6 +19,7 @@ class X1ScoutRequest(TypedDict):
     evidence_id: NotRequired[str]
     fact_type: NotRequired[str]
     subject_id: NotRequired[str]
+    intelligence_evidence_id: NotRequired[str]
 
 
 class X1ScoutPlanProposal(TypedDict):
