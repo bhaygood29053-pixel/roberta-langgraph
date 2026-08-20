@@ -1,6 +1,6 @@
 # Solana Read-Only Production Readiness
 
-Tracking: Roberta issue #78. First implementation slice: #79.
+Tracking: Roberta issue #78. Foundation slice: #79. Degraded-evidence slice: #82.
 
 ## Purpose
 
@@ -36,7 +36,30 @@ Unsupported or unconfigured services remain unavailable. In particular, Solana p
 
 The corpus intentionally does not claim full #78 acceptance yet.
 
-## Acceptance command
+## Controlled degraded-evidence replay
+
+`roberta-solana-readiness-replay` runs the configured production model against deterministic evaluation-only CMIS evidence through the normal Roberta -> Solana Scout tool path. It enables the Solana Scout only inside the harness; no live provider is used.
+
+The replay covers:
+
+- explicitly stale evidence;
+- cross-source conflict;
+- insufficient proof;
+- unavailable provider fields;
+- provider error;
+- null field versus verified zero;
+- exact case-sensitive Solana mint preservation.
+
+Run it with:
+
+```bash
+roberta-solana-readiness-replay \
+  --output artifacts/readiness/solana-replay-local.json
+```
+
+The report authority is `historical_evaluation_snapshot` and `live_market_authority=false`.
+
+## Configured acceptance command
 
 A configured Solana readiness run must not treat skipped scenarios as success:
 
@@ -64,9 +87,9 @@ A production-readiness claim requires:
 The following remain explicit follow-up gates before Solana can be called production-ready for the full issue scope:
 
 - accepted Token-2022 exact-mint readiness fixture/case;
-- deterministic degraded-provider replay for stale, partial, unavailable, conflict, insufficient-proof, timeout/error, and null-vs-zero states;
 - technical/source follow-up coverage for only the Solana services actually promoted through Scout;
-- configured operator-run evidence and blocker report;
+- configured operator-run degraded replay evidence;
+- configured operator-run live corpus evidence and blocker report;
 - roadmap synchronization in `docs/LANGGRAPH_ROADMAP.md`;
 - final scope statement naming exactly which Solana capabilities were proven.
 
