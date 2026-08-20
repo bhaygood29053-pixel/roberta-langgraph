@@ -13,13 +13,17 @@ from roberta.readiness_solana_replay import (
     run_solana_degraded_case,
     write_solana_replay_report,
 )
+from roberta.readiness_solana_token2022 import (
+    TOKEN_2022_CASE_ID,
+    run_token_2022_readiness_case,
+)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=(
             "Run production-model Roberta synthesis against deterministic degraded "
-            "Solana evidence fixtures through the normal Solana Scout path."
+            "and Token-2022 Solana evidence fixtures through the normal Solana Scout path."
         )
     )
     parser.add_argument(
@@ -41,12 +45,19 @@ def main() -> None:
         return create_runtime_model(settings)
 
     selected = set(args.case)
-    cases = list(DEFAULT_SOLANA_REPLAY_CASES)
-    if selected:
-        cases = [case for case in cases if case.case_id in selected]
-        missing = selected.difference(case.case_id for case in cases)
-        if missing:
-            raise SystemExit("Unknown Solana replay case id(s): " + ", ".join(sorted(missing)))
+    known_ids = {case.case_id for case in DEFAULT_SOLANA_REPLAY_CASES} | {
+        TOKEN_2022_CASE_ID
+    }
+    missing = selected.difference(known_ids)
+    if missing:
+        raise SystemExit("Unknown Solana replay case id(s): " + ", ".join(sorted(missing)))
+
+    cases = [
+        case
+        for case in DEFAULT_SOLANA_REPLAY_CASES
+        if not selected or case.case_id in selected
+    ]
+    run_token_2022 = not selected or TOKEN_2022_CASE_ID in selected
 
     degraded = []
     for case in cases:
@@ -58,6 +69,15 @@ def main() -> None:
             f"retry={result.oracle_retry_calls}"
         )
 
+    if run_token_2022:
+        result = run_token_2022_readiness_case(model_factory)
+        degraded.append(result)
+        status = "PASS" if result.passed else "FAIL"
+        print(
+            f"{status:4} {TOKEN_2022_CASE_ID:38} {result.elapsed_ms:10.1f} ms "
+            f"retry={result.oracle_retry_calls}"
+        )
+
     report = build_solana_replay_report(
         degraded=degraded,
         metadata={
@@ -66,6 +86,8 @@ def main() -> None:
             "fixture_authority": "evaluation_input_only",
             "live_provider_used": False,
             "chain": "solana",
+            "token_2022_live_mint_accepted": False,
+            "configured_readiness_blocker": "accepted_token_2022_live_mint_required",
         },
     )
     write_solana_replay_report(report, args.output)
