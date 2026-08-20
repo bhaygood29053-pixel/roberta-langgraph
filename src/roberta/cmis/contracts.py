@@ -17,6 +17,7 @@ CMISService: TypeAlias = Literal[
     "risk_check",
     "pre_trade_check",
     "verification_evidence",
+    "concentration_change_intelligence",
 ]
 CMISOperation: TypeAlias = Literal[
     "market_report",
@@ -26,6 +27,7 @@ CMISOperation: TypeAlias = Literal[
     "risk_check",
     "pre_trade_check",
     "verification_evidence",
+    "concentration_change_intelligence",
 ]
 CMISStatus: TypeAlias = Literal[
     "ok",
@@ -75,3 +77,4 @@ CMISTokenomicsReport: TypeAlias = CMISEnvelope
 CMISRiskCheck: TypeAlias = CMISEnvelope
 CMISPreTradeCheck: TypeAlias = CMISEnvelope
 CMISVerificationEvidence: TypeAlias = CMISEnvelope
+CMISConcentrationChangeIntelligence: TypeAlias = CMISEnvelope
