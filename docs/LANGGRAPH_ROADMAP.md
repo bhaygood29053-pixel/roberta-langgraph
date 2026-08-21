@@ -21,13 +21,14 @@ Roberta has completed:
 - adoption/readiness of the first separately promoted CMIS 1.9 Verified Intelligence service through X1 Scout (#73/#74);
 - Solana Read-Only Production Readiness (#78) for the exact currently promoted Roberta Solana Scout surface;
 - **Learning System Phase 1 — deterministic source-ingestion foundation (#106/#107);**
-- **Learning System Phase 2 — deterministic structure-first Markdown parsing (#109/#110).**
+- **Learning System Phase 2 — deterministic structure-first Markdown parsing (#109/#110);**
+- **Learning System Phase 3 — deterministic structure-aware evidence chunking (#112/#113).**
 
 Phase 5 — X1 Evidence Completeness remains deliberately **bounded**, with explicit verified/bounded/partial/unavailable/conflict/insufficient-evidence states.
 
 Roberta Phase 11 — Controlled Execution remains **locked / not started**.
 
-The **Roberta Learning System is now the primary active development track**. Existing CMIS, Chain Scout, transport, policy, memory, and approval paths should remain stable unless a change is directly required to support the Learning System or fix a proven defect.
+The **Roberta Learning System is the primary active development track**. Existing CMIS, Chain Scout, transport, policy, memory, and approval paths should remain stable unless a change is directly required to support the Learning System or fix a proven defect.
 
 ## Canonical hierarchy
 
@@ -61,7 +62,7 @@ A roadmap item being active does not waive those gates. A PR is not merge-ready 
 
 ## Learning System primary track
 
-The Learning System follows the evidence-grounded design in [`LEARNING_SYSTEM.md`](./LEARNING_SYSTEM.md), [`LEARNING_SYSTEM_STRUCTURE.md`](./LEARNING_SYSTEM_STRUCTURE.md), and the broader Roberta Learning System Specification v1.1.
+The Learning System follows the evidence-grounded design in [`LEARNING_SYSTEM.md`](./LEARNING_SYSTEM.md), [`LEARNING_SYSTEM_STRUCTURE.md`](./LEARNING_SYSTEM_STRUCTURE.md), [`LEARNING_SYSTEM_CHUNKING.md`](./LEARNING_SYSTEM_CHUNKING.md), and the broader Roberta Learning System Specification v1.1.
 
 ### Learning System Phase 1 — Source ingestion ✅ Complete
 
@@ -104,34 +105,74 @@ The accepted Phase 2 boundary:
 
 Accepted verification for PR #110 recorded **520 deterministic tests passing with 5 live/provider tests deselected**, all 10 new structure tests passing, all three engineering review axes passing, and no unresolved review threads.
 
-### Learning System Phase 3 — Semantic chunking + metadata ⬜ Next
+### Learning System Phase 3 — Structure-aware evidence chunking ✅ Complete
 
-The next narrow design target is to convert accepted structural blocks into semantically coherent **evidence chunks** while preserving the Phase 1/2 identities as immutable provenance anchors.
-
-The first Phase 3 slice should remain deterministic and structure-aware:
+Issue #112 / PR #113 established deterministic evidence chunks over canonical Phase 1/2 provenance:
 
 ```text
-SourceRecord
-  -> ParsedDocument
+SourceRecord / exact artifact
+  -> canonical ParsedDocument
     -> SectionRecord / StructuralBlock
-      -> EvidenceChunk
+      -> EvidenceChunk / ChunkManifest
 ```
 
-Phase 3 must preserve, at minimum:
+The accepted first chunker contract is:
 
-- stable `chunk_id`;
-- `source_id`, `document_id`, `section_id`, and contributing `block_id` provenance;
-- structural path and exact source line range;
-- exact chunk text plus content hash;
-- chunker contract/version and parameters;
-- deterministic chunk order;
-- explicit chunk kind/scope;
-- no silent source-text loss;
-- no merging across incompatible source/section boundaries by default;
-- explicit behavior for oversize blocks rather than arbitrary opaque truncation;
-- `live_state_authorized = false`.
+```text
+chunker_contract = structure-aware-chunk/v1
+chunker_version = 1.0.0
+overlap_lines = 0
+max_chars = explicit positive integer; implementation baseline 1600
+```
 
-Phase 3 should **not** add embeddings, vector search, concept extraction, question generation, autonomous learning, reflection-to-lesson promotion, or fine-tuning. Those remain separate later acceptance gates.
+The accepted Phase 3 boundary:
+
+- resolves the exact Phase 1 source and revalidates retained artifact SHA-256;
+- recomputes canonical Phase 2 structure using the declared parser contract/version and rejects a caller-supplied `ParsedDocument` that does not match exactly;
+- treats `code_fence`, `list`, and `table` blocks as atomic in v1;
+- groups only adjacent `preamble`/`paragraph` blocks with the same `section_id`, and only when the exact retained source span including blank separators stays within `max_chars`;
+- never crosses section boundaries merely to fill a chunk;
+- splits oversize prose only at source-line boundaries;
+- preserves a source line longer than `max_chars` intact as `oversize_line` rather than truncating it;
+- preserves an oversize atomic block intact as `oversize_atomic` rather than truncating it;
+- forbids overlap in v1 until retrieval evaluation demonstrates a reason to add it;
+- validates exact once-only coverage for every Phase 2 structural-block source line;
+- preserves source/document/section/block provenance, structural paths, exact source line ranges/text, source authority/approval state, parser/chunker versions, parameters, fragment identity, and deterministic previous/next links;
+- creates reproducible `chk_...` chunk ids and a content-addressed `cset_...` chunk-set manifest;
+- emits structural chunk kinds only and does not infer concepts, truth, importance, ownership, behavior, or intent;
+- structurally denies live-state authority for chunks and manifests.
+
+Accepted verification for PR #113 recorded **534 deterministic tests passing with 5 live/provider tests deselected**, all 14 new chunking tests passing, all three engineering review axes passing, and no unresolved review threads.
+
+### Learning System Phase 4 — Indexing foundation ⬜ Next
+
+The next narrow target corresponds to the Learning System specification's embeddings + lexical-indexing layer, but implementation should remain replaceable and benchmarkable rather than treating a vector database as the knowledge architecture.
+
+The next accepted slice should establish:
+
+```text
+EvidenceChunk
+  -> lexical index representation
+  -> embedding representation through a typed provider contract
+  -> versioned index manifest
+```
+
+Phase 4 should preserve, at minimum:
+
+- exact `chunk_id` provenance on every index entry;
+- index contract/version and parameters;
+- lexical analyzer/tokenization version;
+- embedding provider/model identity and vector dimension where an embedding is actually produced;
+- deterministic/content-addressed index manifests over index metadata rather than pretending floating-point embeddings are source truth;
+- explicit indexing status/error/unknown states;
+- source/document/section filters carried as metadata for future retrieval;
+- clear separation between source evidence, derived index representations, and live state;
+- an in-memory deterministic test adapter behind replaceable interfaces before coupling the Learning System to a production database;
+- PostgreSQL full-text search + pgvector as the intended early production backend once the contracts and benchmark obligations are stable.
+
+Phase 4 must **not** yet collapse retrieval and answer quality into one test. Hybrid retrieval/reranking, concepts, grounded answer generation, question generation, adaptive curriculum, reflection/lesson promotion, and fine-tuning remain later separate gates.
+
+A vector or lexical score is relevance evidence only; it is not source authority, truth, risk, or live-state verification.
 
 ## Technology Radar design boundary — Issue #100
 

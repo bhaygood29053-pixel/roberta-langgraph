@@ -52,12 +52,13 @@ The CMIS implementation still uses the internal Python namespace `liquidity_scou
 - Post-Phase-10 Evidence-Aware Intelligence & User Experience — complete
 - **Learning System Phase 1 Source Ingestion — complete**
 - **Learning System Phase 2 Structure Detection — complete**
-- **Learning System Phase 3 Semantic Chunking + Metadata — next**
+- **Learning System Phase 3 Structure-Aware Evidence Chunking — complete**
+- **Learning System Phase 4 Indexing Foundation — next**
 - Phase 11 Controlled Execution — **locked / not started**
 
 The **Roberta Learning System is the primary active development track**. Existing CMIS, Chain Scout, transport, policy, memory, and approval functionality should remain stable unless a change is directly required to support the Learning System or fix a proven defect.
 
-See [`docs/LANGGRAPH_ROADMAP.md`](./docs/LANGGRAPH_ROADMAP.md) for the authoritative Roberta roadmap, [`docs/LEARNING_SYSTEM.md`](./docs/LEARNING_SYSTEM.md) for source ingestion, and [`docs/LEARNING_SYSTEM_STRUCTURE.md`](./docs/LEARNING_SYSTEM_STRUCTURE.md) for the accepted structure contract.
+See [`docs/LANGGRAPH_ROADMAP.md`](./docs/LANGGRAPH_ROADMAP.md) for the authoritative Roberta roadmap, [`docs/LEARNING_SYSTEM.md`](./docs/LEARNING_SYSTEM.md) for source ingestion, [`docs/LEARNING_SYSTEM_STRUCTURE.md`](./docs/LEARNING_SYSTEM_STRUCTURE.md) for structure parsing, and [`docs/LEARNING_SYSTEM_CHUNKING.md`](./docs/LEARNING_SYSTEM_CHUNKING.md) for the accepted evidence-chunk contract.
 
 CMIS has its own execution-phase numbering. CMIS Phase 11 refers to its completed **read-only Verified Intelligence foundation**; that is separate from Roberta Phase 11 Controlled Execution.
 
@@ -91,7 +92,21 @@ Issue #109 / PR #110 added deterministic **structure-first Markdown parsing** ov
 - document, section, block, and structure identities are deterministic/content-addressed;
 - all derived structure records explicitly deny live-state authority.
 
-The next narrow milestone is **semantic chunking + metadata** over accepted structural blocks. Chunks must remain traceable evidence units linked to immutable source/section/block identities. Embeddings, retrieval, autonomous curriculum, reflection-to-lesson promotion, and fine-tuning remain later gates and must not be pulled forward by implication.
+Issue #112 / PR #113 added deterministic **structure-aware evidence chunking**:
+
+- the exact Phase 1 artifact is revalidated and canonical Phase 2 structure is recomputed before a supplied parsed document may be chunked;
+- adjacent same-section prose may group only when the exact source span fits the explicit `max_chars` policy;
+- code fences, lists, and tables remain atomic;
+- oversize prose splits only at source-line boundaries;
+- oversize source lines and atomic blocks are retained intact with explicit warnings instead of truncation;
+- `structure-aware-chunk/v1` requires zero overlap and validates that each Phase 2 structural-block line is covered exactly once;
+- chunks preserve source/document/section/block provenance, structural paths, exact line ranges, original source text, parser/chunker versions, and chunking parameters;
+- chunk ids and the chunk-set manifest are deterministic/content-addressed;
+- neighbor links are explicit contextual metadata and all chunk records deny live-state authority.
+
+PR #113 passed the full deterministic suite with **534 passed and 5 live/provider tests deselected**; all 14 new chunking tests passed.
+
+The next narrow milestone is **Learning System Phase 4 — indexing foundation**. The goal is to build replaceable lexical and embedding-index contracts over accepted `EvidenceChunk` records without allowing an index to become the canonical knowledge model. The first slice should prove deterministic lexical indexing and a versioned embedding/index interface with reproducible metadata before introducing broad retrieval/reranking behavior. PostgreSQL/full-text search and pgvector remain the intended production baseline once the interface and benchmark obligations are stable.
 
 The Learning System does not replace CMIS for changing market/blockchain state. Fresh accepted CMIS/provider evidence remains authoritative for current prices, liquidity, supply, wallet state, risk, and other freshness-sensitive facts.
 
@@ -239,7 +254,7 @@ python -m pip install -e '.[dev,deepseek]'
 python -m pytest -v -m 'not live and not cmis_live'
 ```
 
-The deterministic suite covers the Oracle/tool loop, provider-neutral model injection, Chain Scout boundaries, CMIS capability validation, X1 and Solana evidence isolation, policy, persistence, durable-memory adapters, human approval, evidence-aware response contracts, Learning System source ingestion, and deterministic structure-first parsing.
+The deterministic suite covers the Oracle/tool loop, provider-neutral model injection, Chain Scout boundaries, CMIS capability validation, X1 and Solana evidence isolation, policy, persistence, durable-memory adapters, human approval, evidence-aware response contracts, Learning System source ingestion, structure-first parsing, and structure-aware evidence chunking.
 
 ## Provider-backed CMIS
 
