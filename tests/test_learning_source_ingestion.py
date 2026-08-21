@@ -20,7 +20,7 @@ def _clock() -> datetime:
     return FIXED_TIME
 
 
-def _ingest(store: InMemorySourceStore, content: str = "alpha\n", **overrides):
+def _ingest(store: InMemorySourceStore, content: str | bytes = "alpha\n", **overrides):
     params = {
         "store": store,
         "content": content,
@@ -64,6 +64,19 @@ def test_identical_reingestion_is_idempotent_and_keeps_original_record() -> None
     assert second.status == "existing"
     assert second.record is first.record
     assert second.record.ingested_at == "2026-08-21T09:30:00Z"
+
+
+def test_same_identity_with_conflicting_provenance_fails_closed() -> None:
+    store = InMemorySourceStore()
+    first = _ingest(store)
+
+    with pytest.raises(SourceIngestionError, match="conflicting immutable provenance"):
+        _ingest(store, authority_class="primary")
+
+    with pytest.raises(SourceIngestionError, match="conflicting immutable provenance"):
+        _ingest(store, metadata={"document_type": "different"})
+
+    assert store.get_source(first.record.source_id) is first.record
 
 
 def test_changed_content_creates_distinct_record_without_erasing_prior_artifact() -> None:
@@ -114,26 +127,28 @@ def test_status_must_be_consistent_with_approval_state() -> None:
         _ingest(store, approval_status="approved", status="quarantined")
 
 
-def test_invalid_utf8_bytes_fail_closed_without_storage_mutation() -> None:
+@pytest.mark.parametrize("content", [b"\xff\xfe", b"", ""])
+def test_invalid_or_empty_source_content_fails_closed(content: str | bytes) -> None:
     store = InMemorySourceStore()
 
-    with pytest.raises(SourceIngestionError, match="UTF-8"):
-        _ingest(store, content=b"\xff\xfe")
-
-    assert store._sources == {}
-    assert store._artifacts == {}
+    with pytest.raises(SourceIngestionError):
+        _ingest(store, content=content)
 
 
-def test_metadata_must_be_json_compatible_and_is_detached_from_caller() -> None:
+def test_metadata_must_be_json_compatible_detached_and_recursively_immutable() -> None:
     store = InMemorySourceStore()
-    metadata = {"tags": ["a", "b"]}
+    metadata = {"tags": ["a", "b"], "nested": {"kind": "spec"}}
     result = _ingest(store, metadata=metadata)
 
     metadata["tags"].append("caller-mutation")
+    metadata["nested"]["kind"] = "caller-mutation"
 
-    assert result.record.metadata["tags"] == ["a", "b"]
+    assert result.record.metadata["tags"] == ("a", "b")
+    assert result.record.metadata["nested"]["kind"] == "spec"
     with pytest.raises(TypeError):
         result.record.metadata["new"] = "blocked"  # type: ignore[index]
+    with pytest.raises(TypeError):
+        result.record.metadata["nested"]["kind"] = "blocked"  # type: ignore[index]
 
     with pytest.raises(SourceIngestionError, match="canonical JSON"):
         _ingest(store, content="other\n", metadata={"not_json": object()})
@@ -172,6 +187,13 @@ def test_in_memory_store_rejects_conflicting_immutable_writes() -> None:
     )
     with pytest.raises(SourceIngestionError, match="source write"):
         store.put_source(conflicting)
+
+
+def test_naive_clock_is_rejected() -> None:
+    store = InMemorySourceStore()
+
+    with pytest.raises(SourceIngestionError, match="timezone-aware"):
+        _ingest(store, clock=lambda: datetime(2026, 8, 21, 9, 30))
 
 
 def test_missing_record_or_artifact_returns_none() -> None:
