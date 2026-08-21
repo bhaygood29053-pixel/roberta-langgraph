@@ -80,7 +80,7 @@ def test_lexical_analyzer_is_unicode_nfkc_casefold_and_ordered() -> None:
 def test_lexical_entries_preserve_chunk_provenance_and_filter_metadata() -> None:
     store, source, chunked = _chunked(
         "# A\none\n\n## B\ntwo\n",
-        authority_class="project",
+        authority_class="primary",
         approval_status="approved",
     )
 
@@ -98,7 +98,7 @@ def test_lexical_entries_preserve_chunk_provenance_and_filter_metadata() -> None
         assert entry.chunk_kind == chunk.kind
         assert entry.line_start == chunk.line_start
         assert entry.line_end == chunk.line_end
-        assert entry.source_authority_class == "project"
+        assert entry.source_authority_class == "primary"
         assert entry.source_approval_status == "approved"
         assert entry.chunk_content_hash == chunk.content_hash
 
