@@ -50,11 +50,16 @@ The CMIS implementation still uses the internal Python namespace `liquidity_scou
 - Phase 9 Human in the Loop — complete
 - Phase 10 More Specialists / Providers — complete
 - Post-Phase-10 Evidence-Aware Intelligence & User Experience — complete
+- Cross-project engineering governance (#97/#98) — complete
+- Deterministic HXMP provenance/reconciliation hardening (#97/#99) — complete
+- Technology Radar design/specification (#97/#100) — complete; runtime implementation deferred
 - Phase 11 Controlled Execution — **locked / not started**
 
 See [`docs/LANGGRAPH_ROADMAP.md`](./docs/LANGGRAPH_ROADMAP.md) for the authoritative Roberta roadmap.
 
 CMIS has its own execution-phase numbering. CMIS Phase 11 refers to its completed **read-only Verified Intelligence foundation**; that is separate from Roberta Phase 11 Controlled Execution.
+
+The active upstream intelligence milestone is now **CMIS #263**, a deterministic concentration-threshold alert evidence contract. It remains CMIS-internal/read-only/non-promoted; Roberta has no new alert capability unless a later CMIS promotion contract and Roberta roadmap gate explicitly authorize adoption.
 
 ## Engineering workflow
 
@@ -64,7 +69,7 @@ Green CI alone is not sufficient if a required review axis fails. The workflow p
 
 ## Technology Radar design
 
-Issue #100 defines a future read-only roadmap-aware Technology Radar in [`docs/TECHNOLOGY_RADAR.md`](./docs/TECHNOLOGY_RADAR.md).
+Issue #100 defines a future read-only roadmap-aware Technology Radar in [`docs/TECHNOLOGY_RADAR.md`](./docs/TECHNOLOGY_RADAR.md). The specification was accepted through PR #103 as the third and final slice of parent #97.
 
 The document is a **design/specification only**. No Radar runtime, source adapter, scheduler, dependency, autonomous adoption path, provider-trust change, or execution authority is currently authorized. The proposed Radar keeps trend strength, roadmap relevance, research-evidence quality, adoption risk, and license compatibility separate and routes any promising discovery back through the normal engineering workflow.
 
@@ -135,9 +140,9 @@ Roberta preserves those boundaries and does not upgrade missing or partial provi
 
 ## Wallet / behavioral safety boundary
 
-CMIS now has a read-only Verified Intelligence foundation for neutral wallet-activity and concentration primitives. Those primitives are not automatically promoted into public Scout services.
+CMIS now has a read-only Verified Intelligence foundation for neutral wallet-activity and concentration primitives plus an accepted internal deterministic direct wallet-relationship evidence foundation with explicit non-ownership semantics. Those primitives/foundations are not automatically promoted into public Scout services.
 
-Roberta may not label a wallet as an insider, whale, bot, accumulator, distributor, market maker, manipulator, dumper, common owner, or equivalent unless a later accepted CMIS classification contract explicitly permits the label from proven evidence.
+Roberta may not label a wallet as an insider, whale, bot, accumulator, distributor, market maker, manipulator, dumper, common owner, beneficial owner, or equivalent unless a later accepted CMIS classification contract and service promotion explicitly permit the label from proven evidence.
 
 Facts and interpretations remain separate.
 
@@ -166,6 +171,8 @@ LLM                    -> explanation / synthesis only
 ```
 
 Fresh verified CMIS/provider evidence overrides remembered or checkpointed live-market snapshots.
+
+The accepted deterministic reconciliation seam may classify compatible accepted historical context as `superseded`, `evolution`, `conflict`, or `unknown`. Incompatible semantics/category/chain/scope, missing or ambiguous time, unaccepted evidence, or reversed observation order fail closed to `unknown`. A conflict or insufficient historical context may justify stronger fresh verification; it may not override fresh CMIS truth or become a new market/risk fact.
 
 ## Human approval boundary
 
@@ -205,7 +212,7 @@ python -m pip install -e '.[dev,deepseek]'
 python -m pytest -v -m 'not live and not cmis_live'
 ```
 
-The deterministic suite covers the Oracle/tool loop, provider-neutral model injection, Chain Scout boundaries, CMIS capability validation, X1 and Solana evidence isolation, policy, persistence, durable-memory adapters, human approval, and evidence-aware response contracts.
+The deterministic suite covers the Oracle/tool loop, provider-neutral model injection, Chain Scout boundaries, CMIS capability validation, X1 and Solana evidence isolation, policy, persistence, durable-memory adapters, human approval, evidence-aware response contracts, and deterministic memory reconciliation.
 
 ## Provider-backed CMIS
 
@@ -295,6 +302,8 @@ If Roberta is unavailable, the normal user-facing transport should report availa
 
 ## Near-term boundary
 
-The deterministic pre-trade trade-size milestone previously tracked as CMIS Issue #99 is complete. Roberta consumes CMIS's structured result and explains it; it does not duplicate the calculation.
+The deterministic pre-trade trade-size milestone, descriptive intelligence-classification foundation, direct wallet-relationship evidence foundation, Roberta governance/HXMP reconciliation work, and Technology Radar specification are complete.
 
-Future wallet/behavioral interpretation, early-warning intelligence, additional cross-chain expansion, and any eventual controlled execution must each be promoted through explicit evidence and safety contracts rather than inferred from the existing read-only foundation.
+The active upstream CMIS milestone is #263, the first deterministic concentration-threshold alert evidence contract. It remains internal/read-only/non-promoted. Roberta should not add alert planning, presentation, or reliance merely because the CMIS internal foundation exists; that requires a later accepted CMIS service promotion and a Roberta adoption gate.
+
+Future broader alert intelligence, additional provider/historical verification, field-by-field Solana maturity, future Ethereum expansion, any Technology Radar runtime, and any eventual Controlled Execution must each be promoted through explicit evidence, contract, and safety gates rather than inferred from the existing read-only foundation.
