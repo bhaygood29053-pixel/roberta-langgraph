@@ -101,6 +101,7 @@ from .retention import (
     prepare_verified_lesson_retention,
     retain_verified_lesson,
     transition_verified_lesson_state,
+    validate_retention_decision,
 )
 from .retrieval import (
     FUSION_CONTRACT,
@@ -271,6 +272,7 @@ __all__ = [
     "validate_grounded_result_for_evaluation",
     "validate_learning_candidate_bundle",
     "validate_reflection_record",
+    "validate_retention_decision",
     "validate_retrieval_result_for_grounding",
     "verify_candidate_lesson",
 ]
