@@ -253,13 +253,15 @@ def _build_retest_evaluation(
     retest_packet: EvidencePacket | None,
     retest_grounded_result: GroundedAnswerResult | None,
 ) -> tuple[EvaluationResult | None, tuple[str, ...]]:
-    missing: list[str] = []
-    if retest_packet is None:
-        missing.append("retest_packet_unavailable")
-    if retest_grounded_result is None:
-        missing.append("retest_grounded_result_unavailable")
-    if missing:
-        return None, tuple(missing)
+    if retest_packet is None and retest_grounded_result is None:
+        return None, (
+            "retest_packet_unavailable",
+            "retest_grounded_result_unavailable",
+        )
+    if retest_packet is None or retest_grounded_result is None:
+        raise VerificationError(
+            "retest evidence must supply packet and grounded result together"
+        )
 
     try:
         evaluation = evaluate_grounded_answer(
