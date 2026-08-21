@@ -46,20 +46,31 @@ X1_WHITEPAPER_PDF_SHA256 = (
 X1_WHITEPAPER_PDF_PAGE_COUNT = 13
 
 
-def x1_whitepaper_markdown() -> str:
-    """Return the exact packaged UTF-8 transcript after integrity validation."""
+def _x1_whitepaper_transcript_bytes() -> bytes:
+    """Return exact packaged transcript bytes after SHA-256 validation."""
 
     root = files("roberta.learning")
-    content = "".join(
-        root.joinpath(resource).read_text(encoding="utf-8")
+    content = b"".join(
+        root.joinpath(resource).read_bytes()
         for resource in X1_WHITEPAPER_TRANSCRIPT_RESOURCES
     )
-    digest = hashlib.sha256(content.encode("utf-8")).hexdigest()
+    digest = hashlib.sha256(content).hexdigest()
     if digest != X1_WHITEPAPER_TRANSCRIPT_SHA256:
         raise SourceIngestionError(
             "packaged X1 whitepaper transcript does not match pinned SHA-256"
         )
     return content
+
+
+def x1_whitepaper_markdown() -> str:
+    """Return the exact packaged UTF-8 transcript after integrity validation."""
+
+    try:
+        return _x1_whitepaper_transcript_bytes().decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise SourceIngestionError(
+            "packaged X1 whitepaper transcript must be valid UTF-8"
+        ) from exc
 
 
 def ingest_x1_whitepaper_source(
@@ -86,14 +97,14 @@ def ingest_x1_whitepaper_source(
         "original_pdf_provenance": "user_supplied_upload",
         "transcript_media_type": "text/markdown; charset=utf-8",
         "transcript_sha256": X1_WHITEPAPER_TRANSCRIPT_SHA256,
-        "transcription_contract": "pdf-text-to-markdown/v1",
+        "transcription_profile": "normalized-pdf-text-transcription/v1",
         "figure_handling": "captions_only_original_pdf_external_provenance",
         "knowledge_scope": "static_architecture_and_protocol_design",
         "current_state_authority": False,
     }
     common = dict(
         store=store,
-        content=x1_whitepaper_markdown(),
+        content=_x1_whitepaper_transcript_bytes(),
         origin=X1_WHITEPAPER_ORIGIN,
         title=X1_WHITEPAPER_TITLE,
         version=X1_WHITEPAPER_VERSION,
