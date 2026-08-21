@@ -24,7 +24,8 @@ Roberta has completed:
 - **Learning System Phase 2 — deterministic structure-first Markdown parsing (#109/#110);**
 - **Learning System Phase 3 — deterministic structure-aware evidence chunking (#112/#113);**
 - **Learning System Phase 4 — deterministic lexical + embedding indexing foundation (#115/#116);**
-- **Learning System Phase 5 — deterministic retrieval + benchmark foundation (#118/#119).**
+- **Learning System Phase 5 — deterministic retrieval + benchmark foundation (#118/#119);**
+- **Learning System Phase 6 — deterministic evidence packet + citation-bound answer foundation (#121/#122).**
 
 Phase 5 — X1 Evidence Completeness remains deliberately **bounded**, with explicit verified/bounded/partial/unavailable/conflict/insufficient-evidence states.
 
@@ -64,7 +65,7 @@ A roadmap item being active does not waive those gates. A PR is not merge-ready 
 
 ## Learning System primary track
 
-The Learning System follows the evidence-grounded design in [`LEARNING_SYSTEM.md`](./LEARNING_SYSTEM.md), [`LEARNING_SYSTEM_STRUCTURE.md`](./LEARNING_SYSTEM_STRUCTURE.md), [`LEARNING_SYSTEM_CHUNKING.md`](./LEARNING_SYSTEM_CHUNKING.md), [`LEARNING_SYSTEM_INDEXING.md`](./LEARNING_SYSTEM_INDEXING.md), [`LEARNING_SYSTEM_RETRIEVAL.md`](./LEARNING_SYSTEM_RETRIEVAL.md), and the broader Roberta Learning System Specification v1.1.
+The Learning System follows the evidence-grounded design in [`LEARNING_SYSTEM.md`](./LEARNING_SYSTEM.md), [`LEARNING_SYSTEM_STRUCTURE.md`](./LEARNING_SYSTEM_STRUCTURE.md), [`LEARNING_SYSTEM_CHUNKING.md`](./LEARNING_SYSTEM_CHUNKING.md), [`LEARNING_SYSTEM_INDEXING.md`](./LEARNING_SYSTEM_INDEXING.md), [`LEARNING_SYSTEM_RETRIEVAL.md`](./LEARNING_SYSTEM_RETRIEVAL.md), [`LEARNING_SYSTEM_GROUNDING.md`](./LEARNING_SYSTEM_GROUNDING.md), and the broader Roberta Learning System Specification v1.1.
 
 ### Learning System Phase 1 — Source ingestion ✅ Complete
 
@@ -214,36 +215,69 @@ The accepted Phase 5 boundary:
 
 Accepted verification for PR #119 recorded **566 deterministic tests passing with 5 live/provider tests deselected**, all new retrieval regressions passing, all three engineering review axes passing, and no unresolved review threads.
 
-### Learning System Phase 6 — Grounded answer + citation foundation ⬜ Next
+### Learning System Phase 6 — Grounded answer + citation foundation ✅ Complete
 
-The next narrow target is to turn an accepted `RetrievalResult` into a bounded evidence packet that a model can explain without converting generated language into evidence.
+Issue #121 / PR #122 established deterministic evidence-packet construction and citation/scope validation over canonical Phase 5 retrieval.
 
-The first accepted slice should establish:
+The accepted first grounding contracts are:
 
 ```text
-RetrievalResult
-  -> deterministic EvidencePacket
-  -> bounded answer request
-  -> model-generated answer candidate
-  -> deterministic citation / evidence-binding validation
-  -> GroundedAnswerResult
+evidence_packet_contract = grounded-evidence-packet/v1
+answer_contract = citation-bound-answer/v1
+prompt_safety_contract = retrieved-text-untrusted-data/v1
+answer_validator_version = 1.0.0
 ```
 
-Phase 6 should preserve, at minimum:
+The accepted Phase 6 boundary:
 
-- exact retrieval/query identity and selected `chunk_id` set as the only static evidence scope for one answer attempt;
-- stable evidence labels/anchors that bind citations to exact source/document/section/chunk identity and source line range;
-- explicit packet status for `ok`, `partial`, conflict-present, and insufficient/no-evidence conditions;
-- source authority/approval metadata as evidence context, not a model-computed truth score;
-- a model-facing contract that treats retrieved source text as untrusted data/evidence rather than system instructions;
-- deterministic validation that every answer citation references an evidence anchor actually present in the packet;
-- explicit unsupported-claim / missing-citation handling rather than silently accepting generated statements;
-- explicit disclosure when retrieved sources disagree or when retrieval is partial/insufficient;
-- strict separation between static Learning System evidence and freshness-sensitive CMIS/provider facts;
-- no automatic write from generated answer/reflection text into trusted source knowledge or durable verified memory;
-- evaluation fixtures for citation correctness, unsupported claims, contradictory evidence, no-answer cases, and prompt-injection-looking source text.
+- reconstructs the exact Phase 5 retrieval from its typed query and requires exact equality before evidence packet construction;
+- assigns deterministic local `E1...En` anchors that bind exact retrieval/chunk/source/document/section/block identities, structural paths, source line ranges, exact text/content hashes, authority/approval metadata, and retrieval rank evidence;
+- content-addresses anchor, packet, and grounded-result identities so evidence-scope tampering is detectable;
+- serializes retrieved text as `untrusted_evidence_data`, explicitly denying source text the ability to expand tool permissions, authorize memory writes, or authorize execution;
+- accepts typed claims with explicit `supported`, `insufficient`, or `conflict` status rather than treating unconstrained prose as verified structure;
+- requires supported claims to cite exact packet anchors and conflict claims to cite at least two exact anchors;
+- rejects fabricated/unknown anchors, duplicate claim ids, packet-identity substitution, and tampered packet/retrieval state;
+- converts `no_match` retrieval into explicit insufficiency and requires an `insufficient_evidence` disclosure marker;
+- preserves partial retrieval and requires an explicit `retrieval_partial` limitation marker;
+- does not infer semantic contradiction merely because multiple sources are present; an upstream explicit deterministic conflict signal is required before packet-level conflict state is asserted;
+- preserves exact user-facing `EvidenceReference` records for cited anchors;
+- deliberately separates structural citation validity from semantic verification: first-slice results retain `semantic_support_verified=false` and `claim_coverage_verified=false`;
+- structurally denies live-state authority, verified-memory promotion, and execution authority for packet/candidate/result records.
 
-Phase 6 should **not** yet add autonomous reflection-to-lesson promotion, concepts/knowledge graph, adaptive curriculum, fine-tuning, or a production pgvector dependency. Model reranking should remain deferred unless retrieval benchmarks identify a concrete failure mode that deterministic candidate generation cannot address.
+Accepted verification for PR #122 recorded **582 deterministic tests passing with 5 live/provider tests deselected**, all 16 new grounding regressions passing, all three engineering review axes passing, and no unresolved review threads.
+
+### Learning System Phase 7 — Answer evaluation foundation ⬜ Next
+
+The next narrow target is an independent evaluation layer over accepted Phase 6 grounded-answer records. It should measure answer quality without collapsing retrieval quality, citation structure, or evaluator opinion into source truth.
+
+The next accepted slice should establish:
+
+```text
+GroundedAnswerResult + EvidencePacket + GoldenEvaluationCase
+  -> independent AnswerEvaluator
+  -> per-dimension scores + failure classification
+  -> EvaluationResult
+```
+
+Phase 7 should preserve, at minimum:
+
+- evaluator contract/version and exact binding to packet/result/golden-case identities;
+- golden fixtures with explicit question, expected evidence/claim criteria, reference-answer criteria where appropriate, and negative/no-answer cases;
+- semantic groundedness scoring distinct from deterministic citation-presence validation;
+- citation correctness, precision, and completeness as separate dimensions;
+- unsupported-claim rate and claim-coverage failures;
+- factual correctness/completeness/usefulness against explicit golden criteria rather than model self-confidence;
+- conflict-handling and insufficiency/no-answer correctness;
+- uncertainty/calibration measures where labeled fixtures make them meaningful;
+- prompt-injection/instruction-compliance evaluation cases;
+- explicit retrieval-failure versus answer-failure classification so weak retrieval is not mislabeled as a reasoning failure;
+- deterministic aggregate metrics where the underlying labels support them;
+- evaluator provenance/status/errors and explicit disagreement/unknown states for evaluator outputs;
+- no direct evaluator or answer write into trusted source knowledge or verified durable memory.
+
+The first Phase 7 slice should prefer deterministic golden-label checks and typed evaluator interfaces. If a model-based judge is later needed for semantic dimensions, it should be a separately identified evaluator adapter with provenance and calibration tests; Roberta should not treat a model grading its own answer as independent truth.
+
+Phase 7 should **not** yet add automatic lesson promotion, adaptive curriculum, concepts/knowledge graph, fine-tuning, production model reranking, or Controlled Execution. Candidate lessons and skill updates remain later gates after evaluation quality itself is measurable.
 
 ## Technology Radar design boundary — Issue #100
 
