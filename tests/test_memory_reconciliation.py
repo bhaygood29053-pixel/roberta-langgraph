@@ -111,6 +111,74 @@ def test_missing_or_ambiguous_timestamps_are_unknown(
     assert_no_authority_grant(result)
 
 
+@pytest.mark.parametrize(
+    ("prior_chain", "candidate_chain"),
+    [
+        (None, "x1"),
+        ("x1", None),
+        (None, None),
+        ("", "x1"),
+    ],
+)
+def test_missing_chain_scope_is_unknown(
+    prior_chain: str | None,
+    candidate_chain: str | None,
+) -> None:
+    result = reconcile_memory_observations(
+        observation(
+            value="WARN",
+            observed_at="2026-08-19T12:00:00Z",
+            chain=prior_chain,
+        ),
+        observation(
+            value="PASS",
+            observed_at="2026-08-20T12:00:00Z",
+            chain=candidate_chain,
+            accepted_evidence=True,
+        ),
+    )
+
+    assert result.label == "unknown"
+    assert "chain scope is required" in result.reason
+    assert result.evidence_sufficient is False
+    assert result.requires_fresh_verification is True
+    assert_no_authority_grant(result)
+
+
+@pytest.mark.parametrize(
+    ("prior_scope", "candidate_scope"),
+    [
+        (None, "asset:agi:risk"),
+        ("asset:agi:risk", None),
+        (None, None),
+        ("", "asset:agi:risk"),
+    ],
+)
+def test_missing_evidence_scope_is_unknown(
+    prior_scope: str | None,
+    candidate_scope: str | None,
+) -> None:
+    result = reconcile_memory_observations(
+        observation(
+            value="WARN",
+            observed_at="2026-08-19T12:00:00Z",
+            scope=prior_scope,
+        ),
+        observation(
+            value="PASS",
+            observed_at="2026-08-20T12:00:00Z",
+            scope=candidate_scope,
+            accepted_evidence=True,
+        ),
+    )
+
+    assert result.label == "unknown"
+    assert "evidence scope is required" in result.reason
+    assert result.evidence_sufficient is False
+    assert result.requires_fresh_verification is True
+    assert_no_authority_grant(result)
+
+
 def test_cross_chain_observations_remain_isolated() -> None:
     result = reconcile_memory_observations(
         observation(value="WARN", observed_at="2026-08-19T12:00:00Z", chain="x1"),
