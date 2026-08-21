@@ -25,7 +25,8 @@ Roberta has completed:
 - **Learning System Phase 3 — deterministic structure-aware evidence chunking (#112/#113);**
 - **Learning System Phase 4 — deterministic lexical + embedding indexing foundation (#115/#116);**
 - **Learning System Phase 5 — deterministic retrieval + benchmark foundation (#118/#119);**
-- **Learning System Phase 6 — deterministic evidence packet + citation-bound answer foundation (#121/#122).**
+- **Learning System Phase 6 — deterministic evidence packet + citation-bound answer foundation (#121/#122);**
+- **Learning System Phase 7 — deterministic independent answer-evaluation foundation (#124/#125).**
 
 Phase 5 — X1 Evidence Completeness remains deliberately **bounded**, with explicit verified/bounded/partial/unavailable/conflict/insufficient-evidence states.
 
@@ -65,7 +66,7 @@ A roadmap item being active does not waive those gates. A PR is not merge-ready 
 
 ## Learning System primary track
 
-The Learning System follows the evidence-grounded design in [`LEARNING_SYSTEM.md`](./LEARNING_SYSTEM.md), [`LEARNING_SYSTEM_STRUCTURE.md`](./LEARNING_SYSTEM_STRUCTURE.md), [`LEARNING_SYSTEM_CHUNKING.md`](./LEARNING_SYSTEM_CHUNKING.md), [`LEARNING_SYSTEM_INDEXING.md`](./LEARNING_SYSTEM_INDEXING.md), [`LEARNING_SYSTEM_RETRIEVAL.md`](./LEARNING_SYSTEM_RETRIEVAL.md), [`LEARNING_SYSTEM_GROUNDING.md`](./LEARNING_SYSTEM_GROUNDING.md), and the broader Roberta Learning System Specification v1.1.
+The Learning System follows the evidence-grounded design in [`LEARNING_SYSTEM.md`](./LEARNING_SYSTEM.md), [`LEARNING_SYSTEM_STRUCTURE.md`](./LEARNING_SYSTEM_STRUCTURE.md), [`LEARNING_SYSTEM_CHUNKING.md`](./LEARNING_SYSTEM_CHUNKING.md), [`LEARNING_SYSTEM_INDEXING.md`](./LEARNING_SYSTEM_INDEXING.md), [`LEARNING_SYSTEM_RETRIEVAL.md`](./LEARNING_SYSTEM_RETRIEVAL.md), [`LEARNING_SYSTEM_GROUNDING.md`](./LEARNING_SYSTEM_GROUNDING.md), [`LEARNING_SYSTEM_EVALUATION.md`](./LEARNING_SYSTEM_EVALUATION.md), and the broader Roberta Learning System Specification v1.1.
 
 ### Learning System Phase 1 — Source ingestion ✅ Complete
 
@@ -246,38 +247,70 @@ The accepted Phase 6 boundary:
 
 Accepted verification for PR #122 recorded **582 deterministic tests passing with 5 live/provider tests deselected**, all 16 new grounding regressions passing, all three engineering review axes passing, and no unresolved review threads.
 
-### Learning System Phase 7 — Answer evaluation foundation ⬜ Next
+### Learning System Phase 7 — Answer evaluation foundation ✅ Complete
 
-The next narrow target is an independent evaluation layer over accepted Phase 6 grounded-answer records. It should measure answer quality without collapsing retrieval quality, citation structure, or evaluator opinion into source truth.
+Issue #124 / PR #125 established an independent deterministic evaluator over accepted Phase 6 grounded answers.
+
+The accepted first evaluation contracts are:
+
+```text
+answer_evaluation_contract = grounded-answer-evaluation/v1
+golden_case_contract = grounded-answer-golden-case/v1
+evaluator_adapter = deterministic-golden-label/v1
+evaluator_version = 1.0.0
+```
+
+The accepted Phase 7 boundary:
+
+- reconstructs supplied Phase 6 grounded answers through the accepted Phase 6 validator before any scoring occurs;
+- content-addresses golden cases and binds explicit question/task, behavior, evidence, claim, limitation, provenance, author, approval, and version labels;
+- scores only `approved` golden cases; pending/rejected labels fail closed;
+- keeps retrieval coverage separate from answer correctness/completeness and marks answer dimensions `not_evaluated` when missing expected evidence would otherwise misattribute the failure;
+- distinguishes structurally valid-but-irrelevant citations from fabricated citations by reducing citation precision rather than citation-binding integrity;
+- measures citation correctness, citation precision, citation completeness, unsupported-claim rate, deterministic claim/answer correctness, answer completeness, limitation disclosure, insufficiency handling, conflict handling, and instruction compliance as separate dimensions;
+- supports deterministic prompt-injection regression fixtures without granting retrieved source text instruction authority;
+- preserves explicit failure classes including retrieval, citation binding, unsupported claim, answer correctness/completeness, conflict, insufficiency, uncertainty/calibration, instruction compliance, evaluator unavailable/disagreement, and unknown states;
+- reports deterministic aggregate case-pass, citation, unsupported-claim, insufficiency/conflict, retrieval-failure, and answer-failure metrics without merging those dimensions;
+- deliberately keeps `semantic_groundedness=not_evaluated`, `semantic_support_verified=false`, and `claim_coverage_verified=false` because deterministic citation/substring checks do not prove semantic entailment;
+- keeps uncertainty calibration `not_applicable` or `not_evaluated` because the current grounded-answer contract does not expose a calibrated confidence field;
+- denies live-state authority, verified-memory promotion, and execution authority for golden cases, dimensions, evaluation results, and aggregates.
+
+Accepted verification for PR #125 recorded **599 deterministic tests passing with 5 live/provider tests deselected**, all 17 new Phase 7 evaluation regressions passing, all three engineering review axes passing, and no unresolved review threads.
+
+### Learning System Phase 8 — Provisional reflection + candidate lesson foundation ⬜ Next
+
+The next narrow target is to transform accepted Phase 7 evaluation failures into provenance-bound diagnostic/reflection records and provisional candidate lessons without allowing evaluation output or generated reflection to become trusted knowledge automatically.
 
 The next accepted slice should establish:
 
 ```text
-GroundedAnswerResult + EvidencePacket + GoldenEvaluationCase
-  -> independent AnswerEvaluator
-  -> per-dimension scores + failure classification
-  -> EvaluationResult
+EvaluationResult
+  -> deterministic failure diagnosis inputs
+  -> ReflectionRecord
+  -> CandidateLesson
+  -> explicit VerificationPlan
+  -> status = provisional
 ```
 
-Phase 7 should preserve, at minimum:
+Phase 8 should preserve, at minimum:
 
-- evaluator contract/version and exact binding to packet/result/golden-case identities;
-- golden fixtures with explicit question, expected evidence/claim criteria, reference-answer criteria where appropriate, and negative/no-answer cases;
-- semantic groundedness scoring distinct from deterministic citation-presence validation;
-- citation correctness, precision, and completeness as separate dimensions;
-- unsupported-claim rate and claim-coverage failures;
-- factual correctness/completeness/usefulness against explicit golden criteria rather than model self-confidence;
-- conflict-handling and insufficiency/no-answer correctness;
-- uncertainty/calibration measures where labeled fixtures make them meaningful;
-- prompt-injection/instruction-compliance evaluation cases;
-- explicit retrieval-failure versus answer-failure classification so weak retrieval is not mislabeled as a reasoning failure;
-- deterministic aggregate metrics where the underlying labels support them;
-- evaluator provenance/status/errors and explicit disagreement/unknown states for evaluator outputs;
-- no direct evaluator or answer write into trusted source knowledge or verified durable memory.
+- exact evaluation, grounded-result, packet, golden-case, retrieval, and relevant evidence identities;
+- explicit failure classifications from Phase 7 rather than a free-form model relabeling of the failure layer;
+- a bounded diagnosed layer such as retrieval, citation binding, answer correctness/completeness, conflict, insufficiency, instruction compliance, or unknown;
+- reflection text clearly labeled generated/provisional rather than source fact;
+- candidate lesson identity, version, rationale, evidence references, creator, and creation metadata;
+- a concrete verification plan describing what independent checks/retests are required before promotion;
+- explicit provisional/rejected/superseded lifecycle states, with no `verified` state in this phase unless a later verification contract is accepted;
+- deterministic content-addressed identities for reflection/candidate records so mutation is detectable;
+- no direct write to source knowledge or trusted HXMP/durable memory;
+- no ability for candidate lessons to change protected governance, source approval, CMIS/provider trust, current market facts, or execution authority;
+- deterministic tests proving evaluator failures remain traceable through reflections/candidates and that passing/no-action cases do not manufacture lessons.
 
-The first Phase 7 slice should prefer deterministic golden-label checks and typed evaluator interfaces. If a model-based judge is later needed for semantic dimensions, it should be a separately identified evaluator adapter with provenance and calibration tests; Roberta should not treat a model grading its own answer as independent truth.
+Phase 8 should prefer deterministic diagnosis from Phase 7 failure classes and a typed reflection/candidate interface. If a model is used to draft a candidate lesson, its text remains generated provisional content and cannot self-verify.
 
-Phase 7 should **not** yet add automatic lesson promotion, adaptive curriculum, concepts/knowledge graph, fine-tuning, production model reranking, or Controlled Execution. Candidate lessons and skill updates remain later gates after evaluation quality itself is measurable.
+A later **Learning System Phase 9 — Candidate Lesson Verification** should independently verify or reject candidate lessons before any retained/reusable verified-knowledge path is introduced.
+
+Phase 8 should **not** add automatic durable-memory promotion, autonomous policy mutation, adaptive curriculum scheduling, model fine-tuning, production reranking, CMIS/provider truth changes, or Controlled Execution.
 
 ## Technology Radar design boundary — Issue #100
 
