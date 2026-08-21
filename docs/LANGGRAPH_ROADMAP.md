@@ -19,7 +19,10 @@ Roberta has completed:
 - Post-Phase-10 Evidence-Aware Intelligence & User Experience;
 - X1 Decision Production Readiness (#62);
 - adoption/readiness of the first separately promoted CMIS 1.9 Verified Intelligence service through X1 Scout (#73/#74);
-- Solana Read-Only Production Readiness (#78) for the exact currently promoted Roberta Solana Scout surface.
+- Solana Read-Only Production Readiness (#78) for the exact currently promoted Roberta Solana Scout surface;
+- cross-project engineering governance under #97/#98;
+- deterministic HXMP provenance/reconciliation hardening under #97/#99;
+- the read-only Technology Radar design/specification under #97/#100, with runtime implementation explicitly deferred.
 
 Phase 5 — X1 Evidence Completeness remains deliberately **bounded**, with explicit verified/bounded/partial/unavailable/conflict/insufficient-evidence states.
 
@@ -49,15 +52,23 @@ Fresh accepted CMIS/provider evidence overrides remembered, checkpointed, or con
 
 The repository/project identity is CMIS, while working internal Python identifiers such as `liquidity_scout` may remain during incremental migration to avoid breaking imports, tests, entry points, and deployments. Compatibility identifiers do not create a second authority layer.
 
-## Engineering governance
+## Engineering governance ✅ Complete
 
 Meaningful Roberta changes are governed by [`ENGINEERING_WORKFLOW.md`](./ENGINEERING_WORKFLOW.md). That document is the repository authority for roadmap/issue gating, narrow tracer-bullet implementation, behavior-first verification, exact-head deterministic testing, and the independent three-axis PR gate: **Spec Fidelity**, **Code/Architecture Quality**, and **Authority/Safety Boundary**.
 
-A roadmap item being active does not waive those gates. A PR is not merge-ready if any required axis fails, and acceptance must be followed by roadmap/source-of-truth reconciliation. This governance does not start or widen Controlled Execution.
+The governance slice was accepted through PR #101 under parent #97. A roadmap item being active does not waive those gates. A PR is not merge-ready if any required axis fails, and acceptance must be followed by roadmap/source-of-truth reconciliation. This governance does not start or widen Controlled Execution.
 
-## Technology Radar design boundary — Issue #100
+## HXMP provenance / reconciliation ✅ Complete
 
-Issue #100 defines a **specification-only** future roadmap-aware Technology Radar in [`TECHNOLOGY_RADAR.md`](./TECHNOLOGY_RADAR.md).
+PR #102 added the bounded deterministic reconciliation seam required by #97/#99 without creating a second durable-memory system or turning memory into current truth.
+
+Materially comparable accepted historical/durable observations can be classified as `superseded`, `evolution`, `conflict`, or `unknown` only under the accepted reconciliation contract. Incompatible semantics/category/chain/scope, missing or ambiguous time, unaccepted evidence, and reversed observation order fail closed to `unknown`.
+
+Historical conflict or insufficient context may justify requesting stronger fresh verification, but HXMP/checkpoint/conversation state cannot replace fresh accepted CMIS evidence, cannot manufacture market/risk/tokenomics/wallet facts, and cannot authorize execution.
+
+## Technology Radar design boundary — Issue #100 ✅ Specification complete
+
+Issue #100 defines a **specification-only** future roadmap-aware Technology Radar in [`TECHNOLOGY_RADAR.md`](./TECHNOLOGY_RADAR.md), accepted through PR #103 under parent #97.
 
 The proposed Radar is a read-only technology-research and recommendation capability. It keeps trend strength, roadmap relevance, research-evidence quality, adoption/maintenance risk, and license compatibility as separate dimensions; preserves source provenance and explicit unknowns; and routes any promising discovery back through the normal engineering workflow.
 
@@ -212,6 +223,8 @@ LLM           -> explanation / synthesis only
 
 Fresh accepted CMIS/provider evidence overrides remembered live-market snapshots.
 
+The accepted reconciliation seam may classify compatible historical context as `superseded`, `evolution`, `conflict`, or `unknown`; those labels remain provenance/context policy and do not become replacement CMIS market facts or risk conclusions. Conflict/insufficient historical context may trigger a request for stronger fresh verification, never a memory override.
+
 ## Human approval
 
 Phase 9 human approval is exact-proposal review. Approval is not a reusable signing credential and does not grant broad future wallet authority.
@@ -234,16 +247,19 @@ If Controlled Execution is ever promoted, it requires a separate accepted transa
 
 ## Next read-only intelligence boundary
 
-The first narrow CMIS 1.9 promotion/adoption and the current Solana read-only readiness gate are complete. The next shared intelligence work should proceed only through separately accepted deterministic contracts, especially:
+The first narrow CMIS 1.9 promotion/adoption, current Solana read-only readiness, deterministic descriptive classification foundation, and deterministic wallet-relationship evidence foundation are complete.
 
-1. deterministic inference/classification contracts before behavioral/ownership labels;
-2. wallet relationship evidence with explicit non-ownership semantics;
-3. evidence-backed alerts with explicit scope/freshness/threshold/persistence rules;
-4. deeper X1 provider-gap and historical redundancy verification;
-5. field-by-field Solana maturity beyond the currently accepted Scout surface;
-6. future Ethereum support only under an explicit capability/verification plan.
+The **active upstream intelligence milestone is CMIS #263: deterministic concentration-threshold alert evidence**. That milestone is CMIS-internal, read-only, and non-promoted. Roberta must not consume or expose it as a new Scout capability unless a later separately accepted CMIS promotion contract makes it callable/reliance-eligible and a Roberta roadmap gate explicitly adopts it.
 
-None of these items starts Controlled Execution. Technology Radar design work is research/governance support and does not displace these accepted read-only intelligence priorities.
+After that, the read-only sequence remains:
+
+1. broader evidence-backed alert contracts only from accepted deterministic evidence boundaries;
+2. deeper X1 provider-gap and historical redundancy verification;
+3. field-by-field Solana maturity beyond the currently accepted Scout surface;
+4. future Ethereum support only under an explicit capability/verification plan;
+5. Technology Radar runtime only if a separate future roadmap gate authorizes implementation without displacing accepted intelligence priorities.
+
+None of these items starts Controlled Execution. The completed Technology Radar design is research/governance support only.
 
 ## Core rule
 
