@@ -1,7 +1,7 @@
 """Deterministic verified-lesson retention for the Roberta Learning System.
 
 Phase 10 consumes only an exact canonical Phase 9 ``verified_for_learning``
-result.  The first slice is deliberately narrow: procedural lessons, exact
+result. The first slice is deliberately narrow: procedural lessons, exact
 approved-source support, complete provider-built contradiction snapshots,
 exact-duplicate handling, evidence-bound uncalibrated confidence, explicit
 human review through Roberta's existing approval contract, and an in-memory
@@ -222,6 +222,7 @@ class VerifiedLessonState(_NoExternalAuthority):
     lesson_id: str
     status: str
     previous_state_id: str | None
+    superseded_by_lesson_id: str | None
     reason: str
     evidence_ids: tuple[str, ...]
 
@@ -246,10 +247,10 @@ class RetentionApprovalRegistry(Protocol):
 class InMemoryRetentionApprovalRegistry:
     """Trusted application/session adapter used by deterministic tests.
 
-    A production adapter is expected to populate this boundary only after the
-    existing LangGraph approval runtime has authenticated the human session and
-    resolved the exact paused request.  Phase 10 never accepts principal or
-    thread identity from candidate/source/model text.
+    Production code must populate this boundary only after the existing
+    LangGraph approval runtime has authenticated the human session and resolved
+    the exact paused request. Phase 10 never accepts principal or thread
+    identity from candidate/source/model text.
     """
 
     def __init__(self) -> None:
@@ -286,15 +287,15 @@ class InMemoryRetentionApprovalRegistry:
         if _mapping_json(outcome.reviewed_proposal) != _mapping_json(request.proposal):
             raise RetentionError("approved reviewed proposal content differs from request")
 
-        material = {
-            "authority": RETENTION_APPROVAL_AUTHORITY,
-            "request_id": request.request_id,
-            "proposal_sha256": request.proposal_sha256,
-            "binding_sha256": request.binding_sha256,
-            "thread_id": thread,
-            "human_principal_id": principal,
-            "outcome_status": outcome.status,
-        }
+        material = _trusted_approval_material_values(
+            authority=RETENTION_APPROVAL_AUTHORITY,
+            request_id=request.request_id,
+            proposal_sha256=request.proposal_sha256,
+            binding_sha256=request.binding_sha256,
+            thread_id=thread,
+            human_principal_id=principal,
+            outcome_status=outcome.status,
+        )
         digest = _hash(material)
         record = TrustedRetentionApproval(
             approval_id=f"rha_{digest}",
@@ -307,6 +308,7 @@ class InMemoryRetentionApprovalRegistry:
             human_principal_id=principal,
             outcome_status=outcome.status,
         )
+        _validate_trusted_approval(record)
         existing = self._records.get(request.request_id)
         if existing is not None and existing != record:
             raise RetentionError("conflicting trusted approval for retention request")
@@ -314,7 +316,10 @@ class InMemoryRetentionApprovalRegistry:
         return record
 
     def get_application_approval(self, request_id: str) -> TrustedRetentionApproval | None:
-        return self._records.get(request_id)
+        record = self._records.get(request_id)
+        if record is not None:
+            _validate_trusted_approval(record)
+        return record
 
 
 class InMemoryVerifiedLessonStore:
@@ -339,13 +344,16 @@ class InMemoryVerifiedLessonStore:
         state = self._states.get(state_id)
         if state is None or state.status != "active":
             return None
+        _validate_state_record(state)
         return state
 
     def list_active(self) -> tuple[VerifiedLessonRecord, ...]:
         output: list[VerifiedLessonRecord] = []
         for lesson_id in sorted(self._lessons):
             if self.get_active_state(lesson_id) is not None:
-                output.append(self._lessons[lesson_id])
+                lesson = self._lessons[lesson_id]
+                self.validate_lesson(lesson)
+                output.append(lesson)
         return tuple(output)
 
     def list_active_applicable(
@@ -354,20 +362,25 @@ class InMemoryVerifiedLessonStore:
         lesson_type: str,
         scope: LessonScope,
     ) -> tuple[tuple[VerifiedLessonRecord, VerifiedLessonState], ...]:
+        """Enumerate every active lesson in the same v1 procedural task boundary.
+
+        ``lesson_key`` is intentionally not used to exclude records: a caller
+        cannot hide a potentially conflicting procedure merely by minting a new
+        key. The first-slice applicability boundary is exact lesson type + domain
+        + task, which is conservative and deterministic.
+        """
+
         output: list[tuple[VerifiedLessonRecord, VerifiedLessonState]] = []
         for lesson in self.list_active():
             if lesson.lesson_type != lesson_type:
                 continue
             if (
-                lesson.lesson_scope.lesson_key != scope.lesson_key
-                or lesson.lesson_scope.domain != scope.domain
+                lesson.lesson_scope.domain != scope.domain
                 or lesson.lesson_scope.task != scope.task
             ):
                 continue
             state = self.get_active_state(lesson.lesson_id)
             assert state is not None
-            self.validate_lesson(lesson)
-            _validate_state_record(state)
             output.append((lesson, state))
         output.sort(key=lambda item: item[0].lesson_id)
         return tuple(output)
@@ -375,6 +388,13 @@ class InMemoryVerifiedLessonStore:
     def validate_lesson(self, lesson: VerifiedLessonRecord) -> VerifiedLessonRecord:
         if not isinstance(lesson, VerifiedLessonRecord):
             raise RetentionError("lesson must be VerifiedLessonRecord")
+        if lesson.verified_lesson_contract != VERIFIED_LESSON_CONTRACT:
+            raise RetentionError("verified lesson contract is invalid")
+        if lesson.retention_contract != RETENTION_CONTRACT:
+            raise RetentionError("verified lesson retention contract is invalid")
+        if lesson.retention_version != RETENTION_VERSION:
+            raise RetentionError("verified lesson retention version is invalid")
+        _validate_scope(lesson.lesson_scope)
         material = _verified_lesson_material(lesson)
         digest = _hash(material)
         if lesson.lesson_hash != digest or lesson.lesson_id != f"vl_{digest}":
@@ -467,9 +487,11 @@ def _canonical_recorded_at(value: str) -> str:
     if not text.endswith("Z"):
         raise RetentionError("recorded_at must be a canonical UTC timestamp ending in Z")
     try:
-        datetime.fromisoformat(text[:-1] + "+00:00")
+        parsed = datetime.fromisoformat(text[:-1] + "+00:00")
     except ValueError as exc:
         raise RetentionError("recorded_at must be a valid UTC timestamp") from exc
+    if parsed.utcoffset() is None or parsed.utcoffset().total_seconds() != 0:
+        raise RetentionError("recorded_at must be UTC")
     return text
 
 
@@ -519,24 +541,43 @@ def _validate_scope(scope: LessonScope) -> LessonScope:
     return rebuilt
 
 
+def _validate_source_record_identity(record: SourceRecord) -> None:
+    identity = {
+        "origin": record.origin,
+        "title": record.title,
+        "version": record.version,
+        "content_hash": record.content_hash,
+    }
+    expected_id = "src_" + _hash(identity)
+    if record.source_id != expected_id:
+        raise RetentionError("trusted source store returned non-canonical source identity")
+    if record.artifact_ref != f"artifact_sha256:{record.content_hash}":
+        raise RetentionError("canonical source artifact reference is invalid")
+
+
 def _source_entry(
     *,
     source_store: SourceStore,
     source_id: str,
     lesson_body: str,
 ) -> tuple[RetentionSourceEntry | None, tuple[str, ...]]:
-    record = source_store.get_source(source_id)
+    try:
+        record = source_store.get_source(source_id)
+    except Exception as exc:
+        return None, (f"source_lookup_failed:{type(exc).__name__}:{source_id}",)
     if record is None:
         return None, (f"missing_source:{source_id}",)
     if not isinstance(record, SourceRecord) or record.source_id != source_id:
         raise RetentionError("trusted source store returned non-canonical source identity")
-    artifact = source_store.get_artifact(record.artifact_ref)
+    _validate_source_record_identity(record)
+    try:
+        artifact = source_store.get_artifact(record.artifact_ref)
+    except Exception as exc:
+        return None, (f"source_artifact_lookup_failed:{type(exc).__name__}:{source_id}",)
     if artifact is None:
         return None, (f"missing_source_artifact:{source_id}",)
     if _sha256_bytes(artifact) != record.content_hash:
         raise RetentionError("canonical source artifact content hash is invalid")
-    if record.artifact_ref != f"artifact_sha256:{record.content_hash}":
-        raise RetentionError("canonical source artifact reference is invalid")
     try:
         text = artifact.decode("utf-8")
     except UnicodeDecodeError as exc:
@@ -623,8 +664,6 @@ def _build_contradiction_snapshot(
             source_entries.append(entry)
             if entry.approval_status != "approved" or entry.source_status != "approved":
                 source_complete = False
-            if not entry.exact_lesson_body_match:
-                source_complete = False
 
     active_pairs = lesson_store.list_active_applicable(
         lesson_type=lesson_type,
@@ -642,7 +681,18 @@ def _build_contradiction_snapshot(
         elif lesson.lesson_body != lesson_body:
             conflict_ids.append(lesson.lesson_id)
 
-    if not source_complete or not lesson_complete:
+    source_tuple = tuple(source_entries)
+    active_ids = tuple(entry.lesson_id for entry in lesson_entries)
+    exact_support_ids = tuple(
+        entry.source_id for entry in source_tuple if entry.exact_lesson_body_match
+    )
+    all_declared_sources_exactly_support = (
+        source_complete
+        and len(source_tuple) == len(scope.source_ids)
+        and len(exact_support_ids) == len(scope.source_ids)
+    )
+
+    if not source_complete or not lesson_complete or not all_declared_sources_exactly_support:
         status = "inconclusive"
     elif conflict_ids:
         status = "conflict"
@@ -651,11 +701,6 @@ def _build_contradiction_snapshot(
     if status not in _CONTRADICTION_STATUSES:
         raise RetentionError("unsupported contradiction snapshot status")
 
-    source_tuple = tuple(source_entries)
-    active_ids = tuple(entry.lesson_id for entry in lesson_entries)
-    exact_support_ids = tuple(
-        entry.source_id for entry in source_tuple if entry.exact_lesson_body_match
-    )
     details = tuple(source_details)
     material = {
         "snapshot_contract": CONTRADICTION_SNAPSHOT_CONTRACT,
@@ -708,10 +753,8 @@ def _build_contradiction_snapshot(
     )
 
 
-def _validate_snapshot(snapshot: RetentionContradictionSnapshot) -> None:
-    if not isinstance(snapshot, RetentionContradictionSnapshot):
-        raise RetentionError("contradiction_snapshot must be RetentionContradictionSnapshot")
-    material = {
+def _snapshot_material(snapshot: RetentionContradictionSnapshot) -> dict[str, Any]:
+    return {
         "snapshot_contract": snapshot.snapshot_contract,
         "retention_version": snapshot.retention_version,
         "lesson_type": snapshot.lesson_type,
@@ -739,7 +782,26 @@ def _validate_snapshot(snapshot: RetentionContradictionSnapshot) -> None:
         "wallet_authorized": False,
         "execution_authorized": False,
     }
-    digest = _hash(material)
+
+
+def _validate_snapshot(snapshot: RetentionContradictionSnapshot) -> None:
+    if not isinstance(snapshot, RetentionContradictionSnapshot):
+        raise RetentionError("contradiction_snapshot must be RetentionContradictionSnapshot")
+    if snapshot.snapshot_contract != CONTRADICTION_SNAPSHOT_CONTRACT:
+        raise RetentionError("contradiction snapshot contract is invalid")
+    if snapshot.retention_version != RETENTION_VERSION:
+        raise RetentionError("contradiction snapshot retention version is invalid")
+    if snapshot.status not in _CONTRADICTION_STATUSES:
+        raise RetentionError("contradiction snapshot status is invalid")
+    if snapshot.source_count != len(snapshot.source_entries):
+        raise RetentionError("contradiction source count is invalid")
+    if snapshot.active_lesson_count != len(snapshot.active_lesson_entries):
+        raise RetentionError("contradiction lesson count is invalid")
+    if snapshot.active_lesson_ids != tuple(
+        item.lesson_id for item in snapshot.active_lesson_entries
+    ):
+        raise RetentionError("contradiction active lesson identities are invalid")
+    digest = _hash(_snapshot_material(snapshot))
     if snapshot.snapshot_hash != digest or snapshot.snapshot_id != f"rcs_{digest}":
         raise RetentionError("contradiction snapshot identity/content is invalid")
 
@@ -843,8 +905,14 @@ def _validate_preparation(preparation: RetentionPreparation) -> RetentionPrepara
         raise RetentionError("preparation must be RetentionPreparation")
     _validate_scope(preparation.lesson_scope)
     _validate_snapshot(preparation.contradiction_snapshot)
+    if preparation.retention_contract != RETENTION_CONTRACT:
+        raise RetentionError("retention preparation contract is invalid")
+    if preparation.retention_version != RETENTION_VERSION:
+        raise RetentionError("retention preparation version is invalid")
     if preparation.status not in _PREPARATION_STATUSES:
         raise RetentionError("unsupported retention preparation status")
+    if preparation.lesson_type not in _ALLOWED_LESSON_TYPES:
+        raise RetentionError("retention preparation lesson type is invalid")
     digest = _hash(_preparation_material(preparation))
     if (
         preparation.preparation_hash != digest
@@ -1047,6 +1115,59 @@ def _validate_lesson_snapshot_current(
         )
 
 
+def _trusted_approval_material_values(
+    *,
+    authority: str,
+    request_id: str,
+    proposal_sha256: str,
+    binding_sha256: str,
+    thread_id: str,
+    human_principal_id: str,
+    outcome_status: str,
+) -> dict[str, Any]:
+    return {
+        "authority": authority,
+        "request_id": request_id,
+        "proposal_sha256": proposal_sha256,
+        "binding_sha256": binding_sha256,
+        "thread_id": thread_id,
+        "human_principal_id": human_principal_id,
+        "outcome_status": outcome_status,
+        "source_truth_authorized": False,
+        "live_state_authorized": False,
+        "governance_mutation_authorized": False,
+        "cmis_provider_trust_authorized": False,
+        "wallet_authorized": False,
+        "execution_authorized": False,
+    }
+
+
+def _validate_trusted_approval(
+    approval: TrustedRetentionApproval,
+) -> TrustedRetentionApproval:
+    if not isinstance(approval, TrustedRetentionApproval):
+        raise RetentionError("trusted approval record type is invalid")
+    if approval.authority != RETENTION_APPROVAL_AUTHORITY:
+        raise RetentionError("trusted retention approval authority is invalid")
+    _text("approval_thread_id", approval.thread_id)
+    _text("approval_principal_id", approval.human_principal_id)
+    if approval.outcome_status != "approved":
+        raise RetentionError("trusted retention approval is not approved")
+    material = _trusted_approval_material_values(
+        authority=approval.authority,
+        request_id=approval.request_id,
+        proposal_sha256=approval.proposal_sha256,
+        binding_sha256=approval.binding_sha256,
+        thread_id=approval.thread_id,
+        human_principal_id=approval.human_principal_id,
+        outcome_status=approval.outcome_status,
+    )
+    digest = _hash(material)
+    if approval.approval_hash != digest or approval.approval_id != f"rha_{digest}":
+        raise RetentionError("trusted retention approval identity/content is invalid")
+    return approval
+
+
 def _verified_lesson_material(lesson: VerifiedLessonRecord) -> dict[str, Any]:
     return {
         "verified_lesson_contract": lesson.verified_lesson_contract,
@@ -1091,6 +1212,7 @@ def _state_material(state: VerifiedLessonState) -> dict[str, Any]:
         "lesson_id": state.lesson_id,
         "status": state.status,
         "previous_state_id": state.previous_state_id,
+        "superseded_by_lesson_id": state.superseded_by_lesson_id,
         "reason": state.reason,
         "evidence_ids": list(state.evidence_ids),
         "source_truth_authorized": False,
@@ -1107,20 +1229,38 @@ def _build_state(
     lesson_id: str,
     status: str,
     previous_state_id: str | None,
+    superseded_by_lesson_id: str | None,
     reason: str,
     evidence_ids: tuple[str, ...],
 ) -> VerifiedLessonState:
     if status not in _LIFECYCLE_STATUSES:
         raise RetentionError("unsupported verified lesson lifecycle status")
+    normalized_lesson = _text("lesson_id", lesson_id)
     if not isinstance(evidence_ids, tuple) or not evidence_ids:
         raise RetentionError("verified lesson lifecycle requires evidence_ids")
     normalized_evidence = tuple(_text("evidence_id", item) for item in evidence_ids)
+
+    replacement: str | None
+    if status == "superseded":
+        replacement = _text("superseded_by_lesson_id", superseded_by_lesson_id)
+        if replacement == normalized_lesson:
+            raise RetentionError("verified lesson cannot supersede itself")
+    else:
+        if superseded_by_lesson_id is not None:
+            raise RetentionError("superseded_by_lesson_id is valid only for superseded state")
+        replacement = None
+    if status == "active" and previous_state_id is not None:
+        raise RetentionError("initial active lesson state cannot have previous_state_id")
+    if status in {"superseded", "revoked"} and previous_state_id is None:
+        raise RetentionError("terminal lesson state requires previous_state_id")
+
     provisional = VerifiedLessonState(
         state_id="",
         state_hash="",
-        lesson_id=_text("lesson_id", lesson_id),
+        lesson_id=normalized_lesson,
         status=status,
         previous_state_id=previous_state_id,
+        superseded_by_lesson_id=replacement,
         reason=_text("reason", reason),
         evidence_ids=normalized_evidence,
     )
@@ -1131,6 +1271,7 @@ def _build_state(
         lesson_id=provisional.lesson_id,
         status=provisional.status,
         previous_state_id=provisional.previous_state_id,
+        superseded_by_lesson_id=provisional.superseded_by_lesson_id,
         reason=provisional.reason,
         evidence_ids=provisional.evidence_ids,
     )
@@ -1139,6 +1280,19 @@ def _build_state(
 def _validate_state_record(state: VerifiedLessonState) -> VerifiedLessonState:
     if not isinstance(state, VerifiedLessonState):
         raise RetentionError("state must be VerifiedLessonState")
+    if state.status not in _LIFECYCLE_STATUSES:
+        raise RetentionError("verified lesson lifecycle status is invalid")
+    if state.status == "superseded":
+        if state.superseded_by_lesson_id is None:
+            raise RetentionError("superseded state must bind replacement lesson")
+        if state.superseded_by_lesson_id == state.lesson_id:
+            raise RetentionError("verified lesson cannot supersede itself")
+    elif state.superseded_by_lesson_id is not None:
+        raise RetentionError("non-superseded state cannot bind replacement lesson")
+    if state.status == "active" and state.previous_state_id is not None:
+        raise RetentionError("active state previous_state_id is invalid")
+    if state.status in {"superseded", "revoked"} and state.previous_state_id is None:
+        raise RetentionError("terminal state previous_state_id is required")
     digest = _hash(_state_material(state))
     if state.state_hash != digest or state.state_id != f"vls_{digest}":
         raise RetentionError("verified lesson lifecycle state identity/content is invalid")
@@ -1163,6 +1317,33 @@ def _decision_material(decision: RetentionDecision) -> dict[str, Any]:
     }
 
 
+def validate_retention_decision(decision: RetentionDecision) -> RetentionDecision:
+    """Validate a retained decision and its content-addressed nested records."""
+
+    if not isinstance(decision, RetentionDecision):
+        raise RetentionError("decision must be RetentionDecision")
+    if decision.retention_contract != RETENTION_CONTRACT:
+        raise RetentionError("retention decision contract is invalid")
+    if decision.retention_version != RETENTION_VERSION:
+        raise RetentionError("retention decision version is invalid")
+    if decision.status != "retained":
+        raise RetentionError("Phase 10 v1 final retention decision must be retained")
+    _validate_scope(decision.verified_lesson.lesson_scope)
+    digest_lesson = _hash(_verified_lesson_material(decision.verified_lesson))
+    if (
+        decision.verified_lesson.lesson_hash != digest_lesson
+        or decision.verified_lesson.lesson_id != f"vl_{digest_lesson}"
+    ):
+        raise RetentionError("verified lesson identity/content is invalid")
+    _validate_state_record(decision.lesson_state)
+    if decision.lesson_state.lesson_id != decision.verified_lesson.lesson_id:
+        raise RetentionError("retention decision lesson state does not bind verified lesson")
+    digest = _hash(_decision_material(decision))
+    if decision.decision_hash != digest or decision.decision_id != f"rdec_{digest}":
+        raise RetentionError("retention decision identity/content is invalid")
+    return decision
+
+
 def retain_verified_lesson(
     *,
     preparation: RetentionPreparation,
@@ -1177,28 +1358,25 @@ def retain_verified_lesson(
         raise RetentionError("retention preparation is not eligible for human-approved retention")
     if not isinstance(lesson_store, InMemoryVerifiedLessonStore):
         raise RetentionError("Phase 10 v1 requires the in-memory verified lesson store")
-    _validate_lesson_snapshot_current(prepared, lesson_store)
 
     request = prepared.approval_request
     trusted = approval_registry.get_application_approval(request.request_id)
     if trusted is None:
         raise RetentionError("trusted human retention approval is unavailable")
-    if not isinstance(trusted, TrustedRetentionApproval):
-        raise RetentionError("approval registry returned invalid trusted approval type")
-    if trusted.authority != RETENTION_APPROVAL_AUTHORITY:
-        raise RetentionError("trusted retention approval authority is invalid")
-    if trusted.outcome_status != "approved":
-        raise RetentionError("trusted retention approval is not approved")
+    _validate_trusted_approval(trusted)
     if trusted.request_id != request.request_id:
         raise RetentionError("trusted retention approval request identity mismatch")
     if trusted.proposal_sha256 != request.proposal_sha256:
         raise RetentionError("trusted retention approval proposal mismatch")
     if trusted.binding_sha256 != request.binding_sha256:
         raise RetentionError("trusted retention approval binding mismatch")
-    _text("approval_thread_id", trusted.thread_id)
-    _text("approval_principal_id", trusted.human_principal_id)
     if lesson_store.approval_binding_consumed(trusted.binding_sha256):
         raise RetentionError("retention approval binding was already consumed")
+
+    # Active lesson state is mutable Phase 10 store state. Recheck it after the
+    # exact human approval is resolved and before committing the lesson. Source
+    # records/artifacts used by this v1 snapshot are immutable Phase 1 identities.
+    _validate_lesson_snapshot_current(prepared, lesson_store)
 
     timestamp = _canonical_recorded_at(recorded_at)
     provisional_lesson = VerifiedLessonRecord(
@@ -1270,6 +1448,7 @@ def retain_verified_lesson(
         lesson_id=lesson.lesson_id,
         status="active",
         previous_state_id=None,
+        superseded_by_lesson_id=None,
         reason="initial_verified_retention",
         evidence_ids=(prepared.verification_id, prepared.contradiction_snapshot.snapshot_id),
     )
@@ -1291,7 +1470,7 @@ def retain_verified_lesson(
         trusted_approval_id=trusted.approval_id,
     )
     decision_digest = _hash(_decision_material(provisional_decision))
-    return RetentionDecision(
+    decision = RetentionDecision(
         decision_id=f"rdec_{decision_digest}",
         decision_hash=decision_digest,
         retention_contract=provisional_decision.retention_contract,
@@ -1302,6 +1481,7 @@ def retain_verified_lesson(
         lesson_state=provisional_decision.lesson_state,
         trusted_approval_id=provisional_decision.trusted_approval_id,
     )
+    return validate_retention_decision(decision)
 
 
 def transition_verified_lesson_state(
@@ -1312,6 +1492,7 @@ def transition_verified_lesson_state(
     status: str,
     reason: str,
     evidence_ids: tuple[str, ...],
+    superseded_by_lesson_id: str | None = None,
 ) -> VerifiedLessonState:
     """Create one immutable superseded/revoked revision from the exact active state."""
 
@@ -1326,6 +1507,7 @@ def transition_verified_lesson_state(
         lesson_id=lesson_id,
         status=status,
         previous_state_id=previous_state_id,
+        superseded_by_lesson_id=superseded_by_lesson_id,
         reason=reason,
         evidence_ids=evidence_ids,
     )
