@@ -76,9 +76,9 @@ Each Phase 8 `VerificationCheck` produces one immutable result preserving at min
 
 A check cannot be added, removed, reordered, or renamed by the verifier.
 
-## First-slice deterministic check semantics
+## Deterministic check semantics
 
-The first accepted verifier maps Phase 8 check kinds to Phase 7 retest dimensions as follows:
+The accepted verifier maps the Phase 8 retest-capable check kinds to Phase 7 dimensions as follows:
 
 ```text
 retest_retrieval_against_golden_case
@@ -110,9 +110,9 @@ For these checks:
 
 - all required dimensions must be `pass` for the check to pass;
 - any required dimension `fail` makes the check fail;
-- any required dimension `not_evaluated` or `not_applicable` makes the check inconclusive unless the contract explicitly defines that state as successful (the first slice defines no such exception).
+- any required dimension `not_evaluated` or `not_applicable` makes the check inconclusive unless the contract explicitly defines that state as successful (v1 defines no such exception).
 
-The following Phase 8 check kinds remain intentionally `inconclusive` in this first slice because the required independent accepted capability does not yet exist:
+The following Phase 8 check kinds remain intentionally `inconclusive` because the required independent accepted capability does not exist in the v1 verifier:
 
 ```text
 require_calibration_evaluator_before_verification
@@ -122,6 +122,28 @@ require_manual_or_new_deterministic_diagnosis
 ```
 
 They must not be guessed, silently passed, or converted into verified learning.
+
+### Coverage and current Phase 7 reachability
+
+The Phase 9 regression suite now exercises every Phase 8 verification check kind at its accepted verifier seam.
+
+End-to-end canonical Phase 8 -> Phase 9 retest coverage is demonstrated for the failure classes the accepted deterministic Phase 7 adapter can currently emit through canonical inputs, including:
+
+```text
+retrieval_failure
+unsupported_claim_failure
+answer_correctness_failure
+answer_completeness_failure
+conflict_handling_failure
+insufficiency_handling_failure
+instruction_compliance_failure
+```
+
+`citation_binding_failure` is exercised at the Phase 9 check seam against a canonical Phase 7 retest evaluation. Canonical Phase 6 validation normally rejects malformed citation state before it can become an accepted Phase 7 input, so Phase 9 does not fabricate a corrupted Phase 6 record merely to manufacture that original failure.
+
+The calibration/evaluator/unknown check kinds remain explicitly inconclusive until separately accepted deterministic capabilities can satisfy them. The current Phase 7 deterministic adapter does not manufacture those failure states, and Phase 9 does not widen Phase 7 merely to create fixtures.
+
+This distinction is intentional: contract coverage does not imply that every declared failure class is currently reachable from the accepted Phase 7 adapter.
 
 ## Aggregate decision
 
@@ -174,9 +196,9 @@ Freshness-sensitive market/blockchain truth continues to flow only through:
 User -> Roberta -> Chain Scout -> CMIS -> Chain Provider
 ```
 
-## Required first-slice tests
+## Required Phase 9 tests
 
-The Phase 9 implementation must prove at minimum:
+The implementation proves at minimum:
 
 1. the complete Phase 8 bundle/lifecycle is revalidated before verification;
 2. rejected/superseded candidates cannot be verified;
@@ -188,8 +210,10 @@ The Phase 9 implementation must prove at minimum:
 8. unsupported verifier capabilities remain `inconclusive`;
 9. candidate/reflection generated text cannot supply replacement evidence or modify the plan;
 10. verification identity is deterministic/content-addressed and tamper-sensitive;
-11. all Phase 9 records deny source truth, live state, memory promotion, governance mutation, and execution;
-12. the full deterministic Roberta suite remains green.
+11. malformed/tampered retest grounded state fails closed before check scoring;
+12. retrieval, citation-binding, unsupported-claim, correctness, completeness, conflict, insufficiency, instruction-compliance, calibration/evaluator, and unknown check semantics are covered without manufacturing unavailable Phase 7 authority;
+13. all Phase 9 records deny source truth, live state, memory promotion, governance mutation, and execution;
+14. the full deterministic Roberta suite remains green.
 
 ## Explicit non-goals
 
