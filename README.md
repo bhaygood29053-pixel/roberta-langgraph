@@ -62,6 +62,14 @@ Meaningful Roberta changes follow the repository-authoritative workflow in [`doc
 
 Green CI alone is not sufficient if a required review axis fails. The workflow preserves `User -> Roberta -> Chain Scout -> CMIS -> Provider` and does not widen Controlled Execution.
 
+## Technology Radar design
+
+Issue #100 defines a future read-only roadmap-aware Technology Radar in [`docs/TECHNOLOGY_RADAR.md`](./docs/TECHNOLOGY_RADAR.md).
+
+The document is a **design/specification only**. No Radar runtime, source adapter, scheduler, dependency, autonomous adoption path, provider-trust change, or execution authority is currently authorized. The proposed Radar keeps trend strength, roadmap relevance, research-evidence quality, adoption risk, and license compatibility separate and routes any promising discovery back through the normal engineering workflow.
+
+A future implementation requires a separate accepted roadmap gate and implementation issue.
+
 ## Evidence-aware intelligence
 
 Roberta consumes the CMIS evidence-quality and capability contracts.
