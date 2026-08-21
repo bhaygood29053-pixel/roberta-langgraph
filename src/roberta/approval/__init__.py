@@ -17,7 +17,12 @@ from roberta.approval.policy_bridge import (
     rereview_request_from_edit,
 )
 from roberta.approval.routing import ApprovalNextStep, approval_next_step
-from roberta.approval.runtime import resume_approval, start_approval
+from roberta.approval.runtime import (
+    AuthenticatedApprovalContext,
+    resume_approval,
+    resume_approval_authenticated,
+    start_approval,
+)
 
 __all__ = [
     "ApprovalDecision",
@@ -27,6 +32,7 @@ __all__ = [
     "ApprovalRequest",
     "ApprovalState",
     "ApprovalStatus",
+    "AuthenticatedApprovalContext",
     "approval_next_step",
     "approval_request_from_policy",
     "build_approval_graph",
@@ -36,5 +42,6 @@ __all__ = [
     "rereview_request_from_edit",
     "resolve_approval_decision",
     "resume_approval",
+    "resume_approval_authenticated",
     "start_approval",
 ]
