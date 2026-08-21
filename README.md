@@ -92,7 +92,7 @@ Issue #109 / PR #110 added deterministic **structure-first Markdown parsing** ov
 - ATX heading hierarchy, repeated headings, parent relationships, structural paths, and exact 1-based source locations are preserved;
 - exact block text and original line endings are retained for preamble, paragraphs, simple lists, fenced code, and narrow pipe tables;
 - heading-looking text inside code fences remains code data;
-- every non-blank source line is deterministically accounted for exactly once as either a heading or block;
+- every non-blank source line is deterministically accounted for exactly once as a heading or block;
 - unclosed fences become explicit `partial` structure with warnings, while heading-level jumps warn without synthetic headings;
 - document, section, block, and structure identities are deterministic/content-addressed;
 - all derived structure records explicitly deny live-state authority.
@@ -125,7 +125,7 @@ Issue #115 / PR #116 added the deterministic **indexing foundation** over canoni
 
 PR #116 passed the full deterministic suite with **548 passed and 5 live/provider tests deselected**; all new indexing regressions passed.
 
-Issue #118 / PR #119 added the deterministic **retrieval foundation** over validated Phase 4 index representations:
+Issue #118 / PR #119 added the deterministic **retrieval foundation** over validated Phase 4 indexes:
 
 - every corpus item revalidates canonical source/chunk/index integrity before retrieval rather than trusting caller-supplied index state;
 - query normalization matches the accepted Unicode analyzer and preserves exact query text separately from derived tokens;
@@ -171,22 +171,22 @@ Issue #124 / PR #125 added the deterministic **independent answer-evaluation fou
 
 PR #125 passed the full deterministic suite with **599 passed and 5 live/provider tests deselected**; all 17 new Phase 7 evaluation regressions passed.
 
-Issue #127 / PR #128 added the deterministic **provisional reflection + candidate-lesson foundation** over canonical failed Phase 7 evaluations:
+Issue #127 / PR #128 added the deterministic **provisional reflection + candidate lesson foundation** over canonical failed Phase 7 evaluations:
 
-- the exact Phase 7 evaluation is reconstructed before reflection creation;
-- passing/no-action evaluations cannot manufacture learning candidates;
-- Phase 7 failure classifications map deterministically into bounded diagnostic layers;
-- `ReflectionRecord`, `CandidateLesson`, and `VerificationPlan` records are provenance-bound and content-addressed;
-- generated reflection/lesson/rationale text remains explicitly `generated_provisional` and is never evidence or source truth;
-- candidate evidence scope is inherited only from the canonical Phase 6 packet/result;
-- provisional candidate lifecycle state is separately content-addressed, with immutable `rejected`/`superseded` revisions and no `verified` status in Phase 8;
-- terminal lifecycle validation reconstructs the exact canonical provisional predecessor state, preventing an unrelated `previous_state_id` from being accepted;
-- verification checks are derived deterministically from the exact originating failure classes;
-- no reflection/candidate/plan/bundle output can authorize current market truth, CMIS/provider trust, source approval, protected governance mutation, HXMP/durable-memory promotion, or execution.
+- every supplied failed `EvaluationResult` is re-run through the accepted deterministic Phase 7 evaluator before reflection creation;
+- passing evaluations cannot manufacture reflections or candidate lessons;
+- accepted failure classifications map through the versioned deterministic diagnosis table into bounded diagnostic layers;
+- reflection, candidate core, candidate lifecycle state, verification plan, and bundle identities are content-addressed and tamper-sensitive;
+- generated reflection, lesson, and rationale text remains `generated_provisional` and cannot introduce evidence authority;
+- candidate evidence references are inherited only from the canonical Phase 6 packet/result path;
+- lifecycle is limited to `provisional`, `rejected`, and `superseded`; Phase 8 has no `verified` candidate state;
+- terminal lifecycle records must bind to the exact reconstructed initial provisional `candidate_state_id`, preventing forged predecessor chains;
+- deterministic verification plans bind required retests to the exact candidate/reflection/evaluation/golden-case/packet/result/retrieval identities and keep `promotion_authorized=false`;
+- all Phase 8 records deny live-state authority, trusted-memory promotion, governance mutation, and execution authority.
 
-PR #128 passed the final exact-head deterministic suite with **617 passed and 5 live/provider tests deselected** after the lifecycle-predecessor integrity fix; the independent review blocker was resolved before merge.
+PR #128 passed the full deterministic suite at its final head with **617 passed and 5 live/provider tests deselected**. The independent review finding on lifecycle-predecessor validation was fixed, regression-tested, and resolved before merge.
 
-The next narrow milestone is **Learning System Phase 9 — Candidate Lesson Verification** (#129). It should independently revalidate the exact provisional Phase 8 candidate and deterministic verification plan, run the required independent checks/retests, and produce a separately identified verification result. A verification result must remain distinct from durable-memory/source-truth promotion and cannot alter CMIS/provider trust, current market facts, protected governance, or execution authority.
+The next narrow milestone is **Learning System Phase 9 — Candidate Lesson Verification**. It must independently verify or reject provisional Phase 8 candidate lessons under a separately accepted verification contract before any retained/reusable verified-learning path is introduced. Phase 9 must not treat self-reflection, candidate text, or a passing retest as automatic authorization for durable-memory promotion, source truth, governance mutation, CMIS/provider trust changes, or execution.
 
 The Learning System does not replace CMIS for changing market/blockchain state. Fresh accepted CMIS/provider evidence remains authoritative for current prices, liquidity, supply, wallet state, risk, and other freshness-sensitive facts.
 
@@ -334,7 +334,7 @@ python -m pip install -e '.[dev,deepseek]'
 python -m pytest -v -m 'not live and not cmis_live'
 ```
 
-The deterministic suite covers the Oracle/tool loop, provider-neutral model injection, Chain Scout boundaries, CMIS capability validation, X1 and Solana evidence isolation, policy, persistence, durable-memory adapters, human approval, evidence-aware response contracts, Learning System source ingestion, structure-first parsing, structure-aware evidence chunking, deterministic indexing, deterministic retrieval/benchmark foundations, deterministic grounding/citation validation, deterministic answer evaluation, and deterministic provisional reflection/candidate-lesson validation.
+The deterministic suite covers the Oracle/tool loop, provider-neutral model injection, Chain Scout boundaries, CMIS capability validation, X1 and Solana evidence isolation, policy, persistence, durable-memory adapters, human approval, evidence-aware response contracts, Learning System source ingestion, structure-first parsing, structure-aware evidence chunking, deterministic indexing, deterministic retrieval/benchmark foundations, deterministic grounding/citation validation, deterministic answer evaluation, and provisional reflection/candidate-lesson lifecycle integrity.
 
 ## Provider-backed CMIS
 
@@ -426,4 +426,4 @@ If Roberta is unavailable, the normal user-facing transport should report availa
 
 The deterministic pre-trade trade-size milestone previously tracked as CMIS Issue #99 is complete. Roberta consumes CMIS's structured result and explains it; it does not duplicate the calculation.
 
-The current active implementation priority is the Learning System. Future wallet/behavioral interpretation, early-warning intelligence, additional cross-chain expansion, Technology Radar implementation, and any eventual controlled execution remain separately gated and must not be inferred from the existing read-only foundation.
+The current active implementation priority is Learning System Phase 9 candidate-lesson verification. Future wallet/behavioral interpretation, early-warning intelligence, additional cross-chain expansion, Technology Radar implementation, and any eventual controlled execution remain separately gated and must not be inferred from the existing read-only foundation.
