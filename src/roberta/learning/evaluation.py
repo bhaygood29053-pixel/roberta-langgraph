@@ -744,7 +744,7 @@ def evaluate_grounded_answer(
             )
     else:
         correctness = _dimension("answer_correctness", "not_evaluated")
-    if retrieval_failed and correctness.status == "fail":
+    if retrieval_failed:
         correctness = _dimension(
             "answer_correctness",
             "not_evaluated",
