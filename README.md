@@ -50,6 +50,7 @@ The CMIS implementation still uses the internal Python namespace `liquidity_scou
 - Phase 9 Human in the Loop — complete
 - Phase 10 More Specialists / Providers — complete
 - Post-Phase-10 Evidence-Aware Intelligence & User Experience — complete
+- Cross-project engineering governance / HXMP provenance discipline / Technology Radar specification (#97) — complete
 - Phase 11 Controlled Execution — **locked / not started**
 
 See [`docs/LANGGRAPH_ROADMAP.md`](./docs/LANGGRAPH_ROADMAP.md) for the authoritative Roberta roadmap.
@@ -64,7 +65,7 @@ Green CI alone is not sufficient if a required review axis fails. The workflow p
 
 ## Technology Radar design
 
-Issue #100 defines a future read-only roadmap-aware Technology Radar in [`docs/TECHNOLOGY_RADAR.md`](./docs/TECHNOLOGY_RADAR.md).
+Issue #100 completed the accepted design/specification for a future read-only roadmap-aware Technology Radar in [`docs/TECHNOLOGY_RADAR.md`](./docs/TECHNOLOGY_RADAR.md).
 
 The document is a **design/specification only**. No Radar runtime, source adapter, scheduler, dependency, autonomous adoption path, provider-trust change, or execution authority is currently authorized. The proposed Radar keeps trend strength, roadmap relevance, research-evidence quality, adoption risk, and license compatibility separate and routes any promising discovery back through the normal engineering workflow.
 
