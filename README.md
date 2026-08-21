@@ -51,12 +51,13 @@ The CMIS implementation still uses the internal Python namespace `liquidity_scou
 - Phase 10 More Specialists / Providers — complete
 - Post-Phase-10 Evidence-Aware Intelligence & User Experience — complete
 - **Learning System Phase 1 Source Ingestion — complete**
-- **Learning System Phase 2 Structure Detection — next**
+- **Learning System Phase 2 Structure Detection — complete**
+- **Learning System Phase 3 Semantic Chunking + Metadata — next**
 - Phase 11 Controlled Execution — **locked / not started**
 
 The **Roberta Learning System is the primary active development track**. Existing CMIS, Chain Scout, transport, policy, memory, and approval functionality should remain stable unless a change is directly required to support the Learning System or fix a proven defect.
 
-See [`docs/LANGGRAPH_ROADMAP.md`](./docs/LANGGRAPH_ROADMAP.md) for the authoritative Roberta roadmap and [`docs/LEARNING_SYSTEM.md`](./docs/LEARNING_SYSTEM.md) for the Learning System source-ingestion contract.
+See [`docs/LANGGRAPH_ROADMAP.md`](./docs/LANGGRAPH_ROADMAP.md) for the authoritative Roberta roadmap, [`docs/LEARNING_SYSTEM.md`](./docs/LEARNING_SYSTEM.md) for source ingestion, and [`docs/LEARNING_SYSTEM_STRUCTURE.md`](./docs/LEARNING_SYSTEM_STRUCTURE.md) for the accepted structure contract.
 
 CMIS has its own execution-phase numbering. CMIS Phase 11 refers to its completed **read-only Verified Intelligence foundation**; that is separate from Roberta Phase 11 Controlled Execution.
 
@@ -68,9 +69,7 @@ Green CI alone is not sufficient if a required review axis fails. The workflow p
 
 ## Learning System
 
-Issue #106 / PR #107 established the first implemented Learning System boundary.
-
-Phase 1 currently provides deterministic provenance-preserving ingestion for approved UTF-8 sources:
+Issue #106 / PR #107 established deterministic provenance-preserving ingestion for approved UTF-8 sources:
 
 - exact original source bytes are retained behind a provider-neutral `SourceStore` interface;
 - `content_hash` is SHA-256 over the exact source bytes;
@@ -81,7 +80,18 @@ Phase 1 currently provides deterministic provenance-preserving ingestion for app
 - metadata is detached and recursively immutable;
 - static Learning System source records never authorize live state.
 
-The next narrow milestone is **structure-first parsing** over those preserved artifacts. Embeddings, vector retrieval, concept extraction, autonomous curriculum, reflection-to-lesson promotion, and fine-tuning remain later gates and must not be pulled into Phase 2 by implication.
+Issue #109 / PR #110 added deterministic **structure-first Markdown parsing** over those exact Phase 1 artifacts:
+
+- the artifact hash is revalidated before parsing;
+- ATX heading hierarchy, repeated headings, parent relationships, structural paths, and exact 1-based source locations are preserved;
+- exact block text and original line endings are retained for preamble, paragraphs, simple lists, fenced code, and narrow pipe tables;
+- heading-looking text inside code fences remains code data;
+- every non-blank source line is deterministically accounted for exactly once as a heading or block;
+- unclosed fences become explicit `partial` structure with warnings, while heading-level jumps warn without synthetic headings;
+- document, section, block, and structure identities are deterministic/content-addressed;
+- all derived structure records explicitly deny live-state authority.
+
+The next narrow milestone is **semantic chunking + metadata** over accepted structural blocks. Chunks must remain traceable evidence units linked to immutable source/section/block identities. Embeddings, retrieval, autonomous curriculum, reflection-to-lesson promotion, and fine-tuning remain later gates and must not be pulled forward by implication.
 
 The Learning System does not replace CMIS for changing market/blockchain state. Fresh accepted CMIS/provider evidence remains authoritative for current prices, liquidity, supply, wallet state, risk, and other freshness-sensitive facts.
 
@@ -229,7 +239,7 @@ python -m pip install -e '.[dev,deepseek]'
 python -m pytest -v -m 'not live and not cmis_live'
 ```
 
-The deterministic suite covers the Oracle/tool loop, provider-neutral model injection, Chain Scout boundaries, CMIS capability validation, X1 and Solana evidence isolation, policy, persistence, durable-memory adapters, human approval, evidence-aware response contracts, and the Learning System source-ingestion foundation.
+The deterministic suite covers the Oracle/tool loop, provider-neutral model injection, Chain Scout boundaries, CMIS capability validation, X1 and Solana evidence isolation, policy, persistence, durable-memory adapters, human approval, evidence-aware response contracts, Learning System source ingestion, and deterministic structure-first parsing.
 
 ## Provider-backed CMIS
 
