@@ -50,9 +50,13 @@ The CMIS implementation still uses the internal Python namespace `liquidity_scou
 - Phase 9 Human in the Loop — complete
 - Phase 10 More Specialists / Providers — complete
 - Post-Phase-10 Evidence-Aware Intelligence & User Experience — complete
+- **Learning System Phase 1 Source Ingestion — complete**
+- **Learning System Phase 2 Structure Detection — next**
 - Phase 11 Controlled Execution — **locked / not started**
 
-See [`docs/LANGGRAPH_ROADMAP.md`](./docs/LANGGRAPH_ROADMAP.md) for the authoritative Roberta roadmap.
+The **Roberta Learning System is the primary active development track**. Existing CMIS, Chain Scout, transport, policy, memory, and approval functionality should remain stable unless a change is directly required to support the Learning System or fix a proven defect.
+
+See [`docs/LANGGRAPH_ROADMAP.md`](./docs/LANGGRAPH_ROADMAP.md) for the authoritative Roberta roadmap and [`docs/LEARNING_SYSTEM.md`](./docs/LEARNING_SYSTEM.md) for the Learning System source-ingestion contract.
 
 CMIS has its own execution-phase numbering. CMIS Phase 11 refers to its completed **read-only Verified Intelligence foundation**; that is separate from Roberta Phase 11 Controlled Execution.
 
@@ -62,13 +66,32 @@ Meaningful Roberta changes follow the repository-authoritative workflow in [`doc
 
 Green CI alone is not sufficient if a required review axis fails. The workflow preserves `User -> Roberta -> Chain Scout -> CMIS -> Provider` and does not widen Controlled Execution.
 
+## Learning System
+
+Issue #106 / PR #107 established the first implemented Learning System boundary.
+
+Phase 1 currently provides deterministic provenance-preserving ingestion for approved UTF-8 sources:
+
+- exact original source bytes are retained behind a provider-neutral `SourceStore` interface;
+- `content_hash` is SHA-256 over the exact source bytes;
+- `source_id` is deterministic/content-addressed from canonical identity material;
+- identical re-ingestion is idempotent;
+- changed content creates a distinct immutable record rather than replacing prior source truth;
+- malformed source identity/state/metadata/UTF-8 input fails closed;
+- metadata is detached and recursively immutable;
+- static Learning System source records never authorize live state.
+
+The next narrow milestone is **structure-first parsing** over those preserved artifacts. Embeddings, vector retrieval, concept extraction, autonomous curriculum, reflection-to-lesson promotion, and fine-tuning remain later gates and must not be pulled into Phase 2 by implication.
+
+The Learning System does not replace CMIS for changing market/blockchain state. Fresh accepted CMIS/provider evidence remains authoritative for current prices, liquidity, supply, wallet state, risk, and other freshness-sensitive facts.
+
 ## Technology Radar design
 
 Issue #100 defines a future read-only roadmap-aware Technology Radar in [`docs/TECHNOLOGY_RADAR.md`](./docs/TECHNOLOGY_RADAR.md).
 
 The document is a **design/specification only**. No Radar runtime, source adapter, scheduler, dependency, autonomous adoption path, provider-trust change, or execution authority is currently authorized. The proposed Radar keeps trend strength, roadmap relevance, research-evidence quality, adoption risk, and license compatibility separate and routes any promising discovery back through the normal engineering workflow.
 
-A future implementation requires a separate accepted roadmap gate and implementation issue.
+A future implementation requires a separate accepted roadmap gate and implementation issue. Technology Radar implementation is not the current primary development track while the Learning System is being built.
 
 ## Evidence-aware intelligence
 
@@ -160,12 +183,13 @@ HXMP and LangGraph checkpoints are not authoritative sources for current market 
 
 ```text
 HXMP / durable memory -> stable context and explicit policy
+Learning System       -> static source knowledge and later verified learning state
 CMIS                  -> current verified facts and evidence
 Policy code           -> deterministic rule result
 LLM                    -> explanation / synthesis only
 ```
 
-Fresh verified CMIS/provider evidence overrides remembered or checkpointed live-market snapshots.
+Fresh verified CMIS/provider evidence overrides remembered, checkpointed, or Learning System live-market snapshots; the Learning System must not create such snapshots as trusted source knowledge.
 
 ## Human approval boundary
 
@@ -188,7 +212,7 @@ Roberta currently has no authority for:
 - autonomous value movement;
 - broad delegated wallet authority.
 
-Research, recommendations, deterministic policy, human review, and CMIS pre-trade analysis must not be interpreted as execution authorization.
+Research, recommendations, deterministic policy, human review, Learning System output, and CMIS pre-trade analysis must not be interpreted as execution authorization.
 
 ## Install
 
@@ -205,7 +229,7 @@ python -m pip install -e '.[dev,deepseek]'
 python -m pytest -v -m 'not live and not cmis_live'
 ```
 
-The deterministic suite covers the Oracle/tool loop, provider-neutral model injection, Chain Scout boundaries, CMIS capability validation, X1 and Solana evidence isolation, policy, persistence, durable-memory adapters, human approval, and evidence-aware response contracts.
+The deterministic suite covers the Oracle/tool loop, provider-neutral model injection, Chain Scout boundaries, CMIS capability validation, X1 and Solana evidence isolation, policy, persistence, durable-memory adapters, human approval, evidence-aware response contracts, and the Learning System source-ingestion foundation.
 
 ## Provider-backed CMIS
 
@@ -297,4 +321,4 @@ If Roberta is unavailable, the normal user-facing transport should report availa
 
 The deterministic pre-trade trade-size milestone previously tracked as CMIS Issue #99 is complete. Roberta consumes CMIS's structured result and explains it; it does not duplicate the calculation.
 
-Future wallet/behavioral interpretation, early-warning intelligence, additional cross-chain expansion, and any eventual controlled execution must each be promoted through explicit evidence and safety contracts rather than inferred from the existing read-only foundation.
+The current active implementation priority is the Learning System. Future wallet/behavioral interpretation, early-warning intelligence, additional cross-chain expansion, Technology Radar implementation, and any eventual controlled execution remain separately gated and must not be inferred from the existing read-only foundation.
