@@ -1,4 +1,4 @@
-# CMIS Roadmap Sync — refreshed 2026-08-20
+# CMIS Roadmap Sync — refreshed 2026-08-21
 
 This document is Roberta's current integration snapshot of CMIS. It is a consumption guide, not a second CMIS roadmap.
 
@@ -23,8 +23,12 @@ Fresh accepted CMIS/provider facts override remembered live-market values. Missi
 - CMIS Phase 10 Solana read-only provider foundation — complete.
 - CMIS Phase 11 read-only Verified Intelligence foundation — complete.
 - CMIS Phase 12 first narrow promoted intelligence service — complete.
+- CMIS deterministic descriptive intelligence classification foundation — complete, internal/read-only/non-promoted.
+- CMIS deterministic wallet relationship evidence foundation — complete with explicit non-ownership semantics, internal/read-only/non-promoted.
 - CMIS current capability contract — `1.9.0`.
-- Roberta adoption/readiness of the promoted X1 service — complete.
+- Roberta adoption/readiness of the promoted X1 concentration service — complete.
+- CMIS Issue #263 concentration-threshold alert-evidence milestone — active, internal/read-only/non-promoted.
+- CMIS Issue #30 X1 provider-gap workstream — active in parallel, read-only/fail-closed.
 - Roberta Controlled Execution — locked / not started.
 
 ## Phase 11 foundation versus Phase 12 wrapper
@@ -55,9 +59,29 @@ execution_authorized = false
 
 Solana is unavailable/non-callable/non-promoted for this service.
 
+## Internal deterministic foundations after the first promotion
+
+CMIS has accepted two additional evidence-bound internal contracts without public-service or Scout-reliance promotion:
+
+- descriptive classification of the exact concentration direction proven by canonical CMIS evidence;
+- verified direct wallet-relationship evidence for observed token-transfer interactions between exact chain identities.
+
+Both preserve:
+
+```text
+public_service_promoted = false
+scout_reliance_promoted = false
+cmis_promotable = false
+execution_authorized = false
+```
+
+The classification foundation does not infer behavior, ownership, intent, manipulation/fraud, or risk. The wallet-relationship foundation does not infer common ownership, beneficial ownership, coordinated control, behavioral intent, or complete relationship-graph/history coverage.
+
+Roberta and Chain Scouts do not gain a new operation merely because these internal CMIS contracts exist.
+
 ## Roberta adoption boundary
 
-Roberta consumes the promoted service only through X1 Scout. The operation is explicit-only and is not automatically added to autonomous X1 Scout planning.
+Roberta consumes the promoted concentration service only through X1 Scout. The operation is explicit-only and is not automatically added to autonomous X1 Scout planning.
 
 The accepted CMIS request contract binds X1, asset context, and a canonical CMIS-owned intelligence evidence id. CMIS performs trusted internal evidence resolution/revalidation. Caller-supplied intelligence bundles, Evidence Receipts, Proof Scores, provider assertions, behavioral labels, or replacement verification state are not trust inputs.
 
@@ -90,6 +114,16 @@ execution_authorized = false
 
 A `PASS` is not permission to trade.
 
+## Active next shared read-only boundary — CMIS #263
+
+The active CMIS intelligence milestone is **deterministic concentration-threshold alert evidence**. This first alert slice is internal, read-only, and non-promoted.
+
+It must bind accepted canonical concentration evidence to explicit threshold/comparator policy, freshness, exact chain/asset/evidence identity, scope, triggering observations, persistence/repetition semantics where used, provenance, limitations, deterministic content-addressed alert identity, and Proof Score/risk separation.
+
+The milestone does not create a public alert service, grant Scout reliance, change Roberta behavior, infer ownership/intent/manipulation/fraud/risk severity/imminent price movement, or authorize execution.
+
+Roberta adoption of any future alert service requires a separate CMIS promotion contract and a separate Roberta promotion/adoption/readiness gate. X1 provider-gap verification and Solana maturity continue read-only in parallel.
+
 ## Memory, policy, approval, and execution
 
 ```text
@@ -102,9 +136,5 @@ LLM           -> explanation / synthesis only
 Human approval is exact-proposal review, not a reusable signing credential.
 
 No current CMIS/Scout/Roberta result authorizes transaction preparation for execution, signing, broadcasting, custody, live trading, bridge transfer, autonomous execution, or value movement.
-
-## Next shared read-only boundary
-
-The first 1.9 promotion/adoption is complete. The next intelligence milestone is deterministic inference/classification contracts before behavioral or ownership labels, while X1 provider-gap verification and Solana maturity continue read-only in parallel.
 
 **CMIS verifies. Chain Scouts investigate and interpret. Roberta coordinates and explains.**
