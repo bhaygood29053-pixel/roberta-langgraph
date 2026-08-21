@@ -26,13 +26,14 @@ Roberta has completed:
 - **Learning System Phase 4 — deterministic lexical + embedding indexing foundation (#115/#116);**
 - **Learning System Phase 5 — deterministic retrieval + benchmark foundation (#118/#119);**
 - **Learning System Phase 6 — deterministic evidence packet + citation-bound answer foundation (#121/#122);**
-- **Learning System Phase 7 — deterministic independent answer-evaluation foundation (#124/#125).**
+- **Learning System Phase 7 — deterministic independent answer-evaluation foundation (#124/#125);**
+- **Learning System Phase 8 — deterministic provisional reflection + candidate-lesson foundation (#127/#128).**
 
 Phase 5 — X1 Evidence Completeness remains deliberately **bounded**, with explicit verified/bounded/partial/unavailable/conflict/insufficient-evidence states.
 
 Roberta Phase 11 — Controlled Execution remains **locked / not started**.
 
-The **Roberta Learning System is the primary active development track**. Existing CMIS, Chain Scout, transport, policy, memory, and approval paths should remain stable unless a change is directly required to support the Learning System or fix a proven defect.
+The **Roberta Learning System is the primary active development track**. The next active milestone is **Learning System Phase 9 — independent candidate lesson verification (#129)**. Existing CMIS, Chain Scout, transport, policy, memory, and approval paths should remain stable unless a change is directly required to support the Learning System or fix a proven defect.
 
 ## Canonical hierarchy
 
@@ -66,7 +67,7 @@ A roadmap item being active does not waive those gates. A PR is not merge-ready 
 
 ## Learning System primary track
 
-The Learning System follows the evidence-grounded design in [`LEARNING_SYSTEM.md`](./LEARNING_SYSTEM.md), [`LEARNING_SYSTEM_STRUCTURE.md`](./LEARNING_SYSTEM_STRUCTURE.md), [`LEARNING_SYSTEM_CHUNKING.md`](./LEARNING_SYSTEM_CHUNKING.md), [`LEARNING_SYSTEM_INDEXING.md`](./LEARNING_SYSTEM_INDEXING.md), [`LEARNING_SYSTEM_RETRIEVAL.md`](./LEARNING_SYSTEM_RETRIEVAL.md), [`LEARNING_SYSTEM_GROUNDING.md`](./LEARNING_SYSTEM_GROUNDING.md), [`LEARNING_SYSTEM_EVALUATION.md`](./LEARNING_SYSTEM_EVALUATION.md), and the broader Roberta Learning System Specification v1.1.
+The Learning System follows the evidence-grounded design in [`LEARNING_SYSTEM.md`](./LEARNING_SYSTEM.md), [`LEARNING_SYSTEM_STRUCTURE.md`](./LEARNING_SYSTEM_STRUCTURE.md), [`LEARNING_SYSTEM_CHUNKING.md`](./LEARNING_SYSTEM_CHUNKING.md), [`LEARNING_SYSTEM_INDEXING.md`](./LEARNING_SYSTEM_INDEXING.md), [`LEARNING_SYSTEM_RETRIEVAL.md`](./LEARNING_SYSTEM_RETRIEVAL.md), [`LEARNING_SYSTEM_GROUNDING.md`](./LEARNING_SYSTEM_GROUNDING.md), [`LEARNING_SYSTEM_EVALUATION.md`](./LEARNING_SYSTEM_EVALUATION.md), [`LEARNING_SYSTEM_REFLECTION.md`](./LEARNING_SYSTEM_REFLECTION.md), and the broader Roberta Learning System Specification v1.1.
 
 ### Learning System Phase 1 — Source ingestion ✅ Complete
 
@@ -277,40 +278,66 @@ The accepted Phase 7 boundary:
 
 Accepted verification for PR #125 recorded **599 deterministic tests passing with 5 live/provider tests deselected**, all 17 new Phase 7 evaluation regressions passing, all three engineering review axes passing, and no unresolved review threads.
 
-### Learning System Phase 8 — Provisional reflection + candidate lesson foundation ⬜ Next
+### Learning System Phase 8 — Provisional reflection + candidate lesson foundation ✅ Complete
 
-The next narrow target is to transform accepted Phase 7 evaluation failures into provenance-bound diagnostic/reflection records and provisional candidate lessons without allowing evaluation output or generated reflection to become trusted knowledge automatically.
+Issue #127 / PR #128 established deterministic, provenance-bound provisional learning candidates from canonical failed Phase 7 evaluations.
 
-The next accepted slice should establish:
+The accepted first Phase 8 contracts are:
 
 ```text
-EvaluationResult
-  -> deterministic failure diagnosis inputs
-  -> ReflectionRecord
-  -> CandidateLesson
-  -> explicit VerificationPlan
-  -> status = provisional
+reflection_contract = evaluation-reflection/v1
+candidate_lesson_contract = candidate-lesson/v1
+verification_plan_contract = candidate-lesson-verification-plan/v1
+learning_diagnosis_version = 1.0.0
 ```
 
-Phase 8 should preserve, at minimum:
+The accepted Phase 8 boundary:
 
-- exact evaluation, grounded-result, packet, golden-case, retrieval, and relevant evidence identities;
-- explicit failure classifications from Phase 7 rather than a free-form model relabeling of the failure layer;
-- a bounded diagnosed layer such as retrieval, citation binding, answer correctness/completeness, conflict, insufficiency, instruction compliance, or unknown;
-- reflection text clearly labeled generated/provisional rather than source fact;
-- candidate lesson identity, version, rationale, evidence references, creator, and creation metadata;
-- a concrete verification plan describing what independent checks/retests are required before promotion;
-- explicit provisional/rejected/superseded lifecycle states, with no `verified` state in this phase unless a later verification contract is accepted;
-- deterministic content-addressed identities for reflection/candidate records so mutation is detectable;
-- no direct write to source knowledge or trusted HXMP/durable memory;
-- no ability for candidate lessons to change protected governance, source approval, CMIS/provider trust, current market facts, or execution authority;
-- deterministic tests proving evaluator failures remain traceable through reflections/candidates and that passing/no-action cases do not manufacture lessons.
+- re-runs the exact accepted deterministic Phase 7 evaluator over the supplied packet/result/golden case before a supplied failed evaluation may produce a reflection;
+- requires exact equality with the supplied Phase 7 `EvaluationResult`, `aggregate_status = fail`, and at least one accepted failure classification;
+- prevents passing evaluations from manufacturing reflections or candidate lessons;
+- maps accepted Phase 7 failure classifications through a versioned deterministic diagnosis table into bounded layers such as retrieval, citation binding, answer support/correctness/completeness, conflict, insufficiency, uncertainty calibration, instruction compliance, evaluator, or unknown;
+- preserves exact evaluation, golden-case, packet, grounded-result, retrieval, chunk, and evidence-reference provenance in the reflection/candidate path;
+- labels reflection text, lesson text, and rationale as `generated_provisional` so generated output never becomes evidence or source truth merely by being reflected upon;
+- content-addresses reflection, candidate core, candidate lifecycle state, verification plan, and complete learning-candidate bundle identities;
+- creates deterministic verification checks directly from the exact failure classes and binds them to exact candidate/reflection/evaluation/golden-case/packet/result/retrieval identities;
+- keeps `promotion_authorized = false` on every Phase 8 verification plan;
+- limits candidate lifecycle to `provisional`, `rejected`, or `superseded`; there is no Phase 8 `verified` state;
+- reconstructs the exact initial provisional candidate state during lifecycle validation and requires any terminal record to bind `previous_state_id` to that exact `candidate_state_id`, preventing a caller from forging a terminal predecessor chain by recomputing hashes;
+- prevents self-supersession and preserves immutable state revisions;
+- keeps prompt-injection/instruction-compliance failures traceable without granting retrieved/source text instruction authority;
+- structurally denies live-state authority, verified-memory promotion, governance mutation, and execution authority for all Phase 8 records.
 
-Phase 8 should prefer deterministic diagnosis from Phase 7 failure classes and a typed reflection/candidate interface. If a model is used to draft a candidate lesson, its text remains generated provisional content and cannot self-verify.
+Accepted verification for PR #128 recorded **617 deterministic tests passing with 5 live/provider tests deselected** at exact final head `e08659ad15688530f421ea3b5fc5e9dbdbea2ec2`. The independent Codex review identified one valid lifecycle-predecessor integrity defect; that defect was fixed, adversarial regressions for missing/unrelated predecessor ids were added, exact-head CI passed, the review thread was resolved, and all three engineering review axes passed before merge.
 
-A later **Learning System Phase 9 — Candidate Lesson Verification** should independently verify or reject candidate lessons before any retained/reusable verified-knowledge path is introduced.
+### Learning System Phase 9 — Independent candidate lesson verification ⬜ Next
 
-Phase 8 should **not** add automatic durable-memory promotion, autonomous policy mutation, adaptive curriculum scheduling, model fine-tuning, production reranking, CMIS/provider truth changes, or Controlled Execution.
+Issue #129 is the next narrow target. It should independently verify or reject a **provisional Phase 8 `CandidateLesson`** against its exact canonical provenance and deterministic `VerificationPlan`.
+
+The intended first-slice boundary is:
+
+```text
+canonical Phase 8 LearningCandidateBundle
+  -> exact bundle/lifecycle revalidation
+    -> independent deterministic verification checks
+      -> CandidateVerificationResult
+        -> verified_for_learning | rejected | inconclusive
+```
+
+Phase 9 must preserve, at minimum:
+
+- exact Phase 8 reflection, candidate, lifecycle, plan, evaluation, golden-case, packet, grounded-result, retrieval, and evidence identities;
+- independent revalidation of the Phase 8 bundle before any verification check runs;
+- execution of only the checks explicitly required by the accepted deterministic `VerificationPlan` rather than free-form verifier-selected checks;
+- per-check `pass`, `fail`, or `inconclusive` state with exact evidence/fixture provenance;
+- fail-closed treatment of unavailable evaluators, fixtures, or evidence as `inconclusive`, never verified;
+- an all-required-checks-pass rule before `verified_for_learning` can be emitted;
+- deterministic/content-addressed verification-result identity with verifier contract/version/producer metadata;
+- rejection of candidate-generated text as self-verification evidence or as a way to change the verification plan;
+- no resurrection of already rejected/superseded candidates;
+- `memory_promotion_authorized = false`, `live_state_authorized = false`, `governance_mutation_authorized = false`, and `execution_authorized = false` throughout the phase.
+
+A `verified_for_learning` result in Phase 9 must mean only that the candidate passed the accepted verification contract. It must **not** itself write trusted durable memory, write source truth, change source approval, alter CMIS/provider trust, mutate protected policy/governance, or authorize wallet/transaction execution. Any retained/reusable verified-learning promotion path requires a later separately accepted phase.
 
 ## Technology Radar design boundary — Issue #100
 
