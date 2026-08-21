@@ -344,7 +344,6 @@ def _verify_check(
     *,
     check: VerificationCheck,
     retest_evaluation: EvaluationResult | None,
-    retest_case: GoldenEvaluationCase | None,
     missing_retest_details: tuple[str, ...],
     retest_packet: EvidencePacket | None,
     retest_grounded_result: GroundedAnswerResult | None,
@@ -385,7 +384,9 @@ def _verify_check(
         diagnosed_layer=check.diagnosed_layer,
         required_identity_refs=check.required_identity_refs,
         status=status,
-        retest_golden_case_id=None if retest_case is None else retest_case.case_id,
+        retest_golden_case_id=(
+            None if retest_evaluation is None else retest_evaluation.golden_case_id
+        ),
         retest_packet_id=None if retest_packet is None else retest_packet.packet_id,
         retest_grounded_result_id=(
             None if retest_grounded_result is None else retest_grounded_result.result_id
@@ -457,7 +458,6 @@ def verify_candidate_lesson(
         _verify_check(
             check=check,
             retest_evaluation=retest_evaluation,
-            retest_case=retest_case,
             missing_retest_details=missing_retest_details,
             retest_packet=retest_packet,
             retest_grounded_result=retest_grounded_result,
