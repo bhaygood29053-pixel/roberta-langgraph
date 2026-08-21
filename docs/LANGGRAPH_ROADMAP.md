@@ -20,7 +20,8 @@ Roberta has completed:
 - X1 Decision Production Readiness (#62);
 - adoption/readiness of the first separately promoted CMIS 1.9 Verified Intelligence service through X1 Scout (#73/#74);
 - Solana Read-Only Production Readiness (#78) for the exact currently promoted Roberta Solana Scout surface;
-- **Learning System Phase 1 — deterministic source-ingestion foundation (#106/#107).**
+- **Learning System Phase 1 — deterministic source-ingestion foundation (#106/#107);**
+- **Learning System Phase 2 — deterministic structure-first Markdown parsing (#109/#110).**
 
 Phase 5 — X1 Evidence Completeness remains deliberately **bounded**, with explicit verified/bounded/partial/unavailable/conflict/insufficient-evidence states.
 
@@ -60,7 +61,7 @@ A roadmap item being active does not waive those gates. A PR is not merge-ready 
 
 ## Learning System primary track
 
-The Learning System follows the evidence-grounded design in [`LEARNING_SYSTEM.md`](./LEARNING_SYSTEM.md) and the broader Roberta Learning System Specification v1.1.
+The Learning System follows the evidence-grounded design in [`LEARNING_SYSTEM.md`](./LEARNING_SYSTEM.md), [`LEARNING_SYSTEM_STRUCTURE.md`](./LEARNING_SYSTEM_STRUCTURE.md), and the broader Roberta Learning System Specification v1.1.
 
 ### Learning System Phase 1 — Source ingestion ✅ Complete
 
@@ -78,22 +79,59 @@ Issue #106 / PR #107 established the first narrow deterministic learning boundar
 
 Accepted verification for PR #107 recorded 510 deterministic tests passing with 5 live/provider tests deselected, all three engineering review axes passing, and no unresolved review threads.
 
-### Learning System Phase 2 — Structure detection ⬜ Next
+### Learning System Phase 2 — Structure detection ✅ Complete
 
-The next accepted design target is structure-first parsing over preserved Phase 1 source artifacts:
+Issue #109 / PR #110 established deterministic structure-first parsing for the first accepted source format:
 
 ```text
-Source artifact
-  -> Document
-    -> Part / Chapter
-      -> Section
-        -> Subsection
-          -> source-located structural blocks
+format = markdown
+parser_contract = markdown-structure/v1
+encoding = UTF-8
 ```
 
-Phase 2 must preserve source identity, heading hierarchy, source locations/page-equivalent positions where available, code/table/list boundaries where supported, parser version, explicit parse uncertainty, and a fail-closed/quarantine path for malformed input.
+The accepted Phase 2 boundary:
 
-Phase 2 must **not** silently expand into embeddings, vector search, autonomous learning, or trusted lesson promotion. Those remain later gates.
+- resolves the exact Phase 1 `SourceRecord` and revalidates the immutable source artifact SHA-256 before parsing;
+- preserves ATX heading hierarchy, nearest-lower-level parents, repeated headings, structural paths, exact 1-based line locations, and exact heading source lines;
+- preserves exact source text and original line endings in source-located `preamble`, `paragraph`, `list`, `code_fence`, and narrow `table` blocks;
+- prevents heading-looking text inside fenced code from becoming document structure;
+- validates that every non-blank source line is accounted for exactly once as either a heading or one structural block;
+- produces deterministic/content-addressed document, section, block, and structure identities that bind parser contract/version;
+- represents an unclosed code fence as explicit `partial` output with a warning rather than inventing closure;
+- represents heading-level jumps with warnings and never synthesizes missing headings;
+- fails closed on missing source/artifact state, source hash mismatch, invalid UTF-8, unsupported parser contract, or violated source-accounting invariants;
+- structurally denies live-state authority on all derived records.
+
+Accepted verification for PR #110 recorded **520 deterministic tests passing with 5 live/provider tests deselected**, all 10 new structure tests passing, all three engineering review axes passing, and no unresolved review threads.
+
+### Learning System Phase 3 — Semantic chunking + metadata ⬜ Next
+
+The next narrow design target is to convert accepted structural blocks into semantically coherent **evidence chunks** while preserving the Phase 1/2 identities as immutable provenance anchors.
+
+The first Phase 3 slice should remain deterministic and structure-aware:
+
+```text
+SourceRecord
+  -> ParsedDocument
+    -> SectionRecord / StructuralBlock
+      -> EvidenceChunk
+```
+
+Phase 3 must preserve, at minimum:
+
+- stable `chunk_id`;
+- `source_id`, `document_id`, `section_id`, and contributing `block_id` provenance;
+- structural path and exact source line range;
+- exact chunk text plus content hash;
+- chunker contract/version and parameters;
+- deterministic chunk order;
+- explicit chunk kind/scope;
+- no silent source-text loss;
+- no merging across incompatible source/section boundaries by default;
+- explicit behavior for oversize blocks rather than arbitrary opaque truncation;
+- `live_state_authorized = false`.
+
+Phase 3 should **not** add embeddings, vector search, concept extraction, question generation, autonomous learning, reflection-to-lesson promotion, or fine-tuning. Those remain separate later acceptance gates.
 
 ## Technology Radar design boundary — Issue #100
 
