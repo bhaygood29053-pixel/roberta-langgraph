@@ -1,9 +1,8 @@
-"""Independent answer-evaluation foundation for the Roberta Learning System.
+"""Independent answer evaluation for the Roberta Learning System.
 
-Phase 7 evaluates accepted Phase 6 grounded-answer records against explicit,
-versioned golden labels. Evaluation output is measurement metadata only: it is
-not source truth, live-state verification, durable-memory promotion, or
-execution authority.
+Phase 7 scores accepted Phase 6 grounded answers against explicit approved
+golden labels. Scores are measurement metadata only: never source truth,
+live-state verification, durable-memory promotion, or execution authority.
 """
 
 from __future__ import annotations
@@ -25,18 +24,15 @@ from .grounding import (
     validate_answer_candidate,
 )
 
-
 ANSWER_EVALUATION_CONTRACT = "grounded-answer-evaluation/v1"
 GOLDEN_CASE_CONTRACT = "grounded-answer-golden-case/v1"
 DETERMINISTIC_EVALUATOR_ADAPTER = "deterministic-golden-label/v1"
 EVALUATOR_VERSION = "1.0.0"
 
-_ALLOWED_CLAIM_STATUSES = frozenset({"supported", "insufficient", "conflict"})
-_ALLOWED_CASE_BEHAVIORS = frozenset({"answer", "insufficient", "conflict"})
-_ALLOWED_CASE_APPROVAL = frozenset({"approved", "pending", "rejected"})
-_ALLOWED_DIMENSION_STATUSES = frozenset(
-    {"pass", "fail", "not_evaluated", "not_applicable"}
-)
+_CLAIM_STATUSES = frozenset({"supported", "insufficient", "conflict"})
+_CASE_BEHAVIORS = frozenset({"answer", "insufficient", "conflict"})
+_CASE_APPROVAL = frozenset({"approved", "pending", "rejected"})
+_DIMENSION_STATUSES = frozenset({"pass", "fail", "not_evaluated", "not_applicable"})
 _FAILURE_CLASSES = frozenset(
     {
         "retrieval_failure",
@@ -56,13 +52,11 @@ _FAILURE_CLASSES = frozenset(
 
 
 class EvaluationError(ValueError):
-    """Raised when answer evaluation cannot be performed safely."""
+    """Raised when evaluation cannot be performed safely."""
 
 
 @dataclass(frozen=True, slots=True)
 class GoldenClaimCriterion:
-    """Explicit deterministic labels for one structured answer claim."""
-
     claim_id: str
     required: bool
     allowed_statuses: tuple[str, ...]
@@ -76,8 +70,6 @@ class GoldenClaimCriterion:
 
 @dataclass(frozen=True, slots=True)
 class GoldenEvaluationCase:
-    """Immutable content-addressed evaluation labels for one answer case."""
-
     case_id: str
     case_hash: str
     golden_case_contract: str
@@ -196,56 +188,49 @@ def _canonical_json(value: Any) -> str:
             allow_nan=False,
         )
     except (TypeError, ValueError) as exc:
-        raise EvaluationError(
-            "evaluation material must be canonical JSON-compatible data"
-        ) from exc
+        raise EvaluationError("evaluation material must be canonical JSON-compatible data") from exc
 
 
-def _content_hash(value: Any) -> str:
+def _hash(value: Any) -> str:
     return hashlib.sha256(_canonical_json(value).encode("utf-8")).hexdigest()
 
 
-def _content_id(prefix: str, value: Any) -> str:
-    return f"{prefix}{_content_hash(value)}"
+def _id(prefix: str, value: Any) -> str:
+    return f"{prefix}{_hash(value)}"
 
 
-def _normalized_text(name: str, value: Any) -> str:
+def _text(name: str, value: Any) -> str:
     if not isinstance(value, str) or not value or value != value.strip():
         raise EvaluationError(f"{name} must be a normalized non-empty string")
     return value
 
 
-def _normalized_optional_text(name: str, value: Any) -> str | None:
-    if value is None:
-        return None
-    return _normalized_text(name, value)
+def _optional_text(name: str, value: Any) -> str | None:
+    return None if value is None else _text(name, value)
 
 
-def _normalized_unique_strings(
-    name: str, values: Any, *, sort_values: bool = True
-) -> tuple[str, ...]:
+def _strings(name: str, values: Any, *, sort_values: bool = True) -> tuple[str, ...]:
     if not isinstance(values, (tuple, list)):
         raise EvaluationError(f"{name} must be a tuple/list of strings")
-    items: list[str] = []
+    output: list[str] = []
     for value in values:
-        item = _normalized_text(name, value)
-        if item in items:
+        item = _text(name, value)
+        if item in output:
             raise EvaluationError(f"{name} must not contain duplicates")
-        items.append(item)
+        output.append(item)
     if sort_values:
-        items.sort()
-    return tuple(items)
+        output.sort()
+    return tuple(output)
 
 
-def _normalized_match_text(value: str) -> str:
+def _match_text(value: str) -> str:
     return unicodedata.normalize("NFKC", value).casefold()
 
 
-def _normalized_substrings(name: str, values: Any) -> tuple[str, ...]:
-    raw = _normalized_unique_strings(name, values, sort_values=False)
+def _substrings(name: str, values: Any) -> tuple[str, ...]:
     normalized: list[str] = []
-    for value in raw:
-        item = _normalized_match_text(value)
+    for value in _strings(name, values, sort_values=False):
+        item = _match_text(value)
         if not item.strip():
             raise EvaluationError(f"{name} cannot normalize to empty text")
         if item in normalized:
@@ -263,63 +248,55 @@ def make_golden_claim_criterion(
     allowed_evidence_chunk_ids: tuple[str, ...] | list[str] = (),
     required_text_substrings: tuple[str, ...] | list[str] = (),
 ) -> GoldenClaimCriterion:
-    """Create one deterministic claim label for a golden evaluation case."""
-
     if not isinstance(required, bool):
         raise EvaluationError("required must be bool")
-    statuses = _normalized_unique_strings("allowed claim status", allowed_statuses)
+    statuses = _strings("allowed claim status", allowed_statuses)
     if not statuses:
         raise EvaluationError("allowed_statuses must contain at least one status")
-    unknown = set(statuses) - _ALLOWED_CLAIM_STATUSES
+    unknown = set(statuses) - _CLAIM_STATUSES
     if unknown:
         raise EvaluationError(f"unsupported allowed claim statuses: {sorted(unknown)!r}")
     return GoldenClaimCriterion(
-        claim_id=_normalized_text("claim_id", claim_id),
+        claim_id=_text("claim_id", claim_id),
         required=required,
         allowed_statuses=statuses,
-        allowed_evidence_chunk_ids=_normalized_unique_strings(
+        allowed_evidence_chunk_ids=_strings(
             "allowed evidence chunk id", allowed_evidence_chunk_ids
         ),
-        required_text_substrings=_normalized_substrings(
+        required_text_substrings=_substrings(
             "required claim substring", required_text_substrings
         ),
     )
 
 
-def _criterion_material(criterion: GoldenClaimCriterion) -> dict[str, Any]:
+def _criterion_material(value: GoldenClaimCriterion) -> dict[str, Any]:
     return {
-        "claim_id": criterion.claim_id,
-        "required": criterion.required,
-        "allowed_statuses": list(criterion.allowed_statuses),
-        "allowed_evidence_chunk_ids": list(criterion.allowed_evidence_chunk_ids),
-        "required_text_substrings": list(criterion.required_text_substrings),
+        "claim_id": value.claim_id,
+        "required": value.required,
+        "allowed_statuses": list(value.allowed_statuses),
+        "allowed_evidence_chunk_ids": list(value.allowed_evidence_chunk_ids),
+        "required_text_substrings": list(value.required_text_substrings),
     }
 
 
-def _case_material(case: GoldenEvaluationCase) -> dict[str, Any]:
+def _case_material(value: GoldenEvaluationCase) -> dict[str, Any]:
     return {
-        "golden_case_contract": case.golden_case_contract,
-        "case_version": case.case_version,
-        "question": case.question,
-        "expected_behavior": case.expected_behavior,
-        "expected_packet_id": case.expected_packet_id,
-        "expected_retrieval_id": case.expected_retrieval_id,
-        "relevant_chunk_ids": list(case.relevant_chunk_ids),
-        "claim_criteria": [
-            _criterion_material(criterion) for criterion in case.claim_criteria
-        ],
-        "required_answer_substrings": list(case.required_answer_substrings),
-        "required_limitations": list(case.required_limitations),
-        "allowed_limitations": list(case.allowed_limitations),
-        "forbidden_answer_substrings": list(case.forbidden_answer_substrings),
-        "calibration_target": (
-            list(case.calibration_target)
-            if case.calibration_target is not None
-            else None
-        ),
-        "provenance_uri": case.provenance_uri,
-        "authored_by": case.authored_by,
-        "approval_status": case.approval_status,
+        "golden_case_contract": value.golden_case_contract,
+        "case_version": value.case_version,
+        "question": value.question,
+        "expected_behavior": value.expected_behavior,
+        "expected_packet_id": value.expected_packet_id,
+        "expected_retrieval_id": value.expected_retrieval_id,
+        "relevant_chunk_ids": list(value.relevant_chunk_ids),
+        "claim_criteria": [_criterion_material(item) for item in value.claim_criteria],
+        "required_answer_substrings": list(value.required_answer_substrings),
+        "required_limitations": list(value.required_limitations),
+        "allowed_limitations": list(value.allowed_limitations),
+        "forbidden_answer_substrings": list(value.forbidden_answer_substrings),
+        "calibration_target": list(value.calibration_target) if value.calibration_target else None,
+        "provenance_uri": value.provenance_uri,
+        "authored_by": value.authored_by,
+        "approval_status": value.approval_status,
     }
 
 
@@ -342,88 +319,85 @@ def make_golden_evaluation_case(
     golden_case_contract: str = GOLDEN_CASE_CONTRACT,
     case_version: str = "1.0.0",
 ) -> GoldenEvaluationCase:
-    """Create an immutable content-addressed golden evaluation case."""
-
-    contract = _normalized_text("golden_case_contract", golden_case_contract)
+    contract = _text("golden_case_contract", golden_case_contract)
     if contract != GOLDEN_CASE_CONTRACT:
         raise EvaluationError(f"unsupported golden case contract {contract!r}")
-    behavior = _normalized_text("expected_behavior", expected_behavior)
-    if behavior not in _ALLOWED_CASE_BEHAVIORS:
+    behavior = _text("expected_behavior", expected_behavior)
+    if behavior not in _CASE_BEHAVIORS:
         raise EvaluationError(f"unsupported expected behavior {behavior!r}")
-    approval = _normalized_text("approval_status", approval_status)
-    if approval not in _ALLOWED_CASE_APPROVAL:
+    approval = _text("approval_status", approval_status)
+    if approval not in _CASE_APPROVAL:
         raise EvaluationError(f"unsupported golden case approval status {approval!r}")
 
     if not isinstance(claim_criteria, (tuple, list)):
         raise EvaluationError("claim_criteria must be a tuple/list")
-    normalized_criteria: list[GoldenClaimCriterion] = []
-    claim_ids: set[str] = set()
-    for criterion in claim_criteria:
-        if not isinstance(criterion, GoldenClaimCriterion):
+    criteria: list[GoldenClaimCriterion] = []
+    seen: set[str] = set()
+    for item in claim_criteria:
+        if not isinstance(item, GoldenClaimCriterion):
             raise EvaluationError("claim_criteria must contain GoldenClaimCriterion")
         normalized = make_golden_claim_criterion(
-            claim_id=criterion.claim_id,
-            required=criterion.required,
-            allowed_statuses=criterion.allowed_statuses,
-            allowed_evidence_chunk_ids=criterion.allowed_evidence_chunk_ids,
-            required_text_substrings=criterion.required_text_substrings,
+            claim_id=item.claim_id,
+            required=item.required,
+            allowed_statuses=item.allowed_statuses,
+            allowed_evidence_chunk_ids=item.allowed_evidence_chunk_ids,
+            required_text_substrings=item.required_text_substrings,
         )
-        if normalized.claim_id in claim_ids:
+        if normalized.claim_id in seen:
             raise EvaluationError("golden claim ids must be unique")
-        claim_ids.add(normalized.claim_id)
-        normalized_criteria.append(normalized)
-    normalized_criteria.sort(key=lambda item: item.claim_id)
+        seen.add(normalized.claim_id)
+        criteria.append(normalized)
+    criteria.sort(key=lambda item: item.claim_id)
 
-    required_lims = _normalized_unique_strings("required limitation", required_limitations)
-    allowed_lims = _normalized_unique_strings("allowed limitation", allowed_limitations)
+    required_lims = _strings("required limitation", required_limitations)
+    allowed_lims = _strings("allowed limitation", allowed_limitations)
     if allowed_lims and not set(required_lims).issubset(allowed_lims):
         raise EvaluationError("required limitations must be included in allowed limitations")
 
-    normalized_calibration: tuple[float, float] | None = None
+    calibration: tuple[float, float] | None = None
     if calibration_target is not None:
         if (
             not isinstance(calibration_target, tuple)
             or len(calibration_target) != 2
-            or any(isinstance(value, bool) or not isinstance(value, (int, float)) for value in calibration_target)
+            or any(
+                isinstance(item, bool) or not isinstance(item, (int, float))
+                for item in calibration_target
+            )
         ):
             raise EvaluationError("calibration_target must be a numeric (low, high) tuple")
-        low, high = (float(calibration_target[0]), float(calibration_target[1]))
-        if not math.isfinite(low) or not math.isfinite(high) or not (0.0 <= low <= high <= 1.0):
+        low, high = float(calibration_target[0]), float(calibration_target[1])
+        if not math.isfinite(low) or not math.isfinite(high) or not (0 <= low <= high <= 1):
             raise EvaluationError("calibration_target must satisfy 0 <= low <= high <= 1")
-        normalized_calibration = (low, high)
+        calibration = (low, high)
 
     provisional = GoldenEvaluationCase(
         case_id="",
         case_hash="",
         golden_case_contract=contract,
-        case_version=_normalized_text("case_version", case_version),
-        question=_normalized_text("question", question),
+        case_version=_text("case_version", case_version),
+        question=_text("question", question),
         expected_behavior=behavior,
-        expected_packet_id=_normalized_optional_text("expected_packet_id", expected_packet_id),
-        expected_retrieval_id=_normalized_optional_text(
-            "expected_retrieval_id", expected_retrieval_id
-        ),
-        relevant_chunk_ids=_normalized_unique_strings(
-            "relevant chunk id", relevant_chunk_ids
-        ),
-        claim_criteria=tuple(normalized_criteria),
-        required_answer_substrings=_normalized_substrings(
+        expected_packet_id=_optional_text("expected_packet_id", expected_packet_id),
+        expected_retrieval_id=_optional_text("expected_retrieval_id", expected_retrieval_id),
+        relevant_chunk_ids=_strings("relevant chunk id", relevant_chunk_ids),
+        claim_criteria=tuple(criteria),
+        required_answer_substrings=_substrings(
             "required answer substring", required_answer_substrings
         ),
         required_limitations=required_lims,
         allowed_limitations=allowed_lims,
-        forbidden_answer_substrings=_normalized_substrings(
+        forbidden_answer_substrings=_substrings(
             "forbidden answer substring", forbidden_answer_substrings
         ),
-        calibration_target=normalized_calibration,
-        provenance_uri=_normalized_text("provenance_uri", provenance_uri),
-        authored_by=_normalized_text("authored_by", authored_by),
+        calibration_target=calibration,
+        provenance_uri=_text("provenance_uri", provenance_uri),
+        authored_by=_text("authored_by", authored_by),
         approval_status=approval,
     )
-    case_hash = _content_hash(_case_material(provisional))
+    digest = _hash(_case_material(provisional))
     return GoldenEvaluationCase(
-        case_id=f"gcase_{case_hash}",
-        case_hash=case_hash,
+        case_id=f"gcase_{digest}",
+        case_hash=digest,
         golden_case_contract=provisional.golden_case_contract,
         case_version=provisional.case_version,
         question=provisional.question,
@@ -443,7 +417,7 @@ def make_golden_evaluation_case(
     )
 
 
-def _validate_golden_case(case: GoldenEvaluationCase) -> GoldenEvaluationCase:
+def _validate_case(case: GoldenEvaluationCase) -> GoldenEvaluationCase:
     if not isinstance(case, GoldenEvaluationCase):
         raise EvaluationError("case must be GoldenEvaluationCase")
     rebuilt = make_golden_evaluation_case(
@@ -474,8 +448,6 @@ def _validate_golden_case(case: GoldenEvaluationCase) -> GoldenEvaluationCase:
 def validate_grounded_result_for_evaluation(
     *, packet: EvidencePacket, result: GroundedAnswerResult
 ) -> GroundedAnswerResult:
-    """Reconstruct and exactly validate one Phase 6 result before evaluation."""
-
     if not isinstance(result, GroundedAnswerResult):
         raise EvaluationError("result must be GroundedAnswerResult")
     if result.answer_contract != ANSWER_CONTRACT:
@@ -508,42 +480,43 @@ def _dimension(
     score: float | None = None,
     details: tuple[str, ...] | list[str] = (),
 ) -> EvaluationDimension:
-    normalized_status = _normalized_text("dimension status", status)
-    if normalized_status not in _ALLOWED_DIMENSION_STATUSES:
-        raise EvaluationError(f"unsupported dimension status {normalized_status!r}")
-    if numerator is not None and (isinstance(numerator, bool) or not isinstance(numerator, int) or numerator < 0):
-        raise EvaluationError("dimension numerator must be a non-negative integer")
-    if denominator is not None and (isinstance(denominator, bool) or not isinstance(denominator, int) or denominator < 0):
-        raise EvaluationError("dimension denominator must be a non-negative integer")
+    status = _text("dimension status", status)
+    if status not in _DIMENSION_STATUSES:
+        raise EvaluationError(f"unsupported dimension status {status!r}")
+    for label, value in (("numerator", numerator), ("denominator", denominator)):
+        if value is not None and (
+            isinstance(value, bool) or not isinstance(value, int) or value < 0
+        ):
+            raise EvaluationError(f"dimension {label} must be a non-negative integer")
     if score is not None:
-        if isinstance(score, bool) or not isinstance(score, (int, float)) or not math.isfinite(float(score)):
-            raise EvaluationError("dimension score must be finite numeric")
+        if isinstance(score, bool) or not isinstance(score, (int, float)):
+            raise EvaluationError("dimension score must be numeric")
         score = float(score)
+        if not math.isfinite(score):
+            raise EvaluationError("dimension score must be finite")
     return EvaluationDimension(
-        name=_normalized_text("dimension name", name),
-        status=normalized_status,
+        name=_text("dimension name", name),
+        status=status,
         score=score,
         numerator=numerator,
         denominator=denominator,
-        details=_normalized_unique_strings("dimension detail", details),
+        details=_strings("dimension detail", details),
     )
 
 
-def _ratio_dimension(
+def _ratio(
     name: str,
     numerator: int,
     denominator: int,
     *,
-    pass_when_equal: bool = True,
     details: tuple[str, ...] | list[str] = (),
 ) -> EvaluationDimension:
     if denominator <= 0:
         return _dimension(name, "not_applicable", details=details)
     score = numerator / denominator
-    status = "pass" if (not pass_when_equal or numerator == denominator) else "fail"
     return _dimension(
         name,
-        status,
+        "pass" if numerator == denominator else "fail",
         numerator=numerator,
         denominator=denominator,
         score=score,
@@ -551,47 +524,39 @@ def _ratio_dimension(
     )
 
 
-def _claim_cited_chunk_ids(
-    *, claim: AnswerClaim, anchor_chunk_by_label: dict[str, str]
-) -> tuple[str, ...]:
-    chunks: list[str] = []
+def _cited_chunks(claim: AnswerClaim, anchor_chunks: dict[str, str]) -> tuple[str, ...]:
+    output: list[str] = []
     for label in claim.evidence_anchors:
-        chunk_id = anchor_chunk_by_label[label]
-        if chunk_id not in chunks:
-            chunks.append(chunk_id)
-    return tuple(chunks)
+        chunk_id = anchor_chunks[label]
+        if chunk_id not in output:
+            output.append(chunk_id)
+    return tuple(output)
 
 
-def _criterion_accepts_claim(
-    *,
+def _criterion_accepts(
     criterion: GoldenClaimCriterion,
     claim: AnswerClaim,
-    anchor_chunk_by_label: dict[str, str],
+    anchor_chunks: dict[str, str],
 ) -> bool:
     if claim.status not in criterion.allowed_statuses:
         return False
-    cited_chunks = _claim_cited_chunk_ids(
-        claim=claim, anchor_chunk_by_label=anchor_chunk_by_label
-    )
-    if criterion.allowed_evidence_chunk_ids and not set(cited_chunks).issubset(
+    cited = _cited_chunks(claim, anchor_chunks)
+    if criterion.allowed_evidence_chunk_ids and not set(cited).issubset(
         set(criterion.allowed_evidence_chunk_ids)
     ):
         return False
-    normalized_claim_text = _normalized_match_text(claim.text)
-    return all(
-        substring in normalized_claim_text
-        for substring in criterion.required_text_substrings
-    )
+    text = _match_text(claim.text)
+    return all(value in text for value in criterion.required_text_substrings)
 
 
-def _dimension_material(dimension: EvaluationDimension) -> dict[str, Any]:
+def _dimension_material(item: EvaluationDimension) -> dict[str, Any]:
     return {
-        "name": dimension.name,
-        "status": dimension.status,
-        "score": dimension.score,
-        "numerator": dimension.numerator,
-        "denominator": dimension.denominator,
-        "details": list(dimension.details),
+        "name": item.name,
+        "status": item.status,
+        "score": item.score,
+        "numerator": item.numerator,
+        "denominator": item.denominator,
+        "details": list(item.details),
     }
 
 
@@ -604,101 +569,86 @@ def evaluate_grounded_answer(
     evaluator_version: str = EVALUATOR_VERSION,
     evaluator_adapter_id: str = DETERMINISTIC_EVALUATOR_ADAPTER,
 ) -> EvaluationResult:
-    """Evaluate one accepted Phase 6 result against deterministic golden labels."""
-
-    contract = _normalized_text(
-        "answer_evaluation_contract", answer_evaluation_contract
-    )
+    contract = _text("answer_evaluation_contract", answer_evaluation_contract)
     if contract != ANSWER_EVALUATION_CONTRACT:
         raise EvaluationError(f"unsupported answer evaluation contract {contract!r}")
-    version = _normalized_text("evaluator_version", evaluator_version)
-    adapter = _normalized_text("evaluator_adapter_id", evaluator_adapter_id)
+    version = _text("evaluator_version", evaluator_version)
+    adapter = _text("evaluator_adapter_id", evaluator_adapter_id)
     if adapter != DETERMINISTIC_EVALUATOR_ADAPTER:
         raise EvaluationError(
             "Phase 7 first slice accepts only the deterministic golden-label adapter"
         )
 
-    canonical_result = validate_grounded_result_for_evaluation(
-        packet=packet, result=result
-    )
-    canonical_case = _validate_golden_case(case)
-
-    if canonical_case.expected_packet_id is not None and canonical_case.expected_packet_id != packet.packet_id:
+    result = validate_grounded_result_for_evaluation(packet=packet, result=result)
+    case = _validate_case(case)
+    if case.expected_packet_id is not None and case.expected_packet_id != packet.packet_id:
         raise EvaluationError("golden case expected_packet_id does not match packet")
-    if canonical_case.expected_retrieval_id is not None and canonical_case.expected_retrieval_id != canonical_result.retrieval_id:
+    if case.expected_retrieval_id is not None and case.expected_retrieval_id != result.retrieval_id:
         raise EvaluationError("golden case expected_retrieval_id does not match result")
 
-    anchors_by_label = {anchor.label: anchor for anchor in packet.evidence_anchors}
-    anchor_chunk_by_label = {
-        label: anchor.chunk_id for label, anchor in anchors_by_label.items()
-    }
-    packet_chunk_ids = {anchor.chunk_id for anchor in packet.evidence_anchors}
-    relevant_chunk_ids = set(canonical_case.relevant_chunk_ids)
-    present_relevant = relevant_chunk_ids & packet_chunk_ids
-    missing_relevant = relevant_chunk_ids - packet_chunk_ids
-
+    anchors = {item.label: item for item in packet.evidence_anchors}
+    anchor_chunks = {label: item.chunk_id for label, item in anchors.items()}
+    packet_chunks = set(anchor_chunks.values())
+    relevant = set(case.relevant_chunk_ids)
+    present_relevant = relevant & packet_chunks
+    missing_relevant = relevant - packet_chunks
     dimensions: list[EvaluationDimension] = []
     failures: list[str] = []
 
-    if relevant_chunk_ids:
-        retrieval_dimension = _ratio_dimension(
+    if relevant:
+        retrieval = _ratio(
             "retrieval_coverage",
             len(present_relevant),
-            len(relevant_chunk_ids),
+            len(relevant),
             details=tuple(
-                f"missing_relevant_chunk:{chunk_id}" for chunk_id in sorted(missing_relevant)
+                f"missing_relevant_chunk:{value}" for value in sorted(missing_relevant)
             ),
         )
     else:
-        retrieval_dimension = _dimension("retrieval_coverage", "not_applicable")
-    dimensions.append(retrieval_dimension)
-    retrieval_failed = retrieval_dimension.status == "fail"
+        retrieval = _dimension("retrieval_coverage", "not_applicable")
+    dimensions.append(retrieval)
+    retrieval_failed = retrieval.status == "fail"
     if retrieval_failed:
         failures.append("retrieval_failure")
 
-    reference_by_label = {
-        reference.label: reference for reference in canonical_result.evidence_references
-    }
-    citation_integrity_ok = all(
-        label in anchors_by_label
-        and reference.anchor_id == anchors_by_label[label].anchor_id
-        and reference.chunk_id == anchors_by_label[label].chunk_id
-        and reference.content_hash == anchors_by_label[label].content_hash
-        for label, reference in reference_by_label.items()
+    references = {item.label: item for item in result.evidence_references}
+    citation_integrity = all(
+        label in anchors
+        and reference.anchor_id == anchors[label].anchor_id
+        and reference.chunk_id == anchors[label].chunk_id
+        and reference.content_hash == anchors[label].content_hash
+        for label, reference in references.items()
     )
     dimensions.append(
         _dimension(
             "citation_correctness",
-            "pass" if citation_integrity_ok else "fail",
-            numerator=int(citation_integrity_ok),
+            "pass" if citation_integrity else "fail",
+            numerator=int(citation_integrity),
             denominator=1,
-            score=1.0 if citation_integrity_ok else 0.0,
+            score=1.0 if citation_integrity else 0.0,
         )
     )
-    if not citation_integrity_ok:
+    if not citation_integrity:
         failures.append("citation_binding_failure")
 
-    cited_chunk_ids = {
-        reference.chunk_id for reference in canonical_result.evidence_references
-    }
-    if relevant_chunk_ids:
-        if cited_chunk_ids:
-            relevant_citations = cited_chunk_ids & relevant_chunk_ids
-            precision = len(relevant_citations) / len(cited_chunk_ids)
+    cited_chunks = {item.chunk_id for item in result.evidence_references}
+    if relevant:
+        if cited_chunks:
+            relevant_cited = cited_chunks & relevant
             dimensions.append(
                 _dimension(
                     "citation_precision",
-                    "pass" if len(relevant_citations) == len(cited_chunk_ids) else "fail",
-                    numerator=len(relevant_citations),
-                    denominator=len(cited_chunk_ids),
-                    score=precision,
+                    "pass" if relevant_cited == cited_chunks else "fail",
+                    numerator=len(relevant_cited),
+                    denominator=len(cited_chunks),
+                    score=len(relevant_cited) / len(cited_chunks),
                     details=tuple(
-                        f"irrelevant_cited_chunk:{chunk_id}"
-                        for chunk_id in sorted(cited_chunk_ids - relevant_chunk_ids)
+                        f"irrelevant_cited_chunk:{value}"
+                        for value in sorted(cited_chunks - relevant)
                     ),
                 )
             )
-        elif canonical_case.expected_behavior == "insufficient":
+        elif case.expected_behavior == "insufficient":
             dimensions.append(_dimension("citation_precision", "not_applicable"))
         else:
             dimensions.append(
@@ -711,7 +661,6 @@ def evaluate_grounded_answer(
                     details=("no_citations_for_answer_case",),
                 )
             )
-
         if retrieval_failed and not present_relevant:
             dimensions.append(
                 _dimension(
@@ -721,15 +670,14 @@ def evaluate_grounded_answer(
                 )
             )
         else:
-            completeness_denominator = len(present_relevant)
             dimensions.append(
-                _ratio_dimension(
+                _ratio(
                     "citation_completeness",
-                    len(cited_chunk_ids & present_relevant),
-                    completeness_denominator,
+                    len(cited_chunks & present_relevant),
+                    len(present_relevant),
                     details=tuple(
-                        f"uncited_relevant_chunk:{chunk_id}"
-                        for chunk_id in sorted(present_relevant - cited_chunk_ids)
+                        f"uncited_relevant_chunk:{value}"
+                        for value in sorted(present_relevant - cited_chunks)
                     ),
                 )
             )
@@ -737,61 +685,45 @@ def evaluate_grounded_answer(
         dimensions.append(_dimension("citation_precision", "not_evaluated"))
         dimensions.append(_dimension("citation_completeness", "not_evaluated"))
 
-    criteria_by_claim_id = {
-        criterion.claim_id: criterion for criterion in canonical_case.claim_criteria
-    }
-    claims_by_id = {claim.claim_id: claim for claim in canonical_result.claims}
-    unsupported_claim_ids: list[str] = []
-    matched_claims = 0
-    correct_matched_claims = 0
-    for claim in canonical_result.claims:
-        criterion = criteria_by_claim_id.get(claim.claim_id)
+    criteria = {item.claim_id: item for item in case.claim_criteria}
+    claims = {item.claim_id: item for item in result.claims}
+    unsupported: list[str] = []
+    matched = 0
+    correct = 0
+    for claim in result.claims:
+        criterion = criteria.get(claim.claim_id)
         if criterion is None:
-            unsupported_claim_ids.append(claim.claim_id)
+            unsupported.append(claim.claim_id)
             continue
-        matched_claims += 1
-        if _criterion_accepts_claim(
-            criterion=criterion,
-            claim=claim,
-            anchor_chunk_by_label=anchor_chunk_by_label,
-        ):
-            correct_matched_claims += 1
+        matched += 1
+        if _criterion_accepts(criterion, claim, anchor_chunks):
+            correct += 1
         else:
-            unsupported_claim_ids.append(claim.claim_id)
-
-    unsupported_rate = (
-        len(unsupported_claim_ids) / len(canonical_result.claims)
-        if canonical_result.claims
-        else 0.0
-    )
+            unsupported.append(claim.claim_id)
+    unsupported_rate = len(unsupported) / len(result.claims) if result.claims else 0.0
     dimensions.append(
         _dimension(
             "unsupported_claim_rate",
-            "pass" if not unsupported_claim_ids else "fail",
-            numerator=len(unsupported_claim_ids),
-            denominator=len(canonical_result.claims),
+            "pass" if not unsupported else "fail",
+            numerator=len(unsupported),
+            denominator=len(result.claims),
             score=unsupported_rate,
             details=tuple(
-                f"unsupported_or_mislabeled_claim:{claim_id}"
-                for claim_id in sorted(unsupported_claim_ids)
+                f"unsupported_or_mislabeled_claim:{value}" for value in sorted(unsupported)
             ),
         )
     )
-    if unsupported_claim_ids:
+    if unsupported:
         failures.append("unsupported_claim_failure")
 
-    normalized_answer_text = _normalized_match_text(canonical_result.answer_text)
-    answer_text_ok = all(
-        substring in normalized_answer_text
-        for substring in canonical_case.required_answer_substrings
-    )
-    if canonical_case.claim_criteria or canonical_case.required_answer_substrings:
-        correctness_numerator = correct_matched_claims + int(answer_text_ok)
-        correctness_denominator = matched_claims + int(
-            bool(canonical_case.required_answer_substrings)
-        )
-        if correctness_denominator == 0:
-            correctness_dimension = _dimension(
+    normalized_answer = _match_text(result.answer_text)
+    has_answer_text_criterion = bool(case.required_answer_substrings)
+    answer_text_ok = all(value in normalized_answer for value in case.required_answer_substrings)
+    if case.claim_criteria or has_answer_text_criterion:
+        numerator = correct + int(has_answer_text_criterion and answer_text_ok)
+        denominator = matched + int(has_answer_text_criterion)
+        if denominator == 0:
+            correctness = _dimension(
                 "answer_correctness",
                 "fail",
                 numerator=0,
@@ -800,67 +732,60 @@ def evaluate_grounded_answer(
                 details=("no_labeled_claims_matched",),
             )
         else:
-            correctness_dimension = _ratio_dimension(
+            correctness = _ratio(
                 "answer_correctness",
-                correctness_numerator,
-                correctness_denominator,
+                numerator,
+                denominator,
                 details=(
                     ()
-                    if answer_text_ok
+                    if (not has_answer_text_criterion or answer_text_ok)
                     else ("required_answer_substring_missing",)
                 ),
             )
     else:
-        correctness_dimension = _dimension("answer_correctness", "not_evaluated")
-    if retrieval_failed and correctness_dimension.status == "fail":
-        correctness_dimension = _dimension(
+        correctness = _dimension("answer_correctness", "not_evaluated")
+    if retrieval_failed and correctness.status == "fail":
+        correctness = _dimension(
             "answer_correctness",
             "not_evaluated",
             details=("blocked_by_retrieval_failure",),
         )
-    dimensions.append(correctness_dimension)
-    if correctness_dimension.status == "fail":
+    dimensions.append(correctness)
+    if correctness.status == "fail":
         failures.append("answer_correctness_failure")
 
-    required_criteria = [
-        criterion for criterion in canonical_case.claim_criteria if criterion.required
-    ]
+    required_criteria = [item for item in case.claim_criteria if item.required]
     if required_criteria:
-        present_required = sum(
-            1 for criterion in required_criteria if criterion.claim_id in claims_by_id
-        )
         if retrieval_failed:
-            completeness_dimension = _dimension(
+            completeness = _dimension(
                 "answer_completeness",
                 "not_evaluated",
                 details=("blocked_by_retrieval_failure",),
             )
         else:
-            completeness_dimension = _ratio_dimension(
+            present = sum(item.claim_id in claims for item in required_criteria)
+            completeness = _ratio(
                 "answer_completeness",
-                present_required,
+                present,
                 len(required_criteria),
                 details=tuple(
-                    f"missing_required_claim:{criterion.claim_id}"
-                    for criterion in required_criteria
-                    if criterion.claim_id not in claims_by_id
+                    f"missing_required_claim:{item.claim_id}"
+                    for item in required_criteria
+                    if item.claim_id not in claims
                 ),
             )
     else:
-        completeness_dimension = _dimension("answer_completeness", "not_applicable")
-    dimensions.append(completeness_dimension)
-    if completeness_dimension.status == "fail":
+        completeness = _dimension("answer_completeness", "not_applicable")
+    dimensions.append(completeness)
+    if completeness.status == "fail":
         failures.append("answer_completeness_failure")
 
-    limitation_set = set(canonical_result.limitations)
-    required_limitations = set(canonical_case.required_limitations)
-    missing_limitations = required_limitations - limitation_set
-    disallowed_limitations = (
-        limitation_set - set(canonical_case.allowed_limitations)
-        if canonical_case.allowed_limitations
-        else set()
+    limitations = set(result.limitations)
+    missing_lims = set(case.required_limitations) - limitations
+    disallowed_lims = (
+        limitations - set(case.allowed_limitations) if case.allowed_limitations else set()
     )
-    limitation_ok = not missing_limitations and not disallowed_limitations
+    limitation_ok = not missing_lims and not disallowed_lims
     dimensions.append(
         _dimension(
             "limitation_disclosure",
@@ -870,8 +795,8 @@ def evaluate_grounded_answer(
             score=1.0 if limitation_ok else 0.0,
             details=tuple(
                 [
-                    *(f"missing_required_limitation:{value}" for value in sorted(missing_limitations)),
-                    *(f"disallowed_limitation:{value}" for value in sorted(disallowed_limitations)),
+                    *(f"missing_required_limitation:{value}" for value in sorted(missing_lims)),
+                    *(f"disallowed_limitation:{value}" for value in sorted(disallowed_lims)),
                 ]
             ),
         )
@@ -879,73 +804,68 @@ def evaluate_grounded_answer(
     if not limitation_ok:
         failures.append("answer_correctness_failure")
 
-    expects_insufficient = canonical_case.expected_behavior == "insufficient"
-    if expects_insufficient or canonical_result.status == "insufficient":
-        insufficiency_ok = (
+    expects_insufficient = case.expected_behavior == "insufficient"
+    if expects_insufficient or result.status == "insufficient":
+        ok = (
             expects_insufficient
-            and canonical_result.status == "insufficient"
-            and all(claim.status == "insufficient" for claim in canonical_result.claims)
-            and "insufficient_evidence" in limitation_set
+            and result.status == "insufficient"
+            and all(claim.status == "insufficient" for claim in result.claims)
+            and "insufficient_evidence" in limitations
         )
         dimensions.append(
             _dimension(
                 "insufficiency_handling",
-                "pass" if insufficiency_ok else "fail",
-                numerator=int(insufficiency_ok),
+                "pass" if ok else "fail",
+                numerator=int(ok),
                 denominator=1,
-                score=1.0 if insufficiency_ok else 0.0,
+                score=1.0 if ok else 0.0,
             )
         )
-        if not insufficiency_ok:
+        if not ok:
             failures.append("insufficiency_handling_failure")
     else:
         dimensions.append(_dimension("insufficiency_handling", "not_applicable"))
 
-    has_conflict_claim = any(
-        claim.status == "conflict" for claim in canonical_result.claims
-    )
-    expects_conflict = canonical_case.expected_behavior == "conflict"
-    if expects_conflict or has_conflict_claim:
-        conflict_ok = expects_conflict and has_conflict_claim
+    has_conflict = any(claim.status == "conflict" for claim in result.claims)
+    expects_conflict = case.expected_behavior == "conflict"
+    if expects_conflict or has_conflict:
+        ok = expects_conflict and has_conflict
         dimensions.append(
             _dimension(
                 "conflict_handling",
-                "pass" if conflict_ok else "fail",
-                numerator=int(conflict_ok),
+                "pass" if ok else "fail",
+                numerator=int(ok),
                 denominator=1,
-                score=1.0 if conflict_ok else 0.0,
+                score=1.0 if ok else 0.0,
             )
         )
-        if not conflict_ok:
+        if not ok:
             failures.append("conflict_handling_failure")
     else:
         dimensions.append(_dimension("conflict_handling", "not_applicable"))
 
     forbidden_hits = [
-        substring
-        for substring in canonical_case.forbidden_answer_substrings
-        if substring in normalized_answer_text
-        or any(
-            substring in _normalized_match_text(claim.text)
-            for claim in canonical_result.claims
-        )
+        value
+        for value in case.forbidden_answer_substrings
+        if value in normalized_answer
+        or any(value in _match_text(claim.text) for claim in result.claims)
     ]
-    if canonical_case.forbidden_answer_substrings:
-        instruction_ok = not forbidden_hits
+    if case.forbidden_answer_substrings:
+        ok = not forbidden_hits
         dimensions.append(
             _dimension(
                 "instruction_compliance",
-                "pass" if instruction_ok else "fail",
-                numerator=int(instruction_ok),
+                "pass" if ok else "fail",
+                numerator=int(ok),
                 denominator=1,
-                score=1.0 if instruction_ok else 0.0,
+                score=1.0 if ok else 0.0,
                 details=tuple(
                     f"forbidden_answer_substring_present:{value}"
                     for value in sorted(forbidden_hits)
                 ),
             )
         )
-        if not instruction_ok:
+        if not ok:
             failures.append("instruction_compliance_failure")
     else:
         dimensions.append(_dimension("instruction_compliance", "not_evaluated"))
@@ -957,10 +877,7 @@ def evaluate_grounded_answer(
             details=("no_accepted_semantic_evaluator_adapter",),
         )
     )
-    if canonical_case.calibration_target is None:
-        calibration_status = "not_applicable"
-    else:
-        calibration_status = "not_evaluated"
+    calibration_status = "not_applicable" if case.calibration_target is None else "not_evaluated"
     dimensions.append(
         _dimension(
             "uncertainty_calibration",
@@ -973,34 +890,33 @@ def evaluate_grounded_answer(
         )
     )
 
-    failure_tuple = tuple(dict.fromkeys(failures))
-    unknown_failures = set(failure_tuple) - _FAILURE_CLASSES
-    if unknown_failures:
-        raise EvaluationError(f"unsupported failure classification {unknown_failures!r}")
-
-    blocking_statuses = {
-        dimension.status for dimension in dimensions if dimension.status == "fail"
-    }
-    aggregate_status = "pass" if not blocking_statuses and not failure_tuple else "fail"
-    warnings: list[str] = [
+    failures_tuple = tuple(dict.fromkeys(failures))
+    if set(failures_tuple) - _FAILURE_CLASSES:
+        raise EvaluationError("unsupported failure classification produced")
+    aggregate_status = (
+        "pass"
+        if not failures_tuple and all(item.status != "fail" for item in dimensions)
+        else "fail"
+    )
+    warnings = [
         "semantic_groundedness_not_evaluated",
         "evaluation_does_not_authorize_memory_promotion",
     ]
     if retrieval_failed:
         warnings.append("answer_dimensions_may_be_blocked_by_retrieval_failure")
-    if canonical_case.calibration_target is not None:
+    if case.calibration_target is not None:
         warnings.append("uncertainty_calibration_not_evaluated")
 
-    evaluation_material = {
+    material = {
         "answer_evaluation_contract": contract,
         "evaluator_version": version,
         "evaluator_adapter_id": adapter,
-        "golden_case_id": canonical_case.case_id,
+        "golden_case_id": case.case_id,
         "packet_id": packet.packet_id,
-        "grounded_result_id": canonical_result.result_id,
-        "retrieval_id": canonical_result.retrieval_id,
+        "grounded_result_id": result.result_id,
+        "retrieval_id": result.retrieval_id,
         "dimensions": [_dimension_material(item) for item in dimensions],
-        "failure_classifications": list(failure_tuple),
+        "failure_classifications": list(failures_tuple),
         "aggregate_status": aggregate_status,
         "warnings": warnings,
         "errors": [],
@@ -1012,19 +928,19 @@ def evaluate_grounded_answer(
         "memory_promotion_authorized": False,
         "execution_authorized": False,
     }
-    evaluation_hash = _content_hash(evaluation_material)
+    digest = _hash(material)
     return EvaluationResult(
-        evaluation_id=f"eval_{evaluation_hash}",
-        evaluation_hash=evaluation_hash,
+        evaluation_id=f"eval_{digest}",
+        evaluation_hash=digest,
         answer_evaluation_contract=contract,
         evaluator_version=version,
         evaluator_adapter_id=adapter,
-        golden_case_id=canonical_case.case_id,
+        golden_case_id=case.case_id,
         packet_id=packet.packet_id,
-        grounded_result_id=canonical_result.result_id,
-        retrieval_id=canonical_result.retrieval_id,
+        grounded_result_id=result.result_id,
+        retrieval_id=result.retrieval_id,
         dimensions=tuple(dimensions),
-        failure_classifications=failure_tuple,
+        failure_classifications=failures_tuple,
         aggregate_status=aggregate_status,
         warnings=tuple(warnings),
         errors=(),
@@ -1035,93 +951,83 @@ def evaluate_grounded_answer(
     )
 
 
-def _dimension_by_name(result: EvaluationResult, name: str) -> EvaluationDimension | None:
+def _dimension_named(result: EvaluationResult, name: str) -> EvaluationDimension | None:
     return next((item for item in result.dimensions if item.name == name), None)
 
 
-def _mean(scores: list[float]) -> float | None:
-    return sum(scores) / len(scores) if scores else None
+def _mean(values: list[float]) -> float | None:
+    return sum(values) / len(values) if values else None
 
 
 def aggregate_evaluation_results(
     results: tuple[EvaluationResult, ...] | list[EvaluationResult],
 ) -> EvaluationAggregate:
-    """Aggregate deterministic Phase 7 metrics without changing their authority."""
-
     if not isinstance(results, (tuple, list)) or not results:
         raise EvaluationError("results must contain at least one EvaluationResult")
     normalized: list[EvaluationResult] = []
-    seen_ids: set[str] = set()
-    for result in results:
-        if not isinstance(result, EvaluationResult):
+    seen: set[str] = set()
+    for item in results:
+        if not isinstance(item, EvaluationResult):
             raise EvaluationError("results must contain EvaluationResult values")
-        if result.evaluation_id in seen_ids:
+        if item.evaluation_id in seen:
             raise EvaluationError("evaluation ids must be unique in an aggregate")
-        if result.answer_evaluation_contract != ANSWER_EVALUATION_CONTRACT:
+        if item.answer_evaluation_contract != ANSWER_EVALUATION_CONTRACT:
             raise EvaluationError("aggregate contains unsupported evaluation contract")
-        seen_ids.add(result.evaluation_id)
-        normalized.append(result)
+        seen.add(item.evaluation_id)
+        normalized.append(item)
     normalized.sort(key=lambda item: item.evaluation_id)
 
-    citation_precision_scores: list[float] = []
-    citation_completeness_scores: list[float] = []
-    unsupported_rates: list[float] = []
-    insufficiency_scores: list[float] = []
-    conflict_scores: list[float] = []
-
+    buckets: dict[str, list[float]] = {
+        "citation_precision": [],
+        "citation_completeness": [],
+        "unsupported_claim_rate": [],
+        "insufficiency_handling": [],
+        "conflict_handling": [],
+    }
     for result in normalized:
-        for name, target in (
-            ("citation_precision", citation_precision_scores),
-            ("citation_completeness", citation_completeness_scores),
-            ("unsupported_claim_rate", unsupported_rates),
-            ("insufficiency_handling", insufficiency_scores),
-            ("conflict_handling", conflict_scores),
-        ):
-            dimension = _dimension_by_name(result, name)
+        for name, bucket in buckets.items():
+            dimension = _dimension_named(result, name)
             if dimension is not None and dimension.score is not None:
-                target.append(dimension.score)
+                bucket.append(dimension.score)
 
     total = len(normalized)
-    passed = sum(result.aggregate_status == "pass" for result in normalized)
+    passed = sum(item.aggregate_status == "pass" for item in normalized)
     retrieval_failures = sum(
-        "retrieval_failure" in result.failure_classifications for result in normalized
+        "retrieval_failure" in item.failure_classifications for item in normalized
     )
-    answer_failure_classes = _FAILURE_CLASSES - {
+    answer_classes = _FAILURE_CLASSES - {
         "retrieval_failure",
         "evaluator_unavailable",
         "evaluator_disagreement",
         "unknown",
     }
     answer_failures = sum(
-        bool(set(result.failure_classifications) & answer_failure_classes)
-        for result in normalized
+        bool(set(item.failure_classifications) & answer_classes) for item in normalized
     )
-
     material = {
-        "evaluation_ids": [result.evaluation_id for result in normalized],
+        "evaluation_ids": [item.evaluation_id for item in normalized],
         "total_cases": total,
         "passed_cases": passed,
         "case_pass_rate": passed / total,
-        "mean_citation_precision": _mean(citation_precision_scores),
-        "mean_citation_completeness": _mean(citation_completeness_scores),
-        "mean_unsupported_claim_rate": _mean(unsupported_rates),
-        "insufficiency_accuracy": _mean(insufficiency_scores),
-        "conflict_accuracy": _mean(conflict_scores),
+        "mean_citation_precision": _mean(buckets["citation_precision"]),
+        "mean_citation_completeness": _mean(buckets["citation_completeness"]),
+        "mean_unsupported_claim_rate": _mean(buckets["unsupported_claim_rate"]),
+        "insufficiency_accuracy": _mean(buckets["insufficiency_handling"]),
+        "conflict_accuracy": _mean(buckets["conflict_handling"]),
         "retrieval_failure_rate": retrieval_failures / total,
         "answer_failure_rate": answer_failures / total,
     }
-    aggregate_id = _content_id("evalagg_", material)
     return EvaluationAggregate(
-        aggregate_id=aggregate_id,
-        evaluation_ids=tuple(result.evaluation_id for result in normalized),
+        aggregate_id=_id("evalagg_", material),
+        evaluation_ids=tuple(item.evaluation_id for item in normalized),
         total_cases=total,
         passed_cases=passed,
         case_pass_rate=passed / total,
-        mean_citation_precision=_mean(citation_precision_scores),
-        mean_citation_completeness=_mean(citation_completeness_scores),
-        mean_unsupported_claim_rate=_mean(unsupported_rates),
-        insufficiency_accuracy=_mean(insufficiency_scores),
-        conflict_accuracy=_mean(conflict_scores),
+        mean_citation_precision=material["mean_citation_precision"],
+        mean_citation_completeness=material["mean_citation_completeness"],
+        mean_unsupported_claim_rate=material["mean_unsupported_claim_rate"],
+        insufficiency_accuracy=material["insufficiency_accuracy"],
+        conflict_accuracy=material["conflict_accuracy"],
         retrieval_failure_rate=retrieval_failures / total,
         answer_failure_rate=answer_failures / total,
     )
