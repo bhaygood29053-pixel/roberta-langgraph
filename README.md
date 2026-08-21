@@ -54,12 +54,13 @@ The CMIS implementation still uses the internal Python namespace `liquidity_scou
 - **Learning System Phase 2 Structure Detection — complete**
 - **Learning System Phase 3 Structure-Aware Evidence Chunking — complete**
 - **Learning System Phase 4 Indexing Foundation — complete**
-- **Learning System Phase 5 Retrieval Foundation — next**
+- **Learning System Phase 5 Retrieval Foundation — complete**
+- **Learning System Phase 6 Grounded Answer + Citation Foundation — next**
 - Phase 11 Controlled Execution — **locked / not started**
 
 The **Roberta Learning System is the primary active development track**. Existing CMIS, Chain Scout, transport, policy, memory, and approval functionality should remain stable unless a change is directly required to support the Learning System or fix a proven defect.
 
-See [`docs/LANGGRAPH_ROADMAP.md`](./docs/LANGGRAPH_ROADMAP.md) for the authoritative Roberta roadmap, [`docs/LEARNING_SYSTEM.md`](./docs/LEARNING_SYSTEM.md) for source ingestion, [`docs/LEARNING_SYSTEM_STRUCTURE.md`](./docs/LEARNING_SYSTEM_STRUCTURE.md) for structure parsing, [`docs/LEARNING_SYSTEM_CHUNKING.md`](./docs/LEARNING_SYSTEM_CHUNKING.md) for evidence chunking, and [`docs/LEARNING_SYSTEM_INDEXING.md`](./docs/LEARNING_SYSTEM_INDEXING.md) for the accepted indexing contract.
+See [`docs/LANGGRAPH_ROADMAP.md`](./docs/LANGGRAPH_ROADMAP.md) for the authoritative Roberta roadmap, [`docs/LEARNING_SYSTEM.md`](./docs/LEARNING_SYSTEM.md) for source ingestion, [`docs/LEARNING_SYSTEM_STRUCTURE.md`](./docs/LEARNING_SYSTEM_STRUCTURE.md) for structure parsing, [`docs/LEARNING_SYSTEM_CHUNKING.md`](./docs/LEARNING_SYSTEM_CHUNKING.md) for evidence chunking, [`docs/LEARNING_SYSTEM_INDEXING.md`](./docs/LEARNING_SYSTEM_INDEXING.md) for indexing, and [`docs/LEARNING_SYSTEM_RETRIEVAL.md`](./docs/LEARNING_SYSTEM_RETRIEVAL.md) for the accepted retrieval contract.
 
 CMIS has its own execution-phase numbering. CMIS Phase 11 refers to its completed **read-only Verified Intelligence foundation**; that is separate from Roberta Phase 11 Controlled Execution.
 
@@ -121,7 +122,25 @@ Issue #115 / PR #116 added the deterministic **indexing foundation** over canoni
 
 PR #116 passed the full deterministic suite with **548 passed and 5 live/provider tests deselected**; all new indexing regressions passed.
 
-The next narrow milestone is **Learning System Phase 5 — retrieval foundation**. It should implement a typed, deterministic retrieval contract over the accepted index representations before production PostgreSQL/pgvector coupling: query normalization, metadata filters, lexical/vector candidate generation where available, deterministic candidate fusion, explicit evidence diversity/duplicate handling, and retrieval-quality benchmark fixtures. Retrieval scores remain relevance evidence, not truth, risk, or authority. Reranking with a model, grounded answer generation, concepts, curriculum, reflection/lesson promotion, and fine-tuning remain later gates.
+Issue #118 / PR #119 added the deterministic **retrieval foundation** over validated Phase 4 indexes:
+
+- every corpus item revalidates canonical source/chunk/index integrity before retrieval rather than trusting caller-supplied index state;
+- query normalization matches the accepted Unicode analyzer and preserves exact query text separately from derived tokens;
+- exact source/document/section/authority/approval/chunk-kind filters never silently widen scope;
+- lexical and optional vector candidate channels remain separately observable;
+- vector candidates are eligible only under exact provider/model/version/dimension matching, with finite-vector and fingerprint validation;
+- deterministic Reciprocal Rank Fusion uses exact rational arithmetic and stable tie-breaking;
+- local-context diversity defers adjacent fragments when independent alternatives exist, with deferred chunk ids preserved explicitly;
+- contradictory cross-source evidence remains visible rather than being silently reconciled;
+- `ok`, `partial`, and `no_match` states preserve uncertainty without fabricated evidence;
+- every selected result preserves exact canonical chunk text and provenance;
+- deterministic benchmark helpers expose Recall@K, Precision@K, reciprocal rank, binary nDCG@K, evidence coverage, redundancy, source diversity, and filter correctness;
+- the deterministic hash embedding adapter proves only vector-channel mechanics and is not evidence of semantic retrieval quality;
+- all retrieval/query/metric records deny live-state authority.
+
+PR #119 passed the full deterministic suite with **566 passed and 5 live/provider tests deselected**; all new retrieval regressions passed.
+
+The next narrow milestone is **Learning System Phase 6 — grounded answer + citation foundation**. The first slice should transform an accepted `RetrievalResult` into a bounded evidence packet and require any generated answer to preserve claim-to-evidence citations, explicit insufficiency/conflict disclosure, and the static-source/live-state authority boundary. Retrieval results should remain immutable evidence inputs; a model may explain them but must not manufacture support, silently widen the corpus, convert relevance into truth, or write generated claims into verified memory. Model reranking, concepts, curriculum, reflection/lesson promotion, and fine-tuning remain separate later gates unless evaluation proves they are needed.
 
 The Learning System does not replace CMIS for changing market/blockchain state. Fresh accepted CMIS/provider evidence remains authoritative for current prices, liquidity, supply, wallet state, risk, and other freshness-sensitive facts.
 
@@ -269,7 +288,7 @@ python -m pip install -e '.[dev,deepseek]'
 python -m pytest -v -m 'not live and not cmis_live'
 ```
 
-The deterministic suite covers the Oracle/tool loop, provider-neutral model injection, Chain Scout boundaries, CMIS capability validation, X1 and Solana evidence isolation, policy, persistence, durable-memory adapters, human approval, evidence-aware response contracts, Learning System source ingestion, structure-first parsing, structure-aware evidence chunking, and the deterministic indexing foundation.
+The deterministic suite covers the Oracle/tool loop, provider-neutral model injection, Chain Scout boundaries, CMIS capability validation, X1 and Solana evidence isolation, policy, persistence, durable-memory adapters, human approval, evidence-aware response contracts, Learning System source ingestion, structure-first parsing, structure-aware evidence chunking, deterministic indexing, and deterministic retrieval/benchmark foundations.
 
 ## Provider-backed CMIS
 

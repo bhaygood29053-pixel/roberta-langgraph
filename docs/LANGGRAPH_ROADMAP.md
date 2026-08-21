@@ -23,7 +23,8 @@ Roberta has completed:
 - **Learning System Phase 1 — deterministic source-ingestion foundation (#106/#107);**
 - **Learning System Phase 2 — deterministic structure-first Markdown parsing (#109/#110);**
 - **Learning System Phase 3 — deterministic structure-aware evidence chunking (#112/#113);**
-- **Learning System Phase 4 — deterministic lexical + embedding indexing foundation (#115/#116).**
+- **Learning System Phase 4 — deterministic lexical + embedding indexing foundation (#115/#116);**
+- **Learning System Phase 5 — deterministic retrieval + benchmark foundation (#118/#119).**
 
 Phase 5 — X1 Evidence Completeness remains deliberately **bounded**, with explicit verified/bounded/partial/unavailable/conflict/insufficient-evidence states.
 
@@ -63,7 +64,7 @@ A roadmap item being active does not waive those gates. A PR is not merge-ready 
 
 ## Learning System primary track
 
-The Learning System follows the evidence-grounded design in [`LEARNING_SYSTEM.md`](./LEARNING_SYSTEM.md), [`LEARNING_SYSTEM_STRUCTURE.md`](./LEARNING_SYSTEM_STRUCTURE.md), [`LEARNING_SYSTEM_CHUNKING.md`](./LEARNING_SYSTEM_CHUNKING.md), [`LEARNING_SYSTEM_INDEXING.md`](./LEARNING_SYSTEM_INDEXING.md), and the broader Roberta Learning System Specification v1.1.
+The Learning System follows the evidence-grounded design in [`LEARNING_SYSTEM.md`](./LEARNING_SYSTEM.md), [`LEARNING_SYSTEM_STRUCTURE.md`](./LEARNING_SYSTEM_STRUCTURE.md), [`LEARNING_SYSTEM_CHUNKING.md`](./LEARNING_SYSTEM_CHUNKING.md), [`LEARNING_SYSTEM_INDEXING.md`](./LEARNING_SYSTEM_INDEXING.md), [`LEARNING_SYSTEM_RETRIEVAL.md`](./LEARNING_SYSTEM_RETRIEVAL.md), and the broader Roberta Learning System Specification v1.1.
 
 ### Learning System Phase 1 — Source ingestion ✅ Complete
 
@@ -177,39 +178,72 @@ The accepted Phase 4 boundary:
 
 Accepted verification for PR #116 recorded **548 deterministic tests passing with 5 live/provider tests deselected**, all new indexing regressions passing, all three engineering review axes passing, and no unresolved review threads.
 
-### Learning System Phase 5 — Retrieval foundation ⬜ Next
+### Learning System Phase 5 — Retrieval + benchmark foundation ✅ Complete
 
-The next narrow target corresponds to the Learning System specification's retrieval/reranking layer, but the first slice should prove retrieval semantics and evaluation obligations before production storage or model reranking becomes authoritative.
+Issue #118 / PR #119 established deterministic retrieval over validated Phase 4 index representations.
 
-The next accepted slice should establish:
+The accepted first retrieval contracts are:
 
 ```text
-RetrievalQuery
-  -> query normalization / constraints
-  -> lexical candidates
-  -> optional vector candidates
-  -> metadata filters
-  -> deterministic candidate fusion
-  -> evidence diversity / sufficiency metadata
-  -> RetrievalResult
+retrieval_contract = evidence-retrieval/v1
+retrieval_version = 1.0.0
+fusion_contract = reciprocal-rank-fusion/v1
+rrf_k = 60
 ```
 
-Phase 5 should preserve, at minimum:
+The accepted Phase 5 boundary:
 
-- exact canonical `chunk_id` mapping for every candidate;
-- query contract/version and deterministic normalized query representation;
-- explicit source/document/section/authority/approval/chunk-kind filters;
-- lexical and vector candidate channels as separate observable evidence rather than one opaque score;
-- deterministic fusion behavior with documented tie-breaking;
-- no substitution of a vector score for source quality, authority, truth, risk, or freshness;
-- explicit duplicate/near-local-context handling so a result set is not dominated by adjacent fragments of the same evidence;
-- contradictory-source visibility rather than silent reconciliation;
-- retrieval status/unknown/failure states separate from downstream reasoning quality;
-- an in-memory deterministic retrieval adapter over accepted Phase 4 index representations before PostgreSQL/pgvector deployment;
-- golden retrieval fixtures covering exact terminology, paraphrases where an actual semantic provider exists, ambiguous terms, negative/no-answer cases, conflicting sources, and metadata-filter correctness;
-- measurable retrieval metrics such as Recall@K, Precision@K, MRR, nDCG, evidence coverage, redundancy rate, source diversity, and filter correctness where the fixture supports them.
+- revalidates each supplied corpus item through canonical Phase 1/2/3 reconstruction and Phase 4 lexical/index-integrity checks before retrieval;
+- validates stored embedding provenance, provider/model/version/dimension metadata, finite vector values, vector fingerprints, entry ids, counts, manifest diagnostics, and manifest hash/id without inventing provider authenticity;
+- normalizes corpus ordering by deterministic `index_id`, rejects duplicate index ids, and rejects duplicate canonical chunk ids that could inflate relevance scores;
+- preserves exact query text separately from deterministic NFKC/casefold Unicode lexical tokens;
+- supports exact-match source/document/section/authority/approval/chunk-kind filters, including explicit null/preamble section scope, without silently widening a supplied filter;
+- ranks lexical candidates transparently by phrase match, matched distinct terms, matched occurrences, indexed token count, and stable chunk-id tie-breaking;
+- allows an optional vector channel only when query and index embedding spaces match exact provider/model/version/dimension metadata;
+- validates query vectors for dimension, finite numeric values, fingerprint, and non-zero magnitude and computes cosine similarity only for eligible stored `ok` vectors;
+- preserves lexical and vector ranks/similarities as separate observable channels;
+- fuses candidate channel ranks with Reciprocal Rank Fusion using exact rational arithmetic rather than an opaque model score;
+- applies deterministic local-context diversity so adjacent fragments from one source/section do not crowd out independent alternatives when available, while preserving deferred chunk ids;
+- preserves contradictory/disagreeing cross-source chunks independently rather than reconciling them inside retrieval;
+- returns explicit `ok`, `partial`, or `no_match` state and never manufactures evidence when a requested channel is unavailable or nothing matches;
+- preserves exact canonical evidence text and source/document/section/block/chunk provenance in every selected candidate;
+- exposes deterministic first-slice benchmark helpers for Recall@K, Precision@K, reciprocal rank, binary nDCG@K, evidence coverage, redundancy rate, source diversity, and filter correctness;
+- treats negative/no-relevant benchmark denominators as undefined rather than inventing favorable or unfavorable scores;
+- uses the deterministic hash embedding adapter only to prove vector-channel mechanics and makes no semantic/paraphrase-quality claim from it;
+- structurally denies live-state authority for all retrieval/query/metric records.
 
-Phase 5 should **not** yet add free-form model reranking, grounded answer generation, concepts/knowledge graph, question generation, adaptive curriculum, reflection/lesson promotion, or fine-tuning. A later evaluated slice may add model reranking only after deterministic candidate-generation/fusion failures can be diagnosed independently.
+Accepted verification for PR #119 recorded **566 deterministic tests passing with 5 live/provider tests deselected**, all new retrieval regressions passing, all three engineering review axes passing, and no unresolved review threads.
+
+### Learning System Phase 6 — Grounded answer + citation foundation ⬜ Next
+
+The next narrow target is to turn an accepted `RetrievalResult` into a bounded evidence packet that a model can explain without converting generated language into evidence.
+
+The first accepted slice should establish:
+
+```text
+RetrievalResult
+  -> deterministic EvidencePacket
+  -> bounded answer request
+  -> model-generated answer candidate
+  -> deterministic citation / evidence-binding validation
+  -> GroundedAnswerResult
+```
+
+Phase 6 should preserve, at minimum:
+
+- exact retrieval/query identity and selected `chunk_id` set as the only static evidence scope for one answer attempt;
+- stable evidence labels/anchors that bind citations to exact source/document/section/chunk identity and source line range;
+- explicit packet status for `ok`, `partial`, conflict-present, and insufficient/no-evidence conditions;
+- source authority/approval metadata as evidence context, not a model-computed truth score;
+- a model-facing contract that treats retrieved source text as untrusted data/evidence rather than system instructions;
+- deterministic validation that every answer citation references an evidence anchor actually present in the packet;
+- explicit unsupported-claim / missing-citation handling rather than silently accepting generated statements;
+- explicit disclosure when retrieved sources disagree or when retrieval is partial/insufficient;
+- strict separation between static Learning System evidence and freshness-sensitive CMIS/provider facts;
+- no automatic write from generated answer/reflection text into trusted source knowledge or durable verified memory;
+- evaluation fixtures for citation correctness, unsupported claims, contradictory evidence, no-answer cases, and prompt-injection-looking source text.
+
+Phase 6 should **not** yet add autonomous reflection-to-lesson promotion, concepts/knowledge graph, adaptive curriculum, fine-tuning, or a production pgvector dependency. Model reranking should remain deferred unless retrieval benchmarks identify a concrete failure mode that deterministic candidate generation cannot address.
 
 ## Technology Radar design boundary — Issue #100
 
