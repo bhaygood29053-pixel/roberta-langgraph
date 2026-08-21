@@ -53,12 +53,13 @@ The CMIS implementation still uses the internal Python namespace `liquidity_scou
 - **Learning System Phase 1 Source Ingestion — complete**
 - **Learning System Phase 2 Structure Detection — complete**
 - **Learning System Phase 3 Structure-Aware Evidence Chunking — complete**
-- **Learning System Phase 4 Indexing Foundation — next**
+- **Learning System Phase 4 Indexing Foundation — complete**
+- **Learning System Phase 5 Retrieval Foundation — next**
 - Phase 11 Controlled Execution — **locked / not started**
 
 The **Roberta Learning System is the primary active development track**. Existing CMIS, Chain Scout, transport, policy, memory, and approval functionality should remain stable unless a change is directly required to support the Learning System or fix a proven defect.
 
-See [`docs/LANGGRAPH_ROADMAP.md`](./docs/LANGGRAPH_ROADMAP.md) for the authoritative Roberta roadmap, [`docs/LEARNING_SYSTEM.md`](./docs/LEARNING_SYSTEM.md) for source ingestion, [`docs/LEARNING_SYSTEM_STRUCTURE.md`](./docs/LEARNING_SYSTEM_STRUCTURE.md) for structure parsing, and [`docs/LEARNING_SYSTEM_CHUNKING.md`](./docs/LEARNING_SYSTEM_CHUNKING.md) for the accepted evidence-chunk contract.
+See [`docs/LANGGRAPH_ROADMAP.md`](./docs/LANGGRAPH_ROADMAP.md) for the authoritative Roberta roadmap, [`docs/LEARNING_SYSTEM.md`](./docs/LEARNING_SYSTEM.md) for source ingestion, [`docs/LEARNING_SYSTEM_STRUCTURE.md`](./docs/LEARNING_SYSTEM_STRUCTURE.md) for structure parsing, [`docs/LEARNING_SYSTEM_CHUNKING.md`](./docs/LEARNING_SYSTEM_CHUNKING.md) for evidence chunking, and [`docs/LEARNING_SYSTEM_INDEXING.md`](./docs/LEARNING_SYSTEM_INDEXING.md) for the accepted indexing contract.
 
 CMIS has its own execution-phase numbering. CMIS Phase 11 refers to its completed **read-only Verified Intelligence foundation**; that is separate from Roberta Phase 11 Controlled Execution.
 
@@ -106,7 +107,21 @@ Issue #112 / PR #113 added deterministic **structure-aware evidence chunking**:
 
 PR #113 passed the full deterministic suite with **534 passed and 5 live/provider tests deselected**; all 14 new chunking tests passed.
 
-The next narrow milestone is **Learning System Phase 4 — indexing foundation**. The goal is to build replaceable lexical and embedding-index contracts over accepted `EvidenceChunk` records without allowing an index to become the canonical knowledge model. The first slice should prove deterministic lexical indexing and a versioned embedding/index interface with reproducible metadata before introducing broad retrieval/reranking behavior. PostgreSQL/full-text search and pgvector remain the intended production baseline once the interface and benchmark obligations are stable.
+Issue #115 / PR #116 added the deterministic **indexing foundation** over canonical Phase 3 evidence chunks:
+
+- supplied chunk sets are not trusted blindly; canonical Phase 2 structure and Phase 3 chunks are recomputed before indexing;
+- `evidence-index/v1` creates deterministic lexical entries with explicit source/document/section/chunk provenance;
+- `unicode-word-casefold/v1` uses versioned Unicode NFKC normalization, casefolding, and ordered Unicode word tokens;
+- an optional typed `EmbeddingProvider` contract binds every request/result to the exact `chunk_id` and content hash;
+- embedding output is validated for exact provider/model/version/dimension, request identity, numeric type, and finite values;
+- malformed embedding output fails closed while provider runtime/unavailable states remain explicit `partial` results with no fabricated vector;
+- vector fingerprints and content-addressed index manifests are derived relevance metadata only, never source truth or live-state verification;
+- the included deterministic hash embedding provider is a test-contract adapter only, not a semantic production embedding model;
+- all index/provider records explicitly deny live-state authority.
+
+PR #116 passed the full deterministic suite with **548 passed and 5 live/provider tests deselected**; all new indexing regressions passed.
+
+The next narrow milestone is **Learning System Phase 5 — retrieval foundation**. It should implement a typed, deterministic retrieval contract over the accepted index representations before production PostgreSQL/pgvector coupling: query normalization, metadata filters, lexical/vector candidate generation where available, deterministic candidate fusion, explicit evidence diversity/duplicate handling, and retrieval-quality benchmark fixtures. Retrieval scores remain relevance evidence, not truth, risk, or authority. Reranking with a model, grounded answer generation, concepts, curriculum, reflection/lesson promotion, and fine-tuning remain later gates.
 
 The Learning System does not replace CMIS for changing market/blockchain state. Fresh accepted CMIS/provider evidence remains authoritative for current prices, liquidity, supply, wallet state, risk, and other freshness-sensitive facts.
 
@@ -254,7 +269,7 @@ python -m pip install -e '.[dev,deepseek]'
 python -m pytest -v -m 'not live and not cmis_live'
 ```
 
-The deterministic suite covers the Oracle/tool loop, provider-neutral model injection, Chain Scout boundaries, CMIS capability validation, X1 and Solana evidence isolation, policy, persistence, durable-memory adapters, human approval, evidence-aware response contracts, Learning System source ingestion, structure-first parsing, and structure-aware evidence chunking.
+The deterministic suite covers the Oracle/tool loop, provider-neutral model injection, Chain Scout boundaries, CMIS capability validation, X1 and Solana evidence isolation, policy, persistence, durable-memory adapters, human approval, evidence-aware response contracts, Learning System source ingestion, structure-first parsing, structure-aware evidence chunking, and the deterministic indexing foundation.
 
 ## Provider-backed CMIS
 
