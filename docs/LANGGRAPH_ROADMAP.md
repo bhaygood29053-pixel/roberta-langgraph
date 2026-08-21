@@ -19,7 +19,8 @@ Roberta has completed:
 - Post-Phase-10 Evidence-Aware Intelligence & User Experience;
 - X1 Decision Production Readiness (#62);
 - adoption/readiness of the first separately promoted CMIS 1.9 Verified Intelligence service through X1 Scout (#73/#74);
-- Solana Read-Only Production Readiness (#78) for the exact currently promoted Roberta Solana Scout surface.
+- Solana Read-Only Production Readiness (#78) for the exact currently promoted Roberta Solana Scout surface;
+- cross-project engineering governance, HXMP provenance discipline, and Technology Radar specification (#97/#98/#99/#100), with companion CMIS governance issue #259 complete.
 
 Phase 5 — X1 Evidence Completeness remains deliberately **bounded**, with explicit verified/bounded/partial/unavailable/conflict/insufficient-evidence states.
 
@@ -54,6 +55,17 @@ The repository/project identity is CMIS, while working internal Python identifie
 Meaningful Roberta changes are governed by [`ENGINEERING_WORKFLOW.md`](./ENGINEERING_WORKFLOW.md). That document is the repository authority for roadmap/issue gating, narrow tracer-bullet implementation, behavior-first verification, exact-head deterministic testing, and the independent three-axis PR gate: **Spec Fidelity**, **Code/Architecture Quality**, and **Authority/Safety Boundary**.
 
 A roadmap item being active does not waive those gates. A PR is not merge-ready if any required axis fails, and acceptance must be followed by roadmap/source-of-truth reconciliation. This governance does not start or widen Controlled Execution.
+
+## Cross-project governance and design milestone #97 ✅ Complete
+
+Parent Issue #97 is complete at the roadmap level. Its accepted slices landed independently and preserve their separate authority boundaries:
+
+- Issue #98 / PR #101 — repository-authoritative Roberta engineering workflow and three-axis PR readiness gate;
+- Issue #99 / PR #102 — deterministic HXMP provenance/reconciliation hardening, with memory remaining context rather than fresh market truth;
+- Issue #100 / PR #103 — Technology Radar design/specification only, with runtime implementation deferred behind a future separate roadmap gate;
+- companion CMIS Issue #259 — deterministic CMIS engineering workflow and authority/evidence-safety review discipline.
+
+This milestone does not add a new runtime authority layer. The canonical path remains `User -> Roberta -> Chain Scout -> CMIS -> Provider`; fresh accepted CMIS/provider evidence remains authoritative over remembered live-data context; and Controlled Execution remains locked.
 
 ## Technology Radar design boundary — Issue #100
 
