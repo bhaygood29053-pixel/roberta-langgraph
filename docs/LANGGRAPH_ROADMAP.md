@@ -22,7 +22,8 @@ Roberta has completed:
 - Solana Read-Only Production Readiness (#78) for the exact currently promoted Roberta Solana Scout surface;
 - **Learning System Phase 1 — deterministic source-ingestion foundation (#106/#107);**
 - **Learning System Phase 2 — deterministic structure-first Markdown parsing (#109/#110);**
-- **Learning System Phase 3 — deterministic structure-aware evidence chunking (#112/#113).**
+- **Learning System Phase 3 — deterministic structure-aware evidence chunking (#112/#113);**
+- **Learning System Phase 4 — deterministic lexical + embedding indexing foundation (#115/#116).**
 
 Phase 5 — X1 Evidence Completeness remains deliberately **bounded**, with explicit verified/bounded/partial/unavailable/conflict/insufficient-evidence states.
 
@@ -62,7 +63,7 @@ A roadmap item being active does not waive those gates. A PR is not merge-ready 
 
 ## Learning System primary track
 
-The Learning System follows the evidence-grounded design in [`LEARNING_SYSTEM.md`](./LEARNING_SYSTEM.md), [`LEARNING_SYSTEM_STRUCTURE.md`](./LEARNING_SYSTEM_STRUCTURE.md), [`LEARNING_SYSTEM_CHUNKING.md`](./LEARNING_SYSTEM_CHUNKING.md), and the broader Roberta Learning System Specification v1.1.
+The Learning System follows the evidence-grounded design in [`LEARNING_SYSTEM.md`](./LEARNING_SYSTEM.md), [`LEARNING_SYSTEM_STRUCTURE.md`](./LEARNING_SYSTEM_STRUCTURE.md), [`LEARNING_SYSTEM_CHUNKING.md`](./LEARNING_SYSTEM_CHUNKING.md), [`LEARNING_SYSTEM_INDEXING.md`](./LEARNING_SYSTEM_INDEXING.md), and the broader Roberta Learning System Specification v1.1.
 
 ### Learning System Phase 1 — Source ingestion ✅ Complete
 
@@ -144,35 +145,71 @@ The accepted Phase 3 boundary:
 
 Accepted verification for PR #113 recorded **534 deterministic tests passing with 5 live/provider tests deselected**, all 14 new chunking tests passing, all three engineering review axes passing, and no unresolved review threads.
 
-### Learning System Phase 4 — Indexing foundation ⬜ Next
+### Learning System Phase 4 — Indexing foundation ✅ Complete
 
-The next narrow target corresponds to the Learning System specification's embeddings + lexical-indexing layer, but implementation should remain replaceable and benchmarkable rather than treating a vector database as the knowledge architecture.
+Issue #115 / PR #116 established replaceable lexical and optional embedding representations over canonical Phase 3 evidence chunks.
+
+The accepted first index contracts are:
+
+```text
+index_contract = evidence-index/v1
+index_version = 1.0.0
+lexical_analyzer_contract = unicode-word-casefold/v1
+lexical_analyzer_version = 1.0.0
+embedding = optional typed EmbeddingProvider
+```
+
+The accepted Phase 4 boundary:
+
+- does not trust a supplied `ChunkedDocument`; it recomputes canonical Phase 2 structure and Phase 3 chunking using the declared parser/chunker contracts, versions, and parameters and requires exact equality;
+- creates deterministic lexical entries that preserve exact `chunk_id`, source/document/section provenance, structural path, chunk kind, line range, source authority/approval metadata, and content hash;
+- version-controls deterministic Unicode NFKC normalization, casefolding, and ordered Unicode word tokenization while deliberately avoiding stemming, concept inference, synonym inference, or truth judgments;
+- defines a typed provider-neutral `EmbeddingProvider` seam with explicit provider/model/version/dimension metadata;
+- binds embedding requests and results to the exact `chunk_id` and chunk content hash;
+- validates successful vectors for exact declared dimension, numeric non-boolean elements, and finite values;
+- fails closed on malformed provider contracts, identity mismatch, wrong dimensions, or non-finite values;
+- converts provider runtime failures or explicit unavailable states into diagnostic partial index state with no synthesized fallback vector;
+- fingerprints validated vector output for derived reproducibility without treating a floating-point representation as source truth;
+- exposes explicit `lexical_only`, `complete`, and `partial` manifest states;
+- includes a deterministic SHA-256-based embedding adapter only to prove the provider/index contract in tests; it is not a semantic production embedding model and does not establish retrieval quality;
+- keeps PostgreSQL full-text search + pgvector as an intended early production backend but does not couple the accepted index model to that backend yet;
+- structurally denies live-state authority for all index/provider records.
+
+Accepted verification for PR #116 recorded **548 deterministic tests passing with 5 live/provider tests deselected**, all new indexing regressions passing, all three engineering review axes passing, and no unresolved review threads.
+
+### Learning System Phase 5 — Retrieval foundation ⬜ Next
+
+The next narrow target corresponds to the Learning System specification's retrieval/reranking layer, but the first slice should prove retrieval semantics and evaluation obligations before production storage or model reranking becomes authoritative.
 
 The next accepted slice should establish:
 
 ```text
-EvidenceChunk
-  -> lexical index representation
-  -> embedding representation through a typed provider contract
-  -> versioned index manifest
+RetrievalQuery
+  -> query normalization / constraints
+  -> lexical candidates
+  -> optional vector candidates
+  -> metadata filters
+  -> deterministic candidate fusion
+  -> evidence diversity / sufficiency metadata
+  -> RetrievalResult
 ```
 
-Phase 4 should preserve, at minimum:
+Phase 5 should preserve, at minimum:
 
-- exact `chunk_id` provenance on every index entry;
-- index contract/version and parameters;
-- lexical analyzer/tokenization version;
-- embedding provider/model identity and vector dimension where an embedding is actually produced;
-- deterministic/content-addressed index manifests over index metadata rather than pretending floating-point embeddings are source truth;
-- explicit indexing status/error/unknown states;
-- source/document/section filters carried as metadata for future retrieval;
-- clear separation between source evidence, derived index representations, and live state;
-- an in-memory deterministic test adapter behind replaceable interfaces before coupling the Learning System to a production database;
-- PostgreSQL full-text search + pgvector as the intended early production backend once the contracts and benchmark obligations are stable.
+- exact canonical `chunk_id` mapping for every candidate;
+- query contract/version and deterministic normalized query representation;
+- explicit source/document/section/authority/approval/chunk-kind filters;
+- lexical and vector candidate channels as separate observable evidence rather than one opaque score;
+- deterministic fusion behavior with documented tie-breaking;
+- no substitution of a vector score for source quality, authority, truth, risk, or freshness;
+- explicit duplicate/near-local-context handling so a result set is not dominated by adjacent fragments of the same evidence;
+- contradictory-source visibility rather than silent reconciliation;
+- retrieval status/unknown/failure states separate from downstream reasoning quality;
+- an in-memory deterministic retrieval adapter over accepted Phase 4 index representations before PostgreSQL/pgvector deployment;
+- golden retrieval fixtures covering exact terminology, paraphrases where an actual semantic provider exists, ambiguous terms, negative/no-answer cases, conflicting sources, and metadata-filter correctness;
+- measurable retrieval metrics such as Recall@K, Precision@K, MRR, nDCG, evidence coverage, redundancy rate, source diversity, and filter correctness where the fixture supports them.
 
-Phase 4 must **not** yet collapse retrieval and answer quality into one test. Hybrid retrieval/reranking, concepts, grounded answer generation, question generation, adaptive curriculum, reflection/lesson promotion, and fine-tuning remain later separate gates.
-
-A vector or lexical score is relevance evidence only; it is not source authority, truth, risk, or live-state verification.
+Phase 5 should **not** yet add free-form model reranking, grounded answer generation, concepts/knowledge graph, question generation, adaptive curriculum, reflection/lesson promotion, or fine-tuning. A later evaluated slice may add model reranking only after deterministic candidate-generation/fusion failures can be diagnosed independently.
 
 ## Technology Radar design boundary — Issue #100
 
