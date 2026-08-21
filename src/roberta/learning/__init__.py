@@ -1,5 +1,13 @@
 """Evidence-grounded Roberta Learning System boundaries."""
 
+from .chunking import (
+    CHUNKER_CONTRACT,
+    ChunkedDocument,
+    ChunkingError,
+    ChunkManifest,
+    EvidenceChunk,
+    chunk_parsed_document,
+)
 from .source_ingestion import (
     InMemorySourceStore,
     IngestionResult,
@@ -19,7 +27,12 @@ from .structure import (
 )
 
 __all__ = [
+    "CHUNKER_CONTRACT",
+    "ChunkManifest",
+    "ChunkedDocument",
+    "ChunkingError",
     "DocumentRecord",
+    "EvidenceChunk",
     "InMemorySourceStore",
     "IngestionResult",
     "PARSER_CONTRACT",
@@ -30,6 +43,7 @@ __all__ = [
     "SourceStore",
     "StructuralBlock",
     "StructureParseError",
+    "chunk_parsed_document",
     "ingest_utf8_source",
     "parse_markdown_structure",
 ]
