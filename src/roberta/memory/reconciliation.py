@@ -83,10 +83,21 @@ def reconcile_memory_observations(
         return _unknown("semantic scope differs; comparison is insufficient")
     if prior.category != candidate.category:
         return _unknown("memory categories differ; comparison is insufficient")
-    if _normalized(prior.chain) != _normalized(candidate.chain):
-        return _unknown("chain scope differs or is missing; keep evidence isolated")
-    if _normalized(prior.scope) != _normalized(candidate.scope):
-        return _unknown("evidence scope differs or is missing; comparison is insufficient")
+
+    prior_chain = _normalized(prior.chain)
+    candidate_chain = _normalized(candidate.chain)
+    if prior_chain is None or candidate_chain is None:
+        return _unknown("chain scope is required for deterministic reconciliation")
+    if prior_chain != candidate_chain:
+        return _unknown("chain scope differs; keep evidence isolated")
+
+    prior_scope = _normalized(prior.scope)
+    candidate_scope = _normalized(candidate.scope)
+    if prior_scope is None or candidate_scope is None:
+        return _unknown("evidence scope is required for deterministic reconciliation")
+    if prior_scope != candidate_scope:
+        return _unknown("evidence scope differs; comparison is insufficient")
+
     if not candidate.accepted_evidence:
         return _unknown("candidate observation is not accepted evidence; request fresh verification")
 
