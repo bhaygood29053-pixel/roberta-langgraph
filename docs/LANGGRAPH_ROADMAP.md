@@ -1,6 +1,6 @@
 # Roberta LangGraph Roadmap
 
-Last updated: 2026-08-20
+Last updated: 2026-08-21
 
 ## Current position
 
@@ -19,11 +19,14 @@ Roberta has completed:
 - Post-Phase-10 Evidence-Aware Intelligence & User Experience;
 - X1 Decision Production Readiness (#62);
 - adoption/readiness of the first separately promoted CMIS 1.9 Verified Intelligence service through X1 Scout (#73/#74);
-- Solana Read-Only Production Readiness (#78) for the exact currently promoted Roberta Solana Scout surface.
+- Solana Read-Only Production Readiness (#78) for the exact currently promoted Roberta Solana Scout surface;
+- **Learning System Phase 1 — deterministic source-ingestion foundation (#106/#107).**
 
 Phase 5 — X1 Evidence Completeness remains deliberately **bounded**, with explicit verified/bounded/partial/unavailable/conflict/insufficient-evidence states.
 
 Roberta Phase 11 — Controlled Execution remains **locked / not started**.
+
+The **Roberta Learning System is now the primary active development track**. Existing CMIS, Chain Scout, transport, policy, memory, and approval paths should remain stable unless a change is directly required to support the Learning System or fix a proven defect.
 
 ## Canonical hierarchy
 
@@ -43,7 +46,7 @@ CMIS owns deterministic verified facts, evidence, Evidence Receipts, Proof Score
 
 Providers remain beneath CMIS.
 
-Fresh accepted CMIS/provider evidence overrides remembered, checkpointed, or conversational live-market values. Missing evidence remains unknown/unavailable; it is never converted into zero, false, or an LLM estimate. Risk remains separate from Proof Score.
+Fresh accepted CMIS/provider evidence overrides remembered, checkpointed, conversational, or Learning System source knowledge for freshness-sensitive market state. Missing evidence remains unknown/unavailable; it is never converted into zero, false, or an LLM estimate. Risk remains separate from Proof Score.
 
 ## Migration rule
 
@@ -55,6 +58,43 @@ Meaningful Roberta changes are governed by [`ENGINEERING_WORKFLOW.md`](./ENGINEE
 
 A roadmap item being active does not waive those gates. A PR is not merge-ready if any required axis fails, and acceptance must be followed by roadmap/source-of-truth reconciliation. This governance does not start or widen Controlled Execution.
 
+## Learning System primary track
+
+The Learning System follows the evidence-grounded design in [`LEARNING_SYSTEM.md`](./LEARNING_SYSTEM.md) and the broader Roberta Learning System Specification v1.1.
+
+### Learning System Phase 1 — Source ingestion ✅ Complete
+
+Issue #106 / PR #107 established the first narrow deterministic learning boundary:
+
+- exact UTF-8 source bytes are preserved behind a provider-neutral `SourceStore` contract;
+- `content_hash` is reproducible SHA-256 over original source bytes;
+- `source_id` is deterministic/content-addressed from canonical source identity material;
+- duplicate ingestion is idempotent;
+- changed content creates a distinct immutable source record rather than overwriting prior source truth;
+- malformed identity/state/metadata/UTF-8 input fails closed;
+- stored metadata is detached and recursively immutable;
+- static Learning System sources expose `live_state_authorized = false` and cannot replace CMIS/provider evidence for current state;
+- no embeddings, retrieval, concepts, curriculum, reflection, lesson promotion, fine-tuning, or additional learning agents were added in this phase.
+
+Accepted verification for PR #107 recorded 510 deterministic tests passing with 5 live/provider tests deselected, all three engineering review axes passing, and no unresolved review threads.
+
+### Learning System Phase 2 — Structure detection ⬜ Next
+
+The next accepted design target is structure-first parsing over preserved Phase 1 source artifacts:
+
+```text
+Source artifact
+  -> Document
+    -> Part / Chapter
+      -> Section
+        -> Subsection
+          -> source-located structural blocks
+```
+
+Phase 2 must preserve source identity, heading hierarchy, source locations/page-equivalent positions where available, code/table/list boundaries where supported, parser version, explicit parse uncertainty, and a fail-closed/quarantine path for malformed input.
+
+Phase 2 must **not** silently expand into embeddings, vector search, autonomous learning, or trusted lesson promotion. Those remain later gates.
+
 ## Technology Radar design boundary — Issue #100
 
 Issue #100 defines a **specification-only** future roadmap-aware Technology Radar in [`TECHNOLOGY_RADAR.md`](./TECHNOLOGY_RADAR.md).
@@ -62,6 +102,8 @@ Issue #100 defines a **specification-only** future roadmap-aware Technology Rada
 The proposed Radar is a read-only technology-research and recommendation capability. It keeps trend strength, roadmap relevance, research-evidence quality, adoption/maintenance risk, and license compatibility as separate dimensions; preserves source provenance and explicit unknowns; and routes any promising discovery back through the normal engineering workflow.
 
 This design does **not** authorize a Radar runtime, live source adapters, schedulers, package installation, autonomous code or architecture changes, roadmap mutation, provider-trust changes, or execution authority. Any future implementation requires a separate accepted roadmap gate and implementation issue. Controlled Execution remains locked.
+
+Technology Radar implementation is not the current primary development track while the Learning System is being built.
 
 ## Phase 10 — More Specialists / Providers ✅ Complete
 
@@ -205,12 +247,13 @@ A `PASS` is not permission to trade.
 
 ```text
 HXMP / memory -> stable context and policy
+Learning System -> static source knowledge and later verified learning state
 CMIS          -> current verified facts and evidence
 Policy code   -> deterministic rule result
 LLM           -> explanation / synthesis only
 ```
 
-Fresh accepted CMIS/provider evidence overrides remembered live-market snapshots.
+Fresh accepted CMIS/provider evidence overrides remembered or Learning System live-market snapshots; the Learning System must not create live-market snapshots as trusted source knowledge.
 
 ## Human approval
 
@@ -218,7 +261,7 @@ Phase 9 human approval is exact-proposal review. Approval is not a reusable sign
 
 ## Phase 11 — Controlled Execution ⬜ Locked / not started
 
-No current CMIS result, Chain Scout report, Roberta policy decision, readiness result, human approval, or Technology Radar recommendation authorizes:
+No current CMIS result, Chain Scout report, Roberta policy decision, readiness result, human approval, Learning System result, or Technology Radar recommendation authorizes:
 
 - transaction preparation for execution;
 - wallet signing;
@@ -232,9 +275,9 @@ No current CMIS result, Chain Scout report, Roberta policy decision, readiness r
 
 If Controlled Execution is ever promoted, it requires a separate accepted transaction-construction/simulation, exact approval-consumption/revalidation, signer/broadcast, replay-protection, precondition, and failure contract.
 
-## Next read-only intelligence boundary
+## Deferred / maintenance intelligence boundary
 
-The first narrow CMIS 1.9 promotion/adoption and the current Solana read-only readiness gate are complete. The next shared intelligence work should proceed only through separately accepted deterministic contracts, especially:
+The first narrow CMIS 1.9 promotion/adoption and the current Solana read-only readiness gate are complete. Additional read-only intelligence work remains valid but is not the primary Roberta development track while the Learning System is being built. Future CMIS/Scout work should proceed only through separately accepted deterministic contracts, especially:
 
 1. deterministic inference/classification contracts before behavioral/ownership labels;
 2. wallet relationship evidence with explicit non-ownership semantics;
@@ -243,8 +286,8 @@ The first narrow CMIS 1.9 promotion/adoption and the current Solana read-only re
 5. field-by-field Solana maturity beyond the currently accepted Scout surface;
 6. future Ethereum support only under an explicit capability/verification plan.
 
-None of these items starts Controlled Execution. Technology Radar design work is research/governance support and does not displace these accepted read-only intelligence priorities.
+None of these items starts Controlled Execution or overrides the Learning System's current priority.
 
 ## Core rule
 
-**CMIS verifies. Chain Scouts investigate and interpret without inventing facts. Roberta coordinates, applies policy, and explains. The system becomes more capable by proving more—not by guessing more.**
+**Roberta learns from preserved evidence without turning generated output into truth. CMIS verifies changing market/blockchain state. Chain Scouts investigate and interpret without inventing facts. Roberta coordinates, applies policy, and explains. The system becomes more capable by proving more—not by guessing more.**
