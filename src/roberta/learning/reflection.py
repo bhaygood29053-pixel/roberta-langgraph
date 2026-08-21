@@ -942,7 +942,7 @@ def _validate_candidate_and_plan(
     if expected_plan != plan or candidate.verification_plan_id != plan.plan_id:
         raise ReflectionError("candidate verification plan identity/content is invalid")
 
-    expected_state = _candidate_with_state(
+    provisional_state = _candidate_with_state(
         candidate_id=candidate.candidate_id,
         candidate_hash=candidate.candidate_hash,
         candidate_lesson_contract=candidate.candidate_lesson_contract,
@@ -953,11 +953,36 @@ def _validate_candidate_and_plan(
         created_by=candidate.created_by,
         producer_version=candidate.producer_version,
         verification_plan_id=candidate.verification_plan_id,
-        status=candidate.status,
-        lifecycle_reason=candidate.lifecycle_reason,
-        superseded_by_candidate_id=candidate.superseded_by_candidate_id,
-        previous_state_id=candidate.previous_state_id,
+        status="provisional",
+        lifecycle_reason=None,
+        superseded_by_candidate_id=None,
+        previous_state_id=None,
     )
+    if candidate.status == "provisional":
+        if candidate.previous_state_id is not None:
+            raise ReflectionError("provisional candidate must not have a previous_state_id")
+        expected_state = provisional_state
+    else:
+        if candidate.previous_state_id != provisional_state.candidate_state_id:
+            raise ReflectionError(
+                "terminal candidate previous_state_id does not match initial provisional state"
+            )
+        expected_state = _candidate_with_state(
+            candidate_id=candidate.candidate_id,
+            candidate_hash=candidate.candidate_hash,
+            candidate_lesson_contract=candidate.candidate_lesson_contract,
+            candidate_version=candidate.candidate_version,
+            reflection=reflection,
+            lesson_text=candidate.lesson_text,
+            rationale=candidate.rationale,
+            created_by=candidate.created_by,
+            producer_version=candidate.producer_version,
+            verification_plan_id=candidate.verification_plan_id,
+            status=candidate.status,
+            lifecycle_reason=candidate.lifecycle_reason,
+            superseded_by_candidate_id=candidate.superseded_by_candidate_id,
+            previous_state_id=provisional_state.candidate_state_id,
+        )
     if expected_state != candidate:
         raise ReflectionError("candidate lifecycle state identity/content is invalid")
     return candidate, plan
