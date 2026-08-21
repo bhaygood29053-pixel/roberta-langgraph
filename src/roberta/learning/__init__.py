@@ -121,6 +121,16 @@ from .verification import (
     validate_candidate_verification_result,
     verify_candidate_lesson,
 )
+from .x1_whitepaper import (
+    X1_WHITEPAPER_AUTHORS,
+    X1_WHITEPAPER_PDF_PAGE_COUNT,
+    X1_WHITEPAPER_PDF_SHA256,
+    X1_WHITEPAPER_TITLE,
+    X1_WHITEPAPER_TRANSCRIPT_SHA256,
+    X1_WHITEPAPER_VERSION,
+    ingest_x1_whitepaper_source,
+    x1_whitepaper_markdown,
+)
 
 __all__ = [
     "ANSWER_CONTRACT",
@@ -143,6 +153,12 @@ __all__ = [
     "RETRIEVAL_CONTRACT",
     "VERIFICATION_PLAN_CONTRACT",
     "VERIFIER_VERSION",
+    "X1_WHITEPAPER_AUTHORS",
+    "X1_WHITEPAPER_PDF_PAGE_COUNT",
+    "X1_WHITEPAPER_PDF_SHA256",
+    "X1_WHITEPAPER_TITLE",
+    "X1_WHITEPAPER_TRANSCRIPT_SHA256",
+    "X1_WHITEPAPER_VERSION",
     "AnswerCandidate",
     "AnswerClaim",
     "CandidateLesson",
@@ -210,6 +226,7 @@ __all__ = [
     "evaluate_grounded_answer",
     "evaluate_retrieval",
     "ingest_utf8_source",
+    "ingest_x1_whitepaper_source",
     "make_answer_candidate",
     "make_answer_claim",
     "make_golden_claim_criterion",
@@ -227,4 +244,5 @@ __all__ = [
     "validate_reflection_record",
     "validate_retrieval_result_for_grounding",
     "verify_candidate_lesson",
+    "x1_whitepaper_markdown",
 ]
