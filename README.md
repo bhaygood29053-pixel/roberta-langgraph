@@ -58,12 +58,12 @@ The CMIS implementation still uses the internal Python namespace `liquidity_scou
 - **Learning System Phase 6 Grounded Answer + Citation Foundation — complete**
 - **Learning System Phase 7 Answer Evaluation Foundation — complete**
 - **Learning System Phase 8 Provisional Reflection + Candidate Lesson Foundation — complete**
-- **Learning System Phase 9 Candidate Lesson Verification — next**
+- **Learning System Phase 9 Independent Candidate Lesson Verification — complete**
 - Phase 11 Controlled Execution — **locked / not started**
 
-The **Roberta Learning System is the primary active development track**. Existing CMIS, Chain Scout, transport, policy, memory, and approval functionality should remain stable unless a change is directly required to support the Learning System or fix a proven defect.
+The **Roberta Learning System remains the primary development track**, but no retained/reusable verified-learning promotion or retention milestone is active yet. Any such next slice requires its own accepted issue/spec/roadmap gate. Existing CMIS, Chain Scout, transport, policy, memory, and approval functionality should remain stable unless a change is directly required to support an accepted Learning System gate or fix a proven defect.
 
-See [`docs/LANGGRAPH_ROADMAP.md`](./docs/LANGGRAPH_ROADMAP.md) for the authoritative Roberta roadmap, [`docs/LEARNING_SYSTEM.md`](./docs/LEARNING_SYSTEM.md) for source ingestion, [`docs/LEARNING_SYSTEM_STRUCTURE.md`](./docs/LEARNING_SYSTEM_STRUCTURE.md) for structure parsing, [`docs/LEARNING_SYSTEM_CHUNKING.md`](./docs/LEARNING_SYSTEM_CHUNKING.md) for evidence chunking, [`docs/LEARNING_SYSTEM_INDEXING.md`](./docs/LEARNING_SYSTEM_INDEXING.md) for indexing, [`docs/LEARNING_SYSTEM_RETRIEVAL.md`](./docs/LEARNING_SYSTEM_RETRIEVAL.md) for retrieval, [`docs/LEARNING_SYSTEM_GROUNDING.md`](./docs/LEARNING_SYSTEM_GROUNDING.md) for grounding/citation, [`docs/LEARNING_SYSTEM_EVALUATION.md`](./docs/LEARNING_SYSTEM_EVALUATION.md) for answer evaluation, and [`docs/LEARNING_SYSTEM_REFLECTION.md`](./docs/LEARNING_SYSTEM_REFLECTION.md) for the accepted provisional reflection/candidate-lesson contract.
+See [`docs/LANGGRAPH_ROADMAP.md`](./docs/LANGGRAPH_ROADMAP.md) for the authoritative Roberta roadmap, [`docs/LEARNING_SYSTEM.md`](./docs/LEARNING_SYSTEM.md) for source ingestion, [`docs/LEARNING_SYSTEM_STRUCTURE.md`](./docs/LEARNING_SYSTEM_STRUCTURE.md) for structure parsing, [`docs/LEARNING_SYSTEM_CHUNKING.md`](./docs/LEARNING_SYSTEM_CHUNKING.md) for evidence chunking, [`docs/LEARNING_SYSTEM_INDEXING.md`](./docs/LEARNING_SYSTEM_INDEXING.md) for indexing, [`docs/LEARNING_SYSTEM_RETRIEVAL.md`](./docs/LEARNING_SYSTEM_RETRIEVAL.md) for retrieval, [`docs/LEARNING_SYSTEM_GROUNDING.md`](./docs/LEARNING_SYSTEM_GROUNDING.md) for grounding/citation, [`docs/LEARNING_SYSTEM_EVALUATION.md`](./docs/LEARNING_SYSTEM_EVALUATION.md) for answer evaluation, [`docs/LEARNING_SYSTEM_REFLECTION.md`](./docs/LEARNING_SYSTEM_REFLECTION.md) for provisional reflection/candidate lessons, and [`docs/LEARNING_SYSTEM_VERIFICATION.md`](./docs/LEARNING_SYSTEM_VERIFICATION.md) for independent candidate-lesson verification.
 
 CMIS has its own execution-phase numbering. CMIS Phase 11 refers to its completed **read-only Verified Intelligence foundation**; that is separate from Roberta Phase 11 Controlled Execution.
 
@@ -186,7 +186,24 @@ Issue #127 / PR #128 added the deterministic **provisional reflection + candidat
 
 PR #128 passed the full deterministic suite at its final head with **617 passed and 5 live/provider tests deselected**. The independent review finding on lifecycle-predecessor validation was fixed, regression-tested, and resolved before merge.
 
-The next narrow milestone is **Learning System Phase 9 — Candidate Lesson Verification**. It must independently verify or reject provisional Phase 8 candidate lessons under a separately accepted verification contract before any retained/reusable verified-learning path is introduced. Phase 9 must not treat self-reflection, candidate text, or a passing retest as automatic authorization for durable-memory promotion, source truth, governance mutation, CMIS/provider trust changes, or execution.
+Issue #129 / PR #131 added deterministic **independent candidate-lesson verification** over exact provisional Phase 8 learning-candidate bundles:
+
+- the complete Phase 8 bundle and lifecycle chain are canonically revalidated before any Phase 9 check runs;
+- only the exact `provisional` candidate state is eligible; rejected or superseded candidates cannot be resurrected;
+- every check comes only from the canonical Phase 8 `VerificationPlan` and preserves its exact order, identity, failure classification, diagnosed layer, and required identity references;
+- retests produce a fresh deterministic Phase 7 evaluation rather than accepting caller-supplied scores;
+- both retest packet/result absent yields explicit `inconclusive`, while exactly one supplied fails closed before unvalidated provenance can be recorded;
+- when an approved golden case pinned the original failed packet/retrieval identities, Phase 9 deterministically derives a content-addressed retest golden case that preserves the approved labels and rebinds only those non-null evidence pins to the observed retest identities;
+- original `golden_case_id` and derived `retest_golden_case_id` remain separately recorded;
+- per-check `pass`, `fail`, and `inconclusive` states aggregate to `verified_for_learning`, `rejected`, or `inconclusive`, with every required check required to pass before verification succeeds;
+- unavailable calibration/evaluator/unknown verification capabilities remain explicitly `inconclusive` rather than being guessed or silently passed;
+- generated reflection/candidate text cannot self-verify or replace evidence;
+- verification results are deterministic, content-addressed, exact-rebuild validated, and tamper-sensitive;
+- every verification/check result denies source-truth authority, live-state authority, durable-memory promotion, governance mutation, and execution authority.
+
+PR #131 passed the final exact-head deterministic suite with **640 passed and 5 live/provider tests deselected**. Independent Codex review identified two P1 defects during development—partial retest provenance and corrected retrievals blocked by original evidence pins. Both were fixed with focused regressions and resolved review threads; the final exact-head Codex review reported no major issues before merge.
+
+The next learning obligation is a **separately scoped retained/reusable verified-learning promotion or retention gate**. No such phase is accepted or active yet. Until a dedicated issue/spec/roadmap gate is approved, `verified_for_learning` remains non-promoting verification evidence and cannot authorize durable-memory writes, source truth, source approval, CMIS/provider trust changes, protected governance mutation, or execution.
 
 The Learning System does not replace CMIS for changing market/blockchain state. Fresh accepted CMIS/provider evidence remains authoritative for current prices, liquidity, supply, wallet state, risk, and other freshness-sensitive facts.
 
@@ -334,7 +351,7 @@ python -m pip install -e '.[dev,deepseek]'
 python -m pytest -v -m 'not live and not cmis_live'
 ```
 
-The deterministic suite covers the Oracle/tool loop, provider-neutral model injection, Chain Scout boundaries, CMIS capability validation, X1 and Solana evidence isolation, policy, persistence, durable-memory adapters, human approval, evidence-aware response contracts, Learning System source ingestion, structure-first parsing, structure-aware evidence chunking, deterministic indexing, deterministic retrieval/benchmark foundations, deterministic grounding/citation validation, deterministic answer evaluation, and provisional reflection/candidate-lesson lifecycle integrity.
+The deterministic suite covers the Oracle/tool loop, provider-neutral model injection, Chain Scout boundaries, CMIS capability validation, X1 and Solana evidence isolation, policy, persistence, durable-memory adapters, human approval, evidence-aware response contracts, Learning System source ingestion, structure-first parsing, structure-aware evidence chunking, deterministic indexing, deterministic retrieval/benchmark foundations, deterministic grounding/citation validation, deterministic answer evaluation, provisional reflection/candidate-lesson lifecycle integrity, and independent candidate-lesson verification.
 
 ## Provider-backed CMIS
 
@@ -426,4 +443,4 @@ If Roberta is unavailable, the normal user-facing transport should report availa
 
 The deterministic pre-trade trade-size milestone previously tracked as CMIS Issue #99 is complete. Roberta consumes CMIS's structured result and explains it; it does not duplicate the calculation.
 
-The current active implementation priority is Learning System Phase 9 candidate-lesson verification. Future wallet/behavioral interpretation, early-warning intelligence, additional cross-chain expansion, Technology Radar implementation, and any eventual controlled execution remain separately gated and must not be inferred from the existing read-only foundation.
+Learning System implementation through **Phase 9 independent candidate-lesson verification is complete**. The next retained/reusable-learning promotion or retention slice remains separately gated and is not active until a dedicated issue/spec/roadmap gate is accepted. Future wallet/behavioral interpretation, early-warning intelligence, additional cross-chain expansion, Technology Radar implementation, and any eventual controlled execution remain separately gated and must not be inferred from the existing read-only foundation.
