@@ -72,13 +72,12 @@ from .reflection import (
     VerificationCheck,
     VerificationPlan,
     build_learning_candidate_bundle,
-    create_candidate_lesson,
     create_reflection_record,
     diagnose_failure_layers,
-    transition_candidate_lesson,
     validate_learning_candidate_bundle,
     validate_reflection_record,
 )
+from .reflection_api import create_candidate_lesson, transition_candidate_lesson
 from .retrieval import (
     FUSION_CONTRACT,
     RETRIEVAL_CONTRACT,
