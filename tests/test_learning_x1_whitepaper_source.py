@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 import hashlib
+from importlib.resources import files as resource_files
+import json
 
+import roberta.learning.x1_whitepaper as whitepaper
 from roberta.learning import (
     InMemorySourceStore,
     RetrievalCorpusItem,
@@ -13,10 +16,12 @@ from roberta.learning import (
     X1_WHITEPAPER_TRANSCRIPT_SHA256,
     X1_WHITEPAPER_VERSION,
     build_evidence_index,
+    build_evidence_packet,
     chunk_parsed_document,
     ingest_x1_whitepaper_source,
     parse_markdown_structure,
     retrieve_evidence,
+    serialize_evidence_packet_for_model,
     x1_whitepaper_markdown,
 )
 
@@ -68,6 +73,40 @@ def test_x1_whitepaper_transcript_is_packaged_integrity_checked_and_ingested_app
     assert repeat.record == source
 
 
+def test_whitepaper_loader_hashes_exact_resource_bytes_before_utf8_decode(monkeypatch) -> None:
+    root = resource_files("roberta.learning")
+    exact_parts = tuple(
+        root.joinpath(resource).read_bytes()
+        for resource in whitepaper.X1_WHITEPAPER_TRANSCRIPT_RESOURCES
+    )
+    crlf_parts = tuple(part.replace(b"\n", b"\r\n") for part in exact_parts)
+    expected_bytes = b"".join(crlf_parts)
+
+    class _BytesOnlyResource:
+        def __init__(self, data: bytes) -> None:
+            self._data = data
+
+        def read_bytes(self) -> bytes:
+            return self._data
+
+    class _BytesOnlyRoot:
+        def __init__(self, parts: tuple[bytes, ...]) -> None:
+            self._parts = parts
+
+        def joinpath(self, resource: str):
+            index = whitepaper.X1_WHITEPAPER_TRANSCRIPT_RESOURCES.index(resource)
+            return _BytesOnlyResource(self._parts[index])
+
+    monkeypatch.setattr(whitepaper, "files", lambda _: _BytesOnlyRoot(crlf_parts))
+    monkeypatch.setattr(
+        whitepaper,
+        "X1_WHITEPAPER_TRANSCRIPT_SHA256",
+        hashlib.sha256(expected_bytes).hexdigest(),
+    )
+
+    assert whitepaper.x1_whitepaper_markdown() == expected_bytes.decode("utf-8")
+
+
 def test_x1_whitepaper_runs_through_existing_markdown_structure_chunk_and_index_contracts() -> None:
     _, source, parsed, chunked, indexed, _ = _pipeline()
 
@@ -113,3 +152,12 @@ def test_x1_whitepaper_static_evidence_is_retrievable_without_becoming_live_trut
     assert any("dynamic base fee" in candidate.text.casefold() for candidate in result.candidates)
     assert result.live_state_authorized is False
     assert all(candidate.live_state_authorized is False for candidate in result.candidates)
+
+    packet = build_evidence_packet(store=store, corpus=(item,), result=result)
+    model_context = json.loads(serialize_evidence_packet_for_model(packet))
+    boundary = model_context["instruction_boundary"]
+    assert boundary["source_authority_labels_can_authorize_live_state"] is False
+    for evidence in model_context["evidence_packet"]["evidence"]:
+        assert evidence["source_authority_class"] == "primary"
+        assert evidence["source_approval_status"] == "approved"
+        assert evidence["source_live_state_authorized"] is False
