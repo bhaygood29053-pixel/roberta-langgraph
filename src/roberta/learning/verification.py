@@ -13,7 +13,13 @@ import hashlib
 import json
 from typing import Any
 
-from .evaluation import EvaluationError, EvaluationResult, GoldenEvaluationCase, evaluate_grounded_answer
+from .evaluation import (
+    EvaluationError,
+    EvaluationResult,
+    GoldenEvaluationCase,
+    evaluate_grounded_answer,
+    make_golden_evaluation_case,
+)
 from .grounding import EvidencePacket, GroundedAnswerResult
 from .reflection import (
     LearningCandidateBundle,
@@ -66,6 +72,7 @@ class VerificationCheckResult:
     diagnosed_layer: str
     required_identity_refs: tuple[str, ...]
     status: str
+    retest_golden_case_id: str | None
     retest_packet_id: str | None
     retest_grounded_result_id: str | None
     retest_retrieval_id: str | None
@@ -110,6 +117,7 @@ class CandidateVerificationResult:
     packet_id: str
     grounded_result_id: str
     retrieval_id: str
+    retest_golden_case_id: str | None
     retest_packet_id: str | None
     retest_grounded_result_id: str | None
     retest_retrieval_id: str | None
@@ -177,6 +185,7 @@ def _check_result_material(result: VerificationCheckResult) -> dict[str, Any]:
         "diagnosed_layer": result.diagnosed_layer,
         "required_identity_refs": list(result.required_identity_refs),
         "status": result.status,
+        "retest_golden_case_id": result.retest_golden_case_id,
         "retest_packet_id": result.retest_packet_id,
         "retest_grounded_result_id": result.retest_grounded_result_id,
         "retest_retrieval_id": result.retest_retrieval_id,
@@ -205,6 +214,7 @@ def _result_material(result: CandidateVerificationResult) -> dict[str, Any]:
         "packet_id": result.packet_id,
         "grounded_result_id": result.grounded_result_id,
         "retrieval_id": result.retrieval_id,
+        "retest_golden_case_id": result.retest_golden_case_id,
         "retest_packet_id": result.retest_packet_id,
         "retest_grounded_result_id": result.retest_grounded_result_id,
         "retest_retrieval_id": result.retest_retrieval_id,
@@ -246,15 +256,49 @@ def _canonical_phase8_bundle(
     return canonical
 
 
+def _rebind_retest_case(
+    *,
+    golden_case: GoldenEvaluationCase,
+    retest_packet: EvidencePacket,
+    retest_grounded_result: GroundedAnswerResult,
+) -> GoldenEvaluationCase:
+    """Preserve approved labels while rebinding original evidence pins to the retest."""
+
+    return make_golden_evaluation_case(
+        question=golden_case.question,
+        expected_behavior=golden_case.expected_behavior,
+        relevant_chunk_ids=golden_case.relevant_chunk_ids,
+        claim_criteria=golden_case.claim_criteria,
+        required_answer_substrings=golden_case.required_answer_substrings,
+        required_limitations=golden_case.required_limitations,
+        allowed_limitations=golden_case.allowed_limitations,
+        forbidden_answer_substrings=golden_case.forbidden_answer_substrings,
+        expected_packet_id=(
+            retest_packet.packet_id if golden_case.expected_packet_id is not None else None
+        ),
+        expected_retrieval_id=(
+            retest_grounded_result.retrieval_id
+            if golden_case.expected_retrieval_id is not None
+            else None
+        ),
+        calibration_target=golden_case.calibration_target,
+        provenance_uri=golden_case.provenance_uri,
+        authored_by=golden_case.authored_by,
+        approval_status=golden_case.approval_status,
+        golden_case_contract=golden_case.golden_case_contract,
+        case_version=golden_case.case_version,
+    )
+
+
 def _build_retest_evaluation(
     *,
     golden_case: GoldenEvaluationCase,
     original_evaluation: EvaluationResult,
     retest_packet: EvidencePacket | None,
     retest_grounded_result: GroundedAnswerResult | None,
-) -> tuple[EvaluationResult | None, tuple[str, ...]]:
+) -> tuple[EvaluationResult | None, GoldenEvaluationCase | None, tuple[str, ...]]:
     if retest_packet is None and retest_grounded_result is None:
-        return None, (
+        return None, None, (
             "retest_packet_unavailable",
             "retest_grounded_result_unavailable",
         )
@@ -263,18 +307,23 @@ def _build_retest_evaluation(
             "retest evidence must supply packet and grounded result together"
         )
 
+    retest_case = _rebind_retest_case(
+        golden_case=golden_case,
+        retest_packet=retest_packet,
+        retest_grounded_result=retest_grounded_result,
+    )
     try:
         evaluation = evaluate_grounded_answer(
             packet=retest_packet,
             result=retest_grounded_result,
-            case=golden_case,
+            case=retest_case,
             answer_evaluation_contract=original_evaluation.answer_evaluation_contract,
             evaluator_version=original_evaluation.evaluator_version,
             evaluator_adapter_id=original_evaluation.evaluator_adapter_id,
         )
     except EvaluationError as exc:
         raise VerificationError("canonical Phase 9 retest evaluation failed") from exc
-    return evaluation, ()
+    return evaluation, retest_case, ()
 
 
 def _dimension_statuses(
@@ -295,6 +344,7 @@ def _verify_check(
     *,
     check: VerificationCheck,
     retest_evaluation: EvaluationResult | None,
+    retest_case: GoldenEvaluationCase | None,
     missing_retest_details: tuple[str, ...],
     retest_packet: EvidencePacket | None,
     retest_grounded_result: GroundedAnswerResult | None,
@@ -335,6 +385,7 @@ def _verify_check(
         diagnosed_layer=check.diagnosed_layer,
         required_identity_refs=check.required_identity_refs,
         status=status,
+        retest_golden_case_id=None if retest_case is None else retest_case.case_id,
         retest_packet_id=None if retest_packet is None else retest_packet.packet_id,
         retest_grounded_result_id=(
             None if retest_grounded_result is None else retest_grounded_result.result_id
@@ -395,7 +446,7 @@ def verify_candidate_lesson(
         evaluation=evaluation,
         bundle=bundle,
     )
-    retest_evaluation, missing_retest_details = _build_retest_evaluation(
+    retest_evaluation, retest_case, missing_retest_details = _build_retest_evaluation(
         golden_case=golden_case,
         original_evaluation=evaluation,
         retest_packet=retest_packet,
@@ -406,6 +457,7 @@ def verify_candidate_lesson(
         _verify_check(
             check=check,
             retest_evaluation=retest_evaluation,
+            retest_case=retest_case,
             missing_retest_details=missing_retest_details,
             retest_packet=retest_packet,
             retest_grounded_result=retest_grounded_result,
@@ -432,6 +484,7 @@ def verify_candidate_lesson(
         packet_id=packet.packet_id,
         grounded_result_id=grounded_result.result_id,
         retrieval_id=grounded_result.retrieval_id,
+        retest_golden_case_id=None if retest_case is None else retest_case.case_id,
         retest_packet_id=None if retest_packet is None else retest_packet.packet_id,
         retest_grounded_result_id=(
             None if retest_grounded_result is None else retest_grounded_result.result_id
@@ -464,6 +517,7 @@ def verify_candidate_lesson(
         packet_id=provisional.packet_id,
         grounded_result_id=provisional.grounded_result_id,
         retrieval_id=provisional.retrieval_id,
+        retest_golden_case_id=provisional.retest_golden_case_id,
         retest_packet_id=provisional.retest_packet_id,
         retest_grounded_result_id=provisional.retest_grounded_result_id,
         retest_retrieval_id=provisional.retest_retrieval_id,
