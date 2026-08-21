@@ -56,12 +56,13 @@ The CMIS implementation still uses the internal Python namespace `liquidity_scou
 - **Learning System Phase 4 Indexing Foundation — complete**
 - **Learning System Phase 5 Retrieval Foundation — complete**
 - **Learning System Phase 6 Grounded Answer + Citation Foundation — complete**
-- **Learning System Phase 7 Answer Evaluation Foundation — next**
+- **Learning System Phase 7 Answer Evaluation Foundation — complete**
+- **Learning System Phase 8 Provisional Reflection + Candidate Lesson Foundation — next**
 - Phase 11 Controlled Execution — **locked / not started**
 
 The **Roberta Learning System is the primary active development track**. Existing CMIS, Chain Scout, transport, policy, memory, and approval functionality should remain stable unless a change is directly required to support the Learning System or fix a proven defect.
 
-See [`docs/LANGGRAPH_ROADMAP.md`](./docs/LANGGRAPH_ROADMAP.md) for the authoritative Roberta roadmap, [`docs/LEARNING_SYSTEM.md`](./docs/LEARNING_SYSTEM.md) for source ingestion, [`docs/LEARNING_SYSTEM_STRUCTURE.md`](./docs/LEARNING_SYSTEM_STRUCTURE.md) for structure parsing, [`docs/LEARNING_SYSTEM_CHUNKING.md`](./docs/LEARNING_SYSTEM_CHUNKING.md) for evidence chunking, [`docs/LEARNING_SYSTEM_INDEXING.md`](./docs/LEARNING_SYSTEM_INDEXING.md) for indexing, [`docs/LEARNING_SYSTEM_RETRIEVAL.md`](./docs/LEARNING_SYSTEM_RETRIEVAL.md) for retrieval, and [`docs/LEARNING_SYSTEM_GROUNDING.md`](./docs/LEARNING_SYSTEM_GROUNDING.md) for the accepted grounding/citation contract.
+See [`docs/LANGGRAPH_ROADMAP.md`](./docs/LANGGRAPH_ROADMAP.md) for the authoritative Roberta roadmap, [`docs/LEARNING_SYSTEM.md`](./docs/LEARNING_SYSTEM.md) for source ingestion, [`docs/LEARNING_SYSTEM_STRUCTURE.md`](./docs/LEARNING_SYSTEM_STRUCTURE.md) for structure parsing, [`docs/LEARNING_SYSTEM_CHUNKING.md`](./docs/LEARNING_SYSTEM_CHUNKING.md) for evidence chunking, [`docs/LEARNING_SYSTEM_INDEXING.md`](./docs/LEARNING_SYSTEM_INDEXING.md) for indexing, [`docs/LEARNING_SYSTEM_RETRIEVAL.md`](./docs/LEARNING_SYSTEM_RETRIEVAL.md) for retrieval, [`docs/LEARNING_SYSTEM_GROUNDING.md`](./docs/LEARNING_SYSTEM_GROUNDING.md) for grounding/citation, and [`docs/LEARNING_SYSTEM_EVALUATION.md`](./docs/LEARNING_SYSTEM_EVALUATION.md) for the accepted answer-evaluation contract.
 
 CMIS has its own execution-phase numbering. CMIS Phase 11 refers to its completed **read-only Verified Intelligence foundation**; that is separate from Roberta Phase 11 Controlled Execution.
 
@@ -155,7 +156,21 @@ Issue #121 / PR #122 added the deterministic **grounded answer + citation founda
 
 PR #122 passed the full deterministic suite with **582 passed and 5 live/provider tests deselected**; all 16 new grounding regressions passed.
 
-The next narrow milestone is **Learning System Phase 7 — Answer Evaluation Foundation**. It should independently evaluate `GroundedAnswerResult` records against a labeled golden corpus, separately measuring semantic groundedness, citation correctness/completeness, unsupported-claim rate, answer correctness/usefulness, conflict and insufficiency handling, and uncertainty/calibration where fixtures support those dimensions. Retrieval quality remains a separate measurement layer, and evaluator output must not directly promote generated content into verified memory. Model reranking, concepts, adaptive curriculum, reflection/lesson promotion, and fine-tuning remain later gates.
+Issue #124 / PR #125 added the deterministic **independent answer-evaluation foundation** over accepted Phase 6 grounded answers:
+
+- supplied `GroundedAnswerResult` records are reconstructed through the accepted Phase 6 validator before scoring;
+- approved golden cases are versioned, content-addressed, provenance-bearing evaluation labels rather than source truth;
+- retrieval coverage is measured separately from answer correctness/completeness so missing evidence is classified as `retrieval_failure` instead of a reasoning failure;
+- citation correctness, citation precision, citation completeness, unsupported-claim rate, answer correctness/completeness, limitation disclosure, insufficiency handling, conflict handling, and instruction compliance remain separate dimensions;
+- irrelevant-but-valid citations reduce precision without being mislabeled as fabricated citations;
+- deterministic aggregates keep retrieval-failure and answer-failure rates separate;
+- semantic groundedness remains `not_evaluated` without a separately accepted semantic evaluator adapter, and citation presence is never upgraded into semantic entailment;
+- calibration remains `not_applicable` or `not_evaluated` rather than inventing a confidence signal;
+- all golden-case/evaluation/aggregate records deny live-state authority, verified-memory promotion, and execution authority.
+
+PR #125 passed the full deterministic suite with **599 passed and 5 live/provider tests deselected**; all 17 new Phase 7 evaluation regressions passed.
+
+The next narrow milestone is **Learning System Phase 8 — Provisional Reflection + Candidate Lesson Foundation**. It should transform accepted evaluation failures into provenance-bound diagnostic/reflection records and provisional candidate lessons with explicit verification plans. Candidate lessons must remain outside trusted durable memory and source truth until a later verification gate accepts them; they must not alter CMIS/provider trust, current market facts, protected governance, or execution authority.
 
 The Learning System does not replace CMIS for changing market/blockchain state. Fresh accepted CMIS/provider evidence remains authoritative for current prices, liquidity, supply, wallet state, risk, and other freshness-sensitive facts.
 
@@ -303,7 +318,7 @@ python -m pip install -e '.[dev,deepseek]'
 python -m pytest -v -m 'not live and not cmis_live'
 ```
 
-The deterministic suite covers the Oracle/tool loop, provider-neutral model injection, Chain Scout boundaries, CMIS capability validation, X1 and Solana evidence isolation, policy, persistence, durable-memory adapters, human approval, evidence-aware response contracts, Learning System source ingestion, structure-first parsing, structure-aware evidence chunking, deterministic indexing, deterministic retrieval/benchmark foundations, and deterministic grounding/citation validation.
+The deterministic suite covers the Oracle/tool loop, provider-neutral model injection, Chain Scout boundaries, CMIS capability validation, X1 and Solana evidence isolation, policy, persistence, durable-memory adapters, human approval, evidence-aware response contracts, Learning System source ingestion, structure-first parsing, structure-aware evidence chunking, deterministic indexing, deterministic retrieval/benchmark foundations, deterministic grounding/citation validation, and deterministic answer evaluation.
 
 ## Provider-backed CMIS
 
