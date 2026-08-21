@@ -57,12 +57,13 @@ The CMIS implementation still uses the internal Python namespace `liquidity_scou
 - **Learning System Phase 5 Retrieval Foundation — complete**
 - **Learning System Phase 6 Grounded Answer + Citation Foundation — complete**
 - **Learning System Phase 7 Answer Evaluation Foundation — complete**
-- **Learning System Phase 8 Provisional Reflection + Candidate Lesson Foundation — next**
+- **Learning System Phase 8 Provisional Reflection + Candidate Lesson Foundation — complete**
+- **Learning System Phase 9 Candidate Lesson Verification — next**
 - Phase 11 Controlled Execution — **locked / not started**
 
 The **Roberta Learning System is the primary active development track**. Existing CMIS, Chain Scout, transport, policy, memory, and approval functionality should remain stable unless a change is directly required to support the Learning System or fix a proven defect.
 
-See [`docs/LANGGRAPH_ROADMAP.md`](./docs/LANGGRAPH_ROADMAP.md) for the authoritative Roberta roadmap, [`docs/LEARNING_SYSTEM.md`](./docs/LEARNING_SYSTEM.md) for source ingestion, [`docs/LEARNING_SYSTEM_STRUCTURE.md`](./docs/LEARNING_SYSTEM_STRUCTURE.md) for structure parsing, [`docs/LEARNING_SYSTEM_CHUNKING.md`](./docs/LEARNING_SYSTEM_CHUNKING.md) for evidence chunking, [`docs/LEARNING_SYSTEM_INDEXING.md`](./docs/LEARNING_SYSTEM_INDEXING.md) for indexing, [`docs/LEARNING_SYSTEM_RETRIEVAL.md`](./docs/LEARNING_SYSTEM_RETRIEVAL.md) for retrieval, [`docs/LEARNING_SYSTEM_GROUNDING.md`](./docs/LEARNING_SYSTEM_GROUNDING.md) for grounding/citation, and [`docs/LEARNING_SYSTEM_EVALUATION.md`](./docs/LEARNING_SYSTEM_EVALUATION.md) for the accepted answer-evaluation contract.
+See [`docs/LANGGRAPH_ROADMAP.md`](./docs/LANGGRAPH_ROADMAP.md) for the authoritative Roberta roadmap, [`docs/LEARNING_SYSTEM.md`](./docs/LEARNING_SYSTEM.md) for source ingestion, [`docs/LEARNING_SYSTEM_STRUCTURE.md`](./docs/LEARNING_SYSTEM_STRUCTURE.md) for structure parsing, [`docs/LEARNING_SYSTEM_CHUNKING.md`](./docs/LEARNING_SYSTEM_CHUNKING.md) for evidence chunking, [`docs/LEARNING_SYSTEM_INDEXING.md`](./docs/LEARNING_SYSTEM_INDEXING.md) for indexing, [`docs/LEARNING_SYSTEM_RETRIEVAL.md`](./docs/LEARNING_SYSTEM_RETRIEVAL.md) for retrieval, [`docs/LEARNING_SYSTEM_GROUNDING.md`](./docs/LEARNING_SYSTEM_GROUNDING.md) for grounding/citation, [`docs/LEARNING_SYSTEM_EVALUATION.md`](./docs/LEARNING_SYSTEM_EVALUATION.md) for answer evaluation, and [`docs/LEARNING_SYSTEM_REFLECTION.md`](./docs/LEARNING_SYSTEM_REFLECTION.md) for the accepted provisional reflection/candidate-lesson contract.
 
 CMIS has its own execution-phase numbering. CMIS Phase 11 refers to its completed **read-only Verified Intelligence foundation**; that is separate from Roberta Phase 11 Controlled Execution.
 
@@ -170,7 +171,22 @@ Issue #124 / PR #125 added the deterministic **independent answer-evaluation fou
 
 PR #125 passed the full deterministic suite with **599 passed and 5 live/provider tests deselected**; all 17 new Phase 7 evaluation regressions passed.
 
-The next narrow milestone is **Learning System Phase 8 — Provisional Reflection + Candidate Lesson Foundation**. It should transform accepted evaluation failures into provenance-bound diagnostic/reflection records and provisional candidate lessons with explicit verification plans. Candidate lessons must remain outside trusted durable memory and source truth until a later verification gate accepts them; they must not alter CMIS/provider trust, current market facts, protected governance, or execution authority.
+Issue #127 / PR #128 added the deterministic **provisional reflection + candidate lesson foundation** over canonical failed Phase 7 evaluations:
+
+- every supplied failed `EvaluationResult` is re-run through the accepted deterministic Phase 7 evaluator before reflection creation;
+- passing evaluations cannot manufacture reflections or candidate lessons;
+- accepted failure classifications map through the versioned deterministic diagnosis table into bounded diagnostic layers;
+- reflection, candidate core, candidate lifecycle state, verification plan, and bundle identities are content-addressed and tamper-sensitive;
+- generated reflection, lesson, and rationale text remains `generated_provisional` and cannot introduce evidence authority;
+- candidate evidence references are inherited only from the canonical Phase 6 packet/result path;
+- lifecycle is limited to `provisional`, `rejected`, and `superseded`; Phase 8 has no `verified` candidate state;
+- terminal lifecycle records must bind to the exact reconstructed initial provisional `candidate_state_id`, preventing forged predecessor chains;
+- deterministic verification plans bind required retests to the exact candidate/reflection/evaluation/golden-case/packet/result/retrieval identities and keep `promotion_authorized=false`;
+- all Phase 8 records deny live-state authority, trusted-memory promotion, governance mutation, and execution authority.
+
+PR #128 passed the full deterministic suite at its final head with **617 passed and 5 live/provider tests deselected**. The independent review finding on lifecycle-predecessor validation was fixed, regression-tested, and resolved before merge.
+
+The next narrow milestone is **Learning System Phase 9 — Candidate Lesson Verification**. It must independently verify or reject provisional Phase 8 candidate lessons under a separately accepted verification contract before any retained/reusable verified-learning path is introduced. Phase 9 must not treat self-reflection, candidate text, or a passing retest as automatic authorization for durable-memory promotion, source truth, governance mutation, CMIS/provider trust changes, or execution.
 
 The Learning System does not replace CMIS for changing market/blockchain state. Fresh accepted CMIS/provider evidence remains authoritative for current prices, liquidity, supply, wallet state, risk, and other freshness-sensitive facts.
 
@@ -318,7 +334,7 @@ python -m pip install -e '.[dev,deepseek]'
 python -m pytest -v -m 'not live and not cmis_live'
 ```
 
-The deterministic suite covers the Oracle/tool loop, provider-neutral model injection, Chain Scout boundaries, CMIS capability validation, X1 and Solana evidence isolation, policy, persistence, durable-memory adapters, human approval, evidence-aware response contracts, Learning System source ingestion, structure-first parsing, structure-aware evidence chunking, deterministic indexing, deterministic retrieval/benchmark foundations, deterministic grounding/citation validation, and deterministic answer evaluation.
+The deterministic suite covers the Oracle/tool loop, provider-neutral model injection, Chain Scout boundaries, CMIS capability validation, X1 and Solana evidence isolation, policy, persistence, durable-memory adapters, human approval, evidence-aware response contracts, Learning System source ingestion, structure-first parsing, structure-aware evidence chunking, deterministic indexing, deterministic retrieval/benchmark foundations, deterministic grounding/citation validation, deterministic answer evaluation, and provisional reflection/candidate-lesson lifecycle integrity.
 
 ## Provider-backed CMIS
 
@@ -410,4 +426,4 @@ If Roberta is unavailable, the normal user-facing transport should report availa
 
 The deterministic pre-trade trade-size milestone previously tracked as CMIS Issue #99 is complete. Roberta consumes CMIS's structured result and explains it; it does not duplicate the calculation.
 
-The current active implementation priority is the Learning System. Future wallet/behavioral interpretation, early-warning intelligence, additional cross-chain expansion, Technology Radar implementation, and any eventual controlled execution remain separately gated and must not be inferred from the existing read-only foundation.
+The current active implementation priority is Learning System Phase 9 candidate-lesson verification. Future wallet/behavioral interpretation, early-warning intelligence, additional cross-chain expansion, Technology Radar implementation, and any eventual controlled execution remain separately gated and must not be inferred from the existing read-only foundation.
