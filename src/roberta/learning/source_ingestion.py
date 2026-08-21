@@ -49,6 +49,12 @@ class SourceRecord:
     status: str
     metadata: Mapping[str, Any]
 
+    @property
+    def live_state_authorized(self) -> bool:
+        """Static Learning System source records never authorize current live state."""
+
+        return False
+
 
 @dataclass(frozen=True, slots=True)
 class IngestionResult:
@@ -135,6 +141,14 @@ def _canonical_json(value: Any) -> str:
         raise SourceIngestionError("value must be canonical JSON-compatible data") from exc
 
 
+def _freeze_json(value: Any) -> Any:
+    if isinstance(value, dict):
+        return MappingProxyType({key: _freeze_json(item) for key, item in value.items()})
+    if isinstance(value, list):
+        return tuple(_freeze_json(item) for item in value)
+    return value
+
+
 def _canonical_metadata(metadata: Mapping[str, Any] | None) -> Mapping[str, Any]:
     if metadata is None:
         return MappingProxyType({})
@@ -143,22 +157,27 @@ def _canonical_metadata(metadata: Mapping[str, Any] | None) -> Mapping[str, Any]
     if any(not isinstance(key, str) for key in metadata):
         raise SourceIngestionError("metadata keys must be strings")
 
-    # JSON round-trip both validates and detaches the stored metadata from the caller.
+    # JSON round-trip validates, canonicalizes, and detaches from caller-owned objects.
     canonical = _canonical_json(dict(metadata))
     detached = json.loads(canonical)
-    return MappingProxyType(detached)
+    return _freeze_json(detached)
 
 
 def _utf8_bytes(content: str | bytes) -> bytes:
     if isinstance(content, str):
-        return content.encode("utf-8")
-    if isinstance(content, bytes):
+        value = content.encode("utf-8")
+    elif isinstance(content, bytes):
         try:
             content.decode("utf-8")
         except UnicodeDecodeError as exc:
             raise SourceIngestionError("source content must be valid UTF-8") from exc
-        return bytes(content)
-    raise SourceIngestionError("source content must be str or UTF-8 bytes")
+        value = bytes(content)
+    else:
+        raise SourceIngestionError("source content must be str or UTF-8 bytes")
+
+    if not value:
+        raise SourceIngestionError("source content must not be empty")
+    return value
 
 
 def _canonical_utc_timestamp(value: datetime) -> str:
@@ -171,6 +190,34 @@ def _canonical_utc_timestamp(value: datetime) -> str:
 
 def _default_clock() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _existing_record_matches_request(
+    record: SourceRecord,
+    *,
+    origin: str,
+    title: str,
+    version: str,
+    content_hash: str,
+    authority_class: str,
+    approval_status: str,
+    parser_version: str,
+    artifact_ref: str,
+    status: str,
+    metadata: Mapping[str, Any],
+) -> bool:
+    return (
+        record.origin == origin
+        and record.title == title
+        and record.version == version
+        and record.content_hash == content_hash
+        and record.authority_class == authority_class
+        and record.approval_status == approval_status
+        and record.parser_version == parser_version
+        and record.artifact_ref == artifact_ref
+        and record.status == status
+        and record.metadata == metadata
+    )
 
 
 def ingest_utf8_source(
@@ -190,7 +237,9 @@ def ingest_utf8_source(
     """Validate and persist one exact UTF-8 source artifact and provenance record.
 
     Re-ingesting an identical canonical source is idempotent: the existing record
-    is returned and no stored timestamp or metadata is mutated.
+    is returned and no stored timestamp or provenance is mutated. A request that
+    resolves to the same source identity but supplies conflicting provenance fails
+    closed; lifecycle changes require a separate future contract.
     """
 
     normalized_origin = _normalized_text("origin", origin)
@@ -212,6 +261,7 @@ def ingest_utf8_source(
         )
 
     source_bytes = _utf8_bytes(content)
+    canonical_metadata = _canonical_metadata(metadata)
     content_hash = hashlib.sha256(source_bytes).hexdigest()
     identity = {
         "origin": normalized_origin,
@@ -224,6 +274,22 @@ def ingest_utf8_source(
 
     existing = store.get_source(source_id)
     if existing is not None:
+        if not _existing_record_matches_request(
+            existing,
+            origin=normalized_origin,
+            title=normalized_title,
+            version=normalized_version,
+            content_hash=content_hash,
+            authority_class=normalized_authority,
+            approval_status=normalized_approval,
+            parser_version=normalized_parser,
+            artifact_ref=artifact_ref,
+            status=normalized_status,
+            metadata=canonical_metadata,
+        ):
+            raise SourceIngestionError(
+                f"conflicting immutable provenance for existing source_id {source_id}"
+            )
         stored_artifact = store.get_artifact(existing.artifact_ref)
         if stored_artifact != source_bytes:
             raise SourceIngestionError(
@@ -231,7 +297,6 @@ def ingest_utf8_source(
             )
         return IngestionResult(status="existing", record=existing)
 
-    canonical_metadata = _canonical_metadata(metadata)
     ingested_at = _canonical_utc_timestamp(clock())
     record = SourceRecord(
         source_id=source_id,
