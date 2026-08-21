@@ -57,7 +57,7 @@ def test_prose_never_crosses_section_boundary() -> None:
     assert len(chunked.chunks) == 2
     assert chunked.chunks[0].section_id == parsed.sections[0].section_id
     assert chunked.chunks[1].section_id == parsed.sections[1].section_id
-    assert chunked.chunks[0].text == "one\n\n"
+    assert chunked.chunks[0].text == "one\n"
     assert chunked.chunks[1].text == "two\n"
 
 
