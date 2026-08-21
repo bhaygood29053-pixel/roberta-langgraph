@@ -55,6 +55,14 @@ Meaningful Roberta changes are governed by [`ENGINEERING_WORKFLOW.md`](./ENGINEE
 
 A roadmap item being active does not waive those gates. A PR is not merge-ready if any required axis fails, and acceptance must be followed by roadmap/source-of-truth reconciliation. This governance does not start or widen Controlled Execution.
 
+## Technology Radar design boundary — Issue #100
+
+Issue #100 defines a **specification-only** future roadmap-aware Technology Radar in [`TECHNOLOGY_RADAR.md`](./TECHNOLOGY_RADAR.md).
+
+The proposed Radar is a read-only technology-research and recommendation capability. It keeps trend strength, roadmap relevance, research-evidence quality, adoption/maintenance risk, and license compatibility as separate dimensions; preserves source provenance and explicit unknowns; and routes any promising discovery back through the normal engineering workflow.
+
+This design does **not** authorize a Radar runtime, live source adapters, schedulers, package installation, autonomous code or architecture changes, roadmap mutation, provider-trust changes, or execution authority. Any future implementation requires a separate accepted roadmap gate and implementation issue. Controlled Execution remains locked.
+
 ## Phase 10 — More Specialists / Providers ✅ Complete
 
 Roberta supports separate X1 Scout and Solana Scout paths above one shared CMIS layer:
@@ -210,7 +218,7 @@ Phase 9 human approval is exact-proposal review. Approval is not a reusable sign
 
 ## Phase 11 — Controlled Execution ⬜ Locked / not started
 
-No current CMIS result, Chain Scout report, Roberta policy decision, readiness result, or human approval authorizes:
+No current CMIS result, Chain Scout report, Roberta policy decision, readiness result, human approval, or Technology Radar recommendation authorizes:
 
 - transaction preparation for execution;
 - wallet signing;
@@ -235,7 +243,7 @@ The first narrow CMIS 1.9 promotion/adoption and the current Solana read-only re
 5. field-by-field Solana maturity beyond the currently accepted Scout surface;
 6. future Ethereum support only under an explicit capability/verification plan.
 
-None of these items starts Controlled Execution.
+None of these items starts Controlled Execution. Technology Radar design work is research/governance support and does not displace these accepted read-only intelligence priorities.
 
 ## Core rule
 
