@@ -33,8 +33,11 @@ def _pipeline():
 
 
 def test_supplied_xenblocks_pow_snapshot_provenance_is_pinned() -> None:
-    assert xenblocks_pow.XENBLOCKS_POW_SOURCE_SHA256 == (
+    assert xenblocks_pow.XENBLOCKS_POW_UPLOAD_SHA256 == (
         "8147715faabc123b0f3c3667362715e4fb04d14a21aa00de90ae1bf070bc55cc"
+    )
+    assert xenblocks_pow.XENBLOCKS_POW_TRANSCRIPT_SHA256 == (
+        "1a8bf84013d3e07d3d9f4a093d95c1ec886ecd479ce6635fe94642118601af38"
     )
     assert xenblocks_pow.XENBLOCKS_POW_DECLARED_SOURCE_URL == "https://docs.xenblocks.io/"
     assert xenblocks_pow.XENBLOCKS_POW_VERSION == "snapshot-2026-08-21"
@@ -47,7 +50,10 @@ def test_xenblocks_pow_snapshot_is_packaged_integrity_checked_and_ingested_appro
     source = result.record
 
     assert result.status == "ingested"
-    assert hashlib.sha256(content.encode("utf-8")).hexdigest() == xenblocks_pow.XENBLOCKS_POW_SOURCE_SHA256
+    assert (
+        hashlib.sha256(content.encode("utf-8")).hexdigest()
+        == xenblocks_pow.XENBLOCKS_POW_TRANSCRIPT_SHA256
+    )
     assert store.get_artifact(source.artifact_ref) == content.encode("utf-8")
     assert source.title == xenblocks_pow.XENBLOCKS_POW_TITLE
     assert source.version == xenblocks_pow.XENBLOCKS_POW_VERSION
@@ -56,6 +62,9 @@ def test_xenblocks_pow_snapshot_is_packaged_integrity_checked_and_ingested_appro
     assert source.status == "approved"
     assert source.metadata["declared_source_url"] == xenblocks_pow.XENBLOCKS_POW_DECLARED_SOURCE_URL
     assert source.metadata["artifact_provenance"] == "user_supplied_upload"
+    assert source.metadata["original_upload_sha256"] == xenblocks_pow.XENBLOCKS_POW_UPLOAD_SHA256
+    assert source.metadata["transcript_sha256"] == xenblocks_pow.XENBLOCKS_POW_TRANSCRIPT_SHA256
+    assert source.metadata["transcription_profile"] == "crlf-to-lf-normalization/v1"
     assert source.metadata["origin_live_verified"] is False
     assert source.metadata["current_state_authority"] is False
     assert source.live_state_authorized is False
@@ -71,8 +80,8 @@ def test_xenblocks_pow_loader_hashes_exact_resource_bytes_before_utf8_decode(mon
         root.joinpath(resource).read_bytes()
         for resource in xenblocks_pow.XENBLOCKS_POW_RESOURCES
     )
-    lf_parts = tuple(part.replace(b"\r\n", b"\n") for part in exact_parts)
-    expected_bytes = b"".join(lf_parts)
+    crlf_parts = tuple(part.replace(b"\n", b"\r\n") for part in exact_parts)
+    expected_bytes = b"".join(crlf_parts)
 
     class _BytesOnlyResource:
         def __init__(self, data: bytes) -> None:
@@ -89,10 +98,10 @@ def test_xenblocks_pow_loader_hashes_exact_resource_bytes_before_utf8_decode(mon
             index = xenblocks_pow.XENBLOCKS_POW_RESOURCES.index(resource)
             return _BytesOnlyResource(self._parts[index])
 
-    monkeypatch.setattr(xenblocks_pow, "files", lambda _: _BytesOnlyRoot(lf_parts))
+    monkeypatch.setattr(xenblocks_pow, "files", lambda _: _BytesOnlyRoot(crlf_parts))
     monkeypatch.setattr(
         xenblocks_pow,
-        "XENBLOCKS_POW_SOURCE_SHA256",
+        "XENBLOCKS_POW_TRANSCRIPT_SHA256",
         hashlib.sha256(expected_bytes).hexdigest(),
     )
 
