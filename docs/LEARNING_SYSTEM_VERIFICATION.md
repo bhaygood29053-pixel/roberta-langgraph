@@ -20,6 +20,8 @@ canonical Phase 8 LearningCandidateBundle
 provisional CandidateLesson + exact VerificationPlan
         ↓ independent retest evidence
 canonical retest EvidencePacket + GroundedAnswerResult
+        ↓ deterministic retest-case derivation
+approved golden labels + retest-observed evidence pins
         ↓ deterministic Phase 7 evaluation
 per-check VerificationCheckResult
         ↓
@@ -54,13 +56,32 @@ Before any check runs, the verifier must:
 
 Candidate text and reflection text are never verification evidence.
 
-When retest evidence is supplied, Phase 9 computes a fresh deterministic Phase 7 `EvaluationResult` from the supplied canonical retest `EvidencePacket`, retest `GroundedAnswerResult`, and the original approved `GoldenEvaluationCase`.
+Retest evidence is atomic in v1:
+
+- if both the retest `EvidencePacket` and retest `GroundedAnswerResult` are absent, the applicable checks are `inconclusive`;
+- if exactly one is supplied, verification fails closed before any supplied identity can be recorded in a verification result;
+- if both are supplied, Phase 9 requires them to survive canonical Phase 7 reconstruction/evaluation before their identities can become observed retest provenance.
 
 The caller does not supply a trusted retest `EvaluationResult`.
 
-If required retest evidence is unavailable, the applicable checks become `inconclusive`; unavailable evidence must never be converted into success.
+### Golden labels versus original evidence pins
 
-Malformed, tampered, or non-canonical retest evidence fails closed.
+The original approved `GoldenEvaluationCase` remains the provenance root for the labels being tested. Its question, expected behavior, relevant chunk labels, claim criteria, required/allowed limitations, forbidden/required answer substrings, calibration target, provenance, author, approval state, contract, and version are preserved exactly for retesting.
+
+Some accepted Phase 7 golden cases may also pin `expected_packet_id` and/or `expected_retrieval_id` to the **original failed evidence**. A corrected retrieval can legitimately produce new packet/retrieval identities, so blindly reusing those original pins would make a valid retrieval correction impossible to score.
+
+Phase 9 therefore derives a deterministic retest golden case:
+
+- all approved golden labels and metadata remain unchanged;
+- an original non-null `expected_packet_id` is rebound only to the supplied retest packet id;
+- an original non-null `expected_retrieval_id` is rebound only to the supplied retest grounded-result retrieval id;
+- an original null pin remains null;
+- the derived retest case is content-addressed under the existing Phase 7 golden-case contract;
+- the original `golden_case_id` and derived `retest_golden_case_id` are both preserved in Phase 9 output provenance.
+
+This is evidence-pin rebinding for the independent retest, not free-form mutation of the approved labels and not a new authority source.
+
+Malformed, tampered, or non-canonical complete retest evidence fails closed.
 
 ## VerificationCheckResult
 
@@ -70,6 +91,7 @@ Each Phase 8 `VerificationCheck` produces one immutable result preserving at min
 - exact originating failure classification and diagnosed layer;
 - exact required identity references from the Phase 8 plan;
 - status: `pass`, `fail`, or `inconclusive`;
+- exact derived retest golden-case id when a retest runs;
 - exact observed retest packet/result/retrieval/evaluation ids when present;
 - bounded deterministic details explaining the outcome;
 - no live-state, memory-promotion, governance-mutation, or execution authority.
@@ -125,7 +147,7 @@ They must not be guessed, silently passed, or converted into verified learning.
 
 ### Coverage and current Phase 7 reachability
 
-The Phase 9 regression suite now exercises every Phase 8 verification check kind at its accepted verifier seam.
+The Phase 9 regression suite exercises every Phase 8 verification check kind at its accepted verifier seam.
 
 End-to-end canonical Phase 8 -> Phase 9 retest coverage is demonstrated for the failure classes the accepted deterministic Phase 7 adapter can currently emit through canonical inputs, including:
 
@@ -138,6 +160,8 @@ conflict_handling_failure
 insufficiency_handling_failure
 instruction_compliance_failure
 ```
+
+Retrieval coverage includes a regression where the original approved golden case pins the failed packet/retrieval identities and the corrected retest necessarily changes them. The verifier preserves the original golden-case identity while deriving and recording a retest-case identity with only those original pins rebound to the observed retest evidence.
 
 `citation_binding_failure` is exercised at the Phase 9 check seam against a canonical Phase 7 retest evaluation. Canonical Phase 6 validation normally rejects malformed citation state before it can become an accepted Phase 7 input, so Phase 9 does not fabricate a corrupted Phase 6 record merely to manufacture that original failure.
 
@@ -168,7 +192,9 @@ The result preserves at minimum:
 
 - deterministic `verification_id` and SHA-256 content hash;
 - verification contract/version/adapter identity;
-- exact Phase 8 bundle, candidate, candidate-state, reflection, plan, original evaluation, golden-case, packet, grounded-result, and retrieval ids;
+- exact Phase 8 bundle, candidate, candidate-state, reflection, plan, original evaluation, original golden-case, packet, grounded-result, and retrieval ids;
+- derived `retest_golden_case_id` when a retest runs;
+- exact observed retest packet, grounded-result, retrieval, and evaluation ids when a retest runs;
 - ordered per-check results matching the exact Phase 8 plan order;
 - aggregate status: `verified_for_learning`, `rejected`, or `inconclusive`;
 - verifier producer identity/version;
@@ -207,13 +233,15 @@ The implementation proves at minimum:
 5. a corrected retest can pass the exact applicable check and yield `verified_for_learning` only when every required check passes;
 6. a repeated failure yields `rejected`;
 7. missing retest evidence yields `inconclusive`, never success;
-8. unsupported verifier capabilities remain `inconclusive`;
-9. candidate/reflection generated text cannot supply replacement evidence or modify the plan;
-10. verification identity is deterministic/content-addressed and tamper-sensitive;
-11. malformed/tampered retest grounded state fails closed before check scoring;
-12. retrieval, citation-binding, unsupported-claim, correctness, completeness, conflict, insufficiency, instruction-compliance, calibration/evaluator, and unknown check semantics are covered without manufacturing unavailable Phase 7 authority;
-13. all Phase 9 records deny source truth, live state, memory promotion, governance mutation, and execution;
-14. the full deterministic Roberta suite remains green.
+8. exactly-one-component retest evidence fails closed before unvalidated provenance can be published;
+9. unsupported verifier capabilities remain `inconclusive`;
+10. candidate/reflection generated text cannot supply replacement evidence or modify the plan;
+11. verification identity is deterministic/content-addressed and tamper-sensitive;
+12. malformed/tampered complete retest grounded state fails closed before check scoring;
+13. a corrected retrieval can be scored when the original approved golden case pinned the failed packet/retrieval ids, with original and derived retest-case provenance both retained;
+14. retrieval, citation-binding, unsupported-claim, correctness, completeness, conflict, insufficiency, instruction-compliance, calibration/evaluator, and unknown check semantics are covered without manufacturing unavailable Phase 7 authority;
+15. all Phase 9 records deny source truth, live state, memory promotion, governance mutation, and execution;
+16. the full deterministic Roberta suite remains green.
 
 ## Explicit non-goals
 
