@@ -340,3 +340,50 @@ def test_all_phase9_records_deny_truth_memory_governance_and_execution_authority
         assert record.memory_promotion_authorized is False
         assert record.governance_mutation_authorized is False
         assert record.execution_authorized is False
+
+
+def test_partial_retest_result_cannot_publish_unvalidated_provenance() -> None:
+    packet, failed_grounded, case, evaluation, bundle, corrected = _fixture()
+    forged_result = replace(
+        corrected,
+        result_id="ans_forged",
+        result_hash="0" * 64,
+        retrieval_id="retr_forged",
+    )
+
+    with pytest.raises(
+        VerificationError,
+        match="retest evidence must supply packet and grounded result together",
+    ):
+        verify_candidate_lesson(
+            packet=packet,
+            grounded_result=failed_grounded,
+            golden_case=case,
+            evaluation=evaluation,
+            bundle=bundle,
+            retest_packet=None,
+            retest_grounded_result=forged_result,
+            created_by="test-verifier",
+            producer_version="1",
+        )
+
+
+def test_partial_retest_packet_cannot_publish_unvalidated_provenance() -> None:
+    packet, failed_grounded, case, evaluation, bundle, _ = _fixture()
+    forged_packet = replace(packet, packet_id="pkt_forged", packet_hash="0" * 64)
+
+    with pytest.raises(
+        VerificationError,
+        match="retest evidence must supply packet and grounded result together",
+    ):
+        verify_candidate_lesson(
+            packet=packet,
+            grounded_result=failed_grounded,
+            golden_case=case,
+            evaluation=evaluation,
+            bundle=bundle,
+            retest_packet=forged_packet,
+            retest_grounded_result=None,
+            created_by="test-verifier",
+            producer_version="1",
+        )
