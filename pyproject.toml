@@ -24,6 +24,7 @@ roberta-readiness-replay = "roberta.readiness_replay_cli:main"
 roberta-solana-readiness-replay = "roberta.readiness_solana_replay_cli:main"
 roberta-pyramid-dashboard = "roberta.learning.pyramid_dashboard:main"
 roberta-pyramid-run = "roberta.learning.pyramid_run_cli:main"
+roberta-pyramid-remediate = "roberta.learning.pyramid_remediation_cli:main"
 
 [tool.setuptools.package-data]
 "roberta.learning" = ["sources/*.md"]
