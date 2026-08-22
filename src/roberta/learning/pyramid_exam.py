@@ -263,7 +263,14 @@ def _parse_grade_rows(
 
 def _question_explicitly_requests_multiple_elements(question: str) -> bool:
     normalized = " ".join(question.lower().split())
-    if re.search(r"\b(?:two|three|four|five|both)\b", normalized):
+    if re.search(
+        r"\b(?:name|list|give|state|identify|describe|explain|provide)\s+(?:at least\s+)?(?:two|three|four|five)\b",
+        normalized,
+    ):
+        return True
+    if re.search(r"\b(?:what|which)\s+(?:are\s+)?(?:the\s+)?(?:two|three|four|five)\b", normalized):
+        return True
+    if re.search(r"\b(?:explain|describe|name|list|state|identify|give|provide)\s+both\b", normalized):
         return True
     if re.search(r"\b(?:compare|contrast|distinguish|differentiate|list|enumerate)\b", normalized):
         return True
