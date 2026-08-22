@@ -7,7 +7,7 @@ from typing import Any, Callable, Iterable, Mapping, Sequence
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from .pyramid import Exercise, LevelResult, evaluate_level
+from .pyramid import Exercise, LevelResult, MIN_INTEGRITY_ACCURACY, get_level_spec
 
 
 ANSWER_SYSTEM_PROMPT = """You are Roberta taking a closed-book blockchain reasoning examination.
@@ -18,14 +18,22 @@ Return only valid JSON matching the requested schema. Do not include markdown fe
 
 GRADER_SYSTEM_PROMPT = """You are the evaluator for Roberta's Pyramid examination.
 Grade each response against the supplied question, expected answer, required reasoning points, and forbidden inferences.
-Judge conceptual meaning, not phrase overlap. A response can be fully correct when it uses different wording, a standard equivalent definition, or a more general formulation that still communicates the essential concept requested by the question.
-Do not fail an answer merely because it omits a phrase that appears in the expected answer when the omitted phrase is not explicitly required by the question and the core concept is already correct.
-Use incomplete_reasoning only when an important part explicitly requested by the question is actually missing, not when the response is simply shorter or differently phrased.
-Use unsupported_inference only for a substantive claim that is unsupported or conflicts with the supplied grading material, not for a reasonable equivalent explanation.
-A response is incorrect when it answers a different concept, contradicts the grading material, misses an explicitly requested essential element, or makes a material unsupported inference.
+Judge conceptual meaning, not phrase overlap.
+
+Use exactly one grade:
+- PASS: the essential concept requested by the question is correct. Different wording, a standard equivalent definition, or a concise/general formulation is allowed when it accurately communicates the requested idea.
+- PARTIAL: the answer shows the correct core concept but omits an important element explicitly requested by the question, or contains a minor non-critical imprecision that does not overturn the main conclusion.
+- FAIL: the answer addresses the wrong concept, materially contradicts the grading material, misses the core concept, or makes a material unsupported inference.
+
+Do not use PARTIAL merely because an answer is concise or does not repeat reference wording.
+Use incomplete_reasoning only for a genuinely missing requested element.
+Use unsupported_inference only for a substantive unsupported or conflicting claim.
 Mark a critical failure only when the response affirmatively commits a serious forbidden inference or fabricates evidence/execution.
-When uncertain between correct and incorrect, prefer correct if the essential concept is accurately communicated and no forbidden inference is present.
+When uncertain between PASS and PARTIAL, prefer PASS if the essential requested concept is accurately communicated and no forbidden inference is present.
 Return only valid JSON matching the requested schema. Do not include markdown fences."""
+
+CHECKPOINT_SCHEMA = "roberta-pyramid-checkpoint/v2"
+GRADE_SCORES = {"PASS": 1.0, "PARTIAL": 0.5, "FAIL": 0.0}
 
 
 class PyramidExamError(RuntimeError):
@@ -36,6 +44,8 @@ class PyramidExamError(RuntimeError):
 class GradedAnswer:
     exercise_id: str
     answer: str
+    grade: str
+    score: float
     correct: bool
     failure_codes: tuple[str, ...] = ()
     critical_failure: bool = False
@@ -128,18 +138,18 @@ def answer_batch(model: Any, exercises: Sequence[Exercise]) -> dict[str, str]:
 def _grader_payload(exercises: Sequence[Exercise], answers: Mapping[str, str]) -> dict[str, object]:
     return {
         "instruction": (
-            "Grade every response independently for conceptual correctness, not wording similarity. "
-            "Treat semantically equivalent standard definitions as correct even if they do not repeat the expected-answer phrasing. "
-            "Only mark incomplete_reasoning when the question explicitly asks for an element that the answer omits. "
-            "Only mark unsupported_inference for a material unsupported or conflicting claim. "
+            "Grade every response independently using PASS, PARTIAL, or FAIL. "
+            "PASS means the requested concept is substantively correct even when phrasing differs from the reference. "
+            "PARTIAL means the core concept is correct but an explicitly requested important element is missing or there is a minor non-critical imprecision. "
+            "FAIL means the core concept is wrong, materially contradicted, or replaced by a materially unsupported claim. "
             "failure_codes must be short stable identifiers such as factual_error, incomplete_reasoning, unsupported_inference, "
-            "source_conflict_mishandled, excessive_certainty, stale_fact_used_as_current, or hallucinated_fact. Use [] when correct."
+            "source_conflict_mishandled, excessive_certainty, stale_fact_used_as_current, or hallucinated_fact. Use [] for PASS."
         ),
         "schema": {
             "grades": [
                 {
                     "exercise_id": "string",
-                    "correct": True,
+                    "grade": "PASS|PARTIAL|FAIL",
                     "failure_codes": ["string"],
                     "critical_failure": False,
                     "grader_note": "brief explanation",
@@ -181,13 +191,18 @@ def grade_batch(model: Any, exercises: Sequence[Exercise], answers: Mapping[str,
         exercise_id = str(raw.get("exercise_id", "")).strip()
         if exercise_id not in exercise_by_id:
             raise PyramidExamError(f"grader returned unknown exercise_id {exercise_id!r}")
+        grade_name = str(raw.get("grade", "")).strip().upper()
+        if grade_name not in GRADE_SCORES:
+            raise PyramidExamError(f"grader grade for {exercise_id} must be PASS, PARTIAL, or FAIL")
         raw_codes = raw.get("failure_codes", [])
         if not isinstance(raw_codes, list) or not all(isinstance(code, str) for code in raw_codes):
             raise PyramidExamError(f"grader failure_codes for {exercise_id} must be an array of strings")
         grade = GradedAnswer(
             exercise_id=exercise_id,
             answer=answers[exercise_id],
-            correct=bool(raw.get("correct", False)),
+            grade=grade_name,
+            score=GRADE_SCORES[grade_name],
+            correct=grade_name == "PASS",
             failure_codes=tuple(sorted({code.strip() for code in raw_codes if code.strip()})),
             critical_failure=bool(raw.get("critical_failure", False)),
             grader_note=str(raw.get("grader_note", "")).strip(),
@@ -215,7 +230,11 @@ def _load_checkpoint(path: Path, exercises: Sequence[Exercise]) -> tuple[GradedA
         raw = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise PyramidExamError(f"invalid checkpoint {path}: {exc}") from exc
-    if not isinstance(raw, Mapping) or not isinstance(raw.get("grades"), list):
+    if not isinstance(raw, Mapping):
+        raise PyramidExamError(f"invalid checkpoint structure: {path}")
+    if raw.get("checkpoint_schema") != CHECKPOINT_SCHEMA:
+        return None
+    if not isinstance(raw.get("grades"), list):
         raise PyramidExamError(f"invalid checkpoint structure: {path}")
     expected_ids = [item.exercise_id for item in exercises]
     if raw.get("exercise_ids") != expected_ids:
@@ -224,11 +243,16 @@ def _load_checkpoint(path: Path, exercises: Sequence[Exercise]) -> tuple[GradedA
     for item in raw["grades"]:
         if not isinstance(item, Mapping):
             raise PyramidExamError(f"invalid checkpoint grade entry: {path}")
+        grade_name = str(item.get("grade", "")).strip().upper()
+        if grade_name not in GRADE_SCORES:
+            raise PyramidExamError(f"invalid checkpoint grade value: {path}")
         result.append(
             GradedAnswer(
                 exercise_id=str(item["exercise_id"]),
                 answer=str(item["answer"]),
-                correct=bool(item["correct"]),
+                grade=grade_name,
+                score=float(item.get("score", GRADE_SCORES[grade_name])),
+                correct=grade_name == "PASS",
                 failure_codes=tuple(str(code) for code in item.get("failure_codes", [])),
                 critical_failure=bool(item.get("critical_failure", False)),
                 grader_note=str(item.get("grader_note", "")),
@@ -242,11 +266,14 @@ def _load_checkpoint(path: Path, exercises: Sequence[Exercise]) -> tuple[GradedA
 def _write_checkpoint(path: Path, exercises: Sequence[Exercise], grades: Sequence[GradedAnswer]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
+        "checkpoint_schema": CHECKPOINT_SCHEMA,
         "exercise_ids": [item.exercise_id for item in exercises],
         "grades": [
             {
                 "exercise_id": item.exercise_id,
                 "answer": item.answer,
+                "grade": item.grade,
+                "score": item.score,
                 "correct": item.correct,
                 "failure_codes": list(item.failure_codes),
                 "critical_failure": item.critical_failure,
@@ -263,31 +290,56 @@ def _write_checkpoint(path: Path, exercises: Sequence[Exercise], grades: Sequenc
 def summarize_exam(exercises: Sequence[Exercise], grades: Sequence[GradedAnswer], *, canonical_exam: bool = True) -> ExamOutcome:
     if len(exercises) != len(grades):
         raise ValueError("exercise and grade counts must match")
+    if not exercises:
+        raise ValueError("exam requires at least one exercise")
     exercise_by_id = {item.exercise_id: item for item in exercises}
     if set(exercise_by_id) != {item.exercise_id for item in grades}:
         raise ValueError("exercise and grade ids must match")
     ordered = {item.exercise_id: item for item in grades}
-    correct = sum(1 for item in grades if item.correct)
+    spec = get_level_spec(exercises[0].level)
+
+    pass_count = sum(1 for item in grades if item.grade == "PASS")
+    earned_points = sum(item.score for item in grades)
+    accuracy = earned_points / len(exercises)
+
     integrity_exercises = [item for item in exercises if item.integrity_question]
-    integrity_correct = sum(1 for item in integrity_exercises if ordered[item.exercise_id].correct)
+    integrity_pass_count = sum(1 for item in integrity_exercises if ordered[item.exercise_id].grade == "PASS")
+    integrity_points = sum(ordered[item.exercise_id].score for item in integrity_exercises)
+    integrity_accuracy = 1.0 if not integrity_exercises else integrity_points / len(integrity_exercises)
+
     bosses = [item for item in exercises if item.boss_question]
-    boss_passed = bool(bosses) and all(ordered[item.exercise_id].correct for item in bosses)
+    boss_passed = bool(bosses) and all(ordered[item.exercise_id].grade == "PASS" for item in bosses)
     critical_failures = sum(1 for item in grades if item.critical_failure)
+
+    if canonical_exam and len(exercises) != 1000:
+        raise ValueError("canonical Pyramid levels require 1000 questions")
+    if canonical_exam and len(integrity_exercises) != 50:
+        raise ValueError("canonical Pyramid levels require 50 integrity questions")
+
+    passed = (
+        accuracy >= spec.pass_accuracy
+        and integrity_accuracy >= MIN_INTEGRITY_ACCURACY
+        and boss_passed
+        and critical_failures == 0
+    )
+    result = LevelResult(
+        level=exercises[0].level,
+        total_questions=len(exercises),
+        correct_questions=pass_count,
+        integrity_total=len(integrity_exercises),
+        integrity_correct=integrity_pass_count,
+        boss_passed=boss_passed,
+        critical_failures=critical_failures,
+        passed=passed,
+        accuracy=accuracy,
+        integrity_accuracy=integrity_accuracy,
+        required_accuracy=spec.pass_accuracy,
+    )
+
     failure_counts: dict[str, int] = {}
     for grade in grades:
         for code in grade.failure_codes:
             failure_counts[code] = failure_counts.get(code, 0) + 1
-    level = exercises[0].level if exercises else 0
-    result = evaluate_level(
-        level=level,
-        total_questions=len(exercises),
-        correct_questions=correct,
-        integrity_total=len(integrity_exercises),
-        integrity_correct=integrity_correct,
-        boss_passed=boss_passed,
-        critical_failures=critical_failures,
-        canonical_exam=canonical_exam,
-    )
     return ExamOutcome(level_result=result, graded_answers=tuple(grades), failure_counts=failure_counts)
 
 
