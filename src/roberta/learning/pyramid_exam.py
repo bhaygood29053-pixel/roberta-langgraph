@@ -76,9 +76,28 @@ def _message_text(response: object) -> str:
     return str(content).strip()
 
 
+def _strip_single_json_fence(text: str) -> str:
+    stripped = text.strip()
+    if not stripped.startswith("```"):
+        return stripped
+
+    first_newline = stripped.find("\n")
+    if first_newline < 0:
+        return stripped
+    opening = stripped[:first_newline].strip().lower()
+    if opening not in {"```", "```json"} or not stripped.endswith("```"):
+        return stripped
+
+    inner = stripped[first_newline + 1 : -3].strip()
+    if "```" in inner:
+        return stripped
+    return inner
+
+
 def _parse_json(text: str, *, context: str) -> object:
+    normalized = _strip_single_json_fence(text)
     try:
-        return json.loads(text)
+        return json.loads(normalized)
     except json.JSONDecodeError as exc:
         raise PyramidExamError(f"{context} returned invalid JSON: {exc}: {text[:500]!r}") from exc
 
