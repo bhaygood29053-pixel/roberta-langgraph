@@ -22,6 +22,7 @@ roberta-serve = "roberta.bridge_http:main"
 roberta-readiness = "roberta.readiness_cli:main"
 roberta-readiness-replay = "roberta.readiness_replay_cli:main"
 roberta-solana-readiness-replay = "roberta.readiness_solana_replay_cli:main"
+roberta-pyramid-dashboard = "roberta.learning.pyramid_dashboard:main"
 
 [tool.setuptools.package-data]
 "roberta.learning" = ["sources/*.md"]
