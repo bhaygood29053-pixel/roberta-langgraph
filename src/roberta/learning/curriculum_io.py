@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+from datetime import datetime
 import json
 import re
 from pathlib import Path
-from typing import Iterable, Mapping
+from typing import Callable, Iterable, Mapping
 
 from .pyramid import Exercise, PYRAMID_CONTRACT, validate_curriculum
 
@@ -13,7 +14,11 @@ SOURCE_PROVENANCE_CONTRACT = "roberta-pyramid-source-provenance/v1"
 _REQUIRED_PROVENANCE_SUPPORTS = frozenset(
     {"question", "expected_answer", "required_reasoning_points"}
 )
+_SOURCE_AUTHORITY_CLASSES = frozenset({"primary", "secondary", "internal", "unknown"})
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+
+TrustedSourceDigestBinding = tuple[str, str]
+TrustedSourceDigestResolver = Callable[[str], TrustedSourceDigestBinding | None]
 
 
 class CurriculumPackageError(ValueError):
@@ -30,6 +35,86 @@ def load_manifest(path: str | Path) -> dict[str, object]:
         raise CurriculumPackageError("manifest must be a JSON object")
     validate_manifest(value)
     return value
+
+
+def _require_nonempty_string(value: Mapping[str, object], field: str) -> str:
+    candidate = value.get(field)
+    if not isinstance(candidate, str) or not candidate.strip():
+        raise CurriculumPackageError(f"{field} is required")
+    return candidate
+
+
+def _require_explicit_optional_string(value: Mapping[str, object], field: str) -> None:
+    if field not in value:
+        raise CurriculumPackageError(f"{field} must be explicitly preserved")
+    candidate = value[field]
+    if candidate is not None and (
+        not isinstance(candidate, str) or not candidate.strip()
+    ):
+        raise CurriculumPackageError(f"{field} must be null or a non-empty string")
+
+
+def _validate_source_manifest_metadata(value: Mapping[str, object]) -> None:
+    """Validate the source-manifest fields required by provenance-bearing packages."""
+
+    for field in (
+        "source_title",
+        "source_version",
+        "source_origin",
+        "ingestion_version",
+        "ingestion_timestamp",
+        "source_status",
+    ):
+        _require_nonempty_string(value, field)
+
+    author = value.get("source_author")
+    valid_author = isinstance(author, str) and bool(author.strip())
+    if isinstance(author, list):
+        valid_author = bool(author) and all(
+            isinstance(item, str) and bool(item.strip()) for item in author
+        )
+    if not valid_author:
+        raise CurriculumPackageError(
+            "source_author must be a non-empty string or non-empty array of strings"
+        )
+
+    _require_explicit_optional_string(value, "source_edition")
+    _require_explicit_optional_string(value, "publication_date")
+
+    authority_class = value.get("source_authority_class")
+    if authority_class not in _SOURCE_AUTHORITY_CLASSES:
+        raise CurriculumPackageError(
+            "source_authority_class must be one of "
+            f"{sorted(_SOURCE_AUTHORITY_CLASSES)}"
+        )
+
+    limitations = value.get("source_limitations")
+    if (
+        not isinstance(limitations, list)
+        or not limitations
+        or not all(isinstance(item, str) and item.strip() for item in limitations)
+    ):
+        raise CurriculumPackageError(
+            "source_limitations must be a non-empty array of non-empty strings"
+        )
+
+    ingestion_timestamp = str(value["ingestion_timestamp"])
+    try:
+        parsed_timestamp = datetime.fromisoformat(
+            ingestion_timestamp.replace("Z", "+00:00")
+        )
+    except ValueError as exc:
+        raise CurriculumPackageError(
+            "ingestion_timestamp must be a valid timezone-aware ISO-8601 timestamp"
+        ) from exc
+    if parsed_timestamp.tzinfo is None or parsed_timestamp.utcoffset() is None:
+        raise CurriculumPackageError(
+            "ingestion_timestamp must be a valid timezone-aware ISO-8601 timestamp"
+        )
+
+    for optional_field in ("source_publisher", "ingestion_timestamp_basis"):
+        if optional_field in value:
+            _require_nonempty_string(value, optional_field)
 
 
 def _validate_source_provenance_declaration(
@@ -96,6 +181,7 @@ def validate_manifest(value: Mapping[str, object]) -> None:
         )
     approved_source_refs = set(source_refs)
     if "source_provenance" in value:
+        _validate_source_manifest_metadata(value)
         _validate_source_provenance_declaration(
             value["source_provenance"],
             approved_source_refs=approved_source_refs,
@@ -275,8 +361,53 @@ def load_source_provenance_jsonl(
     return tuple(records)
 
 
+def _default_trusted_source_digest_resolver(
+    source_key: str,
+) -> TrustedSourceDigestBinding | None:
+    """Resolve accepted Learning System user-source digests without trusting a package."""
+
+    from .source_ingestion import SourceIngestionError
+    from .user_source_batch import get_user_source_spec
+
+    try:
+        spec = get_user_source_spec(source_key)
+    except SourceIngestionError:
+        return None
+    return spec.original_sha256, spec.transcript_sha256
+
+
+def _resolve_trusted_source_digest_binding(
+    source_key: str,
+    resolver: TrustedSourceDigestResolver,
+) -> TrustedSourceDigestBinding:
+    try:
+        binding = resolver(source_key)
+    except Exception as exc:
+        raise CurriculumPackageError(
+            f"trusted source digest resolution failed for {source_key}"
+        ) from exc
+    if binding is None:
+        raise CurriculumPackageError(
+            f"no trusted source digest binding is registered for {source_key}"
+        )
+    if (
+        not isinstance(binding, tuple)
+        or len(binding) != 2
+        or not all(
+            isinstance(digest, str) and _SHA256_RE.fullmatch(digest) is not None
+            for digest in binding
+        )
+    ):
+        raise CurriculumPackageError(
+            f"trusted source digest binding for {source_key} is malformed"
+        )
+    return binding
+
+
 def validate_package(
     directory: str | Path,
+    *,
+    source_digest_resolver: TrustedSourceDigestResolver | None = None,
 ) -> tuple[dict[str, object], tuple[Exercise, ...]]:
     root = Path(directory)
     manifest = load_manifest(root / "manifest.json")
@@ -299,6 +430,19 @@ def validate_package(
             approved_source_refs=approved,
         )
         source_key = str(declaration["source_key"])
+        resolver = source_digest_resolver or _default_trusted_source_digest_resolver
+        trusted_artifact_sha256, trusted_transcript_sha256 = (
+            _resolve_trusted_source_digest_binding(source_key, resolver)
+        )
+        if declaration["source_artifact_sha256"] != trusted_artifact_sha256:
+            raise CurriculumPackageError(
+                f"source_provenance artifact digest does not match trusted source {source_key}"
+            )
+        if declaration["source_transcript_sha256"] != trusted_transcript_sha256:
+            raise CurriculumPackageError(
+                f"source_provenance transcript digest does not match trusted source {source_key}"
+            )
+
         missing_source_binding = sorted(
             exercise.exercise_id
             for exercise in exercises
