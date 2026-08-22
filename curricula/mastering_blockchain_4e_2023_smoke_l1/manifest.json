@@ -4,6 +4,24 @@
   "curriculum_id": "mastering_blockchain_4e_2023_smoke_l1",
   "title": "Mastering Blockchain 4e — Level 1 Smoke Calibration",
   "source_type": "user_supplied_static_educational_reference",
+  "source_title": "Mastering Blockchain: Fourth Edition",
+  "source_author": "Imran Bashir",
+  "source_publisher": "Packt",
+  "source_edition": "Fourth Edition",
+  "publication_date": "2023",
+  "source_version": "Fourth Edition (2023)",
+  "source_origin": "user-upload://mastering-blockchain/fourth-edition-2023",
+  "source_authority_class": "secondary",
+  "ingestion_version": "utf8-source/v1",
+  "ingestion_timestamp": "2026-08-22T15:30:21Z",
+  "ingestion_timestamp_basis": "Accepted Learning System source-registration merge time for PR #147; the copyrighted external transcript is not repository-materialized at runtime.",
+  "source_status": "approved_static_external_exact_transcript",
+  "source_limitations": [
+    "User-supplied copyrighted secondary educational reference.",
+    "The repository stores provenance and integrity metadata but does not republish the full book transcript.",
+    "Runtime source ingestion requires exact external transcript bytes matching the pinned transcript SHA-256.",
+    "This static source is not authoritative for current market, chain, wallet, tokenomics, validator, authority, or risk state."
+  ],
   "approved_source_refs": [
     "mastering_blockchain_4e_2023"
   ],
