@@ -186,6 +186,22 @@ def test_follow_up_explain_is_an_explicit_multi_part_question():
     ) is True
 
 
+def test_follow_up_why_is_an_explicit_multi_part_question():
+    assert _question_explicitly_requests_multiple_elements(
+        "Is the claim supported? Why?"
+    ) is True
+
+
+def test_follow_up_how_is_an_explicit_multi_part_question():
+    assert _question_explicitly_requests_multiple_elements(
+        "Does this hold? How?"
+    ) is True
+
+
+def test_standalone_why_is_not_automatically_multi_part():
+    assert _question_explicitly_requests_multiple_elements("Why?") is False
+
+
 def test_scenario_quantity_does_not_make_single_explanation_multi_part():
     assert _question_explicitly_requests_multiple_elements(
         "Two nodes failed. Why did consensus stall?"
