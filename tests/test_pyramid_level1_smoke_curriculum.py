@@ -20,7 +20,11 @@ PROVENANCE_CONTRACT = "roberta-pyramid-source-provenance/v1"
 
 def _provenance_records() -> tuple[dict[str, object], ...]:
     path = CURRICULUM_ROOT / "provenance.jsonl"
-    return tuple(json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip())
+    return tuple(
+        json.loads(line)
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    )
 
 
 def test_level1_smoke_package_is_valid_and_source_bound() -> None:
@@ -72,7 +76,9 @@ def test_level1_smoke_selection_contains_all_50_including_integrity_and_boss() -
     )
 
     assert len(selected) == 50
-    assert {item.exercise_id for item in selected} == {item.exercise_id for item in exercises}
+    assert {item.exercise_id for item in selected} == {
+        item.exercise_id for item in exercises
+    }
     assert sum(item.integrity_question for item in selected) == 5
     assert sum(item.boss_question for item in selected) == 1
 
@@ -90,6 +96,32 @@ def test_level1_smoke_source_ref_is_an_accepted_static_external_reference() -> N
     assert provenance["source_key"] == SOURCE_REF
     assert provenance["source_artifact_sha256"] == spec.original_sha256
     assert provenance["source_transcript_sha256"] == spec.transcript_sha256
+
+
+def test_level1_smoke_manifest_preserves_required_source_metadata() -> None:
+    manifest, _ = validate_package(CURRICULUM_ROOT)
+    spec = get_user_source_spec(SOURCE_REF)
+
+    assert manifest["source_title"] == spec.title
+    assert manifest["source_author"] == "Imran Bashir"
+    assert manifest["source_publisher"] == "Packt"
+    assert manifest["source_edition"] == "Fourth Edition"
+    assert manifest["publication_date"] == "2023"
+    assert manifest["source_version"] == spec.version
+    assert manifest["source_origin"] == spec.origin
+    assert manifest["source_authority_class"] == spec.authority_class
+    assert manifest["ingestion_version"] == "utf8-source/v1"
+    assert manifest["ingestion_timestamp"] == "2026-08-22T15:30:21Z"
+    assert "source-registration merge time" in manifest["ingestion_timestamp_basis"]
+    assert manifest["source_status"] == "approved_static_external_exact_transcript"
+
+    limitations = manifest["source_limitations"]
+    assert isinstance(limitations, list) and len(limitations) >= 4
+    joined = " ".join(str(item) for item in limitations)
+    assert "copyrighted secondary educational reference" in joined
+    assert "does not republish the full book transcript" in joined
+    assert "exact external transcript bytes" in joined
+    assert "not authoritative for current" in joined
 
 
 def test_every_smoke_exercise_has_auditable_granular_source_location() -> None:
@@ -110,7 +142,8 @@ def test_every_smoke_exercise_has_auditable_granular_source_location() -> None:
         locations = record["locations"]
         assert isinstance(locations, list) and locations
         for location in locations:
-            assert isinstance(location["chapter"], str) and location["chapter"].startswith("Chapter ")
+            assert isinstance(location["chapter"], str)
+            assert location["chapter"].startswith("Chapter ")
             assert isinstance(location["section"], str) and location["section"].strip()
             pages = location["book_pages"]
             assert isinstance(pages, list) and pages
