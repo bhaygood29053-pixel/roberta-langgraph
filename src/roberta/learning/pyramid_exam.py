@@ -261,6 +261,21 @@ def _parse_grade_rows(
     return tuple(grades[item.exercise_id] for item in exercises)
 
 
+def _request_clause_has_conjoined_elements(question: str) -> bool:
+    request_words = re.compile(r"\b(?:what|which|why|how|explain|describe)\b")
+    conditional_words = re.compile(r"\b(?:when|if|while|because|despite|although|after|before|where|whereas)\b")
+    for clause in re.split(r"(?<=[?.!])\s+", question):
+        request = request_words.search(clause)
+        conjunction = re.search(r"\band\b", clause)
+        if request is None or conjunction is None or conjunction.start() < request.end():
+            continue
+        between = clause[request.end() : conjunction.start()]
+        if conditional_words.search(between):
+            continue
+        return True
+    return False
+
+
 def _question_explicitly_requests_multiple_elements(question: str) -> bool:
     normalized = " ".join(question.lower().split())
     if re.search(
@@ -278,9 +293,7 @@ def _question_explicitly_requests_multiple_elements(question: str) -> bool:
         return True
     if re.search(r"[?.!]\s*(?:explain|justify|describe)\b", normalized):
         return True
-    if " and " in normalized and re.search(r"\b(?:what|why|how|explain|describe)\b", normalized):
-        return True
-    return False
+    return _request_clause_has_conjoined_elements(normalized)
 
 
 def _needs_question_first_adjudication(exercise: Exercise, grade: GradedAnswer) -> bool:
