@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 import json
+import sys
 
 import pytest
 
@@ -13,6 +14,7 @@ from roberta.learning.pyramid_learning_handoff import (
     write_pyramid_learning_handoffs_jsonl,
 )
 from roberta.learning.pyramid_remediation import WeakItem
+from roberta.learning.pyramid_remediation_cli import main as remediation_main
 
 
 def _exercise(*, source_refs: tuple[str, ...] = ("book-source",)) -> Exercise:
@@ -161,4 +163,59 @@ def test_handoff_jsonl_writer_preserves_validated_payload(tmp_path):
 
     payload = json.loads(path.read_text(encoding="utf-8").strip())
     assert payload == handoff.to_mapping()
+    assert payload["retention_authorized"] is False
+
+
+def test_remediation_cli_writes_learning_handoff_for_shared_ledger_failure(tmp_path, monkeypatch):
+    checkpoints = tmp_path / "checkpoints"
+    checkpoints.mkdir()
+    checkpoint = checkpoints / "level_01_batch_0002.json"
+    checkpoint.write_text(
+        json.dumps(
+            {
+                "checkpoint_schema": "roberta-pyramid-checkpoint/v3",
+                "grading_semantics": "question-first-adjudication/v1",
+                "exercise_ids": ["mb4e-l1-smoke-013"],
+                "grades": [
+                    {
+                        "exercise_id": "mb4e-l1-smoke-013",
+                        "answer": "A shared ledger is jointly maintained by multiple participants.",
+                        "grade": "PARTIAL",
+                        "score": 0.5,
+                        "correct": False,
+                        "failure_codes": ["conceptual_mismatch"],
+                        "critical_failure": False,
+                        "grader_note": "The answer is narrower than the source concept.",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    output = tmp_path / "remediation"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "roberta-pyramid-remediate",
+            "--curriculum",
+            "curricula/mastering_blockchain_4e_2023_smoke_l1",
+            "--checkpoints",
+            str(checkpoints),
+            "--output",
+            str(output),
+            "--practice-per-weakness",
+            "1",
+            "--seed",
+            "handoff-test",
+        ],
+    )
+
+    assert remediation_main() == 0
+    handoff_path = output / "learning_handoffs.jsonl"
+    assert handoff_path.exists()
+    payload = json.loads(handoff_path.read_text(encoding="utf-8").strip())
+    assert payload["exercise_id"] == "mb4e-l1-smoke-013"
+    assert payload["source_refs"] == ["mastering_blockchain_4e_2023"]
+    assert payload["required_next_gate"] == "source_grounded_phase7_reconstruction"
     assert payload["retention_authorized"] is False
