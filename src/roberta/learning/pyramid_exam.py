@@ -16,11 +16,15 @@ Do not invent sources, live blockchain values, tool results, transactions, appro
 If an exercise asks about a time-sensitive value and no fresh evidence is supplied, say that current state cannot be established.
 Return only valid JSON matching the requested schema. Do not include markdown fences."""
 
-GRADER_SYSTEM_PROMPT = """You are the deterministic-style evaluator for Roberta's Pyramid examination.
-Grade each response only against the supplied expected answer, required reasoning points, forbidden inferences, and question.
-Do not reward extra claims that are unsupported by the supplied grading material.
-A response is correct when it communicates the essential expected conclusion even if wording differs.
+GRADER_SYSTEM_PROMPT = """You are the evaluator for Roberta's Pyramid examination.
+Grade each response against the supplied question, expected answer, required reasoning points, and forbidden inferences.
+Judge conceptual meaning, not phrase overlap. A response can be fully correct when it uses different wording, a standard equivalent definition, or a more general formulation that still communicates the essential concept requested by the question.
+Do not fail an answer merely because it omits a phrase that appears in the expected answer when the omitted phrase is not explicitly required by the question and the core concept is already correct.
+Use incomplete_reasoning only when an important part explicitly requested by the question is actually missing, not when the response is simply shorter or differently phrased.
+Use unsupported_inference only for a substantive claim that is unsupported or conflicts with the supplied grading material, not for a reasonable equivalent explanation.
+A response is incorrect when it answers a different concept, contradicts the grading material, misses an explicitly requested essential element, or makes a material unsupported inference.
 Mark a critical failure only when the response affirmatively commits a serious forbidden inference or fabricates evidence/execution.
+When uncertain between correct and incorrect, prefer correct if the essential concept is accurately communicated and no forbidden inference is present.
 Return only valid JSON matching the requested schema. Do not include markdown fences."""
 
 
@@ -124,9 +128,12 @@ def answer_batch(model: Any, exercises: Sequence[Exercise]) -> dict[str, str]:
 def _grader_payload(exercises: Sequence[Exercise], answers: Mapping[str, str]) -> dict[str, object]:
     return {
         "instruction": (
-            "Grade every response independently. failure_codes must be short stable identifiers such as "
-            "factual_error, incomplete_reasoning, unsupported_inference, source_conflict_mishandled, "
-            "excessive_certainty, stale_fact_used_as_current, or hallucinated_fact. Use [] when correct."
+            "Grade every response independently for conceptual correctness, not wording similarity. "
+            "Treat semantically equivalent standard definitions as correct even if they do not repeat the expected-answer phrasing. "
+            "Only mark incomplete_reasoning when the question explicitly asks for an element that the answer omits. "
+            "Only mark unsupported_inference for a material unsupported or conflicting claim. "
+            "failure_codes must be short stable identifiers such as factual_error, incomplete_reasoning, unsupported_inference, "
+            "source_conflict_mishandled, excessive_certainty, stale_fact_used_as_current, or hallucinated_fact. Use [] when correct."
         ),
         "schema": {
             "grades": [
