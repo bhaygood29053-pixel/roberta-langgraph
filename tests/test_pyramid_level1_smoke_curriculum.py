@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import shutil
 
-from roberta.learning.curriculum_io import validate_package
+import pytest
+
+from roberta.learning.curriculum_io import CurriculumPackageError, validate_package
 from roberta.learning.pyramid import select_level_exercises
 from roberta.learning.user_source_batch import get_user_source_spec
 
@@ -38,6 +41,21 @@ def test_level1_smoke_package_is_valid_and_source_bound() -> None:
     assert all(item.curriculum_id == CURRICULUM_ID for item in exercises)
     assert all(item.source_refs == (SOURCE_REF,) for item in exercises)
     assert all(item.requires_live_data is False for item in exercises)
+
+
+def test_registered_smoke_source_cannot_strip_provenance(tmp_path) -> None:
+    copied_root = tmp_path / CURRICULUM_ID
+    shutil.copytree(CURRICULUM_ROOT, copied_root)
+    manifest_path = copied_root / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    del manifest["source_provenance"]
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    with pytest.raises(
+        CurriculumPackageError,
+        match="registered approved source refs require source_provenance",
+    ):
+        validate_package(copied_root)
 
 
 def test_level1_smoke_exercises_cover_training_gates_and_core_fundamentals() -> None:
