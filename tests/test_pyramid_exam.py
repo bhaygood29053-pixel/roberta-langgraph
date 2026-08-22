@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 
 from roberta.learning.pyramid import Exercise
-from roberta.learning.pyramid_exam import run_exam
+from roberta.learning.pyramid_exam import _parse_json, PyramidExamError, run_exam
 
 
 class _Response:
@@ -59,6 +59,32 @@ def _exercise(index: int, *, integrity: bool = False, boss: bool = False) -> Exe
         integrity_question=integrity,
         boss_question=boss,
     )
+
+
+def test_parse_json_accepts_single_json_code_fence():
+    parsed = _parse_json('```json\n{"grades": []}\n```', context="grader")
+    assert parsed == {"grades": []}
+
+
+def test_parse_json_accepts_unlabeled_single_code_fence():
+    parsed = _parse_json('```\n{"answers": []}\n```', context="answer")
+    assert parsed == {"answers": []}
+
+
+def test_parse_json_does_not_repair_malformed_or_nested_fences():
+    try:
+        _parse_json('```json\n{"grades": []}\n```\nextra', context="grader")
+    except PyramidExamError:
+        pass
+    else:
+        raise AssertionError("trailing content must remain invalid")
+
+    try:
+        _parse_json('```json\n{"x": "```"}\n```', context="grader")
+    except PyramidExamError:
+        pass
+    else:
+        raise AssertionError("nested fence content must remain invalid")
 
 
 def test_run_exam_batches_and_resumes_from_checkpoints(tmp_path):
