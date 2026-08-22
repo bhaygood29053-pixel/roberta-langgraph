@@ -1,0 +1,17 @@
+{
+  "manifest_contract": "roberta-pyramid-manifest/v1",
+  "curriculum_contract": "roberta-pyramid-curriculum/v1",
+  "curriculum_id": "mastering_blockchain_4e_2023_smoke_l1",
+  "title": "Mastering Blockchain 4e — Level 1 Smoke Calibration",
+  "source_type": "user_supplied_static_educational_reference",
+  "approved_source_refs": [
+    "mastering_blockchain_4e_2023"
+  ],
+  "levels": [
+    1
+  ],
+  "exercise_count": 50,
+  "purpose": "fresh 50-question Level 1 Pyramid smoke calibration before the canonical 1000-question exam",
+  "requires_live_data": false,
+  "copyright_boundary": "Source-grounded transformed questions and reference answers only; no long source excerpts or book republication."
+}
