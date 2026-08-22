@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import json
 from pathlib import Path
+import re
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -29,14 +30,32 @@ Important grading rules:
 1. Never reduce a grade because a detail appears only in the expected answer or reference reasoning points but is not required by the question.
 2. Never require a specific phrase or framing when a standard equivalent definition communicates the same concept.
 3. Use incomplete_reasoning only when the question itself requests multiple elements and one or more are genuinely missing.
-4. Use unsupported_inference only for a substantive unsupported or conflicting claim, not harmless additional context.
-5. A response that answers a different concept should still FAIL even if that different concept is generally true.
-6. Mark a critical failure only when the response affirmatively commits a serious forbidden inference or fabricates evidence/execution.
-7. When uncertain between PASS and PARTIAL, prefer PASS if the question has been substantively answered and no forbidden inference is present.
+4. A single definition or characterization question is not a checklist: if the response gives a substantively correct characterization, omitted reference-only implementation details do not justify PARTIAL.
+5. If a response is materially narrower than the concept asked for, substitutes a related but different concept, or otherwise misframes the concept, use conceptual_mismatch or factual_error instead of incomplete_reasoning.
+6. Use unsupported_inference only for a substantive unsupported or conflicting claim, not harmless additional context.
+7. A response that answers a different concept should still FAIL even if that different concept is generally true.
+8. Mark a critical failure only when the response affirmatively commits a serious forbidden inference or fabricates evidence/execution.
+9. When uncertain between PASS and PARTIAL, prefer PASS if the question has been substantively answered and no forbidden inference is present.
+
+Return only valid JSON matching the requested schema. Do not include markdown fences."""
+
+ADJUDICATOR_SYSTEM_PROMPT = """You are the second-pass question-first adjudicator for Roberta's Pyramid examination.
+Review only disputed grades that were marked solely with incomplete_reasoning. Your job is to detect and correct reference-detail anchoring without making the exam easier.
+
+The QUESTION is authoritative. Expected answers and reference reasoning points explain the intended concept but are not a mandatory checklist unless the question explicitly requests those elements.
+
+Rules:
+1. PASS when the response substantively and correctly answers the question, even if a reference answer contains additional true details not separately requested.
+2. For a single definition or characterization question, omission of a reference-only implementation detail is not incomplete_reasoning.
+3. If the response is too narrow, substitutes a related but different concept, or otherwise weakens the requested concept, retain PARTIAL or FAIL and use conceptual_mismatch or factual_error rather than incomplete_reasoning.
+4. Keep incomplete_reasoning only when the wording of the question itself explicitly asks for multiple elements and one or more are genuinely missing.
+5. Do not relax forbidden-inference, integrity, fabrication, stale-live-data, or critical-failure rules. Grades with any independent failure code are not eligible for this adjudication pass.
+6. Judge conceptual meaning, not phrase overlap.
 
 Return only valid JSON matching the requested schema. Do not include markdown fences."""
 
 CHECKPOINT_SCHEMA = "roberta-pyramid-checkpoint/v3"
+GRADING_SEMANTICS = "question-first-adjudication/v1"
 GRADE_SCORES = {"PASS": 1.0, "PARTIAL": 0.5, "FAIL": 0.0}
 
 
@@ -163,10 +182,10 @@ def _grader_payload(exercises: Sequence[Exercise], answers: Mapping[str, str]) -
         "instruction": (
             "Grade every response independently using PASS, PARTIAL, or FAIL. Treat the question as the authoritative task. "
             "The expected answer and reference reasoning points describe the intended concept but do not add mandatory details unless the question asks for them. "
-            "PASS when the question is substantively answered with a correct equivalent concept. "
-            "PARTIAL only when an element explicitly requested by the question is missing or there is a minor non-critical imprecision. "
+            "A single definition or characterization question is not a checklist: a substantively correct characterization should PASS even when the reference contains extra true details. "
+            "Use incomplete_reasoning only for elements explicitly requested by the question. If an answer is too narrow or substitutes a related concept, use conceptual_mismatch or factual_error instead. "
             "FAIL when the answer gives the wrong concept, materially contradicts the intended concept, or does not perform the requested task. "
-            "failure_codes must be short stable identifiers such as factual_error, incomplete_reasoning, unsupported_inference, "
+            "failure_codes must be short stable identifiers such as factual_error, conceptual_mismatch, incomplete_reasoning, unsupported_inference, "
             "source_conflict_mishandled, excessive_certainty, stale_fact_used_as_current, or hallucinated_fact. Use [] for PASS."
         ),
         "schema": {
@@ -196,31 +215,30 @@ def _grader_payload(exercises: Sequence[Exercise], answers: Mapping[str, str]) -
     }
 
 
-def grade_batch(model: Any, exercises: Sequence[Exercise], answers: Mapping[str, str]) -> tuple[GradedAnswer, ...]:
-    response = model.invoke(
-        [
-            SystemMessage(content=GRADER_SYSTEM_PROMPT),
-            HumanMessage(content=json.dumps(_grader_payload(exercises, answers), ensure_ascii=False)),
-        ]
-    )
-    parsed = _parse_json(_message_text(response), context="Pyramid grader batch")
+def _parse_grade_rows(
+    parsed: object,
+    *,
+    exercises: Sequence[Exercise],
+    answers: Mapping[str, str],
+    context: str,
+) -> tuple[GradedAnswer, ...]:
     if not isinstance(parsed, Mapping) or not isinstance(parsed.get("grades"), list):
-        raise PyramidExamError("grader batch must return an object containing a grades array")
+        raise PyramidExamError(f"{context} must return an object containing a grades array")
 
     exercise_by_id = {item.exercise_id: item for item in exercises}
     grades: dict[str, GradedAnswer] = {}
     for raw in parsed["grades"]:
         if not isinstance(raw, Mapping):
-            raise PyramidExamError("grader entries must be objects")
+            raise PyramidExamError(f"{context} entries must be objects")
         exercise_id = str(raw.get("exercise_id", "")).strip()
         if exercise_id not in exercise_by_id:
-            raise PyramidExamError(f"grader returned unknown exercise_id {exercise_id!r}")
+            raise PyramidExamError(f"{context} returned unknown exercise_id {exercise_id!r}")
         grade_name = str(raw.get("grade", "")).strip().upper()
         if grade_name not in GRADE_SCORES:
-            raise PyramidExamError(f"grader grade for {exercise_id} must be PASS, PARTIAL, or FAIL")
+            raise PyramidExamError(f"{context} grade for {exercise_id} must be PASS, PARTIAL, or FAIL")
         raw_codes = raw.get("failure_codes", [])
         if not isinstance(raw_codes, list) or not all(isinstance(code, str) for code in raw_codes):
-            raise PyramidExamError(f"grader failure_codes for {exercise_id} must be an array of strings")
+            raise PyramidExamError(f"{context} failure_codes for {exercise_id} must be an array of strings")
         grade = GradedAnswer(
             exercise_id=exercise_id,
             answer=answers[exercise_id],
@@ -232,15 +250,172 @@ def grade_batch(model: Any, exercises: Sequence[Exercise], answers: Mapping[str,
             grader_note=str(raw.get("grader_note", "")).strip(),
         )
         if exercise_id in grades:
-            raise PyramidExamError(f"duplicate grader result for {exercise_id}")
+            raise PyramidExamError(f"duplicate {context} result for {exercise_id}")
         grades[exercise_id] = grade
 
     expected = set(exercise_by_id)
     if set(grades) != expected:
         missing = sorted(expected - set(grades))
         extra = sorted(set(grades) - expected)
-        raise PyramidExamError(f"grader ids do not match batch; missing={missing}, extra={extra}")
+        raise PyramidExamError(f"{context} ids do not match batch; missing={missing}, extra={extra}")
     return tuple(grades[item.exercise_id] for item in exercises)
+
+
+def _request_clause_has_conjoined_elements(question: str) -> bool:
+    request_words = re.compile(r"\b(?:what|which|why|how|explain|describe)\b")
+    conditional_words = re.compile(r"\b(?:when|if|while|because|despite|although|after|before|where|whereas)\b")
+    for clause in re.split(r"(?<=[?.!])\s+", question):
+        request = request_words.search(clause)
+        conjunction = re.search(r"\band\b", clause)
+        if request is None or conjunction is None or conjunction.start() < request.end():
+            continue
+        between = clause[request.end() : conjunction.start()]
+        if conditional_words.search(between):
+            continue
+        return True
+    return False
+
+
+def _question_explicitly_requests_multiple_elements(question: str) -> bool:
+    normalized = " ".join(question.lower().split())
+    if re.search(
+        r"\b(?:name|list|give|state|identify|describe|explain|provide)\s+(?:at least\s+)?(?:two|three|four|five)\b",
+        normalized,
+    ):
+        return True
+    if re.search(r"\b(?:what|which)\s+(?:are\s+)?(?:the\s+)?(?:two|three|four|five)\b", normalized):
+        return True
+    if re.search(r"\b(?:explain|describe|name|list|state|identify|give|provide)\s+both\b", normalized):
+        return True
+    if re.search(r"\b(?:compare|contrast|distinguish|differentiate|list|enumerate)\b", normalized):
+        return True
+    if re.search(r"\b(?:differences|similarities|advantages and disadvantages|pros and cons)\b", normalized):
+        return True
+    if re.search(r"[?.!]\s*(?:explain|justify|describe)\b", normalized):
+        return True
+    if re.search(r"[?.!]\s*(?:why|how)\s*\?", normalized):
+        return True
+    return _request_clause_has_conjoined_elements(normalized)
+
+
+def _needs_question_first_adjudication(exercise: Exercise, grade: GradedAnswer) -> bool:
+    return (
+        exercise.grading_rubric_id == "pyramid-question-first-v1"
+        and grade.grade != "PASS"
+        and not grade.critical_failure
+        and grade.failure_codes == ("incomplete_reasoning",)
+    )
+
+
+def _adjudication_payload(
+    exercises: Sequence[Exercise],
+    grades: Sequence[GradedAnswer],
+) -> dict[str, object]:
+    grade_by_id = {item.exercise_id: item for item in grades}
+    return {
+        "instruction": (
+            "Re-adjudicate each disputed result under the question-first rubric. The initial result used only incomplete_reasoning. "
+            "Decide whether the alleged omission is actually demanded by the question or merely appears in the reference guidance. "
+            "PASS a substantively correct single-definition/characterization response when the omitted detail is reference-only. "
+            "If the response is narrower than or mismatches the concept asked for, keep PARTIAL/FAIL but use conceptual_mismatch or factual_error instead of incomplete_reasoning. "
+            "Keep incomplete_reasoning only when question_explicitly_requests_multiple_elements is true and a requested element is actually absent."
+        ),
+        "schema": {
+            "grades": [
+                {
+                    "exercise_id": "string",
+                    "grade": "PASS|PARTIAL|FAIL",
+                    "failure_codes": ["string"],
+                    "critical_failure": False,
+                    "grader_note": "brief explanation",
+                }
+            ]
+        },
+        "items": [
+            {
+                "exercise_id": item.exercise_id,
+                "question": item.question,
+                "question_explicitly_requests_multiple_elements": _question_explicitly_requests_multiple_elements(
+                    item.question
+                ),
+                "expected_answer": item.expected_answer,
+                "reference_reasoning_points": list(item.required_reasoning_points),
+                "forbidden_inferences": list(item.forbidden_inferences),
+                "integrity_question": item.integrity_question,
+                "boss_question": item.boss_question,
+                "roberta_answer": grade_by_id[item.exercise_id].answer,
+                "initial_grade": grade_by_id[item.exercise_id].grade,
+                "initial_failure_codes": list(grade_by_id[item.exercise_id].failure_codes),
+                "initial_grader_note": grade_by_id[item.exercise_id].grader_note,
+            }
+            for item in exercises
+        ],
+    }
+
+
+def _adjudicate_question_first(
+    model: Any,
+    exercises: Sequence[Exercise],
+    grades: Sequence[GradedAnswer],
+) -> tuple[GradedAnswer, ...]:
+    exercise_by_id = {item.exercise_id: item for item in exercises}
+    grade_by_id = {item.exercise_id: item for item in grades}
+    disputed = tuple(
+        item for item in exercises if _needs_question_first_adjudication(item, grade_by_id[item.exercise_id])
+    )
+    if not disputed:
+        return tuple(grades)
+
+    disputed_answers = {item.exercise_id: grade_by_id[item.exercise_id].answer for item in disputed}
+    disputed_grades = tuple(grade_by_id[item.exercise_id] for item in disputed)
+    response = model.invoke(
+        [
+            SystemMessage(content=ADJUDICATOR_SYSTEM_PROMPT),
+            HumanMessage(content=json.dumps(_adjudication_payload(disputed, disputed_grades), ensure_ascii=False)),
+        ]
+    )
+    parsed = _parse_json(_message_text(response), context="Pyramid question-first adjudicator")
+    adjudicated = _parse_grade_rows(
+        parsed,
+        exercises=disputed,
+        answers=disputed_answers,
+        context="Pyramid question-first adjudicator",
+    )
+
+    replacements = {item.exercise_id: item for item in adjudicated}
+    for item in adjudicated:
+        exercise = exercise_by_id[item.exercise_id]
+        if item.critical_failure:
+            raise PyramidExamError(
+                f"question-first adjudicator cannot introduce a critical failure for {item.exercise_id}"
+            )
+        if (
+            "incomplete_reasoning" in item.failure_codes
+            and not _question_explicitly_requests_multiple_elements(exercise.question)
+        ):
+            raise PyramidExamError(
+                "question-first adjudicator retained incomplete_reasoning for a question that does not "
+                f"explicitly request multiple elements: {item.exercise_id}"
+            )
+
+    return tuple(replacements.get(item.exercise_id, item) for item in grades)
+
+
+def grade_batch(model: Any, exercises: Sequence[Exercise], answers: Mapping[str, str]) -> tuple[GradedAnswer, ...]:
+    response = model.invoke(
+        [
+            SystemMessage(content=GRADER_SYSTEM_PROMPT),
+            HumanMessage(content=json.dumps(_grader_payload(exercises, answers), ensure_ascii=False)),
+        ]
+    )
+    parsed = _parse_json(_message_text(response), context="Pyramid grader batch")
+    grades = _parse_grade_rows(
+        parsed,
+        exercises=exercises,
+        answers=answers,
+        context="Pyramid grader batch",
+    )
+    return _adjudicate_question_first(model, exercises, grades)
 
 
 def _checkpoint_path(checkpoint_dir: Path, level: int, batch_index: int) -> Path:
@@ -257,6 +432,8 @@ def _load_checkpoint(path: Path, exercises: Sequence[Exercise]) -> tuple[GradedA
     if not isinstance(raw, Mapping):
         raise PyramidExamError(f"invalid checkpoint structure: {path}")
     if raw.get("checkpoint_schema") != CHECKPOINT_SCHEMA:
+        return None
+    if raw.get("grading_semantics") != GRADING_SEMANTICS:
         return None
     if not isinstance(raw.get("grades"), list):
         raise PyramidExamError(f"invalid checkpoint structure: {path}")
@@ -291,6 +468,7 @@ def _write_checkpoint(path: Path, exercises: Sequence[Exercise], grades: Sequenc
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "checkpoint_schema": CHECKPOINT_SCHEMA,
+        "grading_semantics": GRADING_SEMANTICS,
         "exercise_ids": [item.exercise_id for item in exercises],
         "grades": [
             {
@@ -311,7 +489,12 @@ def _write_checkpoint(path: Path, exercises: Sequence[Exercise], grades: Sequenc
     temporary.replace(path)
 
 
-def summarize_exam(exercises: Sequence[Exercise], grades: Sequence[GradedAnswer], *, canonical_exam: bool = True) -> ExamOutcome:
+def summarize_exam(
+    exercises: Sequence[Exercise],
+    grades: Sequence[GradedAnswer],
+    *,
+    canonical_exam: bool = True,
+) -> ExamOutcome:
     if len(exercises) != len(grades):
         raise ValueError("exercise and grade counts must match")
     if not exercises:
