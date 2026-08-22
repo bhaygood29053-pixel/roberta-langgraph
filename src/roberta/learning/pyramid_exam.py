@@ -17,19 +17,23 @@ If an exercise asks about a time-sensitive value and no fresh evidence is suppli
 Return only valid JSON matching the requested schema. Do not include markdown fences."""
 
 GRADER_SYSTEM_PROMPT = """You are the evaluator for Roberta's Pyramid examination.
-Grade each response against the supplied question, expected answer, required reasoning points, and forbidden inferences.
+Grade the response against the QUESTION FIRST. The expected answer and reference reasoning points are supporting guidance for the intended concept; they are not a phrase checklist and do not create extra requirements that the question itself did not ask for.
 Judge conceptual meaning, not phrase overlap.
 
 Use exactly one grade:
-- PASS: the essential concept requested by the question is correct. Different wording, a standard equivalent definition, or a concise/general formulation is allowed when it accurately communicates the requested idea.
-- PARTIAL: the answer shows the correct core concept but omits an important element explicitly requested by the question, or contains a minor non-critical imprecision that does not overturn the main conclusion.
-- FAIL: the answer addresses the wrong concept, materially contradicts the grading material, misses the core concept, or makes a material unsupported inference.
+- PASS: the answer correctly satisfies what the question actually asks. Standard equivalent definitions, different wording, concise answers, or broader accurate formulations are fully acceptable.
+- PARTIAL: the answer has the correct core concept but misses an element that the QUESTION explicitly requests, or contains a minor non-critical imprecision that weakens but does not overturn the answer.
+- FAIL: the answer gives the wrong concept, materially contradicts the intended concept, fails the actual task in the question, or makes a material unsupported inference.
 
-Do not use PARTIAL merely because an answer is concise or does not repeat reference wording.
-Use incomplete_reasoning only for a genuinely missing requested element.
-Use unsupported_inference only for a substantive unsupported or conflicting claim.
-Mark a critical failure only when the response affirmatively commits a serious forbidden inference or fabricates evidence/execution.
-When uncertain between PASS and PARTIAL, prefer PASS if the essential requested concept is accurately communicated and no forbidden inference is present.
+Important grading rules:
+1. Never reduce a grade because a detail appears only in the expected answer or reference reasoning points but is not required by the question.
+2. Never require a specific phrase or framing when a standard equivalent definition communicates the same concept.
+3. Use incomplete_reasoning only when the question itself requests multiple elements and one or more are genuinely missing.
+4. Use unsupported_inference only for a substantive unsupported or conflicting claim, not harmless additional context.
+5. A response that answers a different concept should still FAIL even if that different concept is generally true.
+6. Mark a critical failure only when the response affirmatively commits a serious forbidden inference or fabricates evidence/execution.
+7. When uncertain between PASS and PARTIAL, prefer PASS if the question has been substantively answered and no forbidden inference is present.
+
 Return only valid JSON matching the requested schema. Do not include markdown fences."""
 
 CHECKPOINT_SCHEMA = "roberta-pyramid-checkpoint/v2"
@@ -157,10 +161,11 @@ def answer_batch(model: Any, exercises: Sequence[Exercise]) -> dict[str, str]:
 def _grader_payload(exercises: Sequence[Exercise], answers: Mapping[str, str]) -> dict[str, object]:
     return {
         "instruction": (
-            "Grade every response independently using PASS, PARTIAL, or FAIL. "
-            "PASS means the requested concept is substantively correct even when phrasing differs from the reference. "
-            "PARTIAL means the core concept is correct but an explicitly requested important element is missing or there is a minor non-critical imprecision. "
-            "FAIL means the core concept is wrong, materially contradicted, or replaced by a materially unsupported claim. "
+            "Grade every response independently using PASS, PARTIAL, or FAIL. Treat the question as the authoritative task. "
+            "The expected answer and reference reasoning points describe the intended concept but do not add mandatory details unless the question asks for them. "
+            "PASS when the question is substantively answered with a correct equivalent concept. "
+            "PARTIAL only when an element explicitly requested by the question is missing or there is a minor non-critical imprecision. "
+            "FAIL when the answer gives the wrong concept, materially contradicts the intended concept, or does not perform the requested task. "
             "failure_codes must be short stable identifiers such as factual_error, incomplete_reasoning, unsupported_inference, "
             "source_conflict_mishandled, excessive_certainty, stale_fact_used_as_current, or hallucinated_fact. Use [] for PASS."
         ),
@@ -180,7 +185,7 @@ def _grader_payload(exercises: Sequence[Exercise], answers: Mapping[str, str]) -
                 "exercise_id": item.exercise_id,
                 "question": item.question,
                 "expected_answer": item.expected_answer,
-                "required_reasoning_points": list(item.required_reasoning_points),
+                "reference_reasoning_points": list(item.required_reasoning_points),
                 "forbidden_inferences": list(item.forbidden_inferences),
                 "integrity_question": item.integrity_question,
                 "boss_question": item.boss_question,
