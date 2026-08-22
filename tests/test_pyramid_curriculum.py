@@ -1,0 +1,123 @@
+from __future__ import annotations
+
+import pytest
+
+from roberta.learning.pyramid import (
+    CANONICAL_LEVEL_QUESTION_COUNT,
+    Exercise,
+    derive_level_seed,
+    evaluate_level,
+    next_level_after,
+    select_level_exercises,
+)
+
+
+def _exercise(index: int, level: int = 1) -> Exercise:
+    return Exercise(
+        exercise_id=f"book001-l{level:02d}-{index:05d}",
+        curriculum_id="book001",
+        level=level,
+        concept="fundamentals",
+        question=f"Question {index}?",
+        expected_answer=f"Answer {index}",
+        source_refs=("book001/chapter-1",),
+        integrity_question=index % 20 == 0,
+        boss_question=index == 0,
+    )
+
+
+def test_level_selection_is_reproducible_and_seeded() -> None:
+    bank = tuple(_exercise(index) for index in range(1200))
+    first = select_level_exercises(bank, curriculum_id="book001", level=1, run_seed="run-a")
+    replay = select_level_exercises(bank, curriculum_id="book001", level=1, run_seed="run-a")
+    different = select_level_exercises(bank, curriculum_id="book001", level=1, run_seed="run-b")
+
+    assert len(first) == CANONICAL_LEVEL_QUESTION_COUNT
+    assert [item.exercise_id for item in first] == [item.exercise_id for item in replay]
+    assert [item.exercise_id for item in first] != [item.exercise_id for item in different]
+    assert derive_level_seed("run-a", "book001", 1) == derive_level_seed("run-a", "book001", 1)
+
+
+def test_selection_fails_when_bank_is_too_small() -> None:
+    bank = tuple(_exercise(index) for index in range(999))
+    with pytest.raises(ValueError, match="needs at least 1000"):
+        select_level_exercises(bank, curriculum_id="book001", level=1, run_seed="run-a")
+
+
+def test_progressive_thresholds_and_reset_semantics() -> None:
+    level_one = evaluate_level(
+        level=1,
+        total_questions=1000,
+        correct_questions=850,
+        integrity_total=50,
+        integrity_correct=50,
+        boss_passed=True,
+    )
+    assert level_one.passed is True
+    assert next_level_after(level_one) == 2
+
+    level_sixteen_fail = evaluate_level(
+        level=16,
+        total_questions=1000,
+        correct_questions=919,
+        integrity_total=50,
+        integrity_correct=50,
+        boss_passed=True,
+    )
+    assert level_sixteen_fail.passed is False
+    assert next_level_after(level_sixteen_fail) == 1
+
+
+def test_integrity_boss_and_critical_failures_can_block_pass() -> None:
+    low_integrity = evaluate_level(
+        level=10,
+        total_questions=1000,
+        correct_questions=990,
+        integrity_total=50,
+        integrity_correct=44,
+        boss_passed=True,
+    )
+    assert low_integrity.passed is False
+
+    boss_fail = evaluate_level(
+        level=10,
+        total_questions=1000,
+        correct_questions=990,
+        integrity_total=50,
+        integrity_correct=50,
+        boss_passed=False,
+    )
+    assert boss_fail.passed is False
+
+    critical_fail = evaluate_level(
+        level=10,
+        total_questions=1000,
+        correct_questions=990,
+        integrity_total=50,
+        integrity_correct=50,
+        boss_passed=True,
+        critical_failures=1,
+    )
+    assert critical_fail.passed is False
+
+
+def test_grandmaster_requires_95_percent() -> None:
+    fail = evaluate_level(
+        level=20,
+        total_questions=1000,
+        correct_questions=949,
+        integrity_total=50,
+        integrity_correct=50,
+        boss_passed=True,
+    )
+    passed = evaluate_level(
+        level=20,
+        total_questions=1000,
+        correct_questions=950,
+        integrity_total=50,
+        integrity_correct=50,
+        boss_passed=True,
+    )
+    assert fail.passed is False
+    assert passed.passed is True
+    assert next_level_after(passed) is None
