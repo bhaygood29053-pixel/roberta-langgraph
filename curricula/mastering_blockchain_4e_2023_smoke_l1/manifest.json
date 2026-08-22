@@ -7,6 +7,14 @@
   "approved_source_refs": [
     "mastering_blockchain_4e_2023"
   ],
+  "source_provenance": {
+    "contract": "roberta-pyramid-source-provenance/v1",
+    "file": "provenance.jsonl",
+    "source_key": "mastering_blockchain_4e_2023",
+    "source_artifact_sha256": "75e83498e8522886e422ab642f91d26f527dce5424b262fe818af59a0b1af550",
+    "source_transcript_sha256": "69f6429ed1515d5543bcaf67dd65701f892ea3127ac092f21eca6f93c57f8dac",
+    "location_scheme": "chapter + named section + printed book page(s)"
+  },
   "levels": [
     1
   ],
