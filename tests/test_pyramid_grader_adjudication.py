@@ -186,6 +186,18 @@ def test_follow_up_explain_is_an_explicit_multi_part_question():
     ) is True
 
 
+def test_scenario_quantity_does_not_make_single_explanation_multi_part():
+    assert _question_explicitly_requests_multiple_elements(
+        "Two nodes failed. Why did consensus stall?"
+    ) is False
+
+
+def test_requested_quantity_is_an_explicit_multi_part_question():
+    assert _question_explicitly_requests_multiple_elements(
+        "Name two benefits of removing a central trusted intermediary."
+    ) is True
+
+
 def test_independent_failure_codes_are_not_sent_to_omission_adjudicator():
     exercise = _smoke_exercise(
         "q-mixed",
