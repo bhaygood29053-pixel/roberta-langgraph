@@ -293,6 +293,8 @@ def _question_explicitly_requests_multiple_elements(question: str) -> bool:
         return True
     if re.search(r"[?.!]\s*(?:explain|justify|describe)\b", normalized):
         return True
+    if re.search(r"[?.!]\s*(?:why|how)\s*\?", normalized):
+        return True
     return _request_clause_has_conjoined_elements(normalized)
 
 
