@@ -394,20 +394,10 @@ def _default_trusted_source_resolver(source_key: str) -> TrustedSourceBinding | 
     )
 
 
-def _resolve_trusted_source_binding(
+def _validate_trusted_source_binding(
     source_key: str,
-    resolver: TrustedSourceResolver,
+    binding: object,
 ) -> TrustedSourceBinding:
-    try:
-        binding = resolver(source_key)
-    except Exception as exc:
-        raise CurriculumPackageError(
-            f"trusted source resolution failed for {source_key}"
-        ) from exc
-    if binding is None:
-        raise CurriculumPackageError(
-            f"no trusted source binding is registered for {source_key}"
-        )
     if not isinstance(binding, TrustedSourceBinding):
         raise CurriculumPackageError(
             f"trusted source binding for {source_key} is malformed"
@@ -437,6 +427,40 @@ def _resolve_trusted_source_binding(
         raise CurriculumPackageError(
             f"trusted source binding for {source_key} is malformed"
         )
+    return binding
+
+
+def _lookup_trusted_source_binding(
+    source_key: str,
+    resolver: TrustedSourceResolver,
+    *,
+    required: bool,
+) -> TrustedSourceBinding | None:
+    try:
+        binding = resolver(source_key)
+    except Exception as exc:
+        raise CurriculumPackageError(
+            f"trusted source resolution failed for {source_key}"
+        ) from exc
+    if binding is None:
+        if required:
+            raise CurriculumPackageError(
+                f"no trusted source binding is registered for {source_key}"
+            )
+        return None
+    return _validate_trusted_source_binding(source_key, binding)
+
+
+def _resolve_trusted_source_binding(
+    source_key: str,
+    resolver: TrustedSourceResolver,
+) -> TrustedSourceBinding:
+    binding = _lookup_trusted_source_binding(
+        source_key,
+        resolver,
+        required=True,
+    )
+    assert binding is not None
     return binding
 
 
@@ -491,14 +515,32 @@ def validate_package(
                 f"the approved manifest: {unknown}"
             )
 
+    resolver = source_resolver or _default_trusted_source_resolver
+    trusted_approved: dict[str, TrustedSourceBinding] = {}
+    for source_key in sorted(approved):
+        trusted = _lookup_trusted_source_binding(
+            source_key,
+            resolver,
+            required=False,
+        )
+        if trusted is not None:
+            trusted_approved[source_key] = trusted
+
+    if trusted_approved and "source_provenance" not in manifest:
+        raise CurriculumPackageError(
+            "registered approved source refs require source_provenance; "
+            f"registered={sorted(trusted_approved)}"
+        )
+
     if "source_provenance" in manifest:
         declaration = _validate_source_provenance_declaration(
             manifest["source_provenance"],
             approved_source_refs=approved,
         )
         source_key = str(declaration["source_key"])
-        resolver = source_resolver or _default_trusted_source_resolver
-        trusted = _resolve_trusted_source_binding(source_key, resolver)
+        trusted = trusted_approved.get(source_key)
+        if trusted is None:
+            trusted = _resolve_trusted_source_binding(source_key, resolver)
         _validate_manifest_against_trusted_source(
             manifest,
             declaration,
