@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime
 import json
 import re
@@ -17,8 +18,20 @@ _REQUIRED_PROVENANCE_SUPPORTS = frozenset(
 _SOURCE_AUTHORITY_CLASSES = frozenset({"primary", "secondary", "internal", "unknown"})
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
-TrustedSourceDigestBinding = tuple[str, str]
-TrustedSourceDigestResolver = Callable[[str], TrustedSourceDigestBinding | None]
+
+@dataclass(frozen=True, slots=True)
+class TrustedSourceBinding:
+    """Canonical source identity supplied independently of a curriculum package."""
+
+    source_artifact_sha256: str
+    source_transcript_sha256: str
+    source_title: str
+    source_version: str
+    source_origin: str
+    source_authority_class: str
+
+
+TrustedSourceResolver = Callable[[str], TrustedSourceBinding | None]
 
 
 class CurriculumPackageError(ValueError):
@@ -361,10 +374,8 @@ def load_source_provenance_jsonl(
     return tuple(records)
 
 
-def _default_trusted_source_digest_resolver(
-    source_key: str,
-) -> TrustedSourceDigestBinding | None:
-    """Resolve accepted Learning System user-source digests without trusting a package."""
+def _default_trusted_source_resolver(source_key: str) -> TrustedSourceBinding | None:
+    """Resolve accepted Learning System source identity without trusting a package."""
 
     from .source_ingestion import SourceIngestionError
     from .user_source_batch import get_user_source_spec
@@ -373,41 +384,97 @@ def _default_trusted_source_digest_resolver(
         spec = get_user_source_spec(source_key)
     except SourceIngestionError:
         return None
-    return spec.original_sha256, spec.transcript_sha256
+    return TrustedSourceBinding(
+        source_artifact_sha256=spec.original_sha256,
+        source_transcript_sha256=spec.transcript_sha256,
+        source_title=spec.title,
+        source_version=spec.version,
+        source_origin=spec.origin,
+        source_authority_class=spec.authority_class,
+    )
 
 
-def _resolve_trusted_source_digest_binding(
+def _resolve_trusted_source_binding(
     source_key: str,
-    resolver: TrustedSourceDigestResolver,
-) -> TrustedSourceDigestBinding:
+    resolver: TrustedSourceResolver,
+) -> TrustedSourceBinding:
     try:
         binding = resolver(source_key)
     except Exception as exc:
         raise CurriculumPackageError(
-            f"trusted source digest resolution failed for {source_key}"
+            f"trusted source resolution failed for {source_key}"
         ) from exc
     if binding is None:
         raise CurriculumPackageError(
-            f"no trusted source digest binding is registered for {source_key}"
+            f"no trusted source binding is registered for {source_key}"
         )
-    if (
-        not isinstance(binding, tuple)
-        or len(binding) != 2
-        or not all(
-            isinstance(digest, str) and _SHA256_RE.fullmatch(digest) is not None
-            for digest in binding
+    if not isinstance(binding, TrustedSourceBinding):
+        raise CurriculumPackageError(
+            f"trusted source binding for {source_key} is malformed"
+        )
+    if any(
+        _SHA256_RE.fullmatch(digest) is None
+        for digest in (
+            binding.source_artifact_sha256,
+            binding.source_transcript_sha256,
         )
     ):
         raise CurriculumPackageError(
-            f"trusted source digest binding for {source_key} is malformed"
+            f"trusted source binding for {source_key} is malformed"
+        )
+    if any(
+        not isinstance(candidate, str) or not candidate.strip()
+        for candidate in (
+            binding.source_title,
+            binding.source_version,
+            binding.source_origin,
+        )
+    ):
+        raise CurriculumPackageError(
+            f"trusted source binding for {source_key} is malformed"
+        )
+    if binding.source_authority_class not in _SOURCE_AUTHORITY_CLASSES:
+        raise CurriculumPackageError(
+            f"trusted source binding for {source_key} is malformed"
         )
     return binding
+
+
+def _validate_manifest_against_trusted_source(
+    manifest: Mapping[str, object],
+    declaration: Mapping[str, object],
+    trusted: TrustedSourceBinding,
+    *,
+    source_key: str,
+) -> None:
+    expected_fields = {
+        "source_artifact_sha256": trusted.source_artifact_sha256,
+        "source_transcript_sha256": trusted.source_transcript_sha256,
+    }
+    for field, expected in expected_fields.items():
+        if declaration[field] != expected:
+            label = "artifact" if field == "source_artifact_sha256" else "transcript"
+            raise CurriculumPackageError(
+                f"source_provenance {label} digest does not match trusted source {source_key}"
+            )
+
+    canonical_metadata = {
+        "source_title": trusted.source_title,
+        "source_version": trusted.source_version,
+        "source_origin": trusted.source_origin,
+        "source_authority_class": trusted.source_authority_class,
+    }
+    for field, expected in canonical_metadata.items():
+        if manifest[field] != expected:
+            raise CurriculumPackageError(
+                f"{field} does not match trusted source {source_key}"
+            )
 
 
 def validate_package(
     directory: str | Path,
     *,
-    source_digest_resolver: TrustedSourceDigestResolver | None = None,
+    source_resolver: TrustedSourceResolver | None = None,
 ) -> tuple[dict[str, object], tuple[Exercise, ...]]:
     root = Path(directory)
     manifest = load_manifest(root / "manifest.json")
@@ -430,18 +497,14 @@ def validate_package(
             approved_source_refs=approved,
         )
         source_key = str(declaration["source_key"])
-        resolver = source_digest_resolver or _default_trusted_source_digest_resolver
-        trusted_artifact_sha256, trusted_transcript_sha256 = (
-            _resolve_trusted_source_digest_binding(source_key, resolver)
+        resolver = source_resolver or _default_trusted_source_resolver
+        trusted = _resolve_trusted_source_binding(source_key, resolver)
+        _validate_manifest_against_trusted_source(
+            manifest,
+            declaration,
+            trusted,
+            source_key=source_key,
         )
-        if declaration["source_artifact_sha256"] != trusted_artifact_sha256:
-            raise CurriculumPackageError(
-                f"source_provenance artifact digest does not match trusted source {source_key}"
-            )
-        if declaration["source_transcript_sha256"] != trusted_transcript_sha256:
-            raise CurriculumPackageError(
-                f"source_provenance transcript digest does not match trusted source {source_key}"
-            )
 
         missing_source_binding = sorted(
             exercise.exercise_id
