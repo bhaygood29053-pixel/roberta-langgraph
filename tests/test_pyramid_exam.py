@@ -228,4 +228,51 @@ def test_old_checkpoint_schema_is_ignored_and_regraded(tmp_path):
     assert model.calls == 2
     assert result.level_result.accuracy == 1.0
     rewritten = json.loads(legacy.read_text(encoding="utf-8"))
-    assert rewritten["checkpoint_schema"] == "roberta-pyramid-checkpoint/v2"
+    assert rewritten["checkpoint_schema"] == "roberta-pyramid-checkpoint/v3"
+
+
+def test_v2_grading_checkpoint_is_invalidated_and_regraded_under_question_first_rubric(tmp_path):
+    exercises = (_exercise(1), _exercise(2, boss=True))
+    checkpoint = tmp_path / "level_01_batch_0001.json"
+    checkpoint.write_text(json.dumps({
+        "checkpoint_schema": "roberta-pyramid-checkpoint/v2",
+        "exercise_ids": ["q1", "q2"],
+        "grades": [
+            {
+                "exercise_id": "q1",
+                "answer": "old checklist answer",
+                "grade": "FAIL",
+                "score": 0.0,
+                "correct": False,
+                "failure_codes": ["incomplete_reasoning"],
+                "critical_failure": False,
+                "grader_note": "graded under old checklist rubric",
+            },
+            {
+                "exercise_id": "q2",
+                "answer": "old checklist answer",
+                "grade": "FAIL",
+                "score": 0.0,
+                "correct": False,
+                "failure_codes": ["incomplete_reasoning"],
+                "critical_failure": False,
+                "grader_note": "graded under old checklist rubric",
+            },
+        ],
+    }), encoding="utf-8")
+
+    model = FakeExamModel()
+    result = run_exam(
+        exercises=exercises,
+        answer_model=model,
+        grader_model=model,
+        batch_size=2,
+        checkpoint_dir=tmp_path,
+        canonical_exam=False,
+    )
+
+    assert model.calls == 2
+    assert result.level_result.accuracy == 1.0
+    rewritten = json.loads(checkpoint.read_text(encoding="utf-8"))
+    assert rewritten["checkpoint_schema"] == "roberta-pyramid-checkpoint/v3"
+    assert [item["grade"] for item in rewritten["grades"]] == ["PASS", "PASS"]
