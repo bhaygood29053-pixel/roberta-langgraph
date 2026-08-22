@@ -139,8 +139,12 @@ def main() -> None:
 
     if canonical:
         assert run_id is not None
-        ledger.record_failures(run_id, level, outcome.failure_counts)
+        # Commit the authoritative level result first. If a process dies before
+        # this point, checkpoints allow a safe replay without duplicate ledger
+        # state. Failure aggregates are supplementary analytics and are written
+        # only after the level transition succeeds.
         ledger.record_level_result(run_id, result)
+        ledger.record_failures(run_id, level, outcome.failure_counts)
         print(f"LEDGER_RECORDED {args.db}")
         if result.passed and level < 20:
             print(f"UNLOCKED_LEVEL {level + 1}")
