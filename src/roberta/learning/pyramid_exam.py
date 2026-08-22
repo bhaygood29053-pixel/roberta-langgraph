@@ -36,7 +36,7 @@ Important grading rules:
 
 Return only valid JSON matching the requested schema. Do not include markdown fences."""
 
-CHECKPOINT_SCHEMA = "roberta-pyramid-checkpoint/v2"
+CHECKPOINT_SCHEMA = "roberta-pyramid-checkpoint/v3"
 GRADE_SCORES = {"PASS": 1.0, "PARTIAL": 0.5, "FAIL": 0.0}
 
 
