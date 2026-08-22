@@ -27,7 +27,7 @@ roberta-pyramid-run = "roberta.learning.pyramid_run_cli:main"
 roberta-pyramid-remediate = "roberta.learning.pyramid_remediation_cli:main"
 
 [tool.setuptools.package-data]
-"roberta.learning" = ["sources/*.md"]
+"roberta.learning" = ["sources/*.md", "sources/*.gz.b64"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
