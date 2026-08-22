@@ -1,6 +1,6 @@
 # Learning System Phase 10 — Verified Lesson Retention Foundation
 
-Status: **proposed roadmap / implementation contract for Issue #133**. No runtime implementation is authorized until this gate is accepted.
+Status: **accepted roadmap / implementation contract for Issue #133 via PR #134**. This contract gate is accepted; runtime implementation PR #136 remains unaccepted and must not merge until its independent blockers are resolved and all required review axes pass.
 
 ## Purpose
 
@@ -39,9 +39,9 @@ provider-neutral Phase 10 retention store only
 
 Phase 10 must not create a direct candidate/reflection-to-memory shortcut.
 
-## Proposed first contracts
+## Accepted first contracts
 
-The implementation issue may refine names before code, but the public seam must remain narrow and typed. The proposed v1 records are:
+The accepted v1 public seam is narrow and typed:
 
 ```text
 retention_contract = verified-lesson-retention/v1
@@ -279,4 +279,4 @@ Phase 10 does not add:
 
 ## Gate acceptance
 
-If this roadmap/spec PR is accepted, Issue #133 becomes the active Learning System implementation gate. Implementation must still follow behavior-first tests, exact-head deterministic CI, and the independent **Spec Fidelity / Code-Architecture / Authority-Safety** review gate before merge.
+This roadmap/spec gate was accepted by PR #134 for Issue #133. Issue #133 is therefore the active Learning System Phase 10 implementation gate. Acceptance of this contract does **not** accept implementation PR #136: implementation must still resolve its current blockers, follow behavior-first tests, pass exact-head deterministic CI, and pass the independent **Spec Fidelity / Code-Architecture / Authority-Safety** review gate before merge.

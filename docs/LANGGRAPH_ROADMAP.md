@@ -30,11 +30,15 @@ Roberta has completed:
 - **Learning System Phase 8 — deterministic provisional reflection + candidate-lesson foundation (#127/#128);**
 - **Learning System Phase 9 — deterministic independent candidate-lesson verification (#129/#131).**
 
+The accepted active Learning System gate is:
+
+- **Learning System Phase 10 — verified lesson retention foundation (#133/#134): ACCEPTED / ACTIVE; implementation not yet accepted.**
+
 Phase 5 — X1 Evidence Completeness remains deliberately **bounded**, with explicit verified/bounded/partial/unavailable/conflict/insufficient-evidence states.
 
 Roberta Phase 11 — Controlled Execution remains **locked / not started**.
 
-The **Roberta Learning System remains the primary development track**, but no retained/reusable verified-learning promotion or retention milestone is currently accepted or active. Any next learning slice requires a dedicated issue/spec/roadmap gate. Existing CMIS, Chain Scout, transport, policy, memory, and approval paths should remain stable unless a change is directly required to support an accepted Learning System gate or fix a proven defect.
+The **Roberta Learning System remains the primary development track**. Phase 10 retention has an accepted contract under Issue #133 / PR #134, but its implementation must still pass exact-head deterministic verification and the independent Spec / Code-Architecture / Authority-Safety gate. Existing CMIS, Chain Scout, transport, policy, memory, and approval paths should remain stable unless a change is directly required to support the accepted Learning System gate or fix a proven defect.
 
 ## Canonical hierarchy
 
@@ -68,7 +72,7 @@ A roadmap item being active does not waive those gates. A PR is not merge-ready 
 
 ## Learning System primary track
 
-The Learning System follows the evidence-grounded design in [`LEARNING_SYSTEM.md`](./LEARNING_SYSTEM.md), [`LEARNING_SYSTEM_STRUCTURE.md`](./LEARNING_SYSTEM_STRUCTURE.md), [`LEARNING_SYSTEM_CHUNKING.md`](./LEARNING_SYSTEM_CHUNKING.md), [`LEARNING_SYSTEM_INDEXING.md`](./LEARNING_SYSTEM_INDEXING.md), [`LEARNING_SYSTEM_RETRIEVAL.md`](./LEARNING_SYSTEM_RETRIEVAL.md), [`LEARNING_SYSTEM_GROUNDING.md`](./LEARNING_SYSTEM_GROUNDING.md), [`LEARNING_SYSTEM_EVALUATION.md`](./LEARNING_SYSTEM_EVALUATION.md), [`LEARNING_SYSTEM_REFLECTION.md`](./LEARNING_SYSTEM_REFLECTION.md), [`LEARNING_SYSTEM_VERIFICATION.md`](./LEARNING_SYSTEM_VERIFICATION.md), and the broader Roberta Learning System Specification v1.1.
+The Learning System follows the evidence-grounded design in [`LEARNING_SYSTEM.md`](./LEARNING_SYSTEM.md), [`LEARNING_SYSTEM_STRUCTURE.md`](./LEARNING_SYSTEM_STRUCTURE.md), [`LEARNING_SYSTEM_CHUNKING.md`](./LEARNING_SYSTEM_CHUNKING.md), [`LEARNING_SYSTEM_INDEXING.md`](./LEARNING_SYSTEM_INDEXING.md), [`LEARNING_SYSTEM_RETRIEVAL.md`](./LEARNING_SYSTEM_RETRIEVAL.md), [`LEARNING_SYSTEM_GROUNDING.md`](./LEARNING_SYSTEM_GROUNDING.md), [`LEARNING_SYSTEM_EVALUATION.md`](./LEARNING_SYSTEM_EVALUATION.md), [`LEARNING_SYSTEM_REFLECTION.md`](./LEARNING_SYSTEM_REFLECTION.md), [`LEARNING_SYSTEM_VERIFICATION.md`](./LEARNING_SYSTEM_VERIFICATION.md), [`LEARNING_SYSTEM_RETENTION.md`](./LEARNING_SYSTEM_RETENTION.md), and the broader Roberta Learning System Specification v1.1.
 
 ### Learning System Phase 1 — Source ingestion ✅ Complete
 
@@ -343,20 +347,45 @@ Accepted verification for PR #131 recorded **640 deterministic tests passing wit
 
 A `verified_for_learning` result means only that the candidate passed the accepted Phase 9 verification contract. It does **not** itself write trusted durable memory, write source truth, change source approval, alter CMIS/provider trust, mutate protected policy/governance, or authorize wallet/transaction execution.
 
-### Next Learning gate — retained/reusable verified-learning promotion or retention ⬜ Not yet accepted
+### Learning System Phase 10 — Verified lesson retention foundation 🟡 Active / implementation not yet accepted
 
-The Learning System specification requires retention/promotion to remain separate from verification. No next phase number, retention contract, durable-memory write path, or promotion authority is currently accepted.
+Issue #133 / PR #134 accepted the first retention contract. The phase starts the `RETAIN` step without treating Phase 9 verification as automatic promotion.
 
-Before implementation can begin, a dedicated roadmap gate and issue/spec must define at minimum:
+The accepted first-slice boundary is:
 
-- what verified learning state is eligible for retention;
-- independent provenance/revalidation requirements at promotion time;
-- which storage lane, if any, may receive retained learning;
-- explicit rejection/supersession/revocation and regression behavior;
-- separation from source truth, current CMIS/provider facts, protected governance, and execution authority;
-- human approval or other policy requirements if any consequential durable write is proposed.
+```text
+canonical Phase 8 LearningCandidateBundle
+  + canonical Phase 9 CandidateVerificationResult(status=verified_for_learning)
+        ↓ exact Phase 9 revalidation
+procedural lesson type/scope eligibility
+complete canonical contradiction/source snapshot
+exact duplicate handling
+categorical confidence basis
+exact human retention approval
+        ↓
+RetentionDecision
+        ↓ only when every mandatory gate passes
+VerifiedLessonRecord
+        ↓
+provider-neutral in-memory Phase 10 store only
+```
 
-Until that gate is accepted, `verified_for_learning` remains non-promoting verification evidence and no Phase 9 output authorizes HXMP/durable-memory writes or source-store promotion.
+Phase 10 must preserve, at minimum:
+
+- exact Phase 8/9 candidate, reflection, plan, evaluation, packet/result/retrieval, retest, check, and verification provenance;
+- a narrow procedural-learning eligibility allowlist that excludes factual/current-market claims, protected policy, permissions, credentials, and execution instructions;
+- a trusted, complete, content-addressed enumeration of every active overlapping verified lesson and every canonical approved source/evidence unit in the declared scope, including required lifecycle/superseding versions;
+- inconclusive/fail-closed behavior when source enumeration, contradiction evaluation, lifecycle state, or other completeness evidence is unavailable;
+- deterministic exact-duplicate handling without parallel trusted lessons or lost provenance;
+- categorical confidence basis without fabricated calibrated probability;
+- explicit human approval bound to `action_type=retain_verified_lesson`, exact proposal/binding hashes, scope/contract/provenance/snapshot/results/confidence/thread, and an application-authenticated human principal;
+- one-time approval binding consumption so replay cannot create another trusted lesson;
+- deterministic/content-addressed retention, lesson, decision, snapshot, and immutable lifecycle/audit identities;
+- provider-neutral/in-memory storage only in v1.
+
+Implementation PR #136 is currently **draft / not merge-ready** after independent review identified blockers in procedural-body eligibility, source contradiction evaluation, trusted source-scope completeness enumeration, lifecycle transition evidence/decision binding, and duplicate provenance retention. Green deterministic CI does not override these failed review axes. The implementation must resolve those boundaries, rerun exact-head CI, and pass the independent three-axis review before merge.
+
+Phase 10 does not authorize HXMP writes or any external durable-memory write. It also does not authorize source-store writes from generated text, source truth, current market/blockchain truth, source approval changes, CMIS/provider trust changes, protected governance mutation, wallet authority, transaction preparation/signing/broadcasting, custody, trading, or Controlled Execution. Any future HXMP verified-lesson persistence requires a separate accepted gate.
 
 ## Technology Radar design boundary — Issue #100
 
@@ -476,6 +505,12 @@ Exact canonical asset/evidence binding remains a CMIS/request-contract requireme
 
 The service does not establish total unique holders or beneficial owners. Token-account concentration remains token-account concentration. Optional threshold output is deterministic policy evaluation, not risk, and Proof Score remains separate from risk.
 
+## CMIS post-Phase-12 internal foundations — not promoted to Roberta
+
+CMIS has additionally completed deterministic descriptive concentration-direction classification, direct wallet-relationship evidence with explicit non-ownership semantics, and the first concentration-threshold alert evidence foundation under CMIS #263/#264. These remain internal/read-only/non-promoted and do not create Roberta or Chain Scout operations by implication.
+
+The concentration-alert foundation consumes canonical CMIS concentration-change evidence and deterministic threshold/comparator/freshness/persistence rules. It is not a risk score and does not authorize public alert delivery, Scout reliance, Roberta planner behavior, behavioral/ownership labels, or execution. Any future CMIS alert promotion and any Roberta adoption/readiness work require separately accepted gates.
+
 ## X1 evidence boundary 🟡 Bounded
 
 X1 is the mature CMIS surface, but completeness remains field- and scope-specific.
@@ -540,16 +575,14 @@ If Controlled Execution is ever promoted, it requires a separate accepted transa
 
 ## Deferred / maintenance intelligence boundary
 
-The first narrow CMIS 1.9 promotion/adoption and the current Solana read-only readiness gate are complete. Additional read-only intelligence work remains valid but is not the primary Roberta development track while the Learning System is being built. Future CMIS/Scout work should proceed only through separately accepted deterministic contracts, especially:
+The first narrow CMIS 1.9 promotion/adoption, the current Solana read-only readiness gate, and the first internal concentration-threshold alert evidence foundation are complete. Additional read-only intelligence work remains valid but is not the primary Roberta development track while the Learning System is being built. Future CMIS/Scout work should proceed only through separately accepted deterministic contracts, especially:
 
-1. deterministic inference/classification contracts before behavioral/ownership labels;
-2. wallet relationship evidence with explicit non-ownership semantics;
-3. evidence-backed alerts with explicit scope/freshness/threshold/persistence rules;
-4. deeper X1 provider-gap and historical redundancy verification;
-5. field-by-field Solana maturity beyond the currently accepted Scout surface;
-6. future Ethereum support only under an explicit capability/verification plan.
+1. deeper X1 provider-gap and historical redundancy verification;
+2. field-by-field Solana maturity beyond the currently accepted Scout surface;
+3. any public alert service / Scout-reliance promotion and later Roberta adoption under separate gates;
+4. future Ethereum support only under an explicit capability/verification plan.
 
-None of these items starts Controlled Execution or creates an accepted next Learning System promotion/retention gate.
+None of these items starts Controlled Execution or widens the accepted Learning System Phase 10 retention gate.
 
 ## Core rule
 
