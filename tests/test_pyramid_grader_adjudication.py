@@ -8,6 +8,7 @@ from roberta.learning.pyramid import Exercise
 from roberta.learning.pyramid_exam import (
     GRADING_SEMANTICS,
     PyramidExamError,
+    _question_explicitly_requests_multiple_elements,
     grade_batch,
     run_exam,
 )
@@ -177,6 +178,48 @@ def test_question_first_adjudication_fails_closed_if_single_part_incomplete_reas
 
     with pytest.raises(PyramidExamError, match="does not explicitly request multiple elements"):
         grade_batch(StubbornAnchoringModel(), (exercise,), answers)
+
+
+def test_follow_up_explain_is_an_explicit_multi_part_question():
+    assert _question_explicitly_requests_multiple_elements(
+        "Can a permissioned blockchain be public according to the source? Explain."
+    ) is True
+
+
+def test_independent_failure_codes_are_not_sent_to_omission_adjudicator():
+    exercise = _smoke_exercise(
+        "q-mixed",
+        question="Explain two properties of a permissioned ledger.",
+        expected_answer="Known participants and controlled access.",
+        reasoning_points=("known participants", "controlled access"),
+        subconcept="permissioned_ledger",
+    )
+    answers = {exercise.exercise_id: "It is open to everyone."}
+
+    class MixedFailureModel:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def invoke(self, messages):
+            self.calls += 1
+            if self.calls > 1:
+                raise AssertionError("mixed independent failures must not be adjudicated")
+            return _Response(json.dumps({
+                "grades": [{
+                    "exercise_id": exercise.exercise_id,
+                    "grade": "FAIL",
+                    "failure_codes": ["factual_error", "incomplete_reasoning"],
+                    "critical_failure": False,
+                    "grader_note": "Wrong access model and incomplete response.",
+                }]
+            }))
+
+    model = MixedFailureModel()
+    grades = grade_batch(model, (exercise,), answers)
+
+    assert model.calls == 1
+    assert grades[0].grade == "FAIL"
+    assert grades[0].failure_codes == ("factual_error", "incomplete_reasoning")
 
 
 def test_current_schema_checkpoint_without_new_grading_semantics_is_regraded(tmp_path):
