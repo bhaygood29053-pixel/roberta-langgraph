@@ -40,7 +40,7 @@ Important grading rules:
 Return only valid JSON matching the requested schema. Do not include markdown fences."""
 
 ADJUDICATOR_SYSTEM_PROMPT = """You are the second-pass question-first adjudicator for Roberta's Pyramid examination.
-Review only disputed grades that were marked incomplete_reasoning. Your job is to detect and correct reference-detail anchoring without making the exam easier.
+Review only disputed grades that were marked solely with incomplete_reasoning. Your job is to detect and correct reference-detail anchoring without making the exam easier.
 
 The QUESTION is authoritative. Expected answers and reference reasoning points explain the intended concept but are not a mandatory checklist unless the question explicitly requests those elements.
 
@@ -49,7 +49,7 @@ Rules:
 2. For a single definition or characterization question, omission of a reference-only implementation detail is not incomplete_reasoning.
 3. If the response is too narrow, substitutes a related but different concept, or otherwise weakens the requested concept, retain PARTIAL or FAIL and use conceptual_mismatch or factual_error rather than incomplete_reasoning.
 4. Keep incomplete_reasoning only when the wording of the question itself explicitly asks for multiple elements and one or more are genuinely missing.
-5. Do not relax forbidden-inference, integrity, fabrication, stale-live-data, or critical-failure rules. Never upgrade an initial critical failure.
+5. Do not relax forbidden-inference, integrity, fabrication, stale-live-data, or critical-failure rules. Grades with any independent failure code are not eligible for this adjudication pass.
 6. Judge conceptual meaning, not phrase overlap.
 
 Return only valid JSON matching the requested schema. Do not include markdown fences."""
@@ -269,6 +269,8 @@ def _question_explicitly_requests_multiple_elements(question: str) -> bool:
         return True
     if re.search(r"\b(?:differences|similarities|advantages and disadvantages|pros and cons)\b", normalized):
         return True
+    if re.search(r"[?.!]\s*(?:explain|justify|describe)\b", normalized):
+        return True
     if " and " in normalized and re.search(r"\b(?:what|why|how|explain|describe)\b", normalized):
         return True
     return False
@@ -279,7 +281,7 @@ def _needs_question_first_adjudication(exercise: Exercise, grade: GradedAnswer) 
         exercise.grading_rubric_id == "pyramid-question-first-v1"
         and grade.grade != "PASS"
         and not grade.critical_failure
-        and "incomplete_reasoning" in grade.failure_codes
+        and grade.failure_codes == ("incomplete_reasoning",)
     )
 
 
@@ -290,7 +292,7 @@ def _adjudication_payload(
     grade_by_id = {item.exercise_id: item for item in grades}
     return {
         "instruction": (
-            "Re-adjudicate each disputed result under the question-first rubric. The initial result used incomplete_reasoning. "
+            "Re-adjudicate each disputed result under the question-first rubric. The initial result used only incomplete_reasoning. "
             "Decide whether the alleged omission is actually demanded by the question or merely appears in the reference guidance. "
             "PASS a substantively correct single-definition/characterization response when the omitted detail is reference-only. "
             "If the response is narrower than or mismatches the concept asked for, keep PARTIAL/FAIL but use conceptual_mismatch or factual_error instead of incomplete_reasoning. "
