@@ -198,6 +198,18 @@ def test_requested_quantity_is_an_explicit_multi_part_question():
     ) is True
 
 
+def test_scenario_conjunction_does_not_make_single_explanation_multi_part():
+    assert _question_explicitly_requests_multiple_elements(
+        "Two honest nodes receive updates at different times and temporarily disagree. What role should consensus play?"
+    ) is False
+
+
+def test_request_clause_conjunction_can_be_explicitly_multi_part():
+    assert _question_explicitly_requests_multiple_elements(
+        "How does replication improve fault tolerance and availability in a distributed network?"
+    ) is True
+
+
 def test_independent_failure_codes_are_not_sent_to_omission_adjudicator():
     exercise = _smoke_exercise(
         "q-mixed",
