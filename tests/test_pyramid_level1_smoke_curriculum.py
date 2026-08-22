@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from roberta.learning.curriculum_io import validate_package
@@ -14,6 +15,12 @@ CURRICULUM_ROOT = (
 )
 CURRICULUM_ID = "mastering_blockchain_4e_2023_smoke_l1"
 SOURCE_REF = "mastering_blockchain_4e_2023"
+PROVENANCE_CONTRACT = "roberta-pyramid-source-provenance/v1"
+
+
+def _provenance_records() -> tuple[dict[str, object], ...]:
+    path = CURRICULUM_ROOT / "provenance.jsonl"
+    return tuple(json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip())
 
 
 def test_level1_smoke_package_is_valid_and_source_bound() -> None:
@@ -71,8 +78,57 @@ def test_level1_smoke_selection_contains_all_50_including_integrity_and_boss() -
 
 
 def test_level1_smoke_source_ref_is_an_accepted_static_external_reference() -> None:
+    manifest, _ = validate_package(CURRICULUM_ROOT)
     spec = get_user_source_spec(SOURCE_REF)
+    provenance = manifest["source_provenance"]
 
     assert spec.authority_class == "secondary"
     assert spec.storage_mode == "external_exact_transcript"
     assert spec.live_state_authorized is False
+    assert provenance["contract"] == PROVENANCE_CONTRACT
+    assert provenance["file"] == "provenance.jsonl"
+    assert provenance["source_key"] == SOURCE_REF
+    assert provenance["source_artifact_sha256"] == spec.original_sha256
+    assert provenance["source_transcript_sha256"] == spec.transcript_sha256
+
+
+def test_every_smoke_exercise_has_auditable_granular_source_location() -> None:
+    _, exercises = validate_package(CURRICULUM_ROOT)
+    records = _provenance_records()
+    exercise_ids = {item.exercise_id for item in exercises}
+
+    assert len(records) == 50
+    assert {record["exercise_id"] for record in records} == exercise_ids
+
+    for record in records:
+        assert record["source_key"] == SOURCE_REF
+        assert set(record["supports"]) >= {
+            "question",
+            "expected_answer",
+            "required_reasoning_points",
+        }
+        locations = record["locations"]
+        assert isinstance(locations, list) and locations
+        for location in locations:
+            assert isinstance(location["chapter"], str) and location["chapter"].startswith("Chapter ")
+            assert isinstance(location["section"], str) and location["section"].strip()
+            pages = location["book_pages"]
+            assert isinstance(pages, list) and pages
+            assert all(isinstance(page, int) and page > 0 for page in pages)
+
+        # Provenance is an auditable locator only; copyrighted source text stays out of the repo.
+        assert "text" not in record
+        assert "excerpt" not in record
+
+
+def test_boss_provenance_spans_all_required_synthesis_regions() -> None:
+    by_id = {record["exercise_id"]: record for record in _provenance_records()}
+    boss = by_id["mb4e-l1-smoke-050"]
+
+    assert len(boss["locations"]) == 5
+    chapters = {location["chapter"] for location in boss["locations"]}
+    assert chapters == {
+        "Chapter 1: Blockchain 101",
+        "Chapter 5: Consensus Algorithms",
+        "Chapter 6: Bitcoin Architecture",
+    }
