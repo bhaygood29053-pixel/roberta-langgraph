@@ -1,0 +1,66 @@
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+
+from .curriculum_io import validate_package
+from .pyramid_remediation import build_remediation_plan, load_weak_items, select_fresh_practice, write_practice_jsonl
+
+
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Build a targeted Pyramid remediation plan from checkpoint results.")
+    parser.add_argument("--curriculum", default="curricula/mastering_blockchain_4e_2023")
+    parser.add_argument("--checkpoints", default=".roberta/pyramid_checkpoints/mastering_blockchain_4e_2023_book01/smoke")
+    parser.add_argument("--output", default=".roberta/pyramid_remediation/mastering_blockchain_4e_2023_book01")
+    parser.add_argument("--practice-per-weakness", type=int, default=5)
+    parser.add_argument("--seed", default="remediation-001")
+    return parser
+
+
+def main() -> int:
+    args = _parser().parse_args()
+    manifest, exercises = validate_package(args.curriculum)
+    weak_items = load_weak_items(args.checkpoints)
+    if not weak_items:
+        raise SystemExit("No PARTIAL/FAIL/critical checkpoint items found; nothing to remediate.")
+
+    plan = build_remediation_plan(exercises, weak_items)
+    practice = select_fresh_practice(
+        exercises,
+        weak_items,
+        per_weakness=args.practice_per_weakness,
+        seed=args.seed,
+    )
+
+    output = Path(args.output)
+    output.mkdir(parents=True, exist_ok=True)
+    plan_path = output / "remediation_plan.json"
+    practice_path = output / "practice_questions.jsonl"
+    plan_payload = {
+        "curriculum_id": manifest["curriculum_id"],
+        "seed": args.seed,
+        "practice_question_count": len(practice),
+        **plan,
+    }
+    plan_path.write_text(json.dumps(plan_payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    write_practice_jsonl(practice_path, practice)
+
+    print(f"CURRICULUM {manifest['curriculum_id']}")
+    print(f"WEAK_ITEMS {plan['weak_item_count']}")
+    print(f"WEAKNESSES {plan['weakness_count']}")
+    print(f"FRESH_PRACTICE {len(practice)}")
+    print(f"PLAN {plan_path}")
+    print(f"PRACTICE {practice_path}")
+    print("\n--- TOP REMEDIATION TARGETS ---")
+    for item in plan["weaknesses"][:10]:
+        print(
+            f"{item['concept']}/{item['subconcept']} "
+            f"priority={item['priority']} fail={item['fail_count']} "
+            f"partial={item['partial_count']} critical={item['critical_count']}"
+        )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
