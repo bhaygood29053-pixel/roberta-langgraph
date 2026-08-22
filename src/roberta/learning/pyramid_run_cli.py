@@ -10,6 +10,7 @@ from roberta.models import create_runtime_model
 
 from .curriculum_io import validate_package
 from .pyramid import CANONICAL_LEVEL_QUESTION_COUNT, select_level_exercises
+from .pyramid_answer_recovery import MissingAnswerRetryModel
 from .pyramid_exam import run_exam
 from .training_ledger import PyramidTrainingLedger
 
@@ -121,10 +122,11 @@ def main() -> None:
         print(f"RESUME_RUN_ID {run_id}")
 
     model = create_runtime_model()
+    answer_model = MissingAnswerRetryModel(model)
     checkpoint_dir = Path(args.checkpoint_dir) / curriculum_id / str(seed)
     outcome = run_exam(
         exercises=selected,
-        answer_model=model,
+        answer_model=answer_model,
         grader_model=model,
         batch_size=args.batch_size,
         checkpoint_dir=checkpoint_dir,
