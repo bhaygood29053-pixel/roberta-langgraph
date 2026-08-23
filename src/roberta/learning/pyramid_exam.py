@@ -36,27 +36,30 @@ Important grading rules:
 7. A response that answers a different concept should still FAIL even if that different concept is generally true.
 8. Mark a critical failure only when the response affirmatively commits a serious forbidden inference or fabricates evidence/execution.
 9. When uncertain between PASS and PARTIAL, prefer PASS if the question has been substantively answered and no forbidden inference is present.
+10. A forbidden inference must be affirmatively present in the response. Do not infer a forbidden claim merely because the response omits a preferred qualifier or uses equivalent qualified/conditional wording.
 
 Return only valid JSON matching the requested schema. Do not include markdown fences."""
 
 ADJUDICATOR_SYSTEM_PROMPT = """You are the second-pass question-first adjudicator for Roberta's Pyramid examination.
-Review only disputed grades that were marked solely with incomplete_reasoning. Your job is to detect and correct reference-detail anchoring without making the exam easier.
+Review only the disputed grades selected by the deterministic Pyramid contract. Your job is to detect and correct reference-detail or forbidden-inference anchoring without making the exam easier.
 
-The QUESTION is authoritative. Expected answers and reference reasoning points explain the intended concept but are not a mandatory checklist unless the question explicitly requests those elements.
+The QUESTION is authoritative. Expected answers and reference reasoning points explain the intended concept but are not a mandatory phrase checklist unless the question explicitly requests those elements.
 
 Rules:
-1. PASS when the response substantively and correctly answers the question, even if a reference answer contains additional true details not separately requested.
-2. For a single definition or characterization question, omission of a reference-only implementation detail is not incomplete_reasoning.
-3. If the response is too narrow, substitutes a related but different concept, or otherwise weakens the requested concept, retain PARTIAL or FAIL and use conceptual_mismatch or factual_error rather than incomplete_reasoning.
+1. PASS when the response substantively and correctly answers the question, even if a reference answer contains additional true details or preferred wording not separately requested.
+2. For a single definition or characterization question, omission of a reference-only implementation detail or preferred qualifier is not itself a grading defect.
+3. If the response is too narrow, substitutes a related but different concept, materially misframes the concept, or affirmatively commits a forbidden inference, retain PARTIAL or FAIL with the appropriate failure code.
 4. Keep incomplete_reasoning only when the wording of the question itself explicitly asks for multiple elements and one or more are genuinely missing.
-5. Do not relax forbidden-inference, integrity, fabrication, stale-live-data, or critical-failure rules. Grades with any independent failure code are not eligible for this adjudication pass.
-6. Judge conceptual meaning, not phrase overlap.
+5. Do not relax integrity, fabrication, stale-live-data, forbidden-inference, or critical-failure rules. An affirmative forbidden inference remains non-PASS.
+6. Do not infer a forbidden claim from silence or from wording that explicitly qualifies, conditions, limits, or makes the supposedly forbidden state merely difficult, costly, infeasible, or otherwise non-absolute.
+7. Judge conceptual meaning, not phrase overlap.
 
 Return only valid JSON matching the requested schema. Do not include markdown fences."""
 
 CHECKPOINT_SCHEMA = "roberta-pyramid-checkpoint/v3"
-GRADING_SEMANTICS = "question-first-adjudication/v1"
+GRADING_SEMANTICS = "question-first-adjudication/v2"
 GRADE_SCORES = {"PASS": 1.0, "PARTIAL": 0.5, "FAIL": 0.0}
+_QUESTION_FIRST_RUBRICS = frozenset({"pyramid-question-first-v1", "MB4E-L1-RUBRIC-V1"})
 
 
 class PyramidExamError(RuntimeError):
@@ -184,6 +187,7 @@ def _grader_payload(exercises: Sequence[Exercise], answers: Mapping[str, str]) -
             "The expected answer and reference reasoning points describe the intended concept but do not add mandatory details unless the question asks for them. "
             "A single definition or characterization question is not a checklist: a substantively correct characterization should PASS even when the reference contains extra true details. "
             "Use incomplete_reasoning only for elements explicitly requested by the question. If an answer is too narrow or substitutes a related concept, use conceptual_mismatch or factual_error instead. "
+            "A forbidden inference must be affirmatively present; qualified or conditional wording must be judged by its actual meaning rather than by omission of a preferred phrase. "
             "FAIL when the answer gives the wrong concept, materially contradicts the intended concept, or does not perform the requested task. "
             "failure_codes must be short stable identifiers such as factual_error, conceptual_mismatch, incomplete_reasoning, unsupported_inference, "
             "source_conflict_mishandled, excessive_certainty, stale_fact_used_as_current, or hallucinated_fact. Use [] for PASS."
@@ -299,11 +303,15 @@ def _question_explicitly_requests_multiple_elements(question: str) -> bool:
 
 
 def _needs_question_first_adjudication(exercise: Exercise, grade: GradedAnswer) -> bool:
+    if exercise.grading_rubric_id not in _QUESTION_FIRST_RUBRICS:
+        return False
+    if grade.grade == "PASS" or grade.critical_failure:
+        return False
+    if grade.failure_codes == ("incomplete_reasoning",):
+        return True
     return (
-        exercise.grading_rubric_id == "pyramid-question-first-v1"
-        and grade.grade != "PASS"
-        and not grade.critical_failure
-        and grade.failure_codes == ("incomplete_reasoning",)
+        exercise.grading_rubric_id == "MB4E-L1-RUBRIC-V1"
+        and grade.failure_codes == ("factual_error",)
     )
 
 
@@ -314,10 +322,11 @@ def _adjudication_payload(
     grade_by_id = {item.exercise_id: item for item in grades}
     return {
         "instruction": (
-            "Re-adjudicate each disputed result under the question-first rubric. The initial result used only incomplete_reasoning. "
-            "Decide whether the alleged omission is actually demanded by the question or merely appears in the reference guidance. "
-            "PASS a substantively correct single-definition/characterization response when the omitted detail is reference-only. "
-            "If the response is narrower than or mismatches the concept asked for, keep PARTIAL/FAIL but use conceptual_mismatch or factual_error instead of incomplete_reasoning. "
+            "Re-adjudicate each disputed result under the accepted question-first policy. "
+            "The initial result may reflect incomplete_reasoning or, for an explicitly compatible MB4E rubric, a sole factual_error that may have been caused by reference-detail or forbidden-inference anchoring. "
+            "Decide whether the alleged defect is actually present in the Roberta answer or merely inferred from missing preferred wording. "
+            "PASS a substantively correct response when omitted wording is reference-only or the answer communicates an equivalent qualified/non-absolute concept. "
+            "If the response is narrower than or mismatches the concept, or affirmatively commits a forbidden inference, keep PARTIAL/FAIL with the appropriate failure code. "
             "Keep incomplete_reasoning only when question_explicitly_requests_multiple_elements is true and a requested element is actually absent."
         ),
         "schema": {
@@ -334,6 +343,7 @@ def _adjudication_payload(
         "items": [
             {
                 "exercise_id": item.exercise_id,
+                "grading_rubric_id": item.grading_rubric_id,
                 "question": item.question,
                 "question_explicitly_requests_multiple_elements": _question_explicitly_requests_multiple_elements(
                     item.question
