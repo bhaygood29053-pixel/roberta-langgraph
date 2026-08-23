@@ -26,6 +26,7 @@ roberta-pyramid-dashboard = "roberta.learning.pyramid_dashboard:main"
 roberta-pyramid-run = "roberta.learning.pyramid_run_cli:main"
 roberta-pyramid-remediate = "roberta.learning.pyramid_remediation_cli:main"
 roberta-pyramid-regrade = "roberta.learning.pyramid_regrade_cli:main"
+roberta-pyramid-source-reconstruct = "roberta.learning.pyramid_source_reconstruction_cli:main"
 
 [tool.setuptools.package-data]
 "roberta.learning" = ["sources/*.md", "sources/*.gz.b64"]
