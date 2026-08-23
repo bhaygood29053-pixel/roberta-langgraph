@@ -25,7 +25,7 @@ from .pyramid_remediation import WeakItem
 PYRAMID_LEARNING_HANDOFF_CONTRACT = "roberta-pyramid-learning-handoff/v1"
 PYRAMID_LEARNING_HANDOFF_VERSION = "1.0.0"
 _REQUIRED_CHECKPOINT_SCHEMA = "roberta-pyramid-checkpoint/v3"
-_REQUIRED_GRADING_SEMANTICS = "question-first-adjudication/v1"
+_REQUIRED_GRADING_SEMANTICS = "question-first-adjudication/v2"
 _REQUIRED_NEXT_GATE = "source_grounded_phase7_reconstruction"
 _GRADER_NOTE_ROLE = "diagnostic_only_not_source_evidence"
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
