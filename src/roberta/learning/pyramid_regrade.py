@@ -11,7 +11,7 @@ import shutil
 import tempfile
 from typing import Any, Callable, Mapping, Sequence
 
-from .pyramid import Exercise
+from .pyramid import CANONICAL_LEVEL_QUESTION_COUNT, Exercise, select_level_exercises
 from .pyramid_exam import (
     CHECKPOINT_SCHEMA,
     GRADING_SEMANTICS,
@@ -167,7 +167,7 @@ def _load_historical_batch(
         )
     expected_ids = [item.exercise_id for item in exercises]
     if raw.get("exercise_ids") != expected_ids:
-        raise PyramidRegradeError(f"historical checkpoint exercise ids do not match selected exam: {path}")
+        raise PyramidRegradeError(f"historical checkpoint exercise ids do not match seed-selected exam: {path}")
     grades_raw = raw.get("grades")
     if not isinstance(grades_raw, list) or len(grades_raw) != len(exercises):
         raise PyramidRegradeError(f"historical checkpoint grade count is invalid: {path}")
@@ -233,25 +233,38 @@ def _checkpoint_payload(
 
 def regrade_checkpoints(
     *,
-    exercises: Sequence[Exercise],
+    exercise_bank: Sequence[Exercise],
     grader_model: Any,
     input_dir: str | Path,
     output_dir: str | Path,
     curriculum_id: str,
+    level: int,
     run_seed: str,
     batch_size: int = 10,
+    question_count: int = CANONICAL_LEVEL_QUESTION_COUNT,
     canonical_exam: bool = True,
     progress: Callable[[int, int], None] | None = None,
 ) -> RegradeReport:
-    if not exercises:
-        raise PyramidRegradeError("regrade requires at least one selected exercise")
     expected_curriculum = str(curriculum_id).strip()
-    if not expected_curriculum or any(item.curriculum_id != expected_curriculum for item in exercises):
-        raise PyramidRegradeError("selected exercises do not match the requested curriculum")
-    levels = {item.level for item in exercises}
-    if len(levels) != 1:
-        raise PyramidRegradeError("regrade exercises must belong to exactly one Pyramid level")
-    level = next(iter(levels))
+    if not expected_curriculum:
+        raise PyramidRegradeError("curriculum_id is required")
+    if question_count <= 0:
+        raise PyramidRegradeError("question_count must be positive")
+    if canonical_exam and question_count != CANONICAL_LEVEL_QUESTION_COUNT:
+        raise PyramidRegradeError(
+            f"canonical regrade requires exactly {CANONICAL_LEVEL_QUESTION_COUNT} questions"
+        )
+    try:
+        exercises = select_level_exercises(
+            exercise_bank,
+            curriculum_id=expected_curriculum,
+            level=level,
+            run_seed=run_seed,
+            count=question_count,
+        )
+    except ValueError as exc:
+        raise PyramidRegradeError(f"cannot reconstruct seed-selected Pyramid exam: {exc}") from exc
+
     input_root, output_root = _resolve_distinct_roots(input_dir, output_dir)
     batches = _chunks(exercises, batch_size)
     expected_names = tuple(_checkpoint_name(level, index) for index in range(1, len(batches) + 1))
