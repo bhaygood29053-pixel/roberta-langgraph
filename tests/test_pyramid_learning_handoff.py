@@ -42,7 +42,7 @@ def _weak(*, grade: str = "PARTIAL", critical: bool = False) -> WeakItem:
         checkpoint_file="level_01_batch_0002.json",
         checkpoint_sha256="a" * 64,
         checkpoint_schema="roberta-pyramid-checkpoint/v3",
-        grading_semantics="question-first-adjudication/v1",
+        grading_semantics="question-first-adjudication/v2",
     )
 
 
@@ -230,6 +230,16 @@ def test_handoff_accepts_empty_diagnostic_grader_note():
     assert validate_pyramid_learning_handoff(handoff) == handoff
 
 
+def test_old_grading_semantics_cannot_become_learning_handoff():
+    with pytest.raises(PyramidLearningHandoffError, match="grading semantics"):
+        build_pyramid_learning_handoffs(
+            (_exercise(),),
+            (replace(_weak(), grading_semantics="question-first-adjudication/v1"),),
+            curriculum_id="c1",
+            approved_source_refs=("book-source",),
+        )
+
+
 def test_handoff_jsonl_writer_preserves_validated_payload(tmp_path):
     handoff = build_pyramid_learning_handoffs(
         (_exercise(),),
@@ -270,7 +280,7 @@ def test_remediation_cli_writes_learning_handoff_for_shared_ledger_failure(tmp_p
         json.dumps(
             {
                 "checkpoint_schema": "roberta-pyramid-checkpoint/v3",
-                "grading_semantics": "question-first-adjudication/v1",
+                "grading_semantics": "question-first-adjudication/v2",
                 "exercise_ids": ["mb4e-l1-smoke-013"],
                 "grades": [
                     {
