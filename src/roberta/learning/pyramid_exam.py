@@ -363,6 +363,59 @@ def _adjudication_payload(
     }
 
 
+def _corrective_adjudication_payload(
+    exercises: Sequence[Exercise],
+    grades: Sequence[GradedAnswer],
+) -> dict[str, object]:
+    payload = _adjudication_payload(exercises, grades)
+    payload["correction_attempt"] = 1
+    payload["instruction"] = (
+        "This is the single bounded corrective adjudication for a prior non-compliant second-pass result. "
+        "Every item in this request has question_explicitly_requests_multiple_elements=false. "
+        "You MUST NOT return incomplete_reasoning for these items. "
+        "Re-evaluate the actual Roberta answer against the QUESTION FIRST. "
+        "PASS if the question is substantively answered and no genuine defect or forbidden inference is present. "
+        "If a genuine defect remains, return PARTIAL or FAIL with a supported non-incomplete_reasoning code such as "
+        "conceptual_mismatch, factual_error, unsupported_inference, excessive_certainty, stale_fact_used_as_current, "
+        "source_conflict_mishandled, or hallucinated_fact. "
+        "Do not weaken integrity, fabrication, forbidden-inference, stale-live-data, or critical-failure rules."
+    )
+    return payload
+
+
+def _parse_adjudication(
+    model: Any,
+    exercises: Sequence[Exercise],
+    grades: Sequence[GradedAnswer],
+    *,
+    corrective: bool = False,
+) -> tuple[GradedAnswer, ...]:
+    answers = {item.exercise_id: item.answer for item in grades}
+    payload = (
+        _corrective_adjudication_payload(exercises, grades)
+        if corrective
+        else _adjudication_payload(exercises, grades)
+    )
+    context = (
+        "Pyramid question-first corrective adjudicator"
+        if corrective
+        else "Pyramid question-first adjudicator"
+    )
+    response = model.invoke(
+        [
+            SystemMessage(content=ADJUDICATOR_SYSTEM_PROMPT),
+            HumanMessage(content=json.dumps(payload, ensure_ascii=False)),
+        ]
+    )
+    parsed = _parse_json(_message_text(response), context=context)
+    return _parse_grade_rows(
+        parsed,
+        exercises=exercises,
+        answers=answers,
+        context=context,
+    )
+
+
 def _adjudicate_question_first(
     model: Any,
     exercises: Sequence[Exercise],
@@ -376,37 +429,44 @@ def _adjudicate_question_first(
     if not disputed:
         return tuple(grades)
 
-    disputed_answers = {item.exercise_id: grade_by_id[item.exercise_id].answer for item in disputed}
     disputed_grades = tuple(grade_by_id[item.exercise_id] for item in disputed)
-    response = model.invoke(
-        [
-            SystemMessage(content=ADJUDICATOR_SYSTEM_PROMPT),
-            HumanMessage(content=json.dumps(_adjudication_payload(disputed, disputed_grades), ensure_ascii=False)),
-        ]
-    )
-    parsed = _parse_json(_message_text(response), context="Pyramid question-first adjudicator")
-    adjudicated = _parse_grade_rows(
-        parsed,
-        exercises=disputed,
-        answers=disputed_answers,
-        context="Pyramid question-first adjudicator",
-    )
+    adjudicated = _parse_adjudication(model, disputed, disputed_grades)
 
-    replacements = {item.exercise_id: item for item in adjudicated}
     for item in adjudicated:
-        exercise = exercise_by_id[item.exercise_id]
         if item.critical_failure:
             raise PyramidExamError(
                 f"question-first adjudicator cannot introduce a critical failure for {item.exercise_id}"
             )
-        if (
-            "incomplete_reasoning" in item.failure_codes
-            and not _question_explicitly_requests_multiple_elements(exercise.question)
-        ):
-            raise PyramidExamError(
-                "question-first adjudicator retained incomplete_reasoning for a question that does not "
-                f"explicitly request multiple elements: {item.exercise_id}"
-            )
+
+    invalid_ids = {
+        item.exercise_id
+        for item in adjudicated
+        if "incomplete_reasoning" in item.failure_codes
+        and not _question_explicitly_requests_multiple_elements(exercise_by_id[item.exercise_id].question)
+    }
+
+    replacements = {item.exercise_id: item for item in adjudicated}
+    if invalid_ids:
+        corrective_exercises = tuple(item for item in disputed if item.exercise_id in invalid_ids)
+        corrective_grades = tuple(replacements[item.exercise_id] for item in corrective_exercises)
+        corrected = _parse_adjudication(
+            model,
+            corrective_exercises,
+            corrective_grades,
+            corrective=True,
+        )
+        for item in corrected:
+            if item.critical_failure:
+                raise PyramidExamError(
+                    f"question-first adjudicator cannot introduce a critical failure for {item.exercise_id}"
+                )
+            if "incomplete_reasoning" in item.failure_codes:
+                raise PyramidExamError(
+                    "question-first adjudicator retained incomplete_reasoning for a question that does not "
+                    "explicitly request multiple elements after corrective adjudication: "
+                    f"{item.exercise_id}"
+                )
+        replacements.update({item.exercise_id: item for item in corrected})
 
     return tuple(replacements.get(item.exercise_id, item) for item in grades)
 
