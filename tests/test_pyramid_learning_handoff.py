@@ -151,6 +151,59 @@ def test_checkpoint_or_answer_change_changes_handoff_identity():
     assert baseline.handoff_id != answer_changed.handoff_id
 
 
+def test_grade_failure_note_question_and_source_changes_change_handoff_identity():
+    approved_source_refs = ("book-source", "book-source-2")
+    exercise = _exercise()
+    weak = _weak()
+    baseline = build_pyramid_learning_handoffs(
+        (exercise,),
+        (weak,),
+        curriculum_id="c1",
+        approved_source_refs=approved_source_refs,
+    )[0]
+
+    grade_changed = build_pyramid_learning_handoffs(
+        (exercise,),
+        (replace(weak, grade="FAIL", score=0.0),),
+        curriculum_id="c1",
+        approved_source_refs=approved_source_refs,
+    )[0]
+    failure_code_changed = build_pyramid_learning_handoffs(
+        (exercise,),
+        (replace(weak, failure_codes=("factual_error",)),),
+        curriculum_id="c1",
+        approved_source_refs=approved_source_refs,
+    )[0]
+    grader_note_changed = build_pyramid_learning_handoffs(
+        (exercise,),
+        (replace(weak, grader_note="Different diagnostic note."),),
+        curriculum_id="c1",
+        approved_source_refs=approved_source_refs,
+    )[0]
+    question_changed = build_pyramid_learning_handoffs(
+        (replace(exercise, question="How should a shared ledger be interpreted?"),),
+        (weak,),
+        curriculum_id="c1",
+        approved_source_refs=approved_source_refs,
+    )[0]
+    source_ref_changed = build_pyramid_learning_handoffs(
+        (_exercise(source_refs=("book-source-2",)),),
+        (weak,),
+        curriculum_id="c1",
+        approved_source_refs=approved_source_refs,
+    )[0]
+
+    changed = (
+        grade_changed,
+        failure_code_changed,
+        grader_note_changed,
+        question_changed,
+        source_ref_changed,
+    )
+    assert all(item.handoff_id != baseline.handoff_id for item in changed)
+    assert len({item.handoff_id for item in changed}) == len(changed)
+
+
 def test_handoff_preserves_missing_optional_subconcept():
     handoff = build_pyramid_learning_handoffs(
         (replace(_exercise(), subconcept=None),),
