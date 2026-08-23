@@ -8,7 +8,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from roberta.learning.pyramid import Exercise
+from roberta.learning.pyramid import Exercise, select_level_exercises
 from roberta.learning.pyramid_exam import CHECKPOINT_SCHEMA, GRADING_SEMANTICS
 from roberta.learning.pyramid_regrade import (
     HISTORICAL_GRADING_SEMANTICS,
@@ -30,6 +30,21 @@ def _exercise(index: int) -> Exercise:
         question=f"Question {index}?",
         expected_answer=f"Expected {index}",
         source_refs=("SRC-1",),
+    )
+
+
+def _selected(
+    bank: tuple[Exercise, ...],
+    *,
+    seed: str = SEED,
+    count: int | None = None,
+) -> tuple[Exercise, ...]:
+    return select_level_exercises(
+        bank,
+        curriculum_id=CURRICULUM,
+        level=1,
+        run_seed=seed,
+        count=len(bank) if count is None else count,
     )
 
 
@@ -107,37 +122,62 @@ class GraderOnlyModel:
         return SimpleNamespace(content=json.dumps({"grades": rows}))
 
 
-def test_regrade_has_no_answer_model_seam_and_preserves_exact_historical_answers(tmp_path: Path) -> None:
-    assert "answer_model" not in inspect.signature(regrade_checkpoints).parameters
+def _regrade(
+    *,
+    bank: tuple[Exercise, ...],
+    grader_model,
+    input_dir: Path,
+    output_dir: Path,
+    batch_size: int,
+    seed: str = SEED,
+    question_count: int | None = None,
+):
+    return regrade_checkpoints(
+        exercise_bank=bank,
+        grader_model=grader_model,
+        input_dir=input_dir,
+        output_dir=output_dir,
+        curriculum_id=CURRICULUM,
+        level=1,
+        run_seed=seed,
+        batch_size=batch_size,
+        question_count=len(bank) if question_count is None else question_count,
+        canonical_exam=False,
+    )
 
-    exercises = (_exercise(1), _exercise(2))
+
+def test_regrade_has_no_answer_model_seam_and_preserves_exact_historical_answers(tmp_path: Path) -> None:
+    parameters = inspect.signature(regrade_checkpoints).parameters
+    assert "answer_model" not in parameters
+    assert "exercises" not in parameters
+    assert "exercise_bank" in parameters
+
+    bank = (_exercise(1), _exercise(2))
+    selected = _selected(bank)
     input_dir = tmp_path / "historical"
     output_dir = tmp_path / "regraded"
     answers = ("  exact historical answer one  ", "Exact historical answer two")
     original = _write_checkpoint(
         input_dir / "level_01_batch_0001.json",
-        exercises,
+        selected,
         [
-            _row(exercises[0], answer=answers[0], grade="FAIL"),
-            _row(exercises[1], answer=answers[1], grade="PARTIAL", failure_codes=["incomplete_reasoning"]),
+            _row(selected[0], answer=answers[0], grade="FAIL"),
+            _row(selected[1], answer=answers[1], grade="PARTIAL", failure_codes=["incomplete_reasoning"]),
         ],
     )
     original_hash = hashlib.sha256(original).hexdigest()
     model = GraderOnlyModel()
 
-    report = regrade_checkpoints(
-        exercises=exercises,
+    report = _regrade(
+        bank=bank,
         grader_model=model,
         input_dir=input_dir,
         output_dir=output_dir,
-        curriculum_id=CURRICULUM,
-        run_seed=SEED,
         batch_size=2,
-        canonical_exam=False,
     )
 
     assert model.calls == 1
-    assert model.answers_seen == {exercises[0].exercise_id: answers[0], exercises[1].exercise_id: answers[1]}
+    assert model.answers_seen == {selected[0].exercise_id: answers[0], selected[1].exercise_id: answers[1]}
     assert (input_dir / "level_01_batch_0001.json").read_bytes() == original
     output = json.loads((output_dir / "level_01_batch_0001.json").read_text(encoding="utf-8"))
     assert output["checkpoint_schema"] == CHECKPOINT_SCHEMA
@@ -155,6 +195,7 @@ def test_regrade_has_no_answer_model_seam_and_preserves_exact_historical_answers
     assert dict(report.grade_transitions) == {"FAIL->PASS": 1, "PARTIAL->PASS": 1}
     assert report.old_weakness_count == 2
     assert report.new_weakness_count == 0
+    assert report.run_seed == SEED
     assert report.answer_model_invoked is False
     assert report.training_ledger_mutated is False
     assert report.retention_authorized is False
@@ -166,27 +207,25 @@ def test_regrade_has_no_answer_model_seam_and_preserves_exact_historical_answers
 def test_regrade_rejects_nonhistorical_semantics_before_model_or_output(
     tmp_path: Path, semantics: str
 ) -> None:
-    exercise = _exercise(1)
+    bank = (_exercise(1),)
+    selected = _selected(bank)
     input_dir = tmp_path / "historical"
     output_dir = tmp_path / "regraded"
     _write_checkpoint(
         input_dir / "level_01_batch_0001.json",
-        (exercise,),
-        [_row(exercise, answer="Original")],
+        selected,
+        [_row(selected[0], answer="Original")],
         semantics=semantics,
     )
     model = GraderOnlyModel()
 
     with pytest.raises(PyramidRegradeError, match="grading semantics"):
-        regrade_checkpoints(
-            exercises=(exercise,),
+        _regrade(
+            bank=bank,
             grader_model=model,
             input_dir=input_dir,
             output_dir=output_dir,
-            curriculum_id=CURRICULUM,
-            run_seed=SEED,
             batch_size=1,
-            canonical_exam=False,
         )
 
     assert model.calls == 0
@@ -194,26 +233,24 @@ def test_regrade_rejects_nonhistorical_semantics_before_model_or_output(
 
 
 def test_regrade_requires_exact_complete_batch_set_before_model_call(tmp_path: Path) -> None:
-    exercises = (_exercise(1), _exercise(2))
+    bank = (_exercise(1), _exercise(2))
+    selected = _selected(bank)
     input_dir = tmp_path / "historical"
     output_dir = tmp_path / "regraded"
     _write_checkpoint(
         input_dir / "level_01_batch_0001.json",
-        (exercises[0],),
-        [_row(exercises[0], answer="First")],
+        (selected[0],),
+        [_row(selected[0], answer="First")],
     )
     model = GraderOnlyModel()
 
     with pytest.raises(PyramidRegradeError, match="batch set mismatch"):
-        regrade_checkpoints(
-            exercises=exercises,
+        _regrade(
+            bank=bank,
             grader_model=model,
             input_dir=input_dir,
             output_dir=output_dir,
-            curriculum_id=CURRICULUM,
-            run_seed=SEED,
             batch_size=1,
-            canonical_exam=False,
         )
 
     assert model.calls == 0
@@ -221,43 +258,78 @@ def test_regrade_requires_exact_complete_batch_set_before_model_call(tmp_path: P
 
 
 @pytest.mark.parametrize(
-    "mutator,match",
+    "mode,match",
     [
-        (lambda payload: payload.update({"exercise_ids": ["WRONG", "E-002"]}), "exercise ids"),
-        (
-            lambda payload: payload["grades"].__setitem__(1, {**payload["grades"][1], "exercise_id": "E-001"}),
-            "order/id mismatch",
-        ),
-        (lambda payload: payload["grades"][0].update({"answer": ""}), "non-empty string"),
+        ("exercise_ids", "exercise ids"),
+        ("duplicate_grade", "order/id mismatch"),
+        ("empty_answer", "non-empty string"),
     ],
 )
 def test_regrade_fails_closed_on_mismatched_duplicate_or_malformed_historical_data(
-    tmp_path: Path, mutator, match: str
+    tmp_path: Path, mode: str, match: str
 ) -> None:
-    exercises = (_exercise(1), _exercise(2))
+    bank = (_exercise(1), _exercise(2))
+    selected = _selected(bank)
     input_dir = tmp_path / "historical"
     output_dir = tmp_path / "regraded"
     path = input_dir / "level_01_batch_0001.json"
     _write_checkpoint(
         path,
-        exercises,
-        [_row(exercises[0], answer="First"), _row(exercises[1], answer="Second")],
+        selected,
+        [_row(selected[0], answer="First"), _row(selected[1], answer="Second")],
     )
     payload = json.loads(path.read_text(encoding="utf-8"))
-    mutator(payload)
+    if mode == "exercise_ids":
+        payload["exercise_ids"] = ["WRONG", selected[1].exercise_id]
+    elif mode == "duplicate_grade":
+        payload["grades"][1]["exercise_id"] = selected[0].exercise_id
+    else:
+        payload["grades"][0]["answer"] = ""
     path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     model = GraderOnlyModel()
 
     with pytest.raises(PyramidRegradeError, match=match):
-        regrade_checkpoints(
-            exercises=exercises,
+        _regrade(
+            bank=bank,
             grader_model=model,
             input_dir=input_dir,
             output_dir=output_dir,
-            curriculum_id=CURRICULUM,
-            run_seed=SEED,
             batch_size=2,
-            canonical_exam=False,
+        )
+
+    assert model.calls == 0
+    assert not output_dir.exists()
+
+
+def test_regrade_reconstructs_exact_seed_selected_identity_before_model(tmp_path: Path) -> None:
+    bank = tuple(_exercise(index) for index in range(1, 7))
+    original = _selected(bank, count=3)
+    alternate_seed = None
+    for index in range(100):
+        candidate = f"alternate-{index}"
+        if _selected(bank, seed=candidate, count=3) != original:
+            alternate_seed = candidate
+            break
+    assert alternate_seed is not None
+
+    input_dir = tmp_path / "historical"
+    output_dir = tmp_path / "regraded"
+    _write_checkpoint(
+        input_dir / "level_01_batch_0001.json",
+        original,
+        [_row(item, answer=f"Original {item.exercise_id}") for item in original],
+    )
+    model = GraderOnlyModel()
+
+    with pytest.raises(PyramidRegradeError, match="seed-selected exam"):
+        _regrade(
+            bank=bank,
+            grader_model=model,
+            input_dir=input_dir,
+            output_dir=output_dir,
+            batch_size=3,
+            seed=alternate_seed,
+            question_count=3,
         )
 
     assert model.calls == 0
@@ -265,10 +337,11 @@ def test_regrade_fails_closed_on_mismatched_duplicate_or_malformed_historical_da
 
 
 def test_regrade_model_failure_leaves_no_partial_output(tmp_path: Path) -> None:
-    exercises = (_exercise(1), _exercise(2))
+    bank = (_exercise(1), _exercise(2))
+    selected = _selected(bank)
     input_dir = tmp_path / "historical"
     output_dir = tmp_path / "regraded"
-    for index, exercise in enumerate(exercises, start=1):
+    for index, exercise in enumerate(selected, start=1):
         _write_checkpoint(
             input_dir / f"level_01_batch_{index:04d}.json",
             (exercise,),
@@ -277,15 +350,12 @@ def test_regrade_model_failure_leaves_no_partial_output(tmp_path: Path) -> None:
     model = GraderOnlyModel(fail_on_call=2)
 
     with pytest.raises(RuntimeError, match="simulated grader failure"):
-        regrade_checkpoints(
-            exercises=exercises,
+        _regrade(
+            bank=bank,
             grader_model=model,
             input_dir=input_dir,
             output_dir=output_dir,
-            curriculum_id=CURRICULUM,
-            run_seed=SEED,
             batch_size=1,
-            canonical_exam=False,
         )
 
     assert model.calls == 2
@@ -294,12 +364,13 @@ def test_regrade_model_failure_leaves_no_partial_output(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize("mode", ["same", "nested", "existing"])
 def test_regrade_requires_new_separate_output_directory(tmp_path: Path, mode: str) -> None:
-    exercise = _exercise(1)
+    bank = (_exercise(1),)
+    selected = _selected(bank)
     input_dir = tmp_path / "historical"
     _write_checkpoint(
         input_dir / "level_01_batch_0001.json",
-        (exercise,),
-        [_row(exercise, answer="Original")],
+        selected,
+        [_row(selected[0], answer="Original")],
     )
     if mode == "same":
         output_dir = input_dir
@@ -311,53 +382,46 @@ def test_regrade_requires_new_separate_output_directory(tmp_path: Path, mode: st
     model = GraderOnlyModel()
 
     with pytest.raises(PyramidRegradeError):
-        regrade_checkpoints(
-            exercises=(exercise,),
+        _regrade(
+            bank=bank,
             grader_model=model,
             input_dir=input_dir,
             output_dir=output_dir,
-            curriculum_id=CURRICULUM,
-            run_seed=SEED,
             batch_size=1,
-            canonical_exam=False,
         )
 
     assert model.calls == 0
 
 
 def test_regrade_report_and_written_artifacts_are_deterministic(tmp_path: Path) -> None:
-    exercises = (_exercise(1), _exercise(2))
+    bank = (_exercise(1), _exercise(2))
+    selected = _selected(bank)
     input_dir = tmp_path / "historical"
     _write_checkpoint(
         input_dir / "level_01_batch_0001.json",
-        exercises,
+        selected,
         [
-            _row(exercises[0], answer="First", grade="FAIL"),
-            _row(exercises[1], answer="Second", grade="PASS"),
+            _row(selected[0], answer="First", grade="FAIL"),
+            _row(selected[1], answer="Second", grade="PASS"),
         ],
     )
     output_a = tmp_path / "regraded-a"
     output_b = tmp_path / "regraded-b"
+    grades = {selected[0].exercise_id: "PARTIAL", selected[1].exercise_id: "PASS"}
 
-    report_a = regrade_checkpoints(
-        exercises=exercises,
-        grader_model=GraderOnlyModel({exercises[0].exercise_id: "PARTIAL", exercises[1].exercise_id: "PASS"}),
+    report_a = _regrade(
+        bank=bank,
+        grader_model=GraderOnlyModel(grades),
         input_dir=input_dir,
         output_dir=output_a,
-        curriculum_id=CURRICULUM,
-        run_seed=SEED,
         batch_size=2,
-        canonical_exam=False,
     )
-    report_b = regrade_checkpoints(
-        exercises=exercises,
-        grader_model=GraderOnlyModel({exercises[0].exercise_id: "PARTIAL", exercises[1].exercise_id: "PASS"}),
+    report_b = _regrade(
+        bank=bank,
+        grader_model=GraderOnlyModel(grades),
         input_dir=input_dir,
         output_dir=output_b,
-        curriculum_id=CURRICULUM,
-        run_seed=SEED,
         batch_size=2,
-        canonical_exam=False,
     )
 
     assert report_a.to_mapping() == report_b.to_mapping()
