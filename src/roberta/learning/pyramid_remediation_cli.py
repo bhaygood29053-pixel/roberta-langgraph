@@ -5,6 +5,10 @@ import json
 from pathlib import Path
 
 from .curriculum_io import validate_package
+from .pyramid_learning_handoff import (
+    build_pyramid_learning_handoffs,
+    write_pyramid_learning_handoffs_jsonl,
+)
 from .pyramid_remediation import build_remediation_plan, load_weak_items, select_fresh_practice, write_practice_jsonl
 
 
@@ -32,26 +36,44 @@ def main() -> int:
         per_weakness=args.practice_per_weakness,
         seed=args.seed,
     )
+    approved_source_refs = manifest.get("approved_source_refs")
+    if not isinstance(approved_source_refs, list):
+        raise SystemExit("Validated curriculum manifest is missing approved_source_refs.")
+    handoffs = build_pyramid_learning_handoffs(
+        exercises,
+        weak_items,
+        curriculum_id=str(manifest["curriculum_id"]),
+        approved_source_refs=tuple(str(item) for item in approved_source_refs),
+    )
 
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=True)
     plan_path = output / "remediation_plan.json"
     practice_path = output / "practice_questions.jsonl"
+    handoff_path = output / "learning_handoffs.jsonl"
     plan_payload = {
         "curriculum_id": manifest["curriculum_id"],
         "seed": args.seed,
         "practice_question_count": len(practice),
+        "learning_handoff_count": len(handoffs),
         **plan,
     }
     plan_path.write_text(json.dumps(plan_payload, ensure_ascii=False, indent=2), encoding="utf-8")
     write_practice_jsonl(practice_path, practice)
+    write_pyramid_learning_handoffs_jsonl(handoff_path, handoffs)
 
     print(f"CURRICULUM {manifest['curriculum_id']}")
     print(f"WEAK_ITEMS {plan['weak_item_count']}")
     print(f"WEAKNESSES {plan['weakness_count']}")
     print(f"FRESH_PRACTICE {len(practice)}")
+    print(f"LEARNING_HANDOFFS {len(handoffs)}")
     print(f"PLAN {plan_path}")
     print(f"PRACTICE {practice_path}")
+    print(f"HANDOFFS {handoff_path}")
+    if handoffs:
+        print("NEXT_GATE source_grounded_phase7_reconstruction")
+        print("RETENTION_AUTHORIZED false")
+
     print("\n--- TOP REMEDIATION TARGETS ---")
     for item in plan["weaknesses"][:10]:
         print(

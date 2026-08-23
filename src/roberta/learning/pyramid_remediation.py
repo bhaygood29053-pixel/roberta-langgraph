@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 from dataclasses import dataclass
+import hashlib
 import json
 from pathlib import Path
 import random
-from typing import Iterable, Mapping, Sequence
+from typing import Iterable, Sequence
 
 from .pyramid import Exercise
 
@@ -19,13 +20,21 @@ class WeakItem:
     failure_codes: tuple[str, ...]
     answer: str
     grader_note: str
+    checkpoint_file: str = ""
+    checkpoint_sha256: str = ""
+    checkpoint_schema: str = ""
+    grading_semantics: str = ""
 
 
 def load_weak_items(checkpoint_dir: str | Path) -> tuple[WeakItem, ...]:
     root = Path(checkpoint_dir)
     items: list[WeakItem] = []
     for path in sorted(root.glob("level_*_batch_*.json")):
-        raw = json.loads(path.read_text(encoding="utf-8"))
+        raw_bytes = path.read_bytes()
+        raw = json.loads(raw_bytes.decode("utf-8"))
+        checkpoint_sha256 = hashlib.sha256(raw_bytes).hexdigest()
+        checkpoint_schema = str(raw.get("checkpoint_schema", ""))
+        grading_semantics = str(raw.get("grading_semantics", ""))
         for grade in raw.get("grades", []):
             if grade.get("grade") == "PASS" and not grade.get("critical_failure"):
                 continue
@@ -38,6 +47,10 @@ def load_weak_items(checkpoint_dir: str | Path) -> tuple[WeakItem, ...]:
                     failure_codes=tuple(str(code) for code in grade.get("failure_codes", [])),
                     answer=str(grade.get("answer", "")),
                     grader_note=str(grade.get("grader_note", "")),
+                    checkpoint_file=path.name,
+                    checkpoint_sha256=checkpoint_sha256,
+                    checkpoint_schema=checkpoint_schema,
+                    grading_semantics=grading_semantics,
                 )
             )
     return tuple(items)
