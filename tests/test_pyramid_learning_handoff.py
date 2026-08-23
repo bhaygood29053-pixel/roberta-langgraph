@@ -151,6 +151,32 @@ def test_checkpoint_or_answer_change_changes_handoff_identity():
     assert baseline.handoff_id != answer_changed.handoff_id
 
 
+def test_handoff_preserves_missing_optional_subconcept():
+    handoff = build_pyramid_learning_handoffs(
+        (replace(_exercise(), subconcept=None),),
+        (_weak(),),
+        curriculum_id="c1",
+        approved_source_refs=("book-source",),
+    )[0]
+
+    assert handoff.subconcept is None
+    assert handoff.to_mapping()["subconcept"] is None
+    assert validate_pyramid_learning_handoff(handoff) == handoff
+
+
+def test_handoff_accepts_empty_diagnostic_grader_note():
+    handoff = build_pyramid_learning_handoffs(
+        (_exercise(),),
+        (replace(_weak(), grader_note=""),),
+        curriculum_id="c1",
+        approved_source_refs=("book-source",),
+    )[0]
+
+    assert handoff.grader_note == ""
+    assert handoff.to_mapping()["grader_note"] == ""
+    assert validate_pyramid_learning_handoff(handoff) == handoff
+
+
 def test_handoff_jsonl_writer_preserves_validated_payload(tmp_path):
     handoff = build_pyramid_learning_handoffs(
         (_exercise(),),
@@ -164,6 +190,23 @@ def test_handoff_jsonl_writer_preserves_validated_payload(tmp_path):
     payload = json.loads(path.read_text(encoding="utf-8").strip())
     assert payload == handoff.to_mapping()
     assert payload["retention_authorized"] is False
+
+
+def test_handoff_jsonl_writer_validates_every_record_before_replacing_target(tmp_path):
+    handoff = build_pyramid_learning_handoffs(
+        (_exercise(),),
+        (_weak(),),
+        curriculum_id="c1",
+        approved_source_refs=("book-source",),
+    )[0]
+    tampered = replace(handoff, handoff_hash="0" * 64)
+    path = tmp_path / "learning_handoffs.jsonl"
+    path.write_text("existing-valid-output\n", encoding="utf-8")
+
+    with pytest.raises(PyramidLearningHandoffError, match="identity/content"):
+        write_pyramid_learning_handoffs_jsonl(path, (handoff, tampered))
+
+    assert path.read_text(encoding="utf-8") == "existing-valid-output\n"
 
 
 def test_remediation_cli_writes_learning_handoff_for_shared_ledger_failure(tmp_path, monkeypatch):
