@@ -6,7 +6,7 @@ import json
 from roberta.models import create_runtime_model
 
 from .curriculum_io import validate_package
-from .pyramid import select_level_exercises
+from .pyramid import CANONICAL_LEVEL_QUESTION_COUNT
 from .pyramid_regrade import regrade_checkpoints
 
 
@@ -43,27 +43,22 @@ def main() -> None:
 
     manifest, bank = validate_package(args.curriculum)
     curriculum_id = str(manifest["curriculum_id"])
-    selected = select_level_exercises(
-        bank,
-        curriculum_id=curriculum_id,
-        level=args.level,
-        run_seed=args.seed,
-    )
 
     print(f"CURRICULUM {curriculum_id}")
     print(f"LEVEL {args.level}")
     print(f"SEED {args.seed}")
-    print(f"QUESTIONS {len(selected)}")
+    print(f"QUESTIONS {CANONICAL_LEVEL_QUESTION_COUNT}")
     print(f"INPUT_CHECKPOINTS {args.input_checkpoints}")
     print(f"OUTPUT_CHECKPOINTS {args.output_checkpoints}")
 
     grader_model = create_runtime_model()
     report = regrade_checkpoints(
-        exercises=selected,
+        exercise_bank=bank,
         grader_model=grader_model,
         input_dir=args.input_checkpoints,
         output_dir=args.output_checkpoints,
         curriculum_id=curriculum_id,
+        level=args.level,
         run_seed=args.seed,
         batch_size=args.batch_size,
         canonical_exam=True,
