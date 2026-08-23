@@ -12,8 +12,10 @@ from dataclasses import dataclass
 import hashlib
 import json
 import math
+import os
 from pathlib import Path
 import re
+import tempfile
 from typing import Any, Iterable, Sequence
 
 from .pyramid import Exercise
@@ -44,7 +46,7 @@ class PyramidLearningHandoff:
     exercise_id: str
     level: int
     concept: str
-    subconcept: str
+    subconcept: str | None
     question: str
     roberta_answer: str
     grade: str
@@ -100,6 +102,18 @@ def _text(name: str, value: object) -> str:
     if not isinstance(value, str) or not value.strip() or value != value.strip():
         raise PyramidLearningHandoffError(f"{name} must be a normalized non-empty string")
     return value
+
+
+def _normalized_text(name: str, value: object) -> str:
+    if not isinstance(value, str) or value != value.strip():
+        raise PyramidLearningHandoffError(f"{name} must be a normalized string")
+    return value
+
+
+def _optional_text(name: str, value: object) -> str | None:
+    if value is None:
+        return None
+    return _normalized_text(name, value)
 
 
 def _source_refs(value: Sequence[str]) -> tuple[str, ...]:
@@ -160,14 +174,14 @@ def validate_pyramid_learning_handoff(
         ("curriculum_id", handoff.curriculum_id),
         ("exercise_id", handoff.exercise_id),
         ("concept", handoff.concept),
-        ("subconcept", handoff.subconcept),
         ("question", handoff.question),
         ("roberta_answer", handoff.roberta_answer),
-        ("grader_note", handoff.grader_note),
         ("checkpoint_file", handoff.checkpoint_file),
         ("remediation_query", handoff.remediation_query),
     ):
         _text(name, value)
+    _optional_text("subconcept", handoff.subconcept)
+    _normalized_text("grader_note", handoff.grader_note)
 
     if isinstance(handoff.level, bool) or not isinstance(handoff.level, int) or not 1 <= handoff.level <= 20:
         raise PyramidLearningHandoffError("level must be an integer from 1 through 20")
@@ -228,8 +242,11 @@ def _make_handoff(exercise: Exercise, weak: WeakItem) -> PyramidLearningHandoff:
     if not math.isfinite(score) or score != _GRADE_SCORES[grade]:
         raise PyramidLearningHandoffError("grade score does not match Pyramid grade semantics")
 
+    concept = _text("concept", exercise.concept)
+    subconcept = _optional_text("subconcept", exercise.subconcept)
+    concept_path = concept if not subconcept else f"{concept}/{subconcept}"
     remediation_query = (
-        f"Ground exercise {exercise.exercise_id} concept {exercise.concept}/{exercise.subconcept} "
+        f"Ground exercise {exercise.exercise_id} concept {concept_path} "
         "against canonical approved source evidence before any Phase 8 candidate lesson is created; "
         "treat Pyramid grader diagnosis as diagnostic only, not source evidence."
     )
@@ -239,15 +256,15 @@ def _make_handoff(exercise: Exercise, weak: WeakItem) -> PyramidLearningHandoff:
         "curriculum_id": _text("curriculum_id", exercise.curriculum_id),
         "exercise_id": _text("exercise_id", exercise.exercise_id),
         "level": exercise.level,
-        "concept": _text("concept", exercise.concept),
-        "subconcept": _text("subconcept", exercise.subconcept),
+        "concept": concept,
+        "subconcept": subconcept,
         "question": _text("question", exercise.question),
         "roberta_answer": _text("Roberta answer", weak.answer),
         "grade": grade,
         "score": score,
         "failure_codes": list(tuple(sorted({_text("failure code", code) for code in weak.failure_codes}))),
         "critical_failure": bool(weak.critical_failure),
-        "grader_note": _text("grader_note", weak.grader_note),
+        "grader_note": _normalized_text("grader_note", weak.grader_note),
         "grader_note_role": _GRADER_NOTE_ROLE,
         "source_refs": list(source_refs),
         "checkpoint_file": _text("checkpoint_file", weak.checkpoint_file),
@@ -275,7 +292,7 @@ def _make_handoff(exercise: Exercise, weak: WeakItem) -> PyramidLearningHandoff:
         exercise_id=str(material["exercise_id"]),
         level=int(material["level"]),
         concept=str(material["concept"]),
-        subconcept=str(material["subconcept"]),
+        subconcept=material["subconcept"],
         question=str(material["question"]),
         roberta_answer=str(material["roberta_answer"]),
         grade=str(material["grade"]),
@@ -341,9 +358,33 @@ def write_pyramid_learning_handoffs_jsonl(
     path: str | Path,
     handoffs: Iterable[PyramidLearningHandoff],
 ) -> None:
+    canonical_handoffs = tuple(validate_pyramid_learning_handoff(handoff) for handoff in handoffs)
+    serialized = tuple(
+        json.dumps(handoff.to_mapping(), ensure_ascii=False, sort_keys=True) + "\n"
+        for handoff in canonical_handoffs
+    )
+
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
-    with target.open("w", encoding="utf-8") as handle:
-        for handoff in handoffs:
-            canonical = validate_pyramid_learning_handoff(handoff)
-            handle.write(json.dumps(canonical.to_mapping(), ensure_ascii=False, sort_keys=True) + "\n")
+    temporary: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            "w",
+            encoding="utf-8",
+            dir=target.parent,
+            prefix=f".{target.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            temporary = Path(handle.name)
+            handle.writelines(serialized)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, target)
+    except BaseException:
+        if temporary is not None:
+            try:
+                temporary.unlink(missing_ok=True)
+            except OSError:
+                pass
+        raise
