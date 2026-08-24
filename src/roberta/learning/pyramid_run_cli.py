@@ -11,6 +11,8 @@ from .pyramid import CANONICAL_LEVEL_QUESTION_COUNT, select_level_exercises
 from .pyramid_adjudicator_retry import create_pyramid_runtime_model
 from .pyramid_answer_recovery import MissingAnswerRetryModel
 from .pyramid_exam import run_exam
+from .pyramid_learned_concept_answer import PyramidLearnedConceptAnswerModel
+from .pyramid_learned_concepts import PyramidLearnedConceptError, load_learned_concepts
 from .training_ledger import PyramidTrainingLedger
 
 
@@ -24,6 +26,31 @@ def _active_run(ledger: PyramidTrainingLedger, curriculum_id: str) -> dict[str, 
 def _progress(done: int, total: int) -> None:
     percent = (done / total) * 100
     print(f"PROGRESS {done}/{total} ({percent:.1f}%)", flush=True)
+
+
+def _load_learned_memory(
+    *,
+    supplied_path: str | None,
+    disabled: bool,
+    curriculum_id: str,
+    level: int,
+) -> tuple[Path | None, tuple]:
+    if disabled:
+        if supplied_path is not None:
+            raise PyramidLearnedConceptError(
+                "--learned-concepts cannot be combined with --without-learned-concepts"
+            )
+        return None, ()
+
+    path = Path(supplied_path) if supplied_path is not None else Path(
+        f".roberta/pyramid_learned_concepts/{curriculum_id}.json"
+    )
+    if not path.exists():
+        if supplied_path is not None:
+            raise PyramidLearnedConceptError(f"Pyramid learned-concepts store does not exist: {path}")
+        return path, ()
+    learned = load_learned_concepts(path, curriculum_id=curriculum_id, level=level)
+    return path, learned
 
 
 def main() -> None:
@@ -43,6 +70,18 @@ def main() -> None:
         "--checkpoint-dir",
         default=".roberta/pyramid_checkpoints",
         help="Root directory for restart-safe batch checkpoints",
+    )
+    parser.add_argument(
+        "--learned-concepts",
+        help=(
+            "Verified Pyramid learned-concepts store. When omitted, "
+            ".roberta/pyramid_learned_concepts/<curriculum_id>.json is used if present."
+        ),
+    )
+    parser.add_argument(
+        "--without-learned-concepts",
+        action="store_true",
+        help="Explicitly disable verified Pyramid learned-concept retrieval for this run.",
     )
     parser.add_argument(
         "--dry-run",
@@ -103,12 +142,26 @@ def main() -> None:
         )
         canonical = True
 
+    try:
+        learned_path, learned = _load_learned_memory(
+            supplied_path=args.learned_concepts,
+            disabled=args.without_learned_concepts,
+            curriculum_id=curriculum_id,
+            level=level,
+        )
+    except PyramidLearnedConceptError as exc:
+        parser.error(str(exc))
+
     print(f"CURRICULUM {curriculum_id}")
     print(f"LEVEL {level}")
     print(f"SEED {seed}")
     print(f"QUESTIONS {len(selected)}")
     print(f"INTEGRITY {sum(item.integrity_question for item in selected)}")
     print(f"BOSS {sum(item.boss_question for item in selected)}")
+    print(f"PYRAMID_LEARNED_MEMORY {str(bool(learned)).lower()}")
+    print(f"LEARNED_CONCEPTS {len(learned)}")
+    if learned_path is not None:
+        print(f"LEARNED_CONCEPTS_STORE {learned_path}")
 
     if args.dry_run:
         print("DRY_RUN VALID")
@@ -121,7 +174,8 @@ def main() -> None:
         print(f"RESUME_RUN_ID {run_id}")
 
     model = create_pyramid_runtime_model()
-    answer_model = MissingAnswerRetryModel(model)
+    answer_base = PyramidLearnedConceptAnswerModel(model, learned) if learned else model
+    answer_model = MissingAnswerRetryModel(answer_base)
     checkpoint_dir = Path(args.checkpoint_dir) / curriculum_id / str(seed)
     outcome = run_exam(
         exercises=selected,
