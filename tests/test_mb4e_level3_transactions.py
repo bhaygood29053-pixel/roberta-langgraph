@@ -2,13 +2,20 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from roberta.learning.curriculum_io import (
     SOURCE_PROVENANCE_CONTRACT,
     TrustedSourceBinding,
     validate_package,
 )
 from roberta.learning.mb4e_level2_builder_cli import _prepare_stage as _prepare_level2_stage
-from roberta.learning.mb4e_level3_builder_cli import _prepare_stage as _prepare_level3_stage
+from roberta.learning.mb4e_level2_factory import build_level2_bank
+from roberta.learning.mb4e_level3_builder_cli import (
+    Level3BuildError,
+    _assert_required_level2,
+    _prepare_stage as _prepare_level3_stage,
+)
 from roberta.learning.mb4e_level3_factory import (
     CURRICULUM_ID,
     INTEGRITY_COUNT,
@@ -156,12 +163,24 @@ def test_level3_canonical_selection_is_249_ordinary_50_integrity_1_boss() -> Non
     assert selected[-1].boss_question is True
 
 
+def test_level3_builder_requires_exact_level2_bank_not_manifest_claim() -> None:
+    with pytest.raises(Level3BuildError, match="Level 2 exercise bank is missing"):
+        _assert_required_level2(())
+
+    exact = build_level2_bank(CURRICULUM_ID)
+    _assert_required_level2(exact)
+
+    with pytest.raises(Level3BuildError, match="does not exactly match"):
+        _assert_required_level2(exact[:-1])
+
+
 def test_staging_level3_preserves_existing_level1_and_level2_content(tmp_path) -> None:
     root, manifest = _write_level1_base_package(tmp_path)
     level2_stage = tmp_path / "level2-stage"
     _prepare_level2_stage(root, level2_stage, dict(manifest), "provenance.jsonl")
     level2_manifest, before = validate_package(level2_stage, source_resolver=_resolver)
     prior = tuple(item for item in before if item.level in {1, 2})
+    _assert_required_level2(before)
 
     level3_stage = tmp_path / "level3-stage"
     _prepare_level3_stage(
