@@ -14,6 +14,7 @@ from roberta.learning.pyramid_grounded_practice import (
     GROUNDED_PRACTICE_CONTEXT_CONTRACT,
     GroundedPracticeAnswerModel,
     GroundedPracticeContext,
+    grounded_practice_checkpoint_dir,
     load_grounded_practice_contexts,
     run_grounded_targeted_practice,
 )
@@ -235,7 +236,11 @@ class _CaptureAnswerModel:
 
 
 class _PassGraderModel:
+    def __init__(self) -> None:
+        self.invoke_count = 0
+
     def invoke(self, messages: object, *args: object, **kwargs: object) -> AIMessage:
+        self.invoke_count += 1
         payload = json.loads(messages[-1].content)
         return AIMessage(
             content=json.dumps(
@@ -305,7 +310,7 @@ def test_answer_adapter_fails_closed_without_matching_weakness_context() -> None
         adapter.invoke([HumanMessage(content=json.dumps(request))])
 
 
-def test_grounded_targeted_practice_uses_new_checkpoint_namespace(tmp_path: Path) -> None:
+def test_grounded_targeted_practice_uses_content_addressed_checkpoint_namespace(tmp_path: Path) -> None:
     output = tmp_path / "practice"
     legacy = output / "checkpoints"
     legacy.mkdir(parents=True)
@@ -315,6 +320,7 @@ def test_grounded_targeted_practice_uses_new_checkpoint_namespace(tmp_path: Path
         subconcept="immutability",
         anchors=(("weak-1:E1", "Canonical source excerpt."),),
     )
+    checkpoint_dir = grounded_practice_checkpoint_dir(output, _prepared(), (context,))
 
     report = run_grounded_targeted_practice(
         prepared=_prepared(),
@@ -326,8 +332,52 @@ def test_grounded_targeted_practice_uses_new_checkpoint_namespace(tmp_path: Path
     )
 
     assert report.practice_passed is True
-    assert (output / GROUNDED_PRACTICE_CHECKPOINT_NAMESPACE / "level_01_batch_0001.json").is_file()
+    assert checkpoint_dir.parent == output / GROUNDED_PRACTICE_CHECKPOINT_NAMESPACE
+    assert (checkpoint_dir / "level_01_batch_0001.json").is_file()
     assert (legacy / "level_01_batch_0001.json").read_text(encoding="utf-8") == "legacy-unconditioned"
+
+
+def test_changed_grounded_context_cannot_reuse_prior_checkpoint(tmp_path: Path) -> None:
+    output = tmp_path / "practice"
+    first_context = GroundedPracticeContext(
+        concept="benefits",
+        subconcept="immutability",
+        anchors=(("weak-1:E1", "First canonical excerpt."),),
+    )
+    second_context = GroundedPracticeContext(
+        concept="benefits",
+        subconcept="immutability",
+        anchors=(("weak-1:E1", "Changed canonical excerpt."),),
+    )
+    first_dir = grounded_practice_checkpoint_dir(output, _prepared(), (first_context,))
+    second_dir = grounded_practice_checkpoint_dir(output, _prepared(), (second_context,))
+    assert first_dir != second_dir
+
+    first_answers = _CaptureAnswerModel()
+    run_grounded_targeted_practice(
+        prepared=_prepared(),
+        contexts=(first_context,),
+        answer_model=first_answers,
+        grader_model=_PassGraderModel(),
+        output_dir=output,
+        batch_size=1,
+    )
+    assert len(first_answers.payloads) == 1
+    assert (first_dir / "level_01_batch_0001.json").is_file()
+
+    second_answers = _CaptureAnswerModel()
+    second_grader = _PassGraderModel()
+    run_grounded_targeted_practice(
+        prepared=_prepared(),
+        contexts=(second_context,),
+        answer_model=second_answers,
+        grader_model=second_grader,
+        output_dir=output,
+        batch_size=1,
+    )
+    assert len(second_answers.payloads) == 1
+    assert second_grader.invoke_count == 1
+    assert (second_dir / "level_01_batch_0001.json").is_file()
 
 
 def test_canonical_answer_payload_remains_closed_book() -> None:
