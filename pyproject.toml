@@ -29,6 +29,7 @@ roberta-pyramid-regrade = "roberta.learning.pyramid_regrade_cli:main"
 roberta-pyramid-source-reconstruct = "roberta.learning.pyramid_source_reconstruction_cli:main"
 roberta-pyramid-migrate-provenance = "roberta.learning.pyramid_provenance_migration_cli:main"
 roberta-pyramid-practice = "roberta.learning.pyramid_practice_cli:main"
+roberta-pyramid-supplemental-practice = "roberta.learning.pyramid_supplemental_practice_cli:main"
 
 [tool.setuptools.package-data]
 "roberta.learning" = [
