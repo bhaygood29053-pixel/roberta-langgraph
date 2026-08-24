@@ -20,13 +20,12 @@ class MissingAnswerRetryModel:
     output, duplicate ids, empty values, unexpected ids, or still-missing answers
     fail closed instead of being repaired or invented locally.
 
-    Targeted practice may opt into ``recover_unexpected_initial_ids``. In that mode,
+    Callers may opt into ``recover_unexpected_initial_ids``. In that mode,
     unexpected rows in the *initial* response are discarded only when at least one
     expected exercise is missing, and the adapter retries exactly those missing
     exercise ids once. The recovery response itself is never filtered, so any
     unexpected, duplicate, empty, or still-missing recovery id continues to fail
-    closed in ``answer_batch``. Canonical Pyramid callers keep the conservative
-    default for unexpected ids while still receiving malformed-response recovery.
+    closed in ``answer_batch``.
     """
 
     def __init__(
