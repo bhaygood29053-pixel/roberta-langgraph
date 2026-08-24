@@ -29,6 +29,8 @@ class TrustedSourceBinding:
     source_version: str
     source_origin: str
     source_authority_class: str
+    original_media_type: str | None = None
+    original_page_count: int | None = None
 
 
 TrustedSourceResolver = Callable[[str], TrustedSourceBinding | None]
@@ -258,11 +260,65 @@ def load_exercises_jsonl(
     return tuple(exercises)
 
 
+def _validate_provenance_location_pages(
+    location: Mapping[str, object],
+    *,
+    location_number: int,
+    exercise_id: str,
+    trusted_source: TrustedSourceBinding | None = None,
+) -> None:
+    has_book_pages = "book_pages" in location
+    has_pdf_pages = "pdf_pages" in location
+    if has_book_pages == has_pdf_pages:
+        raise CurriculumPackageError(
+            f"source provenance location {location_number} for {exercise_id} "
+            "must declare exactly one of book_pages or pdf_pages"
+        )
+    field = "book_pages" if has_book_pages else "pdf_pages"
+    pages = location.get(field)
+    if (
+        not isinstance(pages, list)
+        or not pages
+        or not all(
+            isinstance(page, int) and not isinstance(page, bool) and page > 0
+            for page in pages
+        )
+    ):
+        raise CurriculumPackageError(
+            f"source provenance location {location_number} for {exercise_id} "
+            f"requires positive integer {field}"
+        )
+    if has_pdf_pages:
+        if (
+            trusted_source is None
+            or trusted_source.original_media_type != "application/pdf"
+            or trusted_source.original_page_count is None
+        ):
+            raise CurriculumPackageError(
+                f"source provenance location {location_number} for {exercise_id} "
+                "uses pdf_pages but the trusted source is not a page-counted PDF"
+            )
+        if any(page > trusted_source.original_page_count for page in pages):
+            raise CurriculumPackageError(
+                f"source provenance location {location_number} for {exercise_id} "
+                f"pdf_pages exceed trusted source page count {trusted_source.original_page_count}"
+            )
+    legacy_source_ref = location.get("legacy_source_ref")
+    if legacy_source_ref is not None and (
+        not isinstance(legacy_source_ref, str) or not legacy_source_ref.strip()
+    ):
+        raise CurriculumPackageError(
+            f"source provenance location {location_number} for {exercise_id} "
+            "legacy_source_ref must be a non-empty string when present"
+        )
+
+
 def load_source_provenance_jsonl(
     path: str | Path,
     *,
     expected_source_key: str,
     expected_exercise_ids: set[str],
+    trusted_source: TrustedSourceBinding | None = None,
 ) -> tuple[dict[str, object], ...]:
     source = Path(path)
     try:
@@ -337,7 +393,6 @@ def load_source_provenance_jsonl(
                 )
             chapter = location.get("chapter")
             section = location.get("section")
-            pages = location.get("book_pages")
             if not isinstance(chapter, str) or not chapter.strip():
                 raise CurriculumPackageError(
                     f"source provenance location {location_number} for {exercise_id} "
@@ -348,18 +403,12 @@ def load_source_provenance_jsonl(
                     f"source provenance location {location_number} for {exercise_id} "
                     "requires section"
                 )
-            if (
-                not isinstance(pages, list)
-                or not pages
-                or not all(
-                    isinstance(page, int) and not isinstance(page, bool) and page > 0
-                    for page in pages
-                )
-            ):
-                raise CurriculumPackageError(
-                    f"source provenance location {location_number} for {exercise_id} "
-                    "requires positive integer book_pages"
-                )
+            _validate_provenance_location_pages(
+                location,
+                location_number=location_number,
+                exercise_id=exercise_id,
+                trusted_source=trusted_source,
+            )
         records.append(raw)
 
     if not records:
@@ -391,6 +440,8 @@ def _default_trusted_source_resolver(source_key: str) -> TrustedSourceBinding | 
         source_version=spec.version,
         source_origin=spec.origin,
         source_authority_class=spec.authority_class,
+        original_media_type=spec.original_media_type,
+        original_page_count=spec.original_page_count,
     )
 
 
@@ -424,6 +475,21 @@ def _validate_trusted_source_binding(
             f"trusted source binding for {source_key} is malformed"
         )
     if binding.source_authority_class not in _SOURCE_AUTHORITY_CLASSES:
+        raise CurriculumPackageError(
+            f"trusted source binding for {source_key} is malformed"
+        )
+    if binding.original_media_type is not None and (
+        not isinstance(binding.original_media_type, str)
+        or not binding.original_media_type.strip()
+    ):
+        raise CurriculumPackageError(
+            f"trusted source binding for {source_key} is malformed"
+        )
+    if binding.original_page_count is not None and (
+        not isinstance(binding.original_page_count, int)
+        or isinstance(binding.original_page_count, bool)
+        or binding.original_page_count <= 0
+    ):
         raise CurriculumPackageError(
             f"trusted source binding for {source_key} is malformed"
         )
@@ -562,6 +628,7 @@ def validate_package(
             root / str(declaration["file"]),
             expected_source_key=source_key,
             expected_exercise_ids={exercise.exercise_id for exercise in exercises},
+            trusted_source=trusted,
         )
 
     return manifest, exercises

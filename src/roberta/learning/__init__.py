@@ -144,6 +144,13 @@ from .x1_whitepaper import (
     ingest_x1_whitepaper_source,
     x1_whitepaper_markdown,
 )
+from .pyramid_source_provenance_compat import install_basis_aware_source_provenance
+
+# The Learning package is the import boundary for its programmatic API. Install
+# the backward-compatible provenance locator seam here so direct callers of
+# pyramid_source_reconstruction receive the same explicit PDF/book page support
+# as the CLI, without changing checkpoint, retrieval, or authority behavior.
+install_basis_aware_source_provenance()
 
 __all__ = [
     "ANSWER_CONTRACT",
