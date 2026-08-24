@@ -385,3 +385,7 @@ This roadmap does not authorize:
 - automatic Learning System/HXMP memory promotion;
 - provider-trust or capability-manifest mutation;
 - behavioral/ownership/intent/fraud/manipulation labels without separate accepted evidence contracts.
+
+## Naming note
+
+The official Roberta specialist name is **X1Labs Intelligence Scout**. The earlier term **X1 Intelligence Gateway** now refers only to a possible internal transport/gateway implementation detail and should not be used as the specialist's user-facing or roadmap identity.
