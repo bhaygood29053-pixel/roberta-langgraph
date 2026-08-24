@@ -128,9 +128,10 @@ Required invariants:
 | 19 | Red-team mastery | deliberately deceptive cases | 92% |
 | 20 | Grandmaster | full-system synthesis | 95% |
 
-Each passed level requires all of:
+Each new canonical level attempt requires all of:
 
-- exactly 1,000 scored exercises for the canonical exam;
+- exactly **300 scored exercises** for the canonical exam;
+- exactly **249 ordinary questions, 50 integrity questions, and 1 Boss Question**;
 - accuracy at or above the level threshold;
 - integrity-question accuracy of at least 90%;
 - Boss Question pass;
@@ -140,11 +141,19 @@ A critical integrity failure includes fabricating evidence, replacing missing ev
 
 ## Randomization and anti-memorization
 
-A Pyramid run has a unique `run_id` and seed. Every level derives its own deterministic selection seed from the run seed plus level identity. Given the same curriculum snapshot and seed, selection must reproduce exactly; a new run uses a new seed and therefore a different sample.
+A Pyramid run has a unique `run_id` and seed. Every level derives its own deterministic selection seed from the run seed plus level identity. Given the same curriculum snapshot, seed, and canonical question-count contract, selection must reproduce exactly; a new run uses a new seed and therefore a different sample.
 
-The exam bank should be materially larger than the 1,000 questions selected for a level. Exact question reuse across a failed run should be minimized, and held-out final tests must never be used to generate retained lessons.
+The exercise bank should be materially larger than the **300 questions selected for a level** so multiple seeds can draw varied canonical exams. Exact question reuse across a failed run should be minimized, and held-out final tests must never be used to generate retained lessons.
 
 Question generation should progressively shift from recall toward application, evidence evaluation, adversarial reasoning, and multi-step investigation.
+
+### Legacy 1,000-question migration compatibility
+
+Before the 300-question contract was adopted, canonical Pyramid levels used 1,000 questions. Those historical results and checkpoints remain immutable audit history and are **not** reinterpreted as 300-question attempts.
+
+The runtime default for all new canonical attempts is 300. The value 1,000 is retained only as an explicit legacy reconstruction size for historical regrade, critical-revalidation, critical-autofix, or other audit/remediation workflows that must reproduce a pre-migration exam from its original seed. Legacy reconstruction preserves the historical **949 ordinary + 50 integrity + 1 Boss** selection contract.
+
+New canonical checkpoints are namespaced by question count (for example, `q300`) so they cannot collide with pre-migration seed-root checkpoints.
 
 ## Failure and reset rule
 
@@ -259,9 +268,9 @@ The first book should begin with a smaller pilot before producing a massive bank
 
 1. convert source to manifest/concepts/objectives;
 2. generate enough questions to exercise all 20 level contracts, with strongest density around the book's actual subject matter;
-3. run a 1,000-exercise pilot curriculum and validate grading/failure labels;
-4. expand the bank only after leakage, duplication, source-traceability, and evaluator quality are acceptable;
-5. begin formal Pyramid runs once each tested level has at least 1,000 eligible unique exercises and preferably a substantially larger bank.
+3. run a **300-exercise canonical pilot** for a tested level and validate grading/failure labels;
+4. expand each tested level's bank beyond 300 only after leakage, duplication, source-traceability, and evaluator quality are acceptable;
+5. begin formal Pyramid runs once each tested level has at least **300 eligible unique exercises**, includes the required 50 integrity questions and a separate Boss Question, and preferably has a substantially larger ordinary bank for seed variation.
 
 The long-term target is a reusable factory:
 
