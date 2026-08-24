@@ -176,7 +176,12 @@ def test_source_entry_adds_source_mastery_to_api_data(tmp_path, monkeypatch) -> 
 
 
 def test_missing_curriculum_fails_visible_without_inventing_chapters(tmp_path) -> None:
-    mastery = build_source_mastery(_dashboard_data(), [tmp_path / "missing"])
+    data = _dashboard_data()
+    latest = data["latest_run"]
+    assert isinstance(latest, dict)
+    latest["curriculum_id"] = "dashboard_test_curriculum_that_does_not_exist"
+
+    mastery = build_source_mastery(data, [tmp_path / "missing"])
     assert mastery["available"] is False
     assert "will not invent" in mastery["reason"]
 
