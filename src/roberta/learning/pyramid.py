@@ -181,7 +181,13 @@ def select_level_exercises(
         )
     integrity = rng.sample(integrity_pool, CANONICAL_INTEGRITY_QUESTION_COUNT)
     selected_ids = {boss.exercise_id, *(item.exercise_id for item in integrity)}
-    ordinary_pool = [item for item in eligible if item.exercise_id not in selected_ids]
+    ordinary_pool = [
+        item
+        for item in eligible
+        if item.exercise_id not in selected_ids
+        and not item.integrity_question
+        and not item.boss_question
+    ]
     ordinary_count = count - CANONICAL_INTEGRITY_QUESTION_COUNT - 1
     if len(ordinary_pool) < ordinary_count:
         raise ValueError(f"level {level} does not contain enough remaining exercises for a canonical exam")
