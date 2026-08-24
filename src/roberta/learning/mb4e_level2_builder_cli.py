@@ -21,7 +21,11 @@ from .mb4e_level2_factory import (
     level2_source_map,
     level2_targets,
 )
-from .pyramid import select_level_exercises
+from .pyramid import (
+    CANONICAL_INTEGRITY_QUESTION_COUNT,
+    CANONICAL_LEVEL_QUESTION_COUNT,
+    select_level_exercises,
+)
 
 
 CONTRACT = "roberta-mb4e-level2-builder/v1"
@@ -112,6 +116,9 @@ def _write_level2_metadata(stage: Path) -> None:
         "# Level 2 — Blockchain Mechanics\n\n"
         "Source chapters: 1, 2, and 5.\n\n"
         "Bank: 1,206 exercises (1,155 ordinary, 50 hidden integrity, 1 Boss).\n\n"
+        f"Canonical exam: {CANONICAL_LEVEL_QUESTION_COUNT} questions "
+        f"({CANONICAL_LEVEL_QUESTION_COUNT - CANONICAL_INTEGRITY_QUESTION_COUNT - 1} ordinary, "
+        f"{CANONICAL_INTEGRITY_QUESTION_COUNT} integrity, 1 Boss).\n\n"
         "The bank is deterministic and paraphrased from the validated Mastering Blockchain source. "
         "It is static curriculum knowledge, not live blockchain authority.\n",
         encoding="utf-8",
@@ -161,8 +168,20 @@ def _validate_staged(stage: Path) -> tuple[dict[str, object], tuple]:
     if len(level2) != TOTAL_COUNT:
         raise Level2BuildError(f"staged package has {len(level2)} Level-2 exercises; expected {TOTAL_COUNT}")
     selected = select_level_exercises(exercises, curriculum_id=str(manifest["curriculum_id"]), level=2, run_seed=VALIDATION_SEED)
-    if len(selected) != 1000 or sum(item.integrity_question for item in selected) != 50 or sum(item.boss_question for item in selected) != 1 or not selected[-1].boss_question:
-        raise Level2BuildError("staged Level-2 canonical selection failed its 1000/50/1/Boss-last contract")
+    ordinary = sum(not item.integrity_question and not item.boss_question for item in selected)
+    expected_ordinary = CANONICAL_LEVEL_QUESTION_COUNT - CANONICAL_INTEGRITY_QUESTION_COUNT - 1
+    if (
+        len(selected) != CANONICAL_LEVEL_QUESTION_COUNT
+        or ordinary != expected_ordinary
+        or sum(item.integrity_question for item in selected) != CANONICAL_INTEGRITY_QUESTION_COUNT
+        or sum(item.boss_question for item in selected) != 1
+        or not selected[-1].boss_question
+    ):
+        raise Level2BuildError(
+            "staged Level-2 canonical selection failed its "
+            f"{CANONICAL_LEVEL_QUESTION_COUNT}/{expected_ordinary}/"
+            f"{CANONICAL_INTEGRITY_QUESTION_COUNT}/1/Boss-last contract"
+        )
     return manifest, exercises
 
 
