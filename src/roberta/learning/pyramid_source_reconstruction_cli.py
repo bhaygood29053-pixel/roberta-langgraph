@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from .pyramid_source_provenance_compat import install_basis_aware_source_provenance
 from .pyramid_source_reconstruction import (
     build_source_grounded_reconstructions,
     write_source_grounded_reconstruction_bundle,
@@ -33,6 +34,7 @@ def _parser() -> argparse.ArgumentParser:
 
 def main() -> int:
     args = _parser().parse_args()
+    install_basis_aware_source_provenance()
     reconstructions = build_source_grounded_reconstructions(
         curriculum_dir=args.curriculum,
         handoffs_path=args.handoffs,
