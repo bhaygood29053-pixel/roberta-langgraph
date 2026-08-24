@@ -9,13 +9,16 @@ from .pyramid_exam import PyramidExamError, _message_text, _parse_json
 
 
 class MissingAnswerRetryModel:
-    """Retry one incomplete Pyramid answer batch for only the omitted exercises.
+    """Retry one incomplete or structurally malformed Pyramid answer batch.
 
     The wrapped model remains authoritative for the answer text. This adapter only
-    repairs a structurally incomplete answer response by issuing one bounded
-    missing-only retry. Existing ``answer_batch`` validation still decides whether
-    the merged response is acceptable, so malformed, duplicate, empty, unexpected,
-    or still-missing answers fail closed by default.
+    performs bounded recovery. A structurally malformed initial response gets one
+    full-batch regeneration attempt. A structurally valid but incomplete response
+    gets one missing-only retry. No path makes more than two model calls for a batch.
+
+    Existing ``answer_batch`` validation remains authoritative, so malformed retry
+    output, duplicate ids, empty values, unexpected ids, or still-missing answers
+    fail closed instead of being repaired or invented locally.
 
     Targeted practice may opt into ``recover_unexpected_initial_ids``. In that mode,
     unexpected rows in the *initial* response are discarded only when at least one
@@ -23,7 +26,7 @@ class MissingAnswerRetryModel:
     exercise ids once. The recovery response itself is never filtered, so any
     unexpected, duplicate, empty, or still-missing recovery id continues to fail
     closed in ``answer_batch``. Canonical Pyramid callers keep the conservative
-    default.
+    default for unexpected ids while still receiving malformed-response recovery.
     """
 
     def __init__(
@@ -41,9 +44,12 @@ class MissingAnswerRetryModel:
         if request is None:
             return response
 
-        parsed = _parse_json(_message_text(response), context="Roberta answer batch")
+        try:
+            parsed = _parse_json(_message_text(response), context="Roberta answer batch")
+        except PyramidExamError:
+            return self._retry_full_batch(messages, request, *args, **kwargs)
         if not isinstance(parsed, Mapping) or not isinstance(parsed.get("answers"), list):
-            return response
+            return self._retry_full_batch(messages, request, *args, **kwargs)
 
         exercises = request["exercises"]
         expected_ids = [str(item["exercise_id"]).strip() for item in exercises]
@@ -53,10 +59,11 @@ class MissingAnswerRetryModel:
         saw_unexpected = False
         for row in parsed["answers"]:
             if not isinstance(row, Mapping):
-                return response
+                return self._retry_full_batch(messages, request, *args, **kwargs)
             exercise_id = str(row.get("exercise_id", "")).strip()
-            if not exercise_id:
-                return response
+            answer = str(row.get("answer", "")).strip()
+            if not exercise_id or not answer:
+                return self._retry_full_batch(messages, request, *args, **kwargs)
             if exercise_id not in expected:
                 if not self._recover_unexpected_initial_ids:
                     return response
@@ -101,6 +108,23 @@ class MissingAnswerRetryModel:
 
         combined = valid_rows + list(retry_parsed["answers"])
         return AIMessage(content=json.dumps({"answers": combined}, ensure_ascii=False))
+
+    def _retry_full_batch(
+        self,
+        messages: Sequence[object],
+        request: Mapping[str, object],
+        *args: object,
+        **kwargs: object,
+    ) -> object:
+        retry_request = dict(request)
+        retry_request["instruction"] = (
+            "Recovery pass: the previous response was structurally invalid. "
+            "Answer every exercise in this full batch independently. Return valid JSON matching "
+            "the supplied schema exactly, with exactly one non-empty exercise_id and answer per exercise."
+        )
+        retry_messages = list(messages)
+        retry_messages[-1] = HumanMessage(content=json.dumps(retry_request, ensure_ascii=False))
+        return self._model.invoke(retry_messages, *args, **kwargs)
 
     @staticmethod
     def _answer_request(messages: Sequence[object]) -> dict[str, object] | None:
