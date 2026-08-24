@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 import json
 from pathlib import Path
 import sys
@@ -25,6 +26,7 @@ from roberta.learning.training_ledger import PyramidTrainingLedger
 
 CURRICULUM_ID = "critical-blocker-fixture"
 RUN_SEED = "critical-blocker-seed"
+FIXTURE_SOURCE_REF = "critical-blocker-fixture/source"
 
 
 def _exercise(exercise_id: str, *, question: str = "What is practical immutability?") -> Exercise:
@@ -36,7 +38,7 @@ def _exercise(exercise_id: str, *, question: str = "What is practical immutabili
         subconcept="immutability",
         question=question,
         expected_answer="Accepted history is extremely difficult, but not conceptually impossible, to alter.",
-        source_refs=(MB4E_SOURCE_REF,),
+        source_refs=(FIXTURE_SOURCE_REF,),
         required_reasoning_points=("practical rather than absolute",),
         forbidden_inferences=("Do not claim absolute immutability.",),
         grading_rubric_id="MB4E-L1-RUBRIC-V1",
@@ -53,7 +55,7 @@ def _write_curriculum(tmp_path: Path) -> Path:
         "curriculum_id": CURRICULUM_ID,
         "title": "Critical blocker fixture",
         "source_type": "test",
-        "approved_source_refs": [MB4E_SOURCE_REF],
+        "approved_source_refs": [FIXTURE_SOURCE_REF],
         "levels": [1],
     }
     (root / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
@@ -326,6 +328,7 @@ def test_fresh_second_immutability_bank_supports_ten_unseen_questions(tmp_path: 
     assert len({item.exercise_id for item in bank}) == 12
     assert all(item.exercise_id.startswith(CRITICAL_BLOCKER_SUPPLEMENTAL_ID_PREFIX) for item in bank)
     assert all(item.source_refs == (MB4E_SOURCE_REF,) for item in bank)
+    fixture_bank = tuple(replace(item, source_refs=(FIXTURE_SOURCE_REF,)) for item in bank)
 
     seen = tmp_path / "prior-supplemental"
     seen.mkdir()
@@ -333,8 +336,8 @@ def test_fresh_second_immutability_bank_supports_ten_unseen_questions(tmp_path: 
         json.dumps(
             {
                 "grades": [
-                    {"exercise_id": bank[0].exercise_id},
-                    {"exercise_id": bank[1].exercise_id},
+                    {"exercise_id": fixture_bank[0].exercise_id},
+                    {"exercise_id": fixture_bank[1].exercise_id},
                 ]
             }
         ),
@@ -348,13 +351,13 @@ def test_fresh_second_immutability_bank_supports_ten_unseen_questions(tmp_path: 
         exclude_checkpoint_dirs=(seen,),
         questions_per_weakness=10,
         seed="fresh-ten",
-        supplemental_bank=bank,
+        supplemental_bank=fixture_bank,
     )
 
     selected = {item.exercise_id for item in preparation.prepared.exercises}
     assert len(selected) == 10
-    assert bank[0].exercise_id not in selected
-    assert bank[1].exercise_id not in selected
+    assert fixture_bank[0].exercise_id not in selected
+    assert fixture_bank[1].exercise_id not in selected
     assert preparation.current_weakness_keys == (("benefits", "immutability"),)
     assert preparation.prepared.critical_weakness_keys == {("benefits", "immutability")}
 
