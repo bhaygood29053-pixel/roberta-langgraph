@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 from .curriculum_io import validate_package
+from .pyramid_critical_blocker_supplemental import validate_critical_blocker_gate
 from .pyramid_critical_origin import inherit_critical_origins
 from .pyramid_exam import GRADING_SEMANTICS
 from .pyramid_learning_handoff import (
@@ -31,8 +32,16 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help=(
             "Explicitly remediate only validated critical_failure=true items. Requires current "
-            "question-first-adjudication/v3 checkpoint semantics."
+            "question-first-adjudication/v3 checkpoint semantics plus canonical gate evidence."
         ),
+    )
+    parser.add_argument(
+        "--critical-revalidation-report",
+        help="V3 critical_revalidation_report.json proving corrected accuracy and remaining critical ids",
+    )
+    parser.add_argument(
+        "--ledger",
+        help="Read-only Pyramid training ledger used to prove integrity and Boss gates",
     )
     parser.add_argument(
         "--exclude-checkpoints",
@@ -99,6 +108,27 @@ def main() -> int:
             raise SystemExit("No validated critical blockers found; critical-blocker remediation is not applicable.")
         raise SystemExit("No PARTIAL/FAIL/critical checkpoint items found; nothing to remediate.")
 
+    gate_evidence: dict[str, object] | None = None
+    if args.critical_blockers_only:
+        if not args.critical_revalidation_report or not args.ledger:
+            raise SystemExit(
+                "critical-blocker remediation requires --critical-revalidation-report and --ledger"
+            )
+        try:
+            gate_evidence = validate_critical_blocker_gate(
+                revalidation_report_path=args.critical_revalidation_report,
+                ledger_path=args.ledger,
+                curriculum_id=curriculum_id,
+                level=1,
+            )
+        except RuntimeError as exc:
+            raise SystemExit(str(exc)) from exc
+        current_critical_ids = sorted(item.exercise_id for item in weak_items)
+        if gate_evidence.get("critical_ids") != current_critical_ids:
+            raise SystemExit(
+                "critical revalidation report critical ids do not match current V3 checkpoint blockers"
+            )
+
     plan = build_remediation_plan(exercises, weak_items)
     inherited_plans, inherited_plan_records = _load_inherited_plans(
         list(args.inherit_remediation_plan)
@@ -162,6 +192,7 @@ def main() -> int:
         "curriculum_id": manifest["curriculum_id"],
         "seed": args.seed,
         "critical_blocker_mode": args.critical_blockers_only,
+        "critical_blocker_gate": gate_evidence,
         "required_grading_semantics": GRADING_SEMANTICS if args.critical_blockers_only else None,
         "canonical_practice_exhausted": canonical_practice_exhausted,
         "canonical_practice_exhaustion_reason": canonical_practice_exhaustion_reason,
@@ -181,6 +212,12 @@ def main() -> int:
 
     print(f"CURRICULUM {manifest['curriculum_id']}")
     print(f"CRITICAL_BLOCKER_MODE {str(args.critical_blockers_only).lower()}")
+    if gate_evidence is not None:
+        print(f"CRITICAL_BLOCKER_GATE_VERIFIED true")
+        print(f"GATE_REVALIDATED_ACCURACY {float(gate_evidence['revalidated_accuracy']):.4f}")
+        print(f"GATE_INTEGRITY_ACCURACY {float(gate_evidence['integrity_accuracy']):.4f}")
+        print(f"GATE_BOSS_PASSED {str(gate_evidence['boss_passed']).lower()}")
+        print(f"GATE_VALIDATED_CRITICAL_FAILURES {gate_evidence['validated_critical_failures']}")
     print(f"WEAK_ITEMS {plan['weak_item_count']}")
     print(f"WEAKNESSES {plan['weakness_count']}")
     print(f"EXCLUDED_SEEN_EXERCISES {len(excluded_seen_ids)}")
