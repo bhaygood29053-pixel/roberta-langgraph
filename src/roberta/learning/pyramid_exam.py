@@ -52,7 +52,7 @@ Rules:
 4. Keep incomplete_reasoning only when the wording of the question itself explicitly asks for multiple elements and one or more are genuinely missing.
 5. A first-pass critical_failure=true is a proposal, not an authority. Retain critical_failure=true only when initial_critical_failure is true, critical_deterministic_basis is true, and the actual Roberta answer affirmatively commits the serious forbidden/fabricated condition. Otherwise return critical_failure=false.
 6. Never introduce a critical failure when initial_critical_failure is false.
-7. Do not infer a forbidden or absolute claim from silence or from wording that explicitly qualifies, conditions, limits, or makes the supposedly forbidden state merely difficult, costly, infeasible, hard, or not easy. For example, 'cannot be easily altered' is qualified and must not be converted into 'cannot be altered'.
+7. Do not infer a forbidden or absolute claim from silence or from wording that explicitly qualifies, conditions, limits, or makes the supposedly forbidden state merely difficult, costly, infeasible, hard, or not easy. For example, 'cannot be easily altered', 'cannot be altered easily', and 'cannot be altered without consensus' are qualified and must not be converted into 'cannot be altered'.
 8. Do not relax integrity, fabrication, stale-live-data, or genuine forbidden-inference rules. An affirmative serious forbidden inference may remain non-PASS and critical when the deterministic basis allows it.
 9. Judge conceptual meaning, not phrase overlap.
 
@@ -76,6 +76,7 @@ _ABSOLUTE_IMMUTABILITY_FORBIDDEN = "absolute immutability"
 _QUALIFIED_IMMUTABILITY = re.compile(
     r"(?:"
     r"\b(?:cannot|can't|can\s+not)\s+be\s+(?:easily|readily|practically)\s+(?:altered|changed|modified|deleted|rewritten)\b"
+    r"|\b(?:cannot|can't|can\s+not)\s+(?:easily|readily|practically)\s+be\s+(?:altered|changed|modified|deleted|rewritten)\b"
     r"|\b(?:extremely|very|highly)\s+difficult\s+to\s+(?:alter|change|modify|delete|rewrite)\b"
     r"|\b(?:difficult|hard|costly|impractical)\s+to\s+(?:alter|change|modify|delete|rewrite)\b"
     r")",
@@ -87,6 +88,12 @@ _ABSOLUTE_IMMUTABILITY = re.compile(
     r"|\bnever\s+(?:altered|changed|modified|deleted|rewritten)\b"
     r"|\bimpossible\s+to\s+(?:alter|change|modify|delete|rewrite)\b"
     r")",
+    re.IGNORECASE,
+)
+_POST_ABSOLUTE_IMMUTABILITY_QUALIFIER = re.compile(
+    r"^\s*,?\s*"
+    r"(?:(?:(?:and|or)\s+(?:altered|changed|modified|deleted|rewritten)\s+))*"
+    r"(?:easily\b|readily\b|practically\b|without\b|unless\b|except\b)",
     re.IGNORECASE,
 )
 
@@ -342,7 +349,12 @@ def _has_absolute_immutability_forbidden_inference(exercise: Exercise) -> bool:
 
 def _answer_affirmatively_claims_absolute_immutability(answer: str) -> bool:
     without_qualified = _QUALIFIED_IMMUTABILITY.sub("", answer)
-    return _ABSOLUTE_IMMUTABILITY.search(without_qualified) is not None
+    for match in _ABSOLUTE_IMMUTABILITY.finditer(without_qualified):
+        clause_tail = re.split(r"[.!?;]", without_qualified[match.end() :], maxsplit=1)[0]
+        if _POST_ABSOLUTE_IMMUTABILITY_QUALIFIER.search(clause_tail):
+            continue
+        return True
+    return False
 
 
 def _critical_proposal_has_deterministic_basis(exercise: Exercise, grade: GradedAnswer) -> bool:
@@ -390,7 +402,7 @@ def _adjudication_payload(
             "PASS a substantively correct response when omitted wording is reference-only or the answer communicates an equivalent qualified/non-absolute concept. "
             "If the response is narrower than or mismatches the concept, or affirmatively commits a forbidden inference, keep PARTIAL/FAIL with the appropriate failure code. "
             "For proposed critical failures, critical_failure may remain true only when initial_critical_failure and critical_deterministic_basis are both true and the answer affirmatively commits the serious condition. "
-            "Never introduce a new critical failure. Qualified wording such as 'cannot be easily altered' is not an absolute claim. "
+            "Never introduce a new critical failure. Qualified wording such as 'cannot be easily altered', 'cannot be altered easily', or 'cannot be altered without consensus' is not an absolute claim. "
             "Keep incomplete_reasoning only when question_explicitly_requests_multiple_elements is true and a requested element is actually absent."
         ),
         "schema": {
