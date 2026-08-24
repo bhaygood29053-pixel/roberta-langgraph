@@ -26,10 +26,29 @@ class WeakItem:
     grading_semantics: str = ""
 
 
+def _checkpoint_paths(checkpoint_dir: str | Path) -> tuple[Path, ...]:
+    return tuple(sorted(Path(checkpoint_dir).glob("level_*_batch_*.json")))
+
+
+def load_seen_exercise_ids(checkpoint_dirs: Iterable[str | Path]) -> tuple[str, ...]:
+    """Return every exercise id observed in one or more checkpoint directories."""
+
+    seen: set[str] = set()
+    for checkpoint_dir in checkpoint_dirs:
+        for path in _checkpoint_paths(checkpoint_dir):
+            raw = json.loads(path.read_bytes().decode("utf-8"))
+            for grade in raw.get("grades", []):
+                if not isinstance(grade, dict):
+                    continue
+                exercise_id = str(grade.get("exercise_id", "")).strip()
+                if exercise_id:
+                    seen.add(exercise_id)
+    return tuple(sorted(seen))
+
+
 def load_weak_items(checkpoint_dir: str | Path) -> tuple[WeakItem, ...]:
-    root = Path(checkpoint_dir)
     items: list[WeakItem] = []
-    for path in sorted(root.glob("level_*_batch_*.json")):
+    for path in _checkpoint_paths(checkpoint_dir):
         raw_bytes = path.read_bytes()
         raw = json.loads(raw_bytes.decode("utf-8"))
         checkpoint_sha256 = hashlib.sha256(raw_bytes).hexdigest()
@@ -106,23 +125,45 @@ def select_fresh_practice(
     *,
     per_weakness: int = 5,
     seed: str = "remediation",
+    excluded_exercise_ids: Iterable[str] = (),
 ) -> tuple[Exercise, ...]:
     if per_weakness <= 0:
         raise ValueError("per_weakness must be positive")
     by_id = {item.exercise_id: item for item in exercises}
-    seen = {item.exercise_id for item in weak_items}
-    weak_keys = {(by_id[item.exercise_id].concept, by_id[item.exercise_id].subconcept) for item in weak_items if item.exercise_id in by_id}
+    excluded = {
+        exercise_id.strip()
+        for exercise_id in excluded_exercise_ids
+        if isinstance(exercise_id, str) and exercise_id.strip()
+    }
+    excluded.update(item.exercise_id for item in weak_items)
+    weak_keys = {
+        (by_id[item.exercise_id].concept, by_id[item.exercise_id].subconcept)
+        for item in weak_items
+        if item.exercise_id in by_id
+    }
     rng = random.Random(seed)
     selected: list[Exercise] = []
+    uncovered: list[tuple[str, str]] = []
     for key in sorted(weak_keys):
         pool = [
-            item for item in exercises
+            item
+            for item in exercises
             if (item.concept, item.subconcept) == key
-            and item.exercise_id not in seen
+            and item.exercise_id not in excluded
             and not item.boss_question
         ]
         rng.shuffle(pool)
-        selected.extend(pool[:per_weakness])
+        chosen = pool[:per_weakness]
+        if not chosen:
+            uncovered.append(key)
+            continue
+        selected.extend(chosen)
+    if uncovered:
+        labels = [f"{concept}/{subconcept}" for concept, subconcept in uncovered]
+        raise ValueError(
+            "no fresh practice questions remain for remediation weaknesses: "
+            + ", ".join(labels)
+        )
     return tuple(selected)
 
 
