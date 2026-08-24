@@ -1,8 +1,13 @@
 {
-  "alignment_hash": "433058b2dca6a7a773c07a1f61d39cd333d007099322d948854e0e7b24a78ae8",
-  "alignment_method": "verified_multi_signature_midpoint-v1",
+  "alignment_hash": "4e04560fa962d85c0d7d6f4ec1034fc93f4e810802b67c18129053ce53a4d697",
+  "alignment_method": "verified_multi_signature_and_line_ownership-v1",
   "contract": "roberta-source-pdf-transcript-alignment/v1",
   "entries": [
+    {"line_end": 1359, "line_start": 1312, "pdf_page": 37},
+    {"line_end": 1397, "line_start": 1363, "pdf_page": 38},
+    {"line_end": 1434, "line_start": 1400, "pdf_page": 39},
+    {"line_end": 1482, "line_start": 1437, "pdf_page": 40},
+    {"line_end": 1530, "line_start": 1485, "pdf_page": 41},
     {"line_end": 1661, "line_start": 1620, "pdf_page": 44},
     {"line_end": 1695, "line_start": 1662, "pdf_page": 45},
     {"line_end": 1726, "line_start": 1696, "pdf_page": 46},
