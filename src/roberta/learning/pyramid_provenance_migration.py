@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import ctypes
 from dataclasses import dataclass
+import errno
 import hashlib
 import json
 import os
 from pathlib import Path
 import re
 import shutil
+import sys
 import tempfile
 from typing import Any, Mapping
 
@@ -25,6 +28,9 @@ _LEGACY_REF_RE = re.compile(
 _SOURCE_MAP_RE = re.compile(
     r"^PDF pages (?P<start>[1-9][0-9]*)-(?P<end>[1-9][0-9]*):\s*(?P<section>.+)$"
 )
+_SNAPSHOT_FILES = ("manifest.json", "exercises.jsonl", "source_map.json")
+_AT_FDCWD = -100
+_RENAME_NOREPLACE = 1
 
 
 class PyramidProvenanceMigrationError(RuntimeError):
@@ -65,24 +71,36 @@ class PyramidProvenanceMigrationReport:
         }
 
 
-def _sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+def _sha256_bytes(value: bytes) -> str:
+    return hashlib.sha256(value).hexdigest()
+
+
+def _read_bytes(path: Path, *, label: str) -> bytes:
+    try:
+        return path.read_bytes()
+    except OSError as exc:
+        raise PyramidProvenanceMigrationError(f"cannot read {label}: {exc}") from exc
+
+
+def _read_json_object_bytes(value: bytes, *, label: str) -> dict[str, object]:
+    try:
+        text = value.decode("utf-8")
+        parsed = json.loads(text)
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise PyramidProvenanceMigrationError(f"cannot read {label}: {exc}") from exc
+    if not isinstance(parsed, dict):
+        raise PyramidProvenanceMigrationError(f"{label} must be a JSON object")
+    return parsed
 
 
 def _read_json_object(path: Path, *, label: str) -> dict[str, object]:
-    try:
-        value = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        raise PyramidProvenanceMigrationError(f"cannot read {label}: {exc}") from exc
-    if not isinstance(value, dict):
-        raise PyramidProvenanceMigrationError(f"{label} must be a JSON object")
-    return value
+    return _read_json_object_bytes(_read_bytes(path, label=label), label=label)
 
 
-def _read_raw_exercises(path: Path) -> list[dict[str, object]]:
+def _read_raw_exercises_bytes(value: bytes) -> list[dict[str, object]]:
     try:
-        lines = path.read_text(encoding="utf-8").splitlines()
-    except OSError as exc:
+        lines = value.decode("utf-8").splitlines()
+    except UnicodeDecodeError as exc:
         raise PyramidProvenanceMigrationError(f"cannot read legacy exercise bank: {exc}") from exc
     rows: list[dict[str, object]] = []
     seen: set[str] = set()
@@ -113,7 +131,44 @@ def _read_raw_exercises(path: Path) -> list[dict[str, object]]:
     return rows
 
 
-def _legacy_location(source_ref: str, source_map: Mapping[str, object]) -> dict[str, object]:
+def _capture_input_snapshot(input_root: Path) -> dict[str, bytes]:
+    snapshot = {
+        name: _read_bytes(input_root / name, label=f"legacy {name}")
+        for name in _SNAPSHOT_FILES
+    }
+    _assert_input_snapshot_unchanged(input_root, snapshot)
+    return snapshot
+
+
+def _assert_input_snapshot_unchanged(input_root: Path, snapshot: Mapping[str, bytes]) -> None:
+    for name in _SNAPSHOT_FILES:
+        expected = snapshot.get(name)
+        if not isinstance(expected, bytes):
+            raise PyramidProvenanceMigrationError(f"legacy input snapshot is missing {name}")
+        current = _read_bytes(input_root / name, label=f"legacy {name}")
+        if current != expected:
+            raise PyramidProvenanceMigrationError(
+                f"legacy input changed during migration: {name}"
+            )
+
+
+def _validate_legacy_snapshot(snapshot: Mapping[str, bytes]) -> tuple[dict[str, object], list[Any]]:
+    with tempfile.TemporaryDirectory(prefix=".mb4e-legacy-validate-") as temp_dir:
+        root = Path(temp_dir)
+        for name in _SNAPSHOT_FILES:
+            value = snapshot.get(name)
+            if not isinstance(value, bytes):
+                raise PyramidProvenanceMigrationError(f"legacy input snapshot is missing {name}")
+            (root / name).write_bytes(value)
+        return validate_package(root)
+
+
+def _legacy_location(
+    source_ref: str,
+    source_map: Mapping[str, object],
+    *,
+    max_pdf_page: int,
+) -> dict[str, object]:
     ref_match = _LEGACY_REF_RE.fullmatch(source_ref)
     if ref_match is None:
         raise PyramidProvenanceMigrationError(
@@ -138,6 +193,10 @@ def _legacy_location(source_ref: str, source_map: Mapping[str, object]) -> dict[
         raise PyramidProvenanceMigrationError(
             f"legacy source ref/page-map mismatch for {source_ref!r}"
         )
+    if ref_end > max_pdf_page:
+        raise PyramidProvenanceMigrationError(
+            f"legacy source ref {source_ref!r} exceeds registered source PDF page count {max_pdf_page}"
+        )
 
     return {
         "chapter": f"Chapter {int(ref_match.group('chapter'))}",
@@ -156,6 +215,7 @@ def _migrate_exercises(
     source_map: Mapping[str, object],
     *,
     source_key: str,
+    max_pdf_page: int,
 ) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
     migrated: list[dict[str, object]] = []
     provenance: list[dict[str, object]] = []
@@ -175,7 +235,10 @@ def _migrate_exercises(
                 f"legacy exercise {exercise_id} already references canonical source key; package is not an unmigrated legacy input"
             )
         legacy_refs = tuple(source_refs)
-        locations = [_legacy_location(ref, source_map) for ref in legacy_refs]
+        locations = [
+            _legacy_location(ref, source_map, max_pdf_page=max_pdf_page)
+            for ref in legacy_refs
+        ]
 
         migrated_row = json.loads(json.dumps(raw, ensure_ascii=False))
         migrated_row["source_refs"] = [*legacy_refs, source_key]
@@ -204,7 +267,7 @@ def _migrated_manifest(
     *,
     source_key: str,
     exercise_count: int,
-    input_root: Path,
+    input_hashes: Mapping[str, str],
 ) -> dict[str, object]:
     if legacy.get("curriculum_id") != MB4E_LEGACY_CURRICULUM_ID:
         raise PyramidProvenanceMigrationError(
@@ -212,11 +275,11 @@ def _migrated_manifest(
         )
     if "source_provenance" in legacy:
         raise PyramidProvenanceMigrationError("legacy input already declares source_provenance")
-    spec = get_user_source_spec(source_key)
     if source_key != MB4E_SOURCE_KEY:
         raise PyramidProvenanceMigrationError(
             f"migration only supports canonical source key {MB4E_SOURCE_KEY!r}"
         )
+    spec = get_user_source_spec(source_key)
 
     approved = legacy.get("approved_source_refs")
     if (
@@ -264,9 +327,9 @@ def _migrated_manifest(
             "provenance_migration": {
                 "contract": MIGRATION_CONTRACT,
                 "version": MIGRATION_VERSION,
-                "input_manifest_sha256": _sha256(input_root / "manifest.json"),
-                "input_exercises_sha256": _sha256(input_root / "exercises.jsonl"),
-                "input_source_map_sha256": _sha256(input_root / "source_map.json"),
+                "input_manifest_sha256": input_hashes["manifest.json"],
+                "input_exercises_sha256": input_hashes["exercises.jsonl"],
+                "input_source_map_sha256": input_hashes["source_map.json"],
                 "historical_semantics_preserved": True,
                 "legacy_pdf_page_basis_preserved": True,
             },
@@ -275,7 +338,10 @@ def _migrated_manifest(
     return manifest
 
 
-def _checkpoint_compatibility(checkpoints: str | Path | None, exercise_ids: set[str]) -> tuple[bool | None, int | None]:
+def _checkpoint_compatibility(
+    checkpoints: str | Path | None,
+    exercise_ids: set[str],
+) -> tuple[bool | None, int | None]:
     if checkpoints is None:
         return None, None
     root = Path(checkpoints)
@@ -299,6 +365,54 @@ def _checkpoint_compatibility(checkpoints: str | Path | None, exercise_ids: set[
     return True, len(selected)
 
 
+def _publish_directory_noreplace(stage: Path, output_root: Path) -> None:
+    """Atomically publish one staged directory without replacing an existing path."""
+
+    if sys.platform.startswith("linux"):
+        libc = ctypes.CDLL(None, use_errno=True)
+        renameat2 = getattr(libc, "renameat2", None)
+        if renameat2 is None:
+            raise PyramidProvenanceMigrationError(
+                "atomic no-replace publication is unavailable on this Linux runtime"
+            )
+        renameat2.argtypes = [
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_uint,
+        ]
+        renameat2.restype = ctypes.c_int
+        result = renameat2(
+            _AT_FDCWD,
+            os.fsencode(str(stage)),
+            _AT_FDCWD,
+            os.fsencode(str(output_root)),
+            _RENAME_NOREPLACE,
+        )
+        if result == 0:
+            return
+        error_number = ctypes.get_errno()
+        if error_number in {errno.EEXIST, errno.ENOTEMPTY}:
+            raise PyramidProvenanceMigrationError(
+                f"output directory already exists at publication: {output_root}"
+            )
+        raise OSError(error_number, os.strerror(error_number), str(output_root))
+
+    if os.name == "nt":
+        try:
+            os.rename(stage, output_root)
+        except FileExistsError as exc:
+            raise PyramidProvenanceMigrationError(
+                f"output directory already exists at publication: {output_root}"
+            ) from exc
+        return
+
+    raise PyramidProvenanceMigrationError(
+        "atomic no-replace publication is unsupported on this platform"
+    )
+
+
 def migrate_legacy_mb4e_curriculum(
     *,
     curriculum_dir: str | Path,
@@ -316,24 +430,42 @@ def migrate_legacy_mb4e_curriculum(
         )
     if output_root.exists():
         raise PyramidProvenanceMigrationError(f"output directory already exists: {output_root}")
+    if source_key != MB4E_SOURCE_KEY:
+        raise PyramidProvenanceMigrationError(
+            f"migration only supports canonical source key {MB4E_SOURCE_KEY!r}"
+        )
 
-    # Validate the historical package under its original contract before deriving anything.
-    legacy_manifest, legacy_exercises = validate_package(input_root)
-    raw_rows = _read_raw_exercises(input_root / "exercises.jsonl")
+    snapshot = _capture_input_snapshot(input_root)
+    input_hashes = {name: _sha256_bytes(value) for name, value in snapshot.items()}
+
+    # Validate and derive from the exact same immutable byte snapshot.
+    legacy_manifest, legacy_exercises = _validate_legacy_snapshot(snapshot)
+    raw_rows = _read_raw_exercises_bytes(snapshot["exercises.jsonl"])
     if len(raw_rows) != len(legacy_exercises):
         raise PyramidProvenanceMigrationError("raw/validated legacy exercise counts disagree")
-    source_map = _read_json_object(input_root / "source_map.json", label="legacy source_map.json")
+    source_map = _read_json_object_bytes(
+        snapshot["source_map.json"],
+        label="legacy source_map.json",
+    )
+
+    source_spec = get_user_source_spec(source_key)
+    max_pdf_page = source_spec.original_page_count
+    if not isinstance(max_pdf_page, int) or max_pdf_page < 1:
+        raise PyramidProvenanceMigrationError(
+            "registered source does not declare a valid original PDF page count"
+        )
 
     migrated_rows, provenance_rows = _migrate_exercises(
         raw_rows,
         source_map,
         source_key=source_key,
+        max_pdf_page=max_pdf_page,
     )
     manifest = _migrated_manifest(
         legacy_manifest,
         source_key=source_key,
         exercise_count=len(migrated_rows),
-        input_root=input_root,
+        input_hashes=input_hashes,
     )
 
     before_ids = [str(item["exercise_id"]) for item in raw_rows]
@@ -370,7 +502,12 @@ def migrate_legacy_mb4e_curriculum(
     stage = Path(tempfile.mkdtemp(prefix=f".{output_root.name}.tmp-", dir=output_root.parent))
     try:
         for child in input_root.iterdir():
-            if child.name in {"manifest.json", "exercises.jsonl", "provenance.jsonl"}:
+            if child.name in {
+                "manifest.json",
+                "exercises.jsonl",
+                "source_map.json",
+                "provenance.jsonl",
+            }:
                 continue
             target = stage / child.name
             if child.is_dir():
@@ -378,6 +515,7 @@ def migrate_legacy_mb4e_curriculum(
             else:
                 shutil.copy2(child, target)
 
+        (stage / "source_map.json").write_bytes(snapshot["source_map.json"])
         (stage / "manifest.json").write_text(
             json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
@@ -398,7 +536,10 @@ def migrate_legacy_mb4e_curriculum(
             raise PyramidProvenanceMigrationError("curriculum_id changed during migration")
         if [item.exercise_id for item in migrated_exercises] != before_ids:
             raise PyramidProvenanceMigrationError("validated migrated exercise ordering/identity changed")
-        os.replace(stage, output_root)
+
+        # Refuse publication if the historical source package changed after capture.
+        _assert_input_snapshot_unchanged(input_root, snapshot)
+        _publish_directory_noreplace(stage, output_root)
     except Exception:
         shutil.rmtree(stage, ignore_errors=True)
         raise
