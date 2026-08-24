@@ -144,20 +144,31 @@ def _trusted_provenance_loader(
 
 
 def install_basis_aware_source_provenance() -> None:
-    """Install the backward-compatible PDF provenance seam for reconstruction.
+    """Install PDF provenance compatibility and provenance-scoped retrieval.
 
-    The seam keeps the accepted reconstruction pipeline intact while extending
-    migrated PDF provenance in two narrow places: locator parsing/serialization
-    and the builder's second provenance load, where the already-registered
-    trusted source binding must be carried forward for PDF media/page bounds.
-    Existing ``book_pages`` inputs retain the original public locator class.
-    Checkpoint validation, source integrity, retrieval, evidence construction,
-    authority flags, and reconstruction content hashing remain unchanged.
+    Existing ``book_pages`` inputs retain the original public locator class and
+    reconstruction behavior. Migrated ``pdf_pages`` inputs retain their basis and
+    trusted PDF metadata, then use a cryptographically bound PDF-page-to-transcript
+    alignment before retrieval so out-of-provenance chunks cannot compete in
+    lexical/vector ranking. Checkpoint validation, canonical exam behavior, source
+    integrity, and all authority boundaries remain unchanged.
     """
 
-    if getattr(_reconstruction, "_basis_aware_source_provenance_installed", False):
-        return
-    _reconstruction._locator = _basis_aware_locator
-    _reconstruction._locator_mapping = _basis_aware_locator_mapping
-    _reconstruction.load_source_provenance_jsonl = _trusted_provenance_loader
-    _reconstruction._basis_aware_source_provenance_installed = True
+    if not getattr(
+        _reconstruction,
+        "_basis_aware_source_provenance_installed",
+        False,
+    ):
+        _reconstruction._locator = _basis_aware_locator
+        _reconstruction._locator_mapping = _basis_aware_locator_mapping
+        _reconstruction.load_source_provenance_jsonl = _trusted_provenance_loader
+        _reconstruction._basis_aware_source_provenance_installed = True
+
+    # Import lazily after the locator/loader seam is active. The scoped builder
+    # relies on those basis-aware provenance objects but does not alter their
+    # public representation.
+    from .pyramid_provenance_scoped_reconstruction import (
+        install_provenance_scoped_reconstruction,
+    )
+
+    install_provenance_scoped_reconstruction()

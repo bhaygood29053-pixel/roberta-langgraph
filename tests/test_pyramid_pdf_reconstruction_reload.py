@@ -4,6 +4,8 @@ import hashlib
 import json
 from pathlib import Path
 
+import pytest
+
 from roberta.learning.curriculum_io import SOURCE_PROVENANCE_CONTRACT, validate_package
 from roberta.learning.pyramid import PYRAMID_CONTRACT
 from roberta.learning.pyramid_exam import CHECKPOINT_SCHEMA, GRADING_SEMANTICS
@@ -13,10 +15,8 @@ from roberta.learning.pyramid_learning_handoff import (
 )
 from roberta.learning.pyramid_remediation import WeakItem
 from roberta.learning.pyramid_source_reconstruction import (
+    PyramidSourceReconstructionError,
     build_source_grounded_reconstructions,
-)
-from roberta.learning.pyramid_source_provenance_compat import (
-    BasisAwareSourceProvenanceLocator,
 )
 from roberta.learning.user_source_batch import get_user_source_spec
 
@@ -153,18 +153,18 @@ def _write_pdf_fixture(tmp_path: Path) -> tuple[Path, Path, Path]:
     return curriculum, checkpoints, handoffs
 
 
-def test_pdf_provenance_survives_builder_second_reload_with_trusted_metadata(tmp_path: Path) -> None:
+def test_pdf_provenance_without_verified_alignment_fails_closed_after_trusted_reload(
+    tmp_path: Path,
+) -> None:
     curriculum, checkpoints, handoffs = _write_pdf_fixture(tmp_path)
 
-    results = build_source_grounded_reconstructions(
-        curriculum_dir=curriculum,
-        handoffs_path=handoffs,
-        checkpoints_dir=checkpoints,
-        top_k=2,
-    )
-
-    assert len(results) == 1
-    locator = results[0].provenance_locations[0]
-    assert isinstance(locator, BasisAwareSourceProvenanceLocator)
-    assert locator.pdf_pages == (1, 2)
-    assert locator.legacy_source_ref == "XONE-PDF-P1-2-FIXTURE"
+    with pytest.raises(
+        PyramidSourceReconstructionError,
+        match="no verified PDF/transcript alignment",
+    ):
+        build_source_grounded_reconstructions(
+            curriculum_dir=curriculum,
+            handoffs_path=handoffs,
+            checkpoints_dir=checkpoints,
+            top_k=2,
+        )
