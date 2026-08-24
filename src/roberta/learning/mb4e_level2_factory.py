@@ -7,6 +7,7 @@ from .pyramid import Exercise
 
 
 CURRICULUM_ID = "mastering_blockchain_4e_2023_book01"
+SOURCE_KEY = "mastering_blockchain_4e_2023"
 LEVEL = 2
 RUBRIC_ID = "MB4E-L2-RUBRIC-V1"
 ORDINARY_VARIANTS_PER_TARGET = 21
@@ -188,17 +189,17 @@ def build_level2_bank(curriculum_id: str = CURRICULUM_ID) -> tuple[Exercise, ...
     for target in targets:
         label = _label(target)
         for template in QUESTION_TEMPLATES:
-            exercises.append(Exercise(exercise_id=f"MB4E-L02-{sequence:05d}", curriculum_id=curriculum_id, level=LEVEL, concept=target.concept, subconcept=target.subconcept, question=template.format(label=label), expected_answer=target.principle, source_refs=(target.source_ref,), question_type="application", difficulty=2, required_reasoning_points=target.required_points, forbidden_inferences=target.forbidden_inferences, grading_rubric_id=RUBRIC_ID))
+            exercises.append(Exercise(exercise_id=f"MB4E-L02-{sequence:05d}", curriculum_id=curriculum_id, level=LEVEL, concept=target.concept, subconcept=target.subconcept, question=template.format(label=label), expected_answer=target.principle, source_refs=(SOURCE_KEY, target.source_ref), question_type="application", difficulty=2, required_reasoning_points=target.required_points, forbidden_inferences=target.forbidden_inferences, grading_rubric_id=RUBRIC_ID))
             sequence += 1
     if len(exercises) != ORDINARY_COUNT:
         raise AssertionError(f"ordinary Level-2 bank count drifted: {len(exercises)}")
 
     for target in targets[:INTEGRITY_COUNT]:
         label = _label(target)
-        exercises.append(Exercise(exercise_id=f"MB4E-L02-{sequence:05d}", curriculum_id=curriculum_id, level=LEVEL, concept=target.concept, subconcept=target.subconcept, question=f"Integrity check: state the precise source-supported rule for {label}; preserve its fault, timing, trust, quorum, or finality conditions where relevant.", expected_answer=target.principle, source_refs=(target.source_ref,), question_type="integrity", difficulty=2, required_reasoning_points=target.required_points, forbidden_inferences=target.forbidden_inferences, grading_rubric_id=RUBRIC_ID, integrity_question=True))
+        exercises.append(Exercise(exercise_id=f"MB4E-L02-{sequence:05d}", curriculum_id=curriculum_id, level=LEVEL, concept=target.concept, subconcept=target.subconcept, question=f"Integrity check: state the precise source-supported rule for {label}; preserve its fault, timing, trust, quorum, or finality conditions where relevant.", expected_answer=target.principle, source_refs=(SOURCE_KEY, target.source_ref), question_type="integrity", difficulty=2, required_reasoning_points=target.required_points, forbidden_inferences=target.forbidden_inferences, grading_rubric_id=RUBRIC_ID, integrity_question=True))
         sequence += 1
 
-    boss_refs = (CH2_BASICS, CH5_FOUNDATIONS, CH5_PBFT, CH5_NAKAMOTO, CH5_FINALITY)
+    boss_refs = (SOURCE_KEY, CH2_BASICS, CH5_FOUNDATIONS, CH5_PBFT, CH5_NAKAMOTO, CH5_FINALITY)
     exercises.append(Exercise(exercise_id=f"MB4E-L02-{sequence:05d}", curriculum_id=curriculum_id, level=LEVEL, concept="blockchain_mechanics", subconcept="boss_synthesis", question="Boss: A team must choose mechanics for a replicated blockchain network. Explain how decentralization, fault model, timing assumptions, consensus safety/liveness, quorum design, and finality interact. Contrast a PBFT-style design with Nakamoto-style consensus and state why the choice is use-case dependent.", expected_answer="A sound design separates decentralization of control from mere distribution of replicas, identifies the faults and timing model the protocol must tolerate, and preserves both safety and liveness. Classical BFT designs use quorum voting under Byzantine thresholds and can provide deterministic finality in smaller permissioned settings. Nakamoto-style consensus combines resource-based Sybil resistance with fork choice and provides probabilistic agreement/finality suitable for open participation. The appropriate mechanism depends on trust and participation, fault assumptions, finality, performance, and scalability requirements rather than a universally best algorithm.", source_refs=boss_refs, question_type="boss", difficulty=2, required_reasoning_points=("Distinguish decentralization of control from distribution/replication.", "Name fault and timing assumptions as consensus design inputs.", "Preserve both safety and liveness as core requirements.", "Describe PBFT-style quorum voting and deterministic finality.", "Describe Nakamoto fork-choice consensus as probabilistic and PoW as Sybil-resistance/facilitation.", "Conclude that algorithm choice depends on use-case tradeoffs."), forbidden_inferences=("Do not claim distributed automatically means decentralized.", "Do not claim PoW's hash puzzle alone is the complete consensus decision rule.", "Do not describe Nakamoto finality as deterministic or PBFT finality as probabilistic."), grading_rubric_id=RUBRIC_ID, boss_question=True))
 
     if len(exercises) != TOTAL_COUNT:
@@ -212,18 +213,20 @@ def build_level2_bank(curriculum_id: str = CURRICULUM_ID) -> tuple[Exercise, ...
     return tuple(exercises)
 
 
-def level2_provenance_records(exercises: Sequence[Exercise], *, source_key: str = "mastering_blockchain_4e_2023") -> tuple[dict[str, object], ...]:
+def level2_provenance_records(exercises: Sequence[Exercise], *, source_key: str = SOURCE_KEY) -> tuple[dict[str, object], ...]:
     targets = {(item.concept, item.subconcept): item for item in level2_targets()}
     source_map = level2_source_map()
     records: list[dict[str, object]] = []
     for exercise in exercises:
         locations = []
         for source_ref in exercise.source_refs:
+            if source_ref == source_key:
+                continue
             raw = source_map[source_ref]
             locations.append({"chapter": raw["chapter"], "section": raw["section"], "pdf_pages": list(raw["pdf_pages"]), "legacy_source_ref": source_ref})
         if not exercise.boss_question:
             target = targets.get((exercise.concept, exercise.subconcept))
-            if target is None or exercise.source_refs != (target.source_ref,):
+            if target is None or exercise.source_refs != (source_key, target.source_ref):
                 raise AssertionError(f"Level-2 provenance target mismatch: {exercise.exercise_id}")
         records.append({"exercise_id": exercise.exercise_id, "source_key": source_key, "supports": ["question", "expected_answer", "required_reasoning_points"], "locations": locations})
     return tuple(records)
