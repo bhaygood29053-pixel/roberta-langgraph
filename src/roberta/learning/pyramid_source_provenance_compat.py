@@ -4,6 +4,11 @@ from dataclasses import dataclass
 from typing import Any, Mapping
 
 from . import pyramid_source_reconstruction as _reconstruction
+from .curriculum_io import TrustedSourceBinding
+from .user_source_batch import get_user_source_spec
+
+
+_ORIGINAL_LOAD_SOURCE_PROVENANCE = _reconstruction.load_source_provenance_jsonl
 
 
 @dataclass(frozen=True, slots=True)
@@ -106,19 +111,53 @@ def _basis_aware_locator_mapping(value: object) -> dict[str, Any]:
     )
 
 
-def install_basis_aware_source_provenance() -> None:
-    """Install the backward-compatible locator seam for one reconstruction process.
+def _trusted_source_binding(source_key: str) -> TrustedSourceBinding:
+    spec = get_user_source_spec(source_key)
+    return TrustedSourceBinding(
+        source_artifact_sha256=spec.original_sha256,
+        source_transcript_sha256=spec.transcript_sha256,
+        source_title=spec.title,
+        source_version=spec.version,
+        source_origin=spec.origin,
+        source_authority_class=spec.authority_class,
+        original_media_type=spec.original_media_type,
+        original_page_count=spec.original_page_count,
+    )
 
-    This changes only provenance-locator parsing/serialization. The accepted
-    reconstruction pipeline, checkpoint validation, source integrity checks,
-    retrieval, evidence packet construction, authority flags, and content hash
-    logic remain the implementation in ``pyramid_source_reconstruction``.
-    Existing ``book_pages`` inputs retain the original public locator class;
-    only migrated ``pdf_pages`` inputs use the compatibility locator.
+
+def _trusted_provenance_loader(
+    path: object,
+    *,
+    expected_source_key: str,
+    expected_exercise_ids: set[str],
+    trusted_source: TrustedSourceBinding | None = None,
+):
+    """Preserve trusted PDF metadata when reconstruction reloads provenance."""
+
+    binding = trusted_source or _trusted_source_binding(expected_source_key)
+    return _ORIGINAL_LOAD_SOURCE_PROVENANCE(
+        path,
+        expected_source_key=expected_source_key,
+        expected_exercise_ids=expected_exercise_ids,
+        trusted_source=binding,
+    )
+
+
+def install_basis_aware_source_provenance() -> None:
+    """Install the backward-compatible PDF provenance seam for reconstruction.
+
+    The seam keeps the accepted reconstruction pipeline intact while extending
+    migrated PDF provenance in two narrow places: locator parsing/serialization
+    and the builder's second provenance load, where the already-registered
+    trusted source binding must be carried forward for PDF media/page bounds.
+    Existing ``book_pages`` inputs retain the original public locator class.
+    Checkpoint validation, source integrity, retrieval, evidence construction,
+    authority flags, and reconstruction content hashing remain unchanged.
     """
 
     if getattr(_reconstruction, "_basis_aware_source_provenance_installed", False):
         return
     _reconstruction._locator = _basis_aware_locator
     _reconstruction._locator_mapping = _basis_aware_locator_mapping
+    _reconstruction.load_source_provenance_jsonl = _trusted_provenance_loader
     _reconstruction._basis_aware_source_provenance_installed = True
