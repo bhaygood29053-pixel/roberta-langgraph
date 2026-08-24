@@ -113,6 +113,7 @@ class TargetedPracticeReport:
     critical_failures: int
     source_grounded_weak_items: int
     weakness_results: tuple[WeaknessPracticeResult, ...]
+    all_weaknesses_passed: bool
     critical_weaknesses_passed: bool
     practice_passed: bool
     next_gate: str
@@ -141,6 +142,7 @@ class TargetedPracticeReport:
             "critical_failures": self.critical_failures,
             "source_grounded_weak_items": self.source_grounded_weak_items,
             "weakness_results": [item.to_mapping() for item in self.weakness_results],
+            "all_weaknesses_passed": self.all_weaknesses_passed,
             "critical_weaknesses_passed": self.critical_weaknesses_passed,
             "practice_passed": self.practice_passed,
             "next_gate": self.next_gate,
@@ -194,9 +196,13 @@ def _weakness_key(concept: object, subconcept: object) -> WeaknessKey:
     if not isinstance(concept, str) or not concept.strip() or concept != concept.strip():
         raise TargetedPyramidPracticeError("weakness concept must be a normalized non-empty string")
     if subconcept is not None and (
-        not isinstance(subconcept, str) or not subconcept.strip() or subconcept != subconcept.strip()
+        not isinstance(subconcept, str)
+        or not subconcept.strip()
+        or subconcept != subconcept.strip()
     ):
-        raise TargetedPyramidPracticeError("weakness subconcept must be null or a normalized non-empty string")
+        raise TargetedPyramidPracticeError(
+            "weakness subconcept must be null or a normalized non-empty string"
+        )
     return concept, subconcept
 
 
@@ -207,10 +213,14 @@ def _parse_remediation_plan(
 ) -> tuple[dict[WeaknessKey, int], tuple[str, ...], int]:
     raw = _read_json_object(plan_path, label="remediation plan")
     if raw.get("curriculum_id") != curriculum_id:
-        raise TargetedPyramidPracticeError("remediation plan curriculum_id does not match validated curriculum")
+        raise TargetedPyramidPracticeError(
+            "remediation plan curriculum_id does not match validated curriculum"
+        )
     weaknesses = raw.get("weaknesses")
     if not isinstance(weaknesses, list) or not weaknesses:
-        raise TargetedPyramidPracticeError("remediation plan weaknesses must be a non-empty array")
+        raise TargetedPyramidPracticeError(
+            "remediation plan weaknesses must be a non-empty array"
+        )
 
     critical_counts: dict[WeaknessKey, int] = {}
     original_ids: list[str] = []
@@ -221,29 +231,53 @@ def _parse_remediation_plan(
         if key in critical_counts:
             raise TargetedPyramidPracticeError(f"duplicate remediation weakness {key}")
         critical_count = item.get("critical_count")
-        if isinstance(critical_count, bool) or not isinstance(critical_count, int) or critical_count < 0:
-            raise TargetedPyramidPracticeError("remediation critical_count must be a non-negative integer")
+        if (
+            isinstance(critical_count, bool)
+            or not isinstance(critical_count, int)
+            or critical_count < 0
+        ):
+            raise TargetedPyramidPracticeError(
+                "remediation critical_count must be a non-negative integer"
+            )
         ids = item.get("exercise_ids")
-        if not isinstance(ids, list) or not ids or not all(isinstance(value, str) and value for value in ids):
-            raise TargetedPyramidPracticeError("remediation exercise_ids must be a non-empty array of strings")
+        if (
+            not isinstance(ids, list)
+            or not ids
+            or not all(isinstance(value, str) and value for value in ids)
+        ):
+            raise TargetedPyramidPracticeError(
+                "remediation exercise_ids must be a non-empty array of strings"
+            )
         critical_counts[key] = critical_count
         original_ids.extend(ids)
 
     if len(original_ids) != len(set(original_ids)):
-        raise TargetedPyramidPracticeError("remediation weak exercise ids must be unique across weaknesses")
+        raise TargetedPyramidPracticeError(
+            "remediation weak exercise ids must be unique across weaknesses"
+        )
     weak_item_count = raw.get("weak_item_count")
     if isinstance(weak_item_count, bool) or not isinstance(weak_item_count, int):
         raise TargetedPyramidPracticeError("remediation weak_item_count must be an integer")
     if weak_item_count != len(original_ids):
-        raise TargetedPyramidPracticeError("remediation weak_item_count does not match weakness exercise ids")
+        raise TargetedPyramidPracticeError(
+            "remediation weak_item_count does not match weakness exercise ids"
+        )
     weakness_count = raw.get("weakness_count")
     if isinstance(weakness_count, bool) or not isinstance(weakness_count, int):
         raise TargetedPyramidPracticeError("remediation weakness_count must be an integer")
     if weakness_count != len(critical_counts):
-        raise TargetedPyramidPracticeError("remediation weakness_count does not match weakness entries")
+        raise TargetedPyramidPracticeError(
+            "remediation weakness_count does not match weakness entries"
+        )
     practice_count = raw.get("practice_question_count")
-    if isinstance(practice_count, bool) or not isinstance(practice_count, int) or practice_count <= 0:
-        raise TargetedPyramidPracticeError("remediation practice_question_count must be a positive integer")
+    if (
+        isinstance(practice_count, bool)
+        or not isinstance(practice_count, int)
+        or practice_count <= 0
+    ):
+        raise TargetedPyramidPracticeError(
+            "remediation practice_question_count must be a positive integer"
+        )
     return critical_counts, tuple(original_ids), practice_count
 
 
@@ -259,25 +293,37 @@ def _validate_reconstruction_coverage(
     for row in rows:
         exercise_id = row.get("exercise_id")
         if not isinstance(exercise_id, str) or not exercise_id:
-            raise TargetedPyramidPracticeError("reconstruction exercise_id must be a non-empty string")
+            raise TargetedPyramidPracticeError(
+                "reconstruction exercise_id must be a non-empty string"
+            )
         if exercise_id in seen:
             raise TargetedPyramidPracticeError(f"duplicate reconstruction for {exercise_id}")
         seen.add(exercise_id)
         if row.get("curriculum_id") != curriculum_id:
-            raise TargetedPyramidPracticeError("reconstruction curriculum_id does not match validated curriculum")
+            raise TargetedPyramidPracticeError(
+                "reconstruction curriculum_id does not match validated curriculum"
+            )
         if row.get("reconstruction_contract") != PYRAMID_SOURCE_RECONSTRUCTION_CONTRACT:
             raise TargetedPyramidPracticeError("unsupported source reconstruction contract")
         if row.get("reconstruction_version") != PYRAMID_SOURCE_RECONSTRUCTION_VERSION:
             raise TargetedPyramidPracticeError("unsupported source reconstruction version")
         if row.get("source_grounded") is not True:
-            raise TargetedPyramidPracticeError(f"reconstruction is not source grounded for {exercise_id}")
+            raise TargetedPyramidPracticeError(
+                f"reconstruction is not source grounded for {exercise_id}"
+            )
         if row.get("evidence_packet_status") != "ok":
-            raise TargetedPyramidPracticeError(f"reconstruction evidence packet is not ok for {exercise_id}")
+            raise TargetedPyramidPracticeError(
+                f"reconstruction evidence packet is not ok for {exercise_id}"
+            )
         anchors = row.get("evidence_anchors")
         if not isinstance(anchors, list) or not anchors:
-            raise TargetedPyramidPracticeError(f"reconstruction has no evidence anchors for {exercise_id}")
+            raise TargetedPyramidPracticeError(
+                f"reconstruction has no evidence anchors for {exercise_id}"
+            )
         if row.get("required_next_gate") != PYRAMID_SOURCE_RECONSTRUCTION_NEXT_GATE:
-            raise TargetedPyramidPracticeError(f"reconstruction next gate is invalid for {exercise_id}")
+            raise TargetedPyramidPracticeError(
+                f"reconstruction next gate is invalid for {exercise_id}"
+            )
         for field in _AUTHORITY_FIELDS:
             if row.get(field) is not False:
                 raise TargetedPyramidPracticeError(
@@ -288,7 +334,8 @@ def _validate_reconstruction_coverage(
         missing = sorted(expected_ids - seen)
         extra = sorted(seen - expected_ids)
         raise TargetedPyramidPracticeError(
-            f"reconstruction coverage does not match original weak items; missing={missing}, extra={extra}"
+            "reconstruction coverage does not match original weak items; "
+            f"missing={missing}, extra={extra}"
         )
     return len(seen)
 
@@ -308,7 +355,9 @@ def _resolve_practice_exercises(
         )
     by_id = {item.exercise_id: item for item in bank}
     if len(by_id) != len(bank):
-        raise TargetedPyramidPracticeError("validated curriculum contains duplicate exercise ids")
+        raise TargetedPyramidPracticeError(
+            "validated curriculum contains duplicate exercise ids"
+        )
 
     selected: list[Exercise] = []
     selected_ids: set[str] = set()
@@ -318,23 +367,39 @@ def _resolve_practice_exercises(
             missing = sorted(_PRACTICE_FIELDS - set(row))
             extra = sorted(set(row) - _PRACTICE_FIELDS)
             raise TargetedPyramidPracticeError(
-                f"targeted practice row fields do not match contract; missing={missing}, extra={extra}"
+                "targeted practice row fields do not match contract; "
+                f"missing={missing}, extra={extra}"
             )
         exercise_id = row.get("exercise_id")
         if not isinstance(exercise_id, str) or not exercise_id:
-            raise TargetedPyramidPracticeError("targeted practice exercise_id must be a non-empty string")
+            raise TargetedPyramidPracticeError(
+                "targeted practice exercise_id must be a non-empty string"
+            )
         if exercise_id in selected_ids:
-            raise TargetedPyramidPracticeError(f"duplicate targeted practice exercise {exercise_id}")
+            raise TargetedPyramidPracticeError(
+                f"duplicate targeted practice exercise {exercise_id}"
+            )
         exercise = by_id.get(exercise_id)
         if exercise is None:
-            raise TargetedPyramidPracticeError(f"targeted practice exercise {exercise_id} is absent from curriculum")
+            raise TargetedPyramidPracticeError(
+                f"targeted practice exercise {exercise_id} is absent from curriculum"
+            )
         if exercise_id in original_weak_ids:
-            raise TargetedPyramidPracticeError(f"targeted practice exercise {exercise_id} is not fresh")
+            raise TargetedPyramidPracticeError(
+                f"targeted practice exercise {exercise_id} is not fresh"
+            )
         if exercise.boss_question:
-            raise TargetedPyramidPracticeError(f"targeted practice cannot include Boss Question {exercise_id}")
+            raise TargetedPyramidPracticeError(
+                f"targeted practice cannot include Boss Question {exercise_id}"
+            )
         source_refs = row.get("source_refs")
-        if not isinstance(source_refs, list) or not all(isinstance(value, str) for value in source_refs):
-            raise TargetedPyramidPracticeError("targeted practice source_refs must be an array of strings")
+        if (
+            not isinstance(source_refs, list)
+            or not all(isinstance(value, str) for value in source_refs)
+        ):
+            raise TargetedPyramidPracticeError(
+                "targeted practice source_refs must be an array of strings"
+            )
         expected = (
             exercise.level,
             exercise.concept,
@@ -353,7 +418,8 @@ def _resolve_practice_exercises(
         )
         if actual != expected:
             raise TargetedPyramidPracticeError(
-                f"targeted practice row does not match validated curriculum exercise {exercise_id}"
+                "targeted practice row does not match validated curriculum exercise "
+                f"{exercise_id}"
             )
         key = (exercise.concept, exercise.subconcept)
         if key not in weakness_keys:
@@ -365,13 +431,18 @@ def _resolve_practice_exercises(
         selected.append(exercise)
 
     if represented != weakness_keys:
-        missing = sorted(weakness_keys - represented, key=lambda item: (item[0], item[1] or ""))
+        missing = sorted(
+            weakness_keys - represented,
+            key=lambda item: (item[0], item[1] or ""),
+        )
         raise TargetedPyramidPracticeError(
             f"targeted practice does not cover every remediation weakness: {missing}"
         )
     levels = {item.level for item in selected}
     if len(levels) != 1:
-        raise TargetedPyramidPracticeError("targeted practice must cover exactly one Pyramid level")
+        raise TargetedPyramidPracticeError(
+            "targeted practice must cover exactly one Pyramid level"
+        )
     return tuple(selected)
 
 
@@ -400,14 +471,16 @@ def prepare_targeted_practice(
         original_weak_ids=set(original_weak_ids),
         expected_count=expected_count,
     )
-    level = exercises[0].level
     return PreparedTargetedPractice(
         curriculum_id=curriculum_id,
-        level=level,
+        level=exercises[0].level,
         exercises=exercises,
         weakness_critical_counts=tuple(
             (concept, subconcept, critical_counts[(concept, subconcept)])
-            for concept, subconcept in sorted(critical_counts, key=lambda item: (item[0], item[1] or ""))
+            for concept, subconcept in sorted(
+                critical_counts,
+                key=lambda item: (item[0], item[1] or ""),
+            )
         ),
         original_weak_ids=tuple(original_weak_ids),
         source_grounded_weak_items=grounded_count,
@@ -419,17 +492,23 @@ def evaluate_targeted_practice(
     grades: Sequence[GradedAnswer],
 ) -> TargetedPracticeReport:
     if len(grades) != len(prepared.exercises):
-        raise TargetedPyramidPracticeError("practice grade count does not match prepared exercises")
+        raise TargetedPyramidPracticeError(
+            "practice grade count does not match prepared exercises"
+        )
     exercise_by_id = {item.exercise_id: item for item in prepared.exercises}
     grade_by_id = {item.exercise_id: item for item in grades}
     if len(grade_by_id) != len(grades) or set(grade_by_id) != set(exercise_by_id):
-        raise TargetedPyramidPracticeError("practice grade ids do not match prepared exercises")
+        raise TargetedPyramidPracticeError(
+            "practice grade ids do not match prepared exercises"
+        )
 
     required_accuracy = get_level_spec(prepared.level).pass_accuracy
     critical_keys = prepared.critical_weakness_keys
     grouped: dict[WeaknessKey, list[GradedAnswer]] = {}
     for exercise in prepared.exercises:
-        grouped.setdefault((exercise.concept, exercise.subconcept), []).append(grade_by_id[exercise.exercise_id])
+        grouped.setdefault((exercise.concept, exercise.subconcept), []).append(
+            grade_by_id[exercise.exercise_id]
+        )
 
     weakness_results: list[WeaknessPracticeResult] = []
     for key in sorted(grouped, key=lambda item: (item[0], item[1] or "")):
@@ -468,12 +547,14 @@ def evaluate_targeted_practice(
     critical_failures = sum(1 for item in grades if item.critical_failure)
     earned_points = sum(item.score for item in grades)
     accuracy = earned_points / len(grades)
+    all_weaknesses_passed = all(item.passed for item in weakness_results)
     critical_weaknesses_passed = all(
         item.passed for item in weakness_results if item.critical_origin
     )
     practice_passed = (
         accuracy >= required_accuracy
         and critical_failures == 0
+        and all_weaknesses_passed
         and critical_weaknesses_passed
     )
     next_gate = (
@@ -496,6 +577,7 @@ def evaluate_targeted_practice(
         critical_failures=critical_failures,
         source_grounded_weak_items=prepared.source_grounded_weak_items,
         weakness_results=tuple(weakness_results),
+        all_weaknesses_passed=all_weaknesses_passed,
         critical_weaknesses_passed=critical_weaknesses_passed,
         practice_passed=practice_passed,
         next_gate=next_gate,
@@ -517,8 +599,8 @@ def write_targeted_practice_bundle(
     report: TargetedPracticeReport,
 ) -> None:
     output = Path(output_dir)
-    result_lines: list[str] = []
     exercise_by_id = {item.exercise_id: item for item in prepared.exercises}
+    result_lines: list[str] = []
     for grade in grades:
         exercise = exercise_by_id[grade.exercise_id]
         result_lines.append(
@@ -540,7 +622,10 @@ def write_targeted_practice_bundle(
                 separators=(",", ":"),
             )
         )
-    _atomic_write_text(output / "practice_results.jsonl", "\n".join(result_lines) + "\n")
+    _atomic_write_text(
+        output / "practice_results.jsonl",
+        "\n".join(result_lines) + "\n",
+    )
     _atomic_write_text(
         output / "practice_report.json",
         json.dumps(report.to_mapping(), ensure_ascii=False, indent=2, sort_keys=True) + "\n",
@@ -569,5 +654,10 @@ def run_targeted_practice(
         canonical_exam=False,
     )
     report = evaluate_targeted_practice(prepared, outcome.graded_answers)
-    write_targeted_practice_bundle(output, prepared, outcome.graded_answers, report)
+    write_targeted_practice_bundle(
+        output,
+        prepared,
+        outcome.graded_answers,
+        report,
+    )
     return report
