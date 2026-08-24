@@ -44,6 +44,7 @@ def _exercise(
     expected_answer: str,
     reasoning: Sequence[str],
     forbidden: Sequence[str] = (),
+    source_ref: str = MB4E_SOURCE_REF,
 ) -> Exercise:
     return Exercise(
         exercise_id=exercise_id,
@@ -53,7 +54,7 @@ def _exercise(
         subconcept=subconcept,
         question=question,
         expected_answer=expected_answer,
-        source_refs=(MB4E_SOURCE_REF,),
+        source_refs=(source_ref,),
         question_type="supplemental_reasoning",
         required_reasoning_points=tuple(reasoning),
         forbidden_inferences=tuple(forbidden),
@@ -65,63 +66,88 @@ def _exercise(
 
 
 def mb4e_level1_supplemental_bank(curriculum_id: str) -> tuple[Exercise, ...]:
-    """Return a noncanonical practice-only bank for the five exhausted Round-2 weaknesses.
+    """Return a practice-only bank for the exhausted MB4E Level-1 weaknesses.
 
-    These exercises are intentionally absent from the validated Pyramid curriculum package.
-    They may be used only through the supplemental-practice loader below, which fails closed
-    if any supplemental id overlaps the canonical bank.
+    The returned exercises are not stored in the validated canonical curriculum package.
+    The supplemental loader below also rejects any id that overlaps the canonical bank.
     """
 
-    specs = (
-        # architecture/network_layer
-        ("001", "architecture", "network_layer", "In the layered blockchain architecture, what does the Network layer provide, and how is that different from the P2P layer above it?", "The Network layer provides the underlying communication connectivity, normally the internet. The P2P layer sits above it and handles peer information propagation protocols.", ("Network layer is the base communication layer.", "P2P is a separate layer above it."), ("The Network layer itself is the gossip or flooding protocol layer.",)),
-        ("002", "architecture", "network_layer", "A blockchain uses gossip to spread information between peers. Which layer supplies the underlying connectivity, and which layer performs the gossip-style propagation?", "The Network layer supplies the base connectivity, while the P2P layer performs gossip-style peer propagation.", ("Separate base connectivity from peer propagation.",)),
-        ("003", "architecture", "network_layer", "Why is it inaccurate to define the blockchain Network layer as the layer that runs gossip and flooding protocols?", "Because the Network layer is the base communication layer; gossip and flooding are information-propagation protocols of the P2P layer that runs above it.", ("Network and P2P are distinct layers.", "Gossip/flooding belong to P2P."),),
-        ("004", "architecture", "network_layer", "If peer-to-peer propagation software stopped but ordinary internet connectivity still existed, which of the two lower blockchain layers would still be providing its basic function?", "The Network layer would still provide base communications, even though the P2P propagation layer was not functioning.", ("Base communication can be distinguished from P2P propagation."),),
-        ("005", "architecture", "network_layer", "State the bottom two layers of the discussed blockchain architecture in order and give the role of the lower one.", "The Network layer is lowest and provides base communications; the P2P layer runs above it.", ("Network is lower than P2P.", "Network provides the base communication layer."),),
-
-        # architecture/p2p_layer
-        ("006", "architecture", "p2p_layer", "What is the main architectural role of the P2P layer in the discussed blockchain stack?", "It provides peer-to-peer information propagation above the base Network layer, using protocols such as gossip or flooding.", ("P2P handles peer information propagation.", "It runs above the Network layer."),),
-        ("007", "architecture", "p2p_layer", "Where does the P2P layer sit relative to the Network layer, and what type of protocols characterize it?", "It sits on top of the Network layer and contains peer information-propagation protocols such as gossip or flooding.", ("P2P is above Network.", "Propagation protocols characterize P2P."),),
-        ("008", "architecture", "p2p_layer", "A node receives transaction information from peers through a gossip mechanism. Which architectural layer is directly responsible for that propagation behavior?", "The P2P layer is directly responsible for peer information propagation through gossip-style protocols.", ("Identify P2P, not the base Network layer."),),
-        ("009", "architecture", "p2p_layer", "What distinction should Roberta make between internet connectivity and peer-to-peer dissemination in the layered blockchain model?", "Internet connectivity belongs to the base Network layer, while peer-to-peer dissemination belongs to the P2P layer above it.", ("Keep connectivity and dissemination in separate layers."),),
-        ("010", "architecture", "p2p_layer", "Why are gossip and flooding examples useful for identifying the P2P layer rather than the Network layer?", "They are information-propagation protocols used among peers, which is the function assigned to the P2P layer above the base communication layer.", ("Gossip/flooding are peer propagation mechanisms."),),
-
-        # benefits/immutability
-        ("011", "benefits", "immutability", "Does blockchain immutability mean that recorded data is literally impossible to change under every circumstance? Explain the intended meaning.", "No. The intended meaning is practical immutability: changing recorded data is extremely difficult or nearly impossible, not absolutely impossible in a mathematical sense.", ("Reject absolute immutability.", "State the practical extremely-difficult meaning."), ("Blockchain data can never be changed under any circumstance.",)),
-        ("012", "benefits", "immutability", "Why can immutability still be treated as a blockchain benefit even though it is not absolute?", "Because changing recorded history is so difficult that the ledger is effectively stable for uses such as audit and compliance, even though it is not genuinely unchangeable.", ("Practical resistance to change is the benefit.", "Do not claim literal impossibility."), ("Immutability is absolute and exceptionless.",)),
-        ("013", "benefits", "immutability", "Evaluate this statement: 'A blockchain ledger is genuinely immutable because changing old data is impossible.'", "The statement is too absolute. The book's framing is that changing data is extremely difficult and nearly impossible, which produces practical immutability rather than genuine absolute immutability.", ("Correct the absolute claim.", "Preserve the near-impossibility qualification."), ("Old blockchain data is mathematically impossible to alter.",)),
-        ("014", "benefits", "immutability", "How does practical immutability support audit or compliance use cases?", "It makes previously recorded transactions extremely difficult to alter, helping preserve a stable historical record for audit and compliance.", ("Connect difficult-to-change history to audit/compliance."), ("Audit usefulness requires absolute impossibility of change.",)),
-        ("015", "benefits", "immutability", "What wording best captures the book's distinction between 'immutable' as a useful property and 'genuinely immutable'?", "Useful blockchain immutability means data is extremely difficult or nearly impossible to change; it does not mean change is genuinely impossible.", ("Practical, not absolute, immutability."), ("Immutability means no conceivable change can ever occur.",)),
-
-        # types/monolithic_polylithic
-        ("016", "types", "monolithic_polylithic", "What makes a blockchain architecture monolithic in the book's Layer-1 classification?", "A monolithic architecture uses one base chain for the system's functionality, with components such as programmability, consensus, and security on that same blockchain rather than off-chain.", ("Single base chain.", "Core functionality remains on the same chain."),),
-        ("017", "types", "monolithic_polylithic", "What makes a blockchain architecture polylithic rather than monolithic?", "A polylithic architecture is a multi-chain design in which multiple chains connect with a core chain or with one another, forming a network of networks.", ("Multiple connected chains.", "Network-of-networks structure."),),
-        ("018", "types", "monolithic_polylithic", "Why are Bitcoin, Ethereum, and Solana examples of monolithic chains in this classification?", "They are base-layer single-chain protocols whose major functionality belongs to the same base blockchain.", ("Single-chain base layer is the defining feature."),),
-        ("019", "types", "monolithic_polylithic", "A design has several chains connected into one broader system. Which architecture label fits that description, and why?", "Polylithic fits because the architecture is composed of multiple connected chains rather than one chain carrying all system functionality.", ("Identify polylithic from multi-chain composition."),),
-        ("020", "types", "monolithic_polylithic", "What is the key structural contrast between monolithic and polylithic Layer-1 architectures?", "Monolithic is a single base-chain architecture; polylithic is a multi-chain architecture composed of connected chains.", ("Single chain versus multiple connected chains."),),
-
-        # types/tokenized
-        ("021", "types", "tokenized", "What does 'tokenized blockchain' mean in the book's blockchain-type classification?", "It means a standard blockchain that generates cryptocurrency through its consensus process, such as mining, or through an initial distribution.", ("Native cryptocurrency generation is the defining idea."), ("It primarily means converting real-world assets into security tokens.",)),
-        ("022", "types", "tokenized", "Why do Bitcoin and Ethereum qualify as tokenized blockchains under this definition?", "They are blockchains with cryptocurrency generated or distributed as part of the blockchain system, fitting the book's tokenized-blockchain category.", ("Relate the category to native cryptocurrency, not asset tokenization."),),
-        ("023", "types", "tokenized", "How should Roberta distinguish a tokenized blockchain from the separate idea of tokenizing a real-world asset?", "A tokenized blockchain in this classification is a blockchain that generates or initially distributes cryptocurrency. That is different from representing a real-world asset as a token.", ("Distinguish blockchain type from asset tokenization."), ("The category is defined by real-world asset tokenization.",)),
-        ("024", "types", "tokenized", "What role do mining, consensus, or initial distribution play in identifying a tokenized blockchain?", "They are mechanisms through which the blockchain's cryptocurrency is generated or distributed, which is what defines the tokenized category here.", ("Tie category to cryptocurrency generation/distribution."),),
-        ("025", "types", "tokenized", "What is the central difference between tokenized and tokenless blockchains in the book's classification?", "Tokenized blockchains have a cryptocurrency generated or initially distributed as part of the system, whereas tokenless blockchains do not have that basic transferable unit as a defining feature.", ("Presence versus absence of the blockchain's cryptocurrency unit."),),
+    groups: tuple[tuple[str, str, tuple[tuple[str, str, tuple[str, ...], tuple[str, ...]], ...]], ...] = (
+        (
+            "architecture",
+            "network_layer",
+            (
+                ("What does the Network layer provide, and how is that different from the P2P layer above it?", "The Network layer provides base communication connectivity, normally the internet; P2P is a separate layer above it for peer information propagation.", ("Network is the base communication layer.", "P2P is separate and above it."), ("The Network layer itself is the gossip or flooding layer.",)),
+                ("A blockchain uses gossip between peers. Which layer supplies connectivity and which layer performs the gossip-style propagation?", "The Network layer supplies connectivity, while the P2P layer performs peer propagation such as gossip.", ("Separate connectivity from peer propagation.",), ()),
+                ("Why is it inaccurate to define the Network layer itself as the gossip and flooding layer?", "Because the Network layer provides base communications; gossip and flooding are P2P information-propagation protocols above it.", ("Gossip/flooding belong to P2P.",), ()),
+                ("If peer-propagation software stopped while internet connectivity remained, which lower layer would still perform its basic role?", "The Network layer would still provide base communications even though the P2P layer was not functioning.", ("Base communications can remain without P2P propagation."), ()),
+                ("State the bottom two layers in order and give the role of the lower layer.", "The Network layer is lowest and provides base communications; the P2P layer runs above it.", ("Network is below P2P.", "Network provides base communications."), ()),
+            ),
+        ),
+        (
+            "architecture",
+            "p2p_layer",
+            (
+                ("What is the main role of the P2P layer in the discussed blockchain stack?", "It handles peer-to-peer information propagation above the base Network layer, using mechanisms such as gossip or flooding.", ("P2P handles peer propagation.", "It runs above Network."), ()),
+                ("Where does the P2P layer sit relative to Network, and what kind of protocols characterize it?", "It sits above the Network layer and contains peer information-propagation protocols such as gossip or flooding.", ("P2P is above Network.",), ()),
+                ("A node receives transaction information from peers through gossip. Which layer is directly responsible for that propagation behavior?", "The P2P layer is responsible for that peer information propagation.", ("Identify P2P rather than Network."), ()),
+                ("How should Roberta distinguish internet connectivity from peer-to-peer dissemination in this layered model?", "Internet connectivity belongs to the Network layer; peer-to-peer dissemination belongs to the P2P layer above it.", ("Keep the two layer roles separate."), ()),
+                ("Why do gossip and flooding identify the P2P layer rather than the Network layer?", "They are peer information-propagation protocols, which is the role of the P2P layer above the base communication layer.", ("Gossip/flooding are propagation protocols."), ()),
+            ),
+        ),
+        (
+            "benefits",
+            "immutability",
+            (
+                ("Does blockchain immutability mean recorded data is literally impossible to change under every circumstance?", "No. The intended meaning is practical immutability: changing recorded data is extremely difficult or nearly impossible, not absolutely impossible.", ("Reject absolute immutability.", "State the practical difficult-to-change meaning."), ("Blockchain data can never be changed under any circumstance.",)),
+                ("Why can immutability still be a benefit even though it is not absolute?", "Because changing recorded history is so difficult that the ledger is effectively stable for uses such as audit and compliance.", ("Practical resistance to change creates the benefit."), ("Immutability is absolute and exceptionless.",)),
+                ("Evaluate the claim that a blockchain ledger is genuinely immutable because old data is impossible to change.", "The claim is too absolute; the intended framing is that changing data is extremely difficult or nearly impossible, producing practical rather than genuine absolute immutability.", ("Correct the absolute claim."), ("Old blockchain data is mathematically impossible to alter.",)),
+                ("How does practical immutability help audit or compliance?", "It makes previously recorded transactions extremely difficult to alter, helping preserve a stable historical record.", ("Connect difficult-to-change history with audit/compliance."), ()),
+                ("What wording best distinguishes useful blockchain immutability from genuine absolute immutability?", "Useful immutability means data is extremely difficult or nearly impossible to change; it does not mean change is genuinely impossible.", ("Practical, not absolute, immutability."), ("No conceivable change can ever occur.",)),
+            ),
+        ),
+        (
+            "types",
+            "monolithic_polylithic",
+            (
+                ("What makes a blockchain architecture monolithic in this Layer-1 classification?", "A monolithic architecture uses one base chain for the system's main functionality, including areas such as programmability, consensus, and security.", ("Single base chain is the defining structure."), ()),
+                ("What makes an architecture polylithic rather than monolithic?", "A polylithic architecture is a multi-chain design in which multiple chains connect into a broader network of networks.", ("Multiple connected chains define polylithic."), ()),
+                ("Why are Bitcoin, Ethereum, and Solana examples of monolithic chains in this classification?", "They are base-layer single-chain protocols whose major functionality belongs to the same base blockchain.", ("Single-chain base layer is decisive."), ()),
+                ("A design contains several connected chains in one broader system. Which architecture label fits and why?", "Polylithic fits because the architecture is composed of multiple connected chains rather than one chain carrying the system's functionality.", ("Identify the multi-chain structure."), ()),
+                ("What is the core structural contrast between monolithic and polylithic Layer-1 architectures?", "Monolithic is a single-base-chain architecture; polylithic is a multi-chain architecture composed of connected chains.", ("Single chain versus multiple connected chains."), ()),
+            ),
+        ),
+        (
+            "types",
+            "tokenized",
+            (
+                ("What does 'tokenized blockchain' mean in this blockchain-type classification?", "It means a standard blockchain that generates cryptocurrency through consensus, such as mining, or through an initial distribution.", ("Native cryptocurrency generation/distribution is central."), ("It primarily means converting real-world assets into security tokens.",)),
+                ("Why do Bitcoin and Ethereum qualify as tokenized blockchains under this definition?", "They have cryptocurrency generated or distributed as part of the blockchain system, fitting the tokenized-blockchain category.", ("Relate the category to cryptocurrency, not asset tokenization."), ()),
+                ("How should Roberta distinguish a tokenized blockchain from tokenizing a real-world asset?", "A tokenized blockchain here is a blockchain that generates or initially distributes cryptocurrency; that is different from representing a real-world asset as a token.", ("Distinguish blockchain type from asset tokenization."), ("The category is defined by real-world asset tokenization.",)),
+                ("What role do mining, consensus, or initial distribution play in identifying a tokenized blockchain?", "They are mechanisms through which the blockchain's cryptocurrency is generated or distributed, which defines the category here.", ("Tie the category to cryptocurrency generation/distribution."), ()),
+                ("What is the central difference between tokenized and tokenless blockchains in this classification?", "Tokenized blockchains have a cryptocurrency generated or initially distributed as part of the system, whereas tokenless blockchains do not have that basic transferable unit as a defining feature.", ("Presence versus absence of the blockchain cryptocurrency unit."), ()),
+            ),
+        ),
     )
 
-    return tuple(
-        _exercise(
-            f"{SUPPLEMENTAL_ID_PREFIX}{suffix}",
-            curriculum_id=curriculum_id,
-            concept=concept,
-            subconcept=subconcept,
-            question=question,
-            expected_answer=expected,
-            reasoning=reasoning,
-            forbidden=forbidden,
-        )
-        for suffix, concept, subconcept, question, expected, reasoning, forbidden in specs
-    )
+    exercises: list[Exercise] = []
+    counter = 1
+    for concept, subconcept, questions in groups:
+        for question, expected, reasoning, forbidden in questions:
+            exercises.append(
+                _exercise(
+                    f"{SUPPLEMENTAL_ID_PREFIX}{counter:03d}",
+                    curriculum_id=curriculum_id,
+                    concept=concept,
+                    subconcept=subconcept,
+                    question=question,
+                    expected_answer=expected,
+                    reasoning=reasoning,
+                    forbidden=forbidden,
+                )
+            )
+            counter += 1
+    return tuple(exercises)
 
 
 def _read_json_object(path: str | Path, *, label: str) -> Mapping[str, object]:
@@ -155,13 +181,7 @@ def _reconstruction_ids(path: str | Path) -> tuple[str, ...]:
 
 
 def _canonical_hash(value: object) -> str:
-    payload = json.dumps(
-        value,
-        sort_keys=True,
-        separators=(",", ":"),
-        ensure_ascii=False,
-        allow_nan=False,
-    ).encode("utf-8")
+    payload = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode("utf-8")
     return hashlib.sha256(payload).hexdigest()
 
 
@@ -203,20 +223,13 @@ def prepare_supplemental_targeted_practice(
     if not weak_items:
         raise TargetedPyramidPracticeError("current checkpoint set contains no unresolved Pyramid weakness")
 
-    current_plan = {
-        "curriculum_id": curriculum_id,
-        **build_remediation_plan(canonical_bank, weak_items),
-    }
+    current_plan = {"curriculum_id": curriculum_id, **build_remediation_plan(canonical_bank, weak_items)}
     inherited_plans = tuple(
         _read_json_object(path, label=f"inherited remediation plan {index}")
         for index, path in enumerate(inherited_remediation_plan_paths, start=1)
     )
     try:
-        effective_plan = inherit_critical_origins(
-            current_plan,
-            inherited_plans,
-            curriculum_id=curriculum_id,
-        )
+        effective_plan = inherit_critical_origins(current_plan, inherited_plans, curriculum_id=curriculum_id)
     except ValueError as exc:
         raise TargetedPyramidPracticeError(str(exc)) from exc
 
@@ -245,6 +258,8 @@ def prepare_supplemental_targeted_practice(
         ):
             raise TargetedPyramidPracticeError("effective remediation weakness is malformed")
         key = (concept, subconcept)
+        if key in active_counts:
+            raise TargetedPyramidPracticeError(f"duplicate effective remediation weakness {key}")
         active_counts[key] = critical_count
         current_weak_ids.extend(ids)
 
@@ -258,9 +273,7 @@ def prepare_supplemental_targeted_practice(
         raise TargetedPyramidPracticeError("supplemental practice bank contains duplicate exercise ids")
     overlap = canonical_ids & set(supplemental_ids)
     if overlap:
-        raise TargetedPyramidPracticeError(
-            f"supplemental practice ids overlap canonical curriculum: {sorted(overlap)}"
-        )
+        raise TargetedPyramidPracticeError(f"supplemental practice ids overlap canonical curriculum: {sorted(overlap)}")
 
     approved_refs = manifest.get("approved_source_refs")
     if not isinstance(approved_refs, list):
@@ -272,9 +285,7 @@ def prepare_supplemental_targeted_practice(
         if item.integrity_question or item.boss_question or item.requires_live_data:
             raise TargetedPyramidPracticeError("supplemental practice cannot contain integrity, Boss, or live-data questions")
         if not set(item.source_refs).issubset(approved):
-            raise TargetedPyramidPracticeError(
-                f"supplemental exercise {item.exercise_id} references an unapproved source"
-            )
+            raise TargetedPyramidPracticeError(f"supplemental exercise {item.exercise_id} references an unapproved source")
 
     seen_supplemental: set[str] = set()
     if exclude_checkpoint_dirs:
@@ -286,11 +297,7 @@ def prepare_supplemental_targeted_practice(
     rng = random.Random(seed)
     selected: list[Exercise] = []
     for key in sorted(active_counts, key=lambda item: (item[0], item[1] or "")):
-        pool = [
-            item for item in bank
-            if (item.concept, item.subconcept) == key
-            and item.exercise_id not in seen_supplemental
-        ]
+        pool = [item for item in bank if (item.concept, item.subconcept) == key and item.exercise_id not in seen_supplemental]
         rng.shuffle(pool)
         if len(pool) < questions_per_weakness:
             raise TargetedPyramidPracticeError(
@@ -299,16 +306,12 @@ def prepare_supplemental_targeted_practice(
             )
         selected.extend(pool[:questions_per_weakness])
 
-    selected_keys = {(item.concept, item.subconcept) for item in selected}
-    if selected_keys != set(active_counts):
+    if {(item.concept, item.subconcept) for item in selected} != set(active_counts):
         raise TargetedPyramidPracticeError("supplemental practice does not cover every active weakness")
 
     reconstruction_ids = _reconstruction_ids(reconstructions_path)
     recon_sha = hashlib.sha256(Path(reconstructions_path).read_bytes()).hexdigest()
-    inherited_hashes = tuple(
-        hashlib.sha256(Path(path).read_bytes()).hexdigest()
-        for path in inherited_remediation_plan_paths
-    )
+    inherited_hashes = tuple(hashlib.sha256(Path(path).read_bytes()).hexdigest() for path in inherited_remediation_plan_paths)
 
     prepared = PreparedTargetedPractice(
         curriculum_id=curriculum_id,
@@ -342,7 +345,11 @@ def supplemental_manifest(preparation: SupplementalPreparation, *, checkpoint_bi
         "level": preparation.prepared.level,
         "current_weak_ids": list(preparation.current_weak_ids),
         "active_weaknesses": [
-            {"concept": concept, "subconcept": subconcept, "critical_origin": (concept, subconcept) in preparation.prepared.critical_weakness_keys}
+            {
+                "concept": concept,
+                "subconcept": subconcept,
+                "critical_origin": (concept, subconcept) in preparation.prepared.critical_weakness_keys,
+            }
             for concept, subconcept in preparation.current_weakness_keys
         ],
         "supplemental_exercise_ids": list(preparation.selected_supplemental_ids),
