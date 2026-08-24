@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
 import pytest
 
+import roberta.learning.pyramid_provenance_migration as migration_module
 from roberta.learning.curriculum_io import CurriculumPackageError, validate_package
 from roberta.learning.pyramid import PYRAMID_CONTRACT
 from roberta.learning.pyramid_provenance_migration import (
@@ -84,6 +86,10 @@ def _raw_rows(path: Path) -> list[dict[str, object]]:
 def test_migration_preserves_historical_semantics_and_explicit_pdf_page_basis(tmp_path: Path) -> None:
     legacy = _write_legacy_package(tmp_path)
     original = _raw_rows(legacy / "exercises.jsonl")
+    original_hashes = {
+        name: hashlib.sha256((legacy / name).read_bytes()).hexdigest()
+        for name in ("manifest.json", "exercises.jsonl", "source_map.json")
+    }
     output = tmp_path / "migrated"
 
     report = migrate_legacy_mb4e_curriculum(curriculum_dir=legacy, output_dir=output)
@@ -101,6 +107,9 @@ def test_migration_preserves_historical_semantics_and_explicit_pdf_page_basis(tm
     assert manifest["curriculum_id"] == LEGACY_CURRICULUM_ID
     assert manifest["source_provenance"]["source_key"] == MB4E_SOURCE_KEY
     assert "PDF page" in manifest["source_provenance"]["location_scheme"]
+    assert manifest["provenance_migration"]["input_manifest_sha256"] == original_hashes["manifest.json"]
+    assert manifest["provenance_migration"]["input_exercises_sha256"] == original_hashes["exercises.jsonl"]
+    assert manifest["provenance_migration"]["input_source_map_sha256"] == original_hashes["source_map.json"]
     assert len(exercises) == 2
 
     migrated = _raw_rows(output / "exercises.jsonl")
@@ -165,6 +174,41 @@ def test_migration_rejects_pdf_range_disagreement_instead_of_guessing(tmp_path: 
         )
 
 
+def test_migration_rejects_pdf_pages_beyond_registered_artifact(tmp_path: Path) -> None:
+    legacy = _write_legacy_package(tmp_path)
+    bad_ref = "MB4E-CH1-P900-901-OUT-OF-RANGE"
+
+    manifest = _manifest()
+    manifest["approved_source_refs"] = [bad_ref, REF_B]
+    (legacy / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    rows = [
+        _exercise("MB4E-L01-00001", bad_ref, "What changed as blockchain matured?"),
+        _exercise("MB4E-L01-00002", REF_B, "Why do distributed systems need fault tolerance?"),
+    ]
+    (legacy / "exercises.jsonl").write_text(
+        "".join(json.dumps(row) + "\n" for row in rows),
+        encoding="utf-8",
+    )
+    (legacy / "source_map.json").write_text(
+        json.dumps(
+            {
+                bad_ref: "PDF pages 900-901: impossible locator",
+                REF_B: "PDF pages 37-41: distributed systems, Byzantine behavior, CAP, PACELC",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        PyramidProvenanceMigrationError,
+        match="exceeds registered source PDF page count 819",
+    ):
+        migrate_legacy_mb4e_curriculum(
+            curriculum_dir=legacy,
+            output_dir=tmp_path / "migrated",
+        )
+
+
 def test_migration_rejects_existing_output_instead_of_overwriting(tmp_path: Path) -> None:
     legacy = _write_legacy_package(tmp_path)
     output = tmp_path / "migrated"
@@ -206,6 +250,59 @@ def test_migration_report_write_failure_does_not_publish_partial_output(
         migrate_legacy_mb4e_curriculum(curriculum_dir=legacy, output_dir=output)
 
     assert not output.exists()
+
+
+def test_migration_refuses_publish_if_historical_snapshot_changes_mid_run(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    legacy = _write_legacy_package(tmp_path)
+    output = tmp_path / "migrated"
+    original_validate = migration_module.validate_package
+
+    def mutate_after_stage_validation(root: str | Path):
+        result = original_validate(root)
+        candidate = Path(root)
+        if candidate.parent == output.parent and candidate.name.startswith(f".{output.name}.tmp-"):
+            (legacy / "source_map.json").write_text(
+                json.dumps(
+                    {
+                        REF_A: "PDF pages 34-37: changed during migration",
+                        REF_B: "PDF pages 37-41: distributed systems, Byzantine behavior, CAP, PACELC",
+                    }
+                ),
+                encoding="utf-8",
+            )
+        return result
+
+    monkeypatch.setattr(migration_module, "validate_package", mutate_after_stage_validation)
+
+    with pytest.raises(PyramidProvenanceMigrationError, match="legacy input changed during migration: source_map.json"):
+        migrate_legacy_mb4e_curriculum(curriculum_dir=legacy, output_dir=output)
+
+    assert not output.exists()
+
+
+def test_migration_publication_race_does_not_overwrite_late_destination_claim(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    legacy = _write_legacy_package(tmp_path)
+    output = tmp_path / "migrated"
+    original_publish = migration_module._publish_directory_noreplace
+
+    def claim_then_publish(stage: Path, target: Path) -> None:
+        target.mkdir()
+        (target / "claimed.txt").write_text("external claim\n", encoding="utf-8")
+        original_publish(stage, target)
+
+    monkeypatch.setattr(migration_module, "_publish_directory_noreplace", claim_then_publish)
+
+    with pytest.raises(PyramidProvenanceMigrationError, match="already exists at publication"):
+        migrate_legacy_mb4e_curriculum(curriculum_dir=legacy, output_dir=output)
+
+    assert (output / "claimed.txt").read_text(encoding="utf-8") == "external claim\n"
+    assert not (output / "manifest.json").exists()
 
 
 def test_provenance_rejects_ambiguous_mixed_page_basis(tmp_path: Path) -> None:
