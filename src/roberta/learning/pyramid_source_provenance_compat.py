@@ -150,8 +150,9 @@ def install_basis_aware_source_provenance() -> None:
     reconstruction behavior. Migrated ``pdf_pages`` inputs retain their basis and
     trusted PDF metadata, then use a cryptographically bound PDF-page-to-transcript
     alignment before retrieval so out-of-provenance chunks cannot compete in
-    lexical/vector ranking. Checkpoint validation, canonical exam behavior, source
-    integrity, and all authority boundaries remain unchanged.
+    lexical/vector ranking. Scoped chunks and final anchors must be fully contained
+    inside the resolved provenance ranges. Checkpoint validation, canonical exam
+    behavior, source integrity, and all authority boundaries remain unchanged.
     """
 
     if not getattr(
@@ -172,3 +173,12 @@ def install_basis_aware_source_provenance() -> None:
     )
 
     install_provenance_scoped_reconstruction()
+
+    # Tighten the scoped line predicate after the builder/retrieval hooks exist so
+    # a boundary-straddling chunk cannot become an evidence anchor merely because
+    # part of it overlaps the declared pages.
+    from .pyramid_provenance_containment import (
+        install_strict_provenance_containment,
+    )
+
+    install_strict_provenance_containment()
