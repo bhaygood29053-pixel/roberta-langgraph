@@ -310,6 +310,10 @@ def migrate_legacy_mb4e_curriculum(
     output_root = Path(output_dir).resolve()
     if not input_root.is_dir():
         raise PyramidProvenanceMigrationError("legacy curriculum directory does not exist")
+    if output_root == input_root or input_root in output_root.parents:
+        raise PyramidProvenanceMigrationError(
+            "output directory must be outside the legacy curriculum tree"
+        )
     if output_root.exists():
         raise PyramidProvenanceMigrationError(f"output directory already exists: {output_root}")
 
