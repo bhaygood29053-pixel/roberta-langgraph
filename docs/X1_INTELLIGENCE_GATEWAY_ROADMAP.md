@@ -1,27 +1,28 @@
-# X1 Intelligence Gateway — Future Roberta Roadmap
+# X1Labs Intelligence Scout — Future Roberta Roadmap
 
 Status: **FUTURE / BLOCKED UNTIL THE LEARNING SYSTEM IS COMPLETE**
 
 Target owner: Roberta
 
-This roadmap defines a future Roberta sub-agent that communicates with a user-authorized agent created on the X1 Intelligence Network. It is intentionally not an active implementation milestone. The work begins only after the Roberta Learning System is accepted complete under the authoritative `docs/LANGGRAPH_ROADMAP.md` and all in-flight Learning System/source-library gates are reconciled on `main`.
+This roadmap defines a future Roberta specialist named **X1Labs Intelligence Scout** that communicates with a user-authorized agent created on the X1 Intelligence Network. It is intentionally not an active implementation milestone. The work begins only after the Roberta Learning System is accepted complete under the authoritative `docs/LANGGRAPH_ROADMAP.md` and all in-flight Learning System/source-library gates are reconciled on `main`.
 
-The gateway is a communication/collaboration specialist. It is not a second CMIS, not a second Chain Scout, and not an execution authority.
+The X1Labs Intelligence Scout is a communication/collaboration specialist. It is not a second CMIS, not the existing X1 Chain Scout, and not an execution authority. A transport-neutral gateway/client layer may be used internally, but the Roberta-facing specialist identity is **X1Labs Intelligence Scout**.
 
 ## Goal
 
-Give Roberta a transport-neutral sub-agent capable of securely communicating with an external X1 Intelligence agent, preserving exact remote-agent identity and response provenance, and escalating freshness-sensitive blockchain claims through the existing X1 Scout -> CMIS verification path before Roberta treats them as verified current facts.
+Give Roberta a transport-neutral specialist capable of securely communicating with an external X1 Intelligence agent, preserving exact remote-agent identity and response provenance, and escalating freshness-sensitive blockchain claims through the existing X1 Scout -> CMIS verification path before Roberta treats them as verified current facts.
 
 Target interaction:
 
 ```text
 User
   -> Roberta
-    -> X1 Intelligence Gateway
-      -> verified transport
-        -> user-authorized X1 Intelligence agent
-      <- remote response + provenance
-    <- normalized external-agent report
+    -> X1Labs Intelligence Scout
+      -> transport-neutral gateway/client
+        -> verified transport
+          -> user-authorized X1 Intelligence agent
+        <- remote response + provenance
+      <- normalized external-agent report
   -> when live verification is required:
        X1 Scout
          -> CMIS
@@ -37,10 +38,10 @@ The accepted live-state hierarchy remains unchanged:
 User -> Roberta -> Chain Scout -> CMIS -> Chain Provider / verified source
 ```
 
-The X1 Intelligence Gateway is a parallel collaboration path beneath Roberta:
+The X1Labs Intelligence Scout is a parallel collaboration specialist beneath Roberta:
 
 ```text
-Roberta -> X1 Intelligence Gateway -> external X1 Intelligence agent
+Roberta -> X1Labs Intelligence Scout -> transport adapter -> external X1 Intelligence agent
 ```
 
 Remote-agent output is classified as **external-agent intelligence** until separately verified where verification is required.
@@ -122,14 +123,14 @@ Tampered, stale, identity-mismatched, replayed, or uncorrelated responses must f
 
 Status: FUTURE
 
-Implement exactly one transport first.
+Implement exactly one transport first behind the X1Labs Intelligence Scout.
 
 Selection rule:
 
 - choose the simplest transport that is officially supported, reproducible, and contract-testable at implementation time;
 - Telegram may be a practical first adapter if it remains the easiest documented deployment/communication path;
 - native xChat may be preferred when its exact client/protocol contract is documented and testable;
-- do not hard-code the Roberta domain model to either transport.
+- do not hard-code the Roberta specialist/domain model to either transport.
 
 Provider-neutral interface concept:
 
@@ -154,9 +155,9 @@ Required behavior:
 
 Status: FUTURE
 
-Add `X1 Intelligence Gateway` as a Roberta specialist.
+Add **`X1Labs Intelligence Scout` as a Roberta specialist**.
 
-Roberta owns the decision to call it. The gateway owns only remote-agent communication and provenance normalization.
+Roberta owns the decision to call it. The X1Labs Intelligence Scout owns remote-agent communication, transport selection through its accepted adapter boundary, request/response correlation, and provenance normalization. It does not own blockchain fact verification.
 
 Examples of eligible tasks:
 
@@ -166,12 +167,12 @@ Examples of eligible tasks:
 - coordinate a research task with the remote agent;
 - retrieve a response from a named collaboration thread/group.
 
-The gateway must not independently decide that a remote claim is verified market/blockchain truth.
+The X1Labs Intelligence Scout must not independently decide that a remote claim is verified market/blockchain truth.
 
 Roberta should expose the source class when useful, for example:
 
 ```text
-Remote X1 agent reports: <claim>
+Remote X1Labs Intelligence agent reports: <claim>
 Verification state: external-agent intelligence / not yet CMIS-verified
 ```
 
@@ -195,6 +196,7 @@ Flow:
 
 ```text
 external-agent claim
+  -> X1Labs Intelligence Scout provenance classification
   -> Roberta classification
   -> X1 Scout
   -> CMIS
@@ -239,9 +241,10 @@ After one-to-one communication is proven, support bounded collaborative workflow
 
 ```text
 Roberta
-  -> X1 Intelligence Gateway
-      -> remote X1 agent A
-      -> remote X1 agent B
+  -> X1Labs Intelligence Scout
+      -> transport-neutral gateway/client
+          -> remote X1 agent A
+          -> remote X1 agent B
   -> X1 Scout / CMIS verification as needed
   -> final synthesis
 ```
@@ -266,7 +269,7 @@ Example:
 
 ```text
 Remote agent proposes action
-  -> X1 Intelligence Gateway records proposal + provenance
+  -> X1Labs Intelligence Scout records proposal + provenance
   -> Roberta evaluates
   -> existing policy/human-review boundary
   -> STOP unless a separately accepted Controlled Execution phase authorizes the exact action
@@ -291,7 +294,7 @@ Minimum controls:
 
 ## Learning System boundary
 
-The gateway does not automatically promote remote-agent messages into Learning System source truth or verified lessons.
+The X1Labs Intelligence Scout does not automatically promote remote-agent messages into Learning System source truth or verified lessons.
 
 If a remote message contains useful static information, a future explicit source-onboarding path may preserve it as a provenance-bearing external source only after the accepted Learning System source-management rules allow it.
 
@@ -299,20 +302,20 @@ If a remote interaction reveals a useful procedural lesson, it still must traver
 
 ## CMIS / Chain Scout boundary
 
-The gateway never replaces the X1 Scout.
+The X1Labs Intelligence Scout never replaces the X1 Scout.
 
 ```text
-X1 Intelligence Gateway = communicate/collaborate with remote agent
-X1 Scout                 = chain-specific planning/interpretation
-CMIS                     = deterministic current facts/evidence/risk/capability truth
-Roberta                  = coordination, policy, final synthesis
+X1Labs Intelligence Scout = communicate/collaborate with remote X1Labs Intelligence agent(s)
+X1 Scout                   = chain-specific planning/interpretation
+CMIS                       = deterministic current facts/evidence/risk/capability truth
+Roberta                    = coordination, policy, final synthesis
 ```
 
 Direct remote-agent -> CMIS access is not part of this roadmap.
 
 ## Initial acceptance test set
 
-Before calling the first gateway production-ready, prove at minimum:
+Before calling the first X1Labs Intelligence Scout integration production-ready, prove at minimum:
 
 1. correct remote agent receives an exact request;
 2. wrong/ambiguous identity fails closed;
@@ -335,7 +338,7 @@ Before calling the first gateway production-ready, prove at minimum:
 2. verify one exact X1 Intelligence transport;
 3. implement remote-agent identity/provenance contracts;
 4. implement one minimal communication adapter;
-5. integrate the gateway as a Roberta specialist;
+5. integrate **X1Labs Intelligence Scout** as a Roberta specialist;
 6. add external-agent trust labeling and CMIS escalation rules;
 7. run deterministic/adversarial readiness tests;
 8. promote one-to-one communication only;
@@ -351,18 +354,19 @@ The desired mature architecture is:
                            User
                             |
                          Roberta
-                 ___________|____________
-                |           |            |
-             X1 Scout   X1 Intelligence  Learning System
-                |         Gateway
-               CMIS          |
-                |      external X1 agent(s)
-          X1 providers
+                 ___________|____________________
+                |           |                    |
+             X1 Scout   X1Labs Intelligence   Learning System
+                |             Scout
+               CMIS            |
+                |       transport gateway/client
+          X1 providers         |
+                         external X1 agent(s)
 ```
 
 This creates a useful separation of intelligence sources:
 
-- remote agents contribute research, memory, collaboration, and opinions;
+- X1Labs Intelligence Scout contributes remote-agent research, memory, collaboration, and opinions with provenance;
 - the Learning System contributes provenance-bound static knowledge and separately verified learning;
 - CMIS contributes current deterministic blockchain/market evidence;
 - Roberta remains the single coordinator and final user-facing voice.
