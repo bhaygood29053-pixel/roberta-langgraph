@@ -68,7 +68,7 @@ def validate_critical_blocker_gate(
     if report.get("new_passed") is not False:
         raise TargetedPyramidPracticeError("critical-blocker mode is only valid for a still-failed revalidated run")
 
-    required_accuracy = get_level_spec(level).required_accuracy
+    required_accuracy = get_level_spec(level).pass_accuracy
     if float(new_accuracy) < required_accuracy:
         raise TargetedPyramidPracticeError(
             f"critical-blocker mode requires accuracy >= {required_accuracy:.4f}; got {float(new_accuracy):.4f}"
