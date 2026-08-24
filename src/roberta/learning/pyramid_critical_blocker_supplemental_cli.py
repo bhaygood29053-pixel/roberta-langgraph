@@ -15,6 +15,10 @@ from .pyramid_critical_blocker_supplemental import (
     mb4e_immutability_critical_blocker_bank,
     validate_critical_blocker_gate,
 )
+from .pyramid_critical_retention import (
+    CRITICAL_GROUNDED_PASS_NEXT_GATE,
+    demote_grounded_canonical_authority,
+)
 from .pyramid_grounded_practice import (
     GROUNDED_PRACTICE_CHECKPOINT_NAMESPACE,
     grounded_practice_binding,
@@ -145,6 +149,8 @@ def main() -> int:
             "critical_checkpoint_source": critical_manifest,
             "minimum_questions_per_weakness": 10,
             "canonical_attempt_authorized_before_practice": False,
+            "canonical_attempt_authorized_after_grounded_practice": False,
+            "grounded_success_next_gate": CRITICAL_GROUNDED_PASS_NEXT_GATE,
         }
     )
 
@@ -199,6 +205,8 @@ def main() -> int:
         batch_size=args.batch_size,
         progress=_progress,
     )
+    report = demote_grounded_canonical_authority(report)
+    _write_json(output / "practice_report.json", report.to_mapping())
 
     print("\n--- CRITICAL BLOCKER SUPPLEMENTAL RESULT ---")
     print(f"PASS {report.pass_count}")
