@@ -16,7 +16,11 @@ from roberta.learning.mb4e_level2_factory import (
     level2_source_map,
     level2_targets,
 )
-from roberta.learning.pyramid import select_level_exercises
+from roberta.learning.pyramid import (
+    CANONICAL_INTEGRITY_QUESTION_COUNT,
+    CANONICAL_LEVEL_QUESTION_COUNT,
+    select_level_exercises,
+)
 
 
 def test_level2_bank_has_production_shape_and_stable_ids() -> None:
@@ -35,18 +39,18 @@ def test_level2_bank_has_production_shape_and_stable_ids() -> None:
     assert all(item.curriculum_id == CURRICULUM_ID for item in bank)
 
 
-def test_level2_canonical_selection_is_949_plus_50_plus_boss() -> None:
+def test_level2_canonical_selection_is_249_plus_50_plus_boss() -> None:
     selected = select_level_exercises(
         build_level2_bank(),
         curriculum_id=CURRICULUM_ID,
         level=2,
         run_seed="level2-selection-test",
     )
-    assert len(selected) == 1000
-    assert sum(item.integrity_question for item in selected) == 50
+    assert len(selected) == CANONICAL_LEVEL_QUESTION_COUNT == 300
+    assert sum(item.integrity_question for item in selected) == CANONICAL_INTEGRITY_QUESTION_COUNT == 50
     assert sum(item.boss_question for item in selected) == 1
     assert selected[-1].boss_question is True
-    assert sum(not item.integrity_question and not item.boss_question for item in selected) == 949
+    assert sum(not item.integrity_question and not item.boss_question for item in selected) == 249
 
 
 def test_level2_source_map_stays_within_declared_chapters_and_pdf_pages() -> None:
