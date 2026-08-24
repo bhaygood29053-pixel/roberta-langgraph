@@ -83,8 +83,11 @@ def _select_or_exit(
                 f"REQUIRED {count}",
                 f"DETAIL {exc}",
             ]
-            if curriculum_id == "mastering_blockchain_4e_2023_book01" and level == 2:
-                lines.append(f'BUILD_COMMAND roberta-pyramid-build-mb4e-level2 --curriculum "{curriculum_path}"')
+            if curriculum_id == "mastering_blockchain_4e_2023_book01":
+                if level == 2:
+                    lines.append(f'BUILD_COMMAND roberta-pyramid-build-mb4e-level2 --curriculum "{curriculum_path}"')
+                elif level == 3:
+                    lines.append(f'BUILD_COMMAND roberta-pyramid-build-mb4e-level3 --curriculum "{curriculum_path}"')
             lines.append(f"NEXT_GATE build_level_{level}_curriculum")
             raise SystemExit("\n".join(lines)) from exc
         raise
