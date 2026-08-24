@@ -53,6 +53,16 @@ def _load_learned_memory(
     return path, learned
 
 
+def _build_answer_model(model: object, learned: tuple) -> MissingAnswerRetryModel:
+    """Build the canonical answer path with one bounded ID-substitution recovery."""
+
+    answer_base = PyramidLearnedConceptAnswerModel(model, learned) if learned else model
+    return MissingAnswerRetryModel(
+        answer_base,
+        recover_unexpected_initial_ids=True,
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Run a scored Roberta Pyramid level against a validated curriculum package."
@@ -174,8 +184,7 @@ def main() -> None:
         print(f"RESUME_RUN_ID {run_id}")
 
     model = create_pyramid_runtime_model()
-    answer_base = PyramidLearnedConceptAnswerModel(model, learned) if learned else model
-    answer_model = MissingAnswerRetryModel(answer_base)
+    answer_model = _build_answer_model(model, learned)
     checkpoint_dir = Path(args.checkpoint_dir) / curriculum_id / str(seed)
     outcome = run_exam(
         exercises=selected,
