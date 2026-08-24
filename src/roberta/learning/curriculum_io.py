@@ -258,6 +258,43 @@ def load_exercises_jsonl(
     return tuple(exercises)
 
 
+def _validate_provenance_location_pages(
+    location: Mapping[str, object],
+    *,
+    location_number: int,
+    exercise_id: str,
+) -> None:
+    has_book_pages = "book_pages" in location
+    has_pdf_pages = "pdf_pages" in location
+    if has_book_pages == has_pdf_pages:
+        raise CurriculumPackageError(
+            f"source provenance location {location_number} for {exercise_id} "
+            "must declare exactly one of book_pages or pdf_pages"
+        )
+    field = "book_pages" if has_book_pages else "pdf_pages"
+    pages = location.get(field)
+    if (
+        not isinstance(pages, list)
+        or not pages
+        or not all(
+            isinstance(page, int) and not isinstance(page, bool) and page > 0
+            for page in pages
+        )
+    ):
+        raise CurriculumPackageError(
+            f"source provenance location {location_number} for {exercise_id} "
+            f"requires positive integer {field}"
+        )
+    legacy_source_ref = location.get("legacy_source_ref")
+    if legacy_source_ref is not None and (
+        not isinstance(legacy_source_ref, str) or not legacy_source_ref.strip()
+    ):
+        raise CurriculumPackageError(
+            f"source provenance location {location_number} for {exercise_id} "
+            "legacy_source_ref must be a non-empty string when present"
+        )
+
+
 def load_source_provenance_jsonl(
     path: str | Path,
     *,
@@ -337,7 +374,6 @@ def load_source_provenance_jsonl(
                 )
             chapter = location.get("chapter")
             section = location.get("section")
-            pages = location.get("book_pages")
             if not isinstance(chapter, str) or not chapter.strip():
                 raise CurriculumPackageError(
                     f"source provenance location {location_number} for {exercise_id} "
@@ -348,18 +384,11 @@ def load_source_provenance_jsonl(
                     f"source provenance location {location_number} for {exercise_id} "
                     "requires section"
                 )
-            if (
-                not isinstance(pages, list)
-                or not pages
-                or not all(
-                    isinstance(page, int) and not isinstance(page, bool) and page > 0
-                    for page in pages
-                )
-            ):
-                raise CurriculumPackageError(
-                    f"source provenance location {location_number} for {exercise_id} "
-                    "requires positive integer book_pages"
-                )
+            _validate_provenance_location_pages(
+                location,
+                location_number=location_number,
+                exercise_id=exercise_id,
+            )
         records.append(raw)
 
     if not records:
