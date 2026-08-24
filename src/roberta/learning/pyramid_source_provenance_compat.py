@@ -38,7 +38,9 @@ def _positive_pages(name: str, value: object) -> tuple[int, ...]:
     return tuple(value)
 
 
-def _basis_aware_locator(raw: object) -> BasisAwareSourceProvenanceLocator:
+def _basis_aware_locator(
+    raw: object,
+) -> _reconstruction.SourceProvenanceLocator | BasisAwareSourceProvenanceLocator:
     if not isinstance(raw, Mapping):
         raise _reconstruction.PyramidSourceReconstructionError(
             "source provenance locator must be an object"
@@ -51,12 +53,20 @@ def _basis_aware_locator(raw: object) -> BasisAwareSourceProvenanceLocator:
         raise _reconstruction.PyramidSourceReconstructionError(
             "source provenance locator must declare exactly one of book_pages or pdf_pages"
         )
+
     if has_book_pages:
-        page_basis = "book"
-        pages = _positive_pages("book_pages", raw.get("book_pages"))
-    else:
-        page_basis = "pdf"
-        pages = _positive_pages("pdf_pages", raw.get("pdf_pages"))
+        # Preserve the accepted public in-memory representation for every
+        # pre-existing printed-book provenance package. The compatibility seam
+        # extends only the new PDF-page path; it must not change the locator
+        # class, dataclass field shape, isinstance behavior, or pattern-matching
+        # surface for legacy book_pages callers.
+        return _reconstruction.SourceProvenanceLocator(
+            chapter=chapter,
+            section=section,
+            book_pages=_positive_pages("book_pages", raw.get("book_pages")),
+        )
+
+    pages = _positive_pages("pdf_pages", raw.get("pdf_pages"))
     legacy_source_ref = raw.get("legacy_source_ref")
     if legacy_source_ref is not None:
         legacy_source_ref = _reconstruction._text(
@@ -66,7 +76,7 @@ def _basis_aware_locator(raw: object) -> BasisAwareSourceProvenanceLocator:
     return BasisAwareSourceProvenanceLocator(
         chapter=chapter,
         section=section,
-        page_basis=page_basis,
+        page_basis="pdf",
         pages=pages,
         legacy_source_ref=legacy_source_ref,
     )
@@ -85,18 +95,11 @@ def _basis_aware_locator_mapping(value: object) -> dict[str, Any]:
 
     # Preserve the exact accepted representation for pre-existing reconstruction
     # objects created from printed-book provenance.
-    chapter = getattr(value, "chapter", None)
-    section = getattr(value, "section", None)
-    book_pages = getattr(value, "book_pages", None)
-    if (
-        isinstance(chapter, str)
-        and isinstance(section, str)
-        and isinstance(book_pages, tuple)
-    ):
+    if isinstance(value, _reconstruction.SourceProvenanceLocator):
         return {
-            "chapter": chapter,
-            "section": section,
-            "book_pages": list(book_pages),
+            "chapter": value.chapter,
+            "section": value.section,
+            "book_pages": list(value.book_pages),
         }
     raise _reconstruction.PyramidSourceReconstructionError(
         "source provenance locator cannot be serialized"
@@ -110,6 +113,8 @@ def install_basis_aware_source_provenance() -> None:
     reconstruction pipeline, checkpoint validation, source integrity checks,
     retrieval, evidence packet construction, authority flags, and content hash
     logic remain the implementation in ``pyramid_source_reconstruction``.
+    Existing ``book_pages`` inputs retain the original public locator class;
+    only migrated ``pdf_pages`` inputs use the compatibility locator.
     """
 
     if getattr(_reconstruction, "_basis_aware_source_provenance_installed", False):
