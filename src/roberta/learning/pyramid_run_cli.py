@@ -37,14 +37,10 @@ def _load_learned_memory(
 ) -> tuple[Path | None, tuple]:
     if disabled:
         if supplied_path is not None:
-            raise PyramidLearnedConceptError(
-                "--learned-concepts cannot be combined with --without-learned-concepts"
-            )
+            raise PyramidLearnedConceptError("--learned-concepts cannot be combined with --without-learned-concepts")
         return None, ()
 
-    path = Path(supplied_path) if supplied_path is not None else Path(
-        f".roberta/pyramid_learned_concepts/{curriculum_id}.json"
-    )
+    path = Path(supplied_path) if supplied_path is not None else Path(f".roberta/pyramid_learned_concepts/{curriculum_id}.json")
     if not path.exists():
         if supplied_path is not None:
             raise PyramidLearnedConceptError(f"Pyramid learned-concepts store does not exist: {path}")
@@ -55,54 +51,57 @@ def _load_learned_memory(
 
 def _build_answer_model(model: object, learned: tuple) -> MissingAnswerRetryModel:
     """Build the canonical answer path with one bounded ID-substitution recovery."""
-
     answer_base = PyramidLearnedConceptAnswerModel(model, learned) if learned else model
-    return MissingAnswerRetryModel(
-        answer_base,
-        recover_unexpected_initial_ids=True,
-    )
+    return MissingAnswerRetryModel(answer_base, recover_unexpected_initial_ids=True)
+
+
+def _select_or_exit(
+    bank: tuple,
+    *,
+    curriculum_id: str,
+    level: int,
+    seed: str,
+    curriculum_path: str,
+    count: int = CANONICAL_LEVEL_QUESTION_COUNT,
+) -> tuple:
+    try:
+        return select_level_exercises(
+            bank,
+            curriculum_id=curriculum_id,
+            level=level,
+            run_seed=seed,
+            count=count,
+        )
+    except ValueError as exc:
+        eligible = sum(1 for item in bank if item.curriculum_id == curriculum_id and item.level == level)
+        if eligible < count:
+            lines = [
+                "CURRICULUM_LEVEL_BANK_MISSING",
+                f"CURRICULUM {curriculum_id}",
+                f"LEVEL {level}",
+                f"ELIGIBLE {eligible}",
+                f"REQUIRED {count}",
+                f"DETAIL {exc}",
+            ]
+            if curriculum_id == "mastering_blockchain_4e_2023_book01" and level == 2:
+                lines.append(f'BUILD_COMMAND roberta-pyramid-build-mb4e-level2 --curriculum "{curriculum_path}"')
+            lines.append(f"NEXT_GATE build_level_{level}_curriculum")
+            raise SystemExit("\n".join(lines)) from exc
+        raise
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Run a scored Roberta Pyramid level against a validated curriculum package."
-    )
+    parser = argparse.ArgumentParser(description="Run a scored Roberta Pyramid level against a validated curriculum package.")
     parser.add_argument("--curriculum", required=True, help="Curriculum package directory")
-    parser.add_argument(
-        "--db",
-        default=".roberta/pyramid_training.sqlite3",
-        help="Pyramid SQLite training ledger",
-    )
+    parser.add_argument("--db", default=".roberta/pyramid_training.sqlite3", help="Pyramid SQLite training ledger")
     parser.add_argument("--level", type=int, help="Level to run; defaults to the active run's next level or 1")
     parser.add_argument("--seed", help="Run seed. A new random seed is generated for a new run when omitted.")
     parser.add_argument("--batch-size", type=int, default=10, help="Questions per model batch (default: 10)")
-    parser.add_argument(
-        "--checkpoint-dir",
-        default=".roberta/pyramid_checkpoints",
-        help="Root directory for restart-safe batch checkpoints",
-    )
-    parser.add_argument(
-        "--learned-concepts",
-        help=(
-            "Verified Pyramid learned-concepts store. When omitted, "
-            ".roberta/pyramid_learned_concepts/<curriculum_id>.json is used if present."
-        ),
-    )
-    parser.add_argument(
-        "--without-learned-concepts",
-        action="store_true",
-        help="Explicitly disable verified Pyramid learned-concept retrieval for this run.",
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Validate and select the exam without making model calls or writing a run",
-    )
-    parser.add_argument(
-        "--smoke-count",
-        type=int,
-        help="Run a non-canonical sample for model/evaluator testing; results are not written to the ledger",
-    )
+    parser.add_argument("--checkpoint-dir", default=".roberta/pyramid_checkpoints", help="Root directory for restart-safe batch checkpoints")
+    parser.add_argument("--learned-concepts", help="Verified Pyramid learned-concepts store. When omitted, .roberta/pyramid_learned_concepts/<curriculum_id>.json is used if present.")
+    parser.add_argument("--without-learned-concepts", action="store_true", help="Explicitly disable verified Pyramid learned-concept retrieval for this run.")
+    parser.add_argument("--dry-run", action="store_true", help="Validate and select the exam without making model calls or writing a run")
+    parser.add_argument("--smoke-count", type=int, help="Run a non-canonical sample for model/evaluator testing; results are not written to the ledger")
     args = parser.parse_args()
 
     if args.batch_size <= 0:
@@ -118,11 +117,12 @@ def main() -> None:
     if args.smoke_count is not None:
         level = args.level or 1
         seed = args.seed or "smoke"
-        selected = select_level_exercises(
+        selected = _select_or_exit(
             bank,
             curriculum_id=curriculum_id,
             level=level,
-            run_seed=seed,
+            seed=seed,
+            curriculum_path=args.curriculum,
             count=args.smoke_count,
         )
         canonical = False
@@ -144,11 +144,12 @@ def main() -> None:
                 parser.error("a new Pyramid run must begin at level 1")
             seed = args.seed or secrets.token_hex(8)
             run_id = None
-        selected = select_level_exercises(
+        selected = _select_or_exit(
             bank,
             curriculum_id=curriculum_id,
             level=level,
-            run_seed=seed,
+            seed=seed,
+            curriculum_path=args.curriculum,
         )
         canonical = True
 
@@ -203,10 +204,6 @@ def main() -> None:
 
     if canonical:
         assert run_id is not None
-        # Commit the authoritative level result first. If a process dies before
-        # this point, checkpoints allow a safe replay without duplicate ledger
-        # state. Failure aggregates are supplementary analytics and are written
-        # only after the level transition succeeds.
         ledger.record_level_result(run_id, result)
         ledger.record_failures(run_id, level, outcome.failure_counts)
         print(f"LEDGER_RECORDED {args.db}")
