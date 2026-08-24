@@ -3,10 +3,9 @@ from __future__ import annotations
 import argparse
 import json
 
-from roberta.models import create_runtime_model
-
 from .curriculum_io import validate_package
 from .pyramid import CANONICAL_LEVEL_QUESTION_COUNT
+from .pyramid_adjudicator_retry import create_pyramid_runtime_model
 from .pyramid_critical_revalidation import revalidate_critical_checkpoints
 
 
@@ -45,7 +44,7 @@ def main() -> None:
 
     report = revalidate_critical_checkpoints(
         exercise_bank=bank,
-        grader_model=create_runtime_model(),
+        grader_model=create_pyramid_runtime_model(),
         input_dir=args.input_checkpoints,
         output_dir=args.output_checkpoints,
         curriculum_id=curriculum_id,
