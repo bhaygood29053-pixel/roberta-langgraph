@@ -11,8 +11,8 @@ def test_dashboard_reads_training_ledger_without_mutation(tmp_path) -> None:
     run_id = ledger.start_run("book001", "seed", run_id="rp_dashboard")
     result = evaluate_level(
         level=1,
-        total_questions=1000,
-        correct_questions=900,
+        total_questions=300,
+        correct_questions=270,
         integrity_total=50,
         integrity_correct=50,
         boss_passed=True,
