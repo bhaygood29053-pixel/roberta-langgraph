@@ -214,19 +214,21 @@ def build_level2_bank(curriculum_id: str = CURRICULUM_ID) -> tuple[Exercise, ...
 
 
 def level2_provenance_records(exercises: Sequence[Exercise], *, source_key: str = SOURCE_KEY) -> tuple[dict[str, object], ...]:
+    if source_key != SOURCE_KEY:
+        raise ValueError(f"Level-2 provenance source_key must be canonical {SOURCE_KEY!r}")
     targets = {(item.concept, item.subconcept): item for item in level2_targets()}
     source_map = level2_source_map()
     records: list[dict[str, object]] = []
     for exercise in exercises:
         locations = []
         for source_ref in exercise.source_refs:
-            if source_ref == source_key:
+            if source_ref == SOURCE_KEY:
                 continue
             raw = source_map[source_ref]
             locations.append({"chapter": raw["chapter"], "section": raw["section"], "pdf_pages": list(raw["pdf_pages"]), "legacy_source_ref": source_ref})
         if not exercise.boss_question:
             target = targets.get((exercise.concept, exercise.subconcept))
-            if target is None or exercise.source_refs != (source_key, target.source_ref):
+            if target is None or exercise.source_refs != (SOURCE_KEY, target.source_ref):
                 raise AssertionError(f"Level-2 provenance target mismatch: {exercise.exercise_id}")
-        records.append({"exercise_id": exercise.exercise_id, "source_key": source_key, "supports": ["question", "expected_answer", "required_reasoning_points"], "locations": locations})
+        records.append({"exercise_id": exercise.exercise_id, "source_key": SOURCE_KEY, "supports": ["question", "expected_answer", "required_reasoning_points"], "locations": locations})
     return tuple(records)
