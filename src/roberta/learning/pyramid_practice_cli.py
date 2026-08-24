@@ -8,6 +8,8 @@ from roberta.models import create_runtime_model
 from .pyramid_answer_recovery import MissingAnswerRetryModel
 from .pyramid_grounded_practice import (
     GROUNDED_PRACTICE_CHECKPOINT_NAMESPACE,
+    grounded_practice_binding,
+    grounded_practice_checkpoint_dir,
     load_grounded_practice_contexts,
     run_grounded_targeted_practice,
 )
@@ -60,6 +62,9 @@ def main() -> int:
         reconstructions_path=args.reconstructions,
         prepared=prepared,
     )
+    output = Path(args.output)
+    checkpoint_binding = grounded_practice_binding(prepared, contexts)
+    checkpoint_dir = grounded_practice_checkpoint_dir(output, prepared, contexts)
 
     print(f"CURRICULUM {prepared.curriculum_id}")
     print(f"LEVEL {prepared.level}")
@@ -69,6 +74,8 @@ def main() -> int:
     print(f"GROUNDED_CONTEXT_GROUPS {len(contexts)}")
     print(f"CRITICAL_WEAKNESS_GROUPS {len(prepared.critical_weakness_keys)}")
     print(f"CHECKPOINT_NAMESPACE {GROUNDED_PRACTICE_CHECKPOINT_NAMESPACE}")
+    print(f"CHECKPOINT_BINDING {checkpoint_binding}")
+    print(f"CHECKPOINTS {checkpoint_dir}")
 
     if args.dry_run:
         print("DRY_RUN VALID")
@@ -88,11 +95,10 @@ def main() -> int:
         contexts=contexts,
         answer_model=answer_model,
         grader_model=model,
-        output_dir=args.output,
+        output_dir=output,
         batch_size=args.batch_size,
         progress=_progress,
     )
-    output = Path(args.output)
     print("\n--- TARGETED PYRAMID PRACTICE RESULT ---")
     print(f"PASS {report.pass_count}")
     print(f"PARTIAL {report.partial_count}")
@@ -105,7 +111,7 @@ def main() -> int:
     print(f"PRACTICE_PASSED {str(report.practice_passed).lower()}")
     print(f"RESULTS {output / 'practice_results.jsonl'}")
     print(f"REPORT {output / 'practice_report.json'}")
-    print(f"CHECKPOINTS {output / GROUNDED_PRACTICE_CHECKPOINT_NAMESPACE}")
+    print(f"CHECKPOINTS {checkpoint_dir}")
     print(f"NEXT_GATE {report.next_gate}")
     print(f"CANONICAL_ATTEMPT_AUTHORIZED {str(report.canonical_attempt_authorized).lower()}")
     print("GROUNDED_REMEDIATION_CONTEXT true")
