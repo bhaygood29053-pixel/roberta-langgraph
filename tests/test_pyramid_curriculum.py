@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import replace
+
 import pytest
 
 from roberta.learning.pyramid import (
@@ -22,7 +24,7 @@ def _exercise(index: int, level: int = 1) -> Exercise:
         question=f"Question {index}?",
         expected_answer=f"Answer {index}",
         source_refs=("book001/chapter-1",),
-        integrity_question=index % 5 == 0,
+        integrity_question=index % 5 == 0 and index != 0,
         boss_question=index == 0,
     )
 
@@ -43,6 +45,14 @@ def test_level_selection_is_reproducible_seeded_and_uses_300_question_contract()
     assert [item.exercise_id for item in first] == [item.exercise_id for item in replay]
     assert [item.exercise_id for item in first] != [item.exercise_id for item in different]
     assert derive_level_seed("run-a", "book001", 1) == derive_level_seed("run-a", "book001", 1)
+
+
+def test_canonical_selection_rejects_boss_integrity_overlap() -> None:
+    bank = list(_exercise(index) for index in range(1200))
+    bank[0] = replace(bank[0], integrity_question=True)
+
+    with pytest.raises(ValueError, match="Boss Questions cannot also be integrity questions"):
+        select_level_exercises(bank, curriculum_id="book001", level=1, run_seed="run-a")
 
 
 def test_selection_fails_when_bank_is_too_small() -> None:
