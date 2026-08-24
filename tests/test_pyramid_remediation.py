@@ -106,7 +106,7 @@ def test_cumulative_exclusion_blocks_prior_checkpoint_questions(tmp_path):
     assert {item.exercise_id for item in practice} == {"q4", "q5"}
 
 
-def test_fresh_practice_fails_closed_when_a_weakness_is_exhausted(tmp_path):
+def test_fresh_practice_fails_closed_when_cumulative_history_exhausts_weakness(tmp_path):
     checkpoint = tmp_path / "level_01_batch_0001.json"
     _write_checkpoint(checkpoint, [
         {"exercise_id": "q1", "grade": "FAIL", "score": 0.0, "critical_failure": False,
@@ -121,7 +121,7 @@ def test_fresh_practice_fails_closed_when_a_weakness_is_exhausted(tmp_path):
     weak = load_weak_items(tmp_path)
     seen = load_seen_exercise_ids((tmp_path,))
 
-    with pytest.raises(ValueError, match="no fresh practice questions remain"):
+    with pytest.raises(ValueError, match="cumulative checkpoint history exhausted fresh practice"):
         select_fresh_practice(
             exercises,
             weak,
@@ -129,6 +129,25 @@ def test_fresh_practice_fails_closed_when_a_weakness_is_exhausted(tmp_path):
             seed="test",
             excluded_exercise_ids=seen,
         )
+
+
+def test_legacy_singleton_weakness_can_still_emit_handoff_without_practice(tmp_path):
+    checkpoint = tmp_path / "level_01_batch_0001.json"
+    _write_checkpoint(checkpoint, [
+        {"exercise_id": "q1", "grade": "FAIL", "score": 0.0, "critical_failure": False,
+         "failure_codes": ["factual_error"], "answer": "bad", "grader_note": "wrong"},
+    ])
+    exercises = (_exercise(1, "types", "private"),)
+    weak = load_weak_items(tmp_path)
+    seen = load_seen_exercise_ids((tmp_path,))
+
+    assert select_fresh_practice(
+        exercises,
+        weak,
+        per_weakness=1,
+        seed="test",
+        excluded_exercise_ids=seen,
+    ) == ()
 
 
 def test_no_checkpoint_failures_returns_empty_tuple(tmp_path):
