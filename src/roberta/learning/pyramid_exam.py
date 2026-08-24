@@ -34,7 +34,7 @@ Important grading rules:
 5. If a response is materially narrower than the concept asked for, substitutes a related but different concept, or otherwise misframes the concept, use conceptual_mismatch or factual_error instead of incomplete_reasoning.
 6. Use unsupported_inference only for a substantive unsupported or conflicting claim, not harmless additional context.
 7. A response that answers a different concept should still FAIL even if that different concept is generally true.
-8. critical_failure=true is only a first-pass proposal. Propose it only when the response affirmatively commits a serious forbidden inference or fabricates evidence/tool/execution state; it will receive bounded validation before becoming authoritative.
+8. critical_failure=true is only a first-pass proposal. Propose it only when the response affirmatively commits a serious forbidden inference or fabricates evidence/execution.
 9. When uncertain between PASS and PARTIAL, prefer PASS if the question has been substantively answered and no forbidden inference is present.
 10. A forbidden inference must be affirmatively present in the response. Do not infer a forbidden claim merely because the response omits a preferred qualifier or uses equivalent qualified/conditional wording.
 
@@ -71,6 +71,23 @@ _INTEGRITY_CRITICAL_CODES = frozenset(
         "stale_fact_used_as_current",
         "unsupported_inference",
     }
+)
+_ABSOLUTE_IMMUTABILITY_FORBIDDEN = "absolute immutability"
+_QUALIFIED_IMMUTABILITY = re.compile(
+    r"(?:"
+    r"\b(?:cannot|can't|can\s+not)\s+be\s+(?:easily|readily|practically)\s+(?:altered|changed|modified|deleted|rewritten)\b"
+    r"|\b(?:extremely|very|highly)\s+difficult\s+to\s+(?:alter|change|modify|delete|rewrite)\b"
+    r"|\b(?:difficult|hard|costly|impractical)\s+to\s+(?:alter|change|modify|delete|rewrite)\b"
+    r")",
+    re.IGNORECASE,
+)
+_ABSOLUTE_IMMUTABILITY = re.compile(
+    r"(?:"
+    r"\b(?:cannot|can't|can\s+not)\s+be\s+(?:altered|changed|modified|deleted|rewritten)\b"
+    r"|\bnever\s+(?:altered|changed|modified|deleted|rewritten)\b"
+    r"|\bimpossible\s+to\s+(?:alter|change|modify|delete|rewrite)\b"
+    r")",
+    re.IGNORECASE,
 )
 
 
@@ -316,10 +333,24 @@ def _question_explicitly_requests_multiple_elements(question: str) -> bool:
     return _request_clause_has_conjoined_elements(normalized)
 
 
+def _has_absolute_immutability_forbidden_inference(exercise: Exercise) -> bool:
+    return any(
+        _ABSOLUTE_IMMUTABILITY_FORBIDDEN in inference.lower()
+        for inference in exercise.forbidden_inferences
+    )
+
+
+def _answer_affirmatively_claims_absolute_immutability(answer: str) -> bool:
+    without_qualified = _QUALIFIED_IMMUTABILITY.sub("", answer)
+    return _ABSOLUTE_IMMUTABILITY.search(without_qualified) is not None
+
+
 def _critical_proposal_has_deterministic_basis(exercise: Exercise, grade: GradedAnswer) -> bool:
     if grade.grade == "PASS":
         return False
     codes = set(grade.failure_codes)
+    if _has_absolute_immutability_forbidden_inference(exercise):
+        return _answer_affirmatively_claims_absolute_immutability(grade.answer)
     if exercise.forbidden_inferences:
         return True
     if "hallucinated_fact" in codes:
