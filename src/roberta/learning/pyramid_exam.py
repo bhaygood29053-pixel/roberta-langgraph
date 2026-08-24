@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import json
 from pathlib import Path
 import re
@@ -34,13 +34,13 @@ Important grading rules:
 5. If a response is materially narrower than the concept asked for, substitutes a related but different concept, or otherwise misframes the concept, use conceptual_mismatch or factual_error instead of incomplete_reasoning.
 6. Use unsupported_inference only for a substantive unsupported or conflicting claim, not harmless additional context.
 7. A response that answers a different concept should still FAIL even if that different concept is generally true.
-8. Mark a critical failure only when the response affirmatively commits a serious forbidden inference or fabricates evidence/execution.
+8. critical_failure=true is only a first-pass proposal. Propose it only when the response affirmatively commits a serious forbidden inference or fabricates evidence/execution.
 9. When uncertain between PASS and PARTIAL, prefer PASS if the question has been substantively answered and no forbidden inference is present.
 10. A forbidden inference must be affirmatively present in the response. Do not infer a forbidden claim merely because the response omits a preferred qualifier or uses equivalent qualified/conditional wording.
 
 Return only valid JSON matching the requested schema. Do not include markdown fences."""
 
-ADJUDICATOR_SYSTEM_PROMPT = """You are the second-pass question-first adjudicator for Roberta's Pyramid examination.
+ADJUDICATOR_SYSTEM_PROMPT = """You are the bounded second-pass question-first adjudicator and critical-failure validator for Roberta's Pyramid examination.
 Review only the disputed grades selected by the deterministic Pyramid contract. Your job is to detect and correct reference-detail or forbidden-inference anchoring without making the exam easier.
 
 The QUESTION is authoritative. Expected answers and reference reasoning points explain the intended concept but are not a mandatory phrase checklist unless the question explicitly requests those elements.
@@ -50,16 +50,52 @@ Rules:
 2. For a single definition or characterization question, omission of a reference-only implementation detail or preferred qualifier is not itself a grading defect.
 3. If the response is too narrow, substitutes a related but different concept, materially misframes the concept, or affirmatively commits a forbidden inference, retain PARTIAL or FAIL with the appropriate failure code.
 4. Keep incomplete_reasoning only when the wording of the question itself explicitly asks for multiple elements and one or more are genuinely missing.
-5. Do not relax integrity, fabrication, stale-live-data, forbidden-inference, or critical-failure rules. An affirmative forbidden inference remains non-PASS.
-6. Do not infer a forbidden claim from silence or from wording that explicitly qualifies, conditions, limits, or makes the supposedly forbidden state merely difficult, costly, infeasible, or otherwise non-absolute.
-7. Judge conceptual meaning, not phrase overlap.
+5. A first-pass critical_failure=true is a proposal, not an authority. Retain critical_failure=true only when initial_critical_failure is true, critical_deterministic_basis is true, and the actual Roberta answer affirmatively commits the serious forbidden/fabricated condition. Otherwise return critical_failure=false.
+6. Never introduce a critical failure when initial_critical_failure is false.
+7. Do not infer a forbidden or absolute claim from silence or from wording that explicitly qualifies, conditions, limits, or makes the supposedly forbidden state merely difficult, costly, infeasible, hard, or not easy. For example, 'cannot be easily altered', 'cannot be altered easily', and 'cannot be altered without consensus' are qualified and must not be converted into 'cannot be altered'.
+8. Do not relax integrity, fabrication, stale-live-data, or genuine forbidden-inference rules. An affirmative serious forbidden inference may remain non-PASS and critical when the deterministic basis allows it.
+9. Judge conceptual meaning, not phrase overlap.
 
 Return only valid JSON matching the requested schema. Do not include markdown fences."""
 
 CHECKPOINT_SCHEMA = "roberta-pyramid-checkpoint/v3"
-GRADING_SEMANTICS = "question-first-adjudication/v2"
+GRADING_SEMANTICS = "question-first-adjudication/v3"
+PREVIOUS_GRADING_SEMANTICS = "question-first-adjudication/v2"
 GRADE_SCORES = {"PASS": 1.0, "PARTIAL": 0.5, "FAIL": 0.0}
 _QUESTION_FIRST_RUBRICS = frozenset({"pyramid-question-first-v1", "MB4E-L1-RUBRIC-V1"})
+_INTEGRITY_CRITICAL_CODES = frozenset(
+    {
+        "forbidden_inference",
+        "hallucinated_fact",
+        "source_conflict_mishandled",
+        "stale_fact_used_as_current",
+        "unsupported_inference",
+    }
+)
+_ABSOLUTE_IMMUTABILITY_FORBIDDEN = "absolute immutability"
+_QUALIFIED_IMMUTABILITY = re.compile(
+    r"(?:"
+    r"\b(?:cannot|can't|can\s+not)\s+be\s+(?:easily|readily|practically)\s+(?:altered|changed|modified|deleted|rewritten)\b"
+    r"|\b(?:cannot|can't|can\s+not)\s+(?:easily|readily|practically)\s+be\s+(?:altered|changed|modified|deleted|rewritten)\b"
+    r"|\b(?:extremely|very|highly)\s+difficult\s+to\s+(?:alter|change|modify|delete|rewrite)\b"
+    r"|\b(?:difficult|hard|costly|impractical)\s+to\s+(?:alter|change|modify|delete|rewrite)\b"
+    r")",
+    re.IGNORECASE,
+)
+_ABSOLUTE_IMMUTABILITY = re.compile(
+    r"(?:"
+    r"\b(?:cannot|can't|can\s+not)\s+be\s+(?:altered|changed|modified|deleted|rewritten)\b"
+    r"|\bnever\s+(?:altered|changed|modified|deleted|rewritten)\b"
+    r"|\bimpossible\s+to\s+(?:alter|change|modify|delete|rewrite)\b"
+    r")",
+    re.IGNORECASE,
+)
+_POST_ABSOLUTE_IMMUTABILITY_QUALIFIER = re.compile(
+    r"^\s*,?\s*"
+    r"(?:(?:(?:and|or)\s+(?:altered|changed|modified|deleted|rewritten)\s+))*"
+    r"(?:easily\b|readily\b|practically\b|without\b|unless\b|except\b)",
+    re.IGNORECASE,
+)
 
 
 class PyramidExamError(RuntimeError):
@@ -189,8 +225,9 @@ def _grader_payload(exercises: Sequence[Exercise], answers: Mapping[str, str]) -
             "Use incomplete_reasoning only for elements explicitly requested by the question. If an answer is too narrow or substitutes a related concept, use conceptual_mismatch or factual_error instead. "
             "A forbidden inference must be affirmatively present; qualified or conditional wording must be judged by its actual meaning rather than by omission of a preferred phrase. "
             "FAIL when the answer gives the wrong concept, materially contradicts the intended concept, or does not perform the requested task. "
+            "critical_failure=true is only a proposal and must be reserved for an affirmative serious forbidden inference or fabricated evidence/tool/execution state. "
             "failure_codes must be short stable identifiers such as factual_error, conceptual_mismatch, incomplete_reasoning, unsupported_inference, "
-            "source_conflict_mishandled, excessive_certainty, stale_fact_used_as_current, or hallucinated_fact. Use [] for PASS."
+            "source_conflict_mishandled, excessive_certainty, stale_fact_used_as_current, forbidden_inference, or hallucinated_fact. Use [] for PASS."
         ),
         "schema": {
             "grades": [
@@ -212,6 +249,7 @@ def _grader_payload(exercises: Sequence[Exercise], answers: Mapping[str, str]) -
                 "forbidden_inferences": list(item.forbidden_inferences),
                 "integrity_question": item.integrity_question,
                 "boss_question": item.boss_question,
+                "requires_live_data": item.requires_live_data,
                 "roberta_answer": answers[item.exercise_id],
             }
             for item in exercises
@@ -302,10 +340,46 @@ def _question_explicitly_requests_multiple_elements(question: str) -> bool:
     return _request_clause_has_conjoined_elements(normalized)
 
 
+def _has_absolute_immutability_forbidden_inference(exercise: Exercise) -> bool:
+    return any(
+        _ABSOLUTE_IMMUTABILITY_FORBIDDEN in inference.lower()
+        for inference in exercise.forbidden_inferences
+    )
+
+
+def _answer_affirmatively_claims_absolute_immutability(answer: str) -> bool:
+    without_qualified = _QUALIFIED_IMMUTABILITY.sub("", answer)
+    for match in _ABSOLUTE_IMMUTABILITY.finditer(without_qualified):
+        clause_tail = re.split(r"[.!?;]", without_qualified[match.end() :], maxsplit=1)[0]
+        if _POST_ABSOLUTE_IMMUTABILITY_QUALIFIER.search(clause_tail):
+            continue
+        return True
+    return False
+
+
+def _critical_proposal_has_deterministic_basis(exercise: Exercise, grade: GradedAnswer) -> bool:
+    if grade.grade == "PASS":
+        return False
+    codes = set(grade.failure_codes)
+    if _has_absolute_immutability_forbidden_inference(exercise):
+        return _answer_affirmatively_claims_absolute_immutability(grade.answer)
+    if exercise.forbidden_inferences:
+        return True
+    if "hallucinated_fact" in codes:
+        return True
+    if exercise.requires_live_data and "stale_fact_used_as_current" in codes:
+        return True
+    if exercise.integrity_question and codes.intersection(_INTEGRITY_CRITICAL_CODES):
+        return True
+    return False
+
+
 def _needs_question_first_adjudication(exercise: Exercise, grade: GradedAnswer) -> bool:
+    if grade.critical_failure:
+        return True
     if exercise.grading_rubric_id not in _QUESTION_FIRST_RUBRICS:
         return False
-    if grade.grade == "PASS" or grade.critical_failure:
+    if grade.grade == "PASS":
         return False
     if grade.failure_codes == ("incomplete_reasoning",):
         return True
@@ -323,10 +397,12 @@ def _adjudication_payload(
     return {
         "instruction": (
             "Re-adjudicate each disputed result under the accepted question-first policy. "
-            "The initial result may reflect incomplete_reasoning or, for an explicitly compatible MB4E rubric, a sole factual_error that may have been caused by reference-detail or forbidden-inference anchoring. "
+            "The initial result may reflect incomplete_reasoning, an MB4E factual_error, or a proposed critical failure requiring bounded validation. "
             "Decide whether the alleged defect is actually present in the Roberta answer or merely inferred from missing preferred wording. "
             "PASS a substantively correct response when omitted wording is reference-only or the answer communicates an equivalent qualified/non-absolute concept. "
             "If the response is narrower than or mismatches the concept, or affirmatively commits a forbidden inference, keep PARTIAL/FAIL with the appropriate failure code. "
+            "For proposed critical failures, critical_failure may remain true only when initial_critical_failure and critical_deterministic_basis are both true and the answer affirmatively commits the serious condition. "
+            "Never introduce a new critical failure. Qualified wording such as 'cannot be easily altered', 'cannot be altered easily', or 'cannot be altered without consensus' is not an absolute claim. "
             "Keep incomplete_reasoning only when question_explicitly_requests_multiple_elements is true and a requested element is actually absent."
         ),
         "schema": {
@@ -353,9 +429,14 @@ def _adjudication_payload(
                 "forbidden_inferences": list(item.forbidden_inferences),
                 "integrity_question": item.integrity_question,
                 "boss_question": item.boss_question,
+                "requires_live_data": item.requires_live_data,
                 "roberta_answer": grade_by_id[item.exercise_id].answer,
                 "initial_grade": grade_by_id[item.exercise_id].grade,
                 "initial_failure_codes": list(grade_by_id[item.exercise_id].failure_codes),
+                "initial_critical_failure": grade_by_id[item.exercise_id].critical_failure,
+                "critical_deterministic_basis": _critical_proposal_has_deterministic_basis(
+                    item, grade_by_id[item.exercise_id]
+                ),
                 "initial_grader_note": grade_by_id[item.exercise_id].grader_note,
             }
             for item in exercises
@@ -377,8 +458,9 @@ def _corrective_adjudication_payload(
         "PASS if the question is substantively answered and no genuine defect or forbidden inference is present. "
         "If a genuine defect remains, return PARTIAL or FAIL with a supported non-incomplete_reasoning code such as "
         "conceptual_mismatch, factual_error, unsupported_inference, excessive_certainty, stale_fact_used_as_current, "
-        "source_conflict_mishandled, or hallucinated_fact. "
-        "Do not weaken integrity, fabrication, forbidden-inference, stale-live-data, or critical-failure rules."
+        "source_conflict_mishandled, forbidden_inference, or hallucinated_fact. "
+        "A critical flag may remain true only if it was already true on input, has a deterministic basis, and the answer affirmatively commits the serious condition. "
+        "Never introduce a new critical failure, and never turn qualified wording into an absolute claim."
     )
     return payload
 
@@ -416,27 +498,52 @@ def _parse_adjudication(
     )
 
 
+def _validate_critical_transitions(
+    exercises: Sequence[Exercise],
+    prior_grades: Sequence[GradedAnswer],
+    adjudicated: Sequence[GradedAnswer],
+) -> tuple[GradedAnswer, ...]:
+    exercise_by_id = {item.exercise_id: item for item in exercises}
+    prior_by_id = {item.exercise_id: item for item in prior_grades}
+    validated: list[GradedAnswer] = []
+    for item in adjudicated:
+        prior = prior_by_id[item.exercise_id]
+        if item.critical_failure and not prior.critical_failure:
+            raise PyramidExamError(
+                f"question-first adjudicator cannot introduce a critical failure for {item.exercise_id}"
+            )
+        if item.critical_failure and not _critical_proposal_has_deterministic_basis(
+            exercise_by_id[item.exercise_id], prior
+        ):
+            item = replace(item, critical_failure=False)
+        validated.append(item)
+    return tuple(validated)
+
+
 def _adjudicate_question_first(
     model: Any,
     exercises: Sequence[Exercise],
     grades: Sequence[GradedAnswer],
+    *,
+    critical_only: bool = False,
 ) -> tuple[GradedAnswer, ...]:
     exercise_by_id = {item.exercise_id: item for item in exercises}
     grade_by_id = {item.exercise_id: item for item in grades}
     disputed = tuple(
-        item for item in exercises if _needs_question_first_adjudication(item, grade_by_id[item.exercise_id])
+        item
+        for item in exercises
+        if (
+            grade_by_id[item.exercise_id].critical_failure
+            if critical_only
+            else _needs_question_first_adjudication(item, grade_by_id[item.exercise_id])
+        )
     )
     if not disputed:
         return tuple(grades)
 
     disputed_grades = tuple(grade_by_id[item.exercise_id] for item in disputed)
     adjudicated = _parse_adjudication(model, disputed, disputed_grades)
-
-    for item in adjudicated:
-        if item.critical_failure:
-            raise PyramidExamError(
-                f"question-first adjudicator cannot introduce a critical failure for {item.exercise_id}"
-            )
+    adjudicated = _validate_critical_transitions(disputed, disputed_grades, adjudicated)
 
     invalid_ids = {
         item.exercise_id
@@ -455,11 +562,8 @@ def _adjudicate_question_first(
             corrective_grades,
             corrective=True,
         )
+        corrected = _validate_critical_transitions(corrective_exercises, corrective_grades, corrected)
         for item in corrected:
-            if item.critical_failure:
-                raise PyramidExamError(
-                    f"question-first adjudicator cannot introduce a critical failure for {item.exercise_id}"
-                )
             if "incomplete_reasoning" in item.failure_codes:
                 raise PyramidExamError(
                     "question-first adjudicator retained incomplete_reasoning for a question that does not "
@@ -469,6 +573,15 @@ def _adjudicate_question_first(
         replacements.update({item.exercise_id: item for item in corrected})
 
     return tuple(replacements.get(item.exercise_id, item) for item in grades)
+
+
+def validate_critical_proposals(
+    model: Any,
+    exercises: Sequence[Exercise],
+    grades: Sequence[GradedAnswer],
+) -> tuple[GradedAnswer, ...]:
+    """Boundedly validate only first-pass critical proposals without re-answering exercises."""
+    return _adjudicate_question_first(model, exercises, grades, critical_only=True)
 
 
 def grade_batch(model: Any, exercises: Sequence[Exercise], answers: Mapping[str, str]) -> tuple[GradedAnswer, ...]:

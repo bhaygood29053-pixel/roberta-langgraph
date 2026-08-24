@@ -119,52 +119,78 @@ def test_real_mb4e_immutability_regressions_correct_false_positives_without_weak
                     )
                 return _Response(json.dumps({"grades": grades}))
 
-            assert {item["exercise_id"] for item in payload["items"]} == {
-                "MB4E-L01-00841",
-                "MB4E-L01-00843",
-                "MB4E-L01-00844",
-                "MB4E-L01-00847",
-            }
+            expected_ids = {case[0].exercise_id for case in cases}
+            assert {item["exercise_id"] for item in payload["items"]} == expected_ids
+            by_id = {item["exercise_id"]: item for item in payload["items"]}
             for item in payload["items"]:
                 assert item["grading_rubric_id"] == "MB4E-L1-RUBRIC-V1"
                 assert item["forbidden_inferences"] == ["Do not claim absolute immutability."]
 
-            return _Response(
-                json.dumps(
+            for exercise_id in (
+                "MB4E-L01-00845",
+                "MB4E-L01-00848",
+                "MB4E-L01-00856",
+                "MB4E-L01-00857",
+                "MB4E-L01-00858",
+            ):
+                assert by_id[exercise_id]["initial_critical_failure"] is True
+                assert by_id[exercise_id]["critical_deterministic_basis"] is True
+
+            for exercise_id in (
+                "MB4E-L01-00841",
+                "MB4E-L01-00843",
+                "MB4E-L01-00844",
+                "MB4E-L01-00847",
+            ):
+                assert by_id[exercise_id]["initial_critical_failure"] is False
+
+            grades = [
+                {
+                    "exercise_id": "MB4E-L01-00841",
+                    "grade": "PASS",
+                    "failure_codes": [],
+                    "critical_failure": False,
+                    "grader_note": "The answer explicitly conditions alteration on enormous computational effort and is non-absolute.",
+                },
+                {
+                    "exercise_id": "MB4E-L01-00843",
+                    "grade": "FAIL",
+                    "failure_codes": ["factual_error"],
+                    "critical_failure": False,
+                    "grader_note": "The answer affirmatively says the data cannot be altered or deleted.",
+                },
+                {
+                    "exercise_id": "MB4E-L01-00844",
+                    "grade": "FAIL",
+                    "failure_codes": ["factual_error"],
+                    "critical_failure": False,
+                    "grader_note": "The answer overstates the benefit as preventing retroactive changes without qualification.",
+                },
+                {
+                    "exercise_id": "MB4E-L01-00847",
+                    "grade": "PASS",
+                    "failure_codes": [],
+                    "critical_failure": False,
+                    "grader_note": "Extremely difficult to alter is a practical, non-absolute characterization.",
+                },
+            ]
+            for exercise_id in (
+                "MB4E-L01-00845",
+                "MB4E-L01-00848",
+                "MB4E-L01-00856",
+                "MB4E-L01-00857",
+                "MB4E-L01-00858",
+            ):
+                grades.append(
                     {
-                        "grades": [
-                            {
-                                "exercise_id": "MB4E-L01-00841",
-                                "grade": "PASS",
-                                "failure_codes": [],
-                                "critical_failure": False,
-                                "grader_note": "The answer explicitly conditions alteration on enormous computational effort and is non-absolute.",
-                            },
-                            {
-                                "exercise_id": "MB4E-L01-00843",
-                                "grade": "FAIL",
-                                "failure_codes": ["factual_error"],
-                                "critical_failure": False,
-                                "grader_note": "The answer affirmatively says the data cannot be altered or deleted.",
-                            },
-                            {
-                                "exercise_id": "MB4E-L01-00844",
-                                "grade": "FAIL",
-                                "failure_codes": ["factual_error"],
-                                "critical_failure": False,
-                                "grader_note": "The answer overstates the benefit as preventing retroactive changes without qualification.",
-                            },
-                            {
-                                "exercise_id": "MB4E-L01-00847",
-                                "grade": "PASS",
-                                "failure_codes": [],
-                                "critical_failure": False,
-                                "grader_note": "Extremely difficult to alter is a practical, non-absolute characterization.",
-                            },
-                        ]
+                        "exercise_id": exercise_id,
+                        "grade": "FAIL",
+                        "failure_codes": ["factual_error"],
+                        "critical_failure": True,
+                        "grader_note": "The answer affirmatively claims absolute immutability and the explicit prohibition applies.",
                     }
                 )
-            )
+            return _Response(json.dumps({"grades": grades}))
 
     model = InitialAnchoringThenQuestionFirstModel()
     grades = grade_batch(model, exercises, answers)
@@ -183,9 +209,24 @@ def test_real_mb4e_immutability_regressions_correct_false_positives_without_weak
         "MB4E-L01-00858",
     ):
         assert by_id[exercise_id].grade != "PASS"
+    for exercise_id in (
+        "MB4E-L01-00845",
+        "MB4E-L01-00848",
+        "MB4E-L01-00856",
+        "MB4E-L01-00857",
+        "MB4E-L01-00858",
+    ):
+        assert by_id[exercise_id].critical_failure is True
+    for exercise_id in (
+        "MB4E-L01-00841",
+        "MB4E-L01-00843",
+        "MB4E-L01-00844",
+        "MB4E-L01-00847",
+    ):
+        assert by_id[exercise_id].critical_failure is False
 
 
-def test_old_v1_checkpoint_is_regraded_under_v2_semantics(tmp_path):
+def test_old_v1_checkpoint_is_regraded_under_current_semantics(tmp_path):
     exercise = Exercise(
         exercise_id="q1",
         curriculum_id="c1",
@@ -258,4 +299,4 @@ def test_old_v1_checkpoint_is_regraded_under_v2_semantics(tmp_path):
     assert outcome.graded_answers[0].grade == "PASS"
     rewritten = json.loads(checkpoint.read_text(encoding="utf-8"))
     assert rewritten["grading_semantics"] == GRADING_SEMANTICS
-    assert GRADING_SEMANTICS == "question-first-adjudication/v2"
+    assert GRADING_SEMANTICS == "question-first-adjudication/v3"
