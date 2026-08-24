@@ -95,6 +95,7 @@ def test_migration_preserves_historical_semantics_and_explicit_pdf_page_basis(tm
     assert report.question_text_identical is True
     assert report.semantic_fields_identical is True
     assert (output / "README.md").read_text(encoding="utf-8") == "legacy support file\n"
+    assert json.loads((output / "migration_report.json").read_text(encoding="utf-8")) == report.to_mapping()
 
     manifest, exercises = validate_package(output)
     assert manifest["curriculum_id"] == LEGACY_CURRICULUM_ID
@@ -184,6 +185,27 @@ def test_migration_rejects_output_nested_inside_historical_package(tmp_path: Pat
         )
 
     assert not nested_output.exists()
+
+
+def test_migration_report_write_failure_does_not_publish_partial_output(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    legacy = _write_legacy_package(tmp_path)
+    output = tmp_path / "migrated"
+    original_write_text = Path.write_text
+
+    def fail_report_write(self: Path, data: str, *args: object, **kwargs: object) -> int:
+        if self.name == "migration_report.json":
+            raise OSError("simulated report write failure")
+        return original_write_text(self, data, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "write_text", fail_report_write)
+
+    with pytest.raises(OSError, match="simulated report write failure"):
+        migrate_legacy_mb4e_curriculum(curriculum_dir=legacy, output_dir=output)
+
+    assert not output.exists()
 
 
 def test_provenance_rejects_ambiguous_mixed_page_basis(tmp_path: Path) -> None:
