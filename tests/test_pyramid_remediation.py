@@ -106,6 +106,23 @@ def test_cumulative_exclusion_blocks_prior_checkpoint_questions(tmp_path):
     assert {item.exercise_id for item in practice} == {"q4", "q5"}
 
 
+def test_seen_exercise_loading_rejects_missing_or_empty_checkpoint_directory(tmp_path):
+    with pytest.raises(ValueError, match="checkpoint directory does not exist"):
+        load_seen_exercise_ids((tmp_path / "missing",))
+
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    with pytest.raises(ValueError, match="contains no Pyramid checkpoints"):
+        load_seen_exercise_ids((empty,))
+
+
+def test_seen_exercise_loading_rejects_malformed_checkpoint(tmp_path):
+    checkpoint = tmp_path / "level_01_batch_0001.json"
+    checkpoint.write_text("not-json", encoding="utf-8")
+    with pytest.raises(ValueError, match="cannot read exclusion checkpoint"):
+        load_seen_exercise_ids((tmp_path,))
+
+
 def test_fresh_practice_fails_closed_when_cumulative_history_exhausts_weakness(tmp_path):
     checkpoint = tmp_path / "level_01_batch_0001.json"
     _write_checkpoint(checkpoint, [
