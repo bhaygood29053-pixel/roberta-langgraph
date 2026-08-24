@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
+import hashlib
 import json
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
@@ -29,6 +30,15 @@ GROUNDED_PRACTICE_CHECKPOINT_NAMESPACE = "checkpoints_grounded_v1"
 MAX_CONTEXT_ANCHORS_PER_WEAKNESS = 24
 MAX_CONTEXT_CHARS_PER_WEAKNESS = 40_000
 
+_AUTHORITY_FIELDS = (
+    "phase8_candidate_creation_authorized",
+    "source_truth_authorized",
+    "live_state_authorized",
+    "memory_promotion_authorized",
+    "retention_authorized",
+    "governance_mutation_authorized",
+    "execution_authorized",
+)
 
 WeaknessKey = tuple[str, str | None]
 
@@ -98,6 +108,66 @@ def _normalized_subconcept(value: object) -> str | None:
     return value
 
 
+def _canonical_hash(value: object) -> str:
+    try:
+        payload = json.dumps(
+            value,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        ).encode("utf-8")
+    except (TypeError, ValueError) as exc:
+        raise TargetedPyramidPracticeError(
+            "source-grounded reconstruction must be canonical JSON-compatible data"
+        ) from exc
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _validate_reconstruction_integrity(
+    row: Mapping[str, object],
+    *,
+    exercise_id: str,
+) -> None:
+    """Verify the exact generated reconstruction before any source text is injected."""
+
+    reconstruction_hash = row.get("reconstruction_hash")
+    reconstruction_id = row.get("reconstruction_id")
+    if not isinstance(reconstruction_hash, str) or len(reconstruction_hash) != 64:
+        raise TargetedPyramidPracticeError(
+            f"reconstruction hash is invalid for {exercise_id}"
+        )
+    if reconstruction_id != f"pyrrecon_{reconstruction_hash}":
+        raise TargetedPyramidPracticeError(
+            f"reconstruction id/hash binding is invalid for {exercise_id}"
+        )
+
+    material = dict(row)
+    material.pop("reconstruction_id", None)
+    material.pop("reconstruction_hash", None)
+    if _canonical_hash(material) != reconstruction_hash:
+        raise TargetedPyramidPracticeError(
+            f"source-grounded reconstruction content hash is invalid for {exercise_id}"
+        )
+
+    source_content_hash = row.get("source_content_hash")
+    source_transcript_sha256 = row.get("source_transcript_sha256")
+    if (
+        not isinstance(source_content_hash, str)
+        or not isinstance(source_transcript_sha256, str)
+        or source_content_hash != source_transcript_sha256
+    ):
+        raise TargetedPyramidPracticeError(
+            f"reconstruction source content is not bound to the pinned transcript for {exercise_id}"
+        )
+
+    for field in _AUTHORITY_FIELDS:
+        if row.get(field) is not False:
+            raise TargetedPyramidPracticeError(
+                f"source-grounded reconstruction cannot authorize {field} for {exercise_id}"
+            )
+
+
 def load_grounded_practice_contexts(
     *,
     curriculum_dir: str | Path,
@@ -106,9 +176,10 @@ def load_grounded_practice_contexts(
 ) -> tuple[GroundedPracticeContext, ...]:
     """Load bounded source excerpts for the exact weaknesses under targeted practice.
 
-    Reconstruction rows are rebound to the validated curriculum before their source
-    excerpts can reach the answer model. Only source evidence is carried forward;
-    fresh exercise expected answers and grading reference points are never included.
+    Reconstruction rows are rebound to the validated curriculum and their canonical
+    reconstruction identities are revalidated before source excerpts can reach the
+    answer model. Only source evidence is carried forward; fresh exercise expected
+    answers and grading reference points are never included.
     """
 
     manifest, bank = validate_package(curriculum_dir)
@@ -142,6 +213,8 @@ def load_grounded_practice_contexts(
 
         if exercise_id not in expected_ids:
             continue
+        _validate_reconstruction_integrity(row, exercise_id=exercise_id)
+
         exercise = by_id.get(exercise_id)
         if exercise is None:
             raise TargetedPyramidPracticeError(
@@ -180,6 +253,11 @@ def load_grounded_practice_contexts(
                 f"reconstruction concept/question binding does not match curriculum exercise {exercise_id}"
             )
 
+        source_id = row.get("source_id")
+        if not isinstance(source_id, str) or not source_id:
+            raise TargetedPyramidPracticeError(
+                f"reconstruction source_id is invalid for {exercise_id}"
+            )
         anchors = row.get("evidence_anchors")
         if not isinstance(anchors, list) or not anchors:
             raise TargetedPyramidPracticeError(
@@ -202,11 +280,21 @@ def load_grounded_practice_contexts(
                 raise TargetedPyramidPracticeError(
                     f"reconstruction evidence text is missing for {exercise_id}"
                 )
+            if (
+                anchor.get("source_id") != source_id
+                or anchor.get("source_approval_status") != "approved"
+            ):
+                raise TargetedPyramidPracticeError(
+                    f"reconstruction evidence is outside the approved canonical source for {exercise_id}"
+                )
             if isinstance(fusion_rank, bool) or not isinstance(fusion_rank, int) or fusion_rank <= 0:
                 raise TargetedPyramidPracticeError(
                     f"reconstruction evidence fusion_rank is invalid for {exercise_id}"
                 )
-            grouped[key].append((fusion_rank, anchor_id, text))
+            # Anchor ids are packet-local (commonly E1..E5), so namespace them by
+            # the weak exercise before aggregating multiple reconstruction packets.
+            prompt_anchor_id = f"{exercise_id}:{anchor_id}"
+            grouped[key].append((fusion_rank, prompt_anchor_id, text))
 
     if seen_ids != expected_ids:
         missing = sorted(expected_ids - seen_ids)
@@ -228,7 +316,9 @@ def load_grounded_practice_contexts(
                 continue
             if len(selected) >= MAX_CONTEXT_ANCHORS_PER_WEAKNESS:
                 break
-            if selected and total_chars + len(text) > MAX_CONTEXT_CHARS_PER_WEAKNESS:
+            if len(text) > MAX_CONTEXT_CHARS_PER_WEAKNESS:
+                continue
+            if total_chars + len(text) > MAX_CONTEXT_CHARS_PER_WEAKNESS:
                 continue
             selected.append((anchor_id, text))
             seen_text.add(text)
