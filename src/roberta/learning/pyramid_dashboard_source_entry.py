@@ -5,7 +5,8 @@ from typing import Mapping
 
 from roberta.learning import pyramid_dashboard as dashboard
 from roberta.learning import pyramid_dashboard_entry as avatar_entry
-from roberta.learning.dashboard_source_mastery import build_source_mastery, insert_source_mastery_panel
+from roberta.learning.dashboard_source_mastery import build_source_mastery
+from roberta.learning.dashboard_source_chapter_learning import enhance_source_mastery, insert_source_mastery_panel
 
 
 # Preserve the original read-only ledger loader and the existing full-color
@@ -17,7 +18,7 @@ _AVATAR_RENDER = avatar_entry.render_dashboard
 
 def load_dashboard_data(path: Path, curriculum_id: str | None = None) -> dict[str, object]:
     data = _ORIGINAL_LOAD(path, curriculum_id)
-    data["source_mastery"] = build_source_mastery(data)
+    data["source_mastery"] = enhance_source_mastery(build_source_mastery(data))
     return data
 
 
@@ -27,7 +28,7 @@ def render_dashboard(*args: object, **kwargs: object) -> str:
     mastery: Mapping[str, object]
     if isinstance(data, Mapping):
         raw = data.get("source_mastery")
-        mastery = raw if isinstance(raw, Mapping) else build_source_mastery(data)
+        mastery = enhance_source_mastery(raw) if isinstance(raw, Mapping) else enhance_source_mastery(build_source_mastery(data))
     else:
         mastery = {"available": False, "reason": "Dashboard data was unavailable."}
     return insert_source_mastery_panel(html, mastery)
