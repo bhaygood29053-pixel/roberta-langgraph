@@ -26,8 +26,15 @@ def test_dashboard_reads_training_ledger_without_mutation(tmp_path) -> None:
 
     assert before == after
     assert data["highest_level"] == 1
+    assert data["latest_level"] == 1
+    assert data["latest_accuracy"] == 0.9
+    assert data["failure_event_total"] == 3
     assert data["failure_modes"][0]["failure_code"] == "F03"
+
     html = render_dashboard(data, path)
     assert "Roberta Learning Command Center" in html
     assert "20-Level Pyramid" in html
+    assert "PYRAMID LEDGER" in html
+    assert "/api/summary" in html
+    assert "/assets/roberta.svg" in html
     assert "F03" in html
