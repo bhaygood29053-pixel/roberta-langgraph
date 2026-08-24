@@ -26,6 +26,7 @@ from .pyramid_source_reconstruction import (
 
 
 GROUNDED_PRACTICE_CONTEXT_CONTRACT = "roberta-pyramid-targeted-practice-grounded-context/v1"
+GROUNDED_PRACTICE_CHECKPOINT_BINDING_CONTRACT = "roberta-pyramid-targeted-practice-checkpoint-binding/v1"
 GROUNDED_PRACTICE_CHECKPOINT_NAMESPACE = "checkpoints_grounded_v1"
 MAX_CONTEXT_ANCHORS_PER_WEAKNESS = 24
 MAX_CONTEXT_CHARS_PER_WEAKNESS = 40_000
@@ -291,8 +292,8 @@ def load_grounded_practice_contexts(
                 raise TargetedPyramidPracticeError(
                     f"reconstruction evidence fusion_rank is invalid for {exercise_id}"
                 )
-            # Anchor ids are packet-local (commonly E1..E5), so namespace them by
-            # the weak exercise before aggregating multiple reconstruction packets.
+            # Anchor ids are packet-local/content-addressed within one packet; namespace
+            # them by weak exercise before aggregating multiple reconstruction packets.
             prompt_anchor_id = f"{exercise_id}:{anchor_id}"
             grouped[key].append((fusion_rank, prompt_anchor_id, text))
 
@@ -336,6 +337,61 @@ def load_grounded_practice_contexts(
             )
         )
     return tuple(contexts)
+
+
+def grounded_practice_binding(
+    prepared: PreparedTargetedPractice,
+    contexts: Sequence[GroundedPracticeContext],
+) -> str:
+    """Content-address the exact fresh practice set and exact injected evidence."""
+
+    required_keys = {(item.concept, item.subconcept) for item in prepared.exercises}
+    supplied_keys = {item.key for item in contexts}
+    if len(supplied_keys) != len(contexts) or supplied_keys != required_keys:
+        raise TargetedPyramidPracticeError(
+            "grounded practice checkpoint binding requires exact unique context coverage"
+        )
+
+    material = {
+        "contract": GROUNDED_PRACTICE_CHECKPOINT_BINDING_CONTRACT,
+        "curriculum_id": prepared.curriculum_id,
+        "level": prepared.level,
+        "original_weak_ids": list(prepared.original_weak_ids),
+        "practice_exercises": [
+            {
+                "exercise_id": item.exercise_id,
+                "level": item.level,
+                "concept": item.concept,
+                "subconcept": item.subconcept,
+                "question": item.question,
+                "source_refs": list(item.source_refs),
+                "integrity_question": item.integrity_question,
+                "boss_question": item.boss_question,
+            }
+            for item in prepared.exercises
+        ],
+        "grounded_contexts": [
+            {
+                "concept": item.concept,
+                "subconcept": item.subconcept,
+                "anchors": [
+                    {"anchor_id": anchor_id, "text": text}
+                    for anchor_id, text in item.anchors
+                ],
+            }
+            for item in sorted(contexts, key=lambda value: (value.concept, value.subconcept or ""))
+        ],
+    }
+    return _canonical_hash(material)
+
+
+def grounded_practice_checkpoint_dir(
+    output_dir: str | Path,
+    prepared: PreparedTargetedPractice,
+    contexts: Sequence[GroundedPracticeContext],
+) -> Path:
+    binding = grounded_practice_binding(prepared, contexts)
+    return Path(output_dir) / GROUNDED_PRACTICE_CHECKPOINT_NAMESPACE / binding
 
 
 class GroundedPracticeAnswerModel:
@@ -436,13 +492,14 @@ def run_grounded_targeted_practice(
         )
 
     output = Path(output_dir)
+    checkpoint_dir = grounded_practice_checkpoint_dir(output, prepared, contexts)
     grounded_answer_model = GroundedPracticeAnswerModel(answer_model, contexts)
     outcome = run_exam(
         exercises=prepared.exercises,
         answer_model=grounded_answer_model,
         grader_model=grader_model,
         batch_size=batch_size,
-        checkpoint_dir=output / GROUNDED_PRACTICE_CHECKPOINT_NAMESPACE,
+        checkpoint_dir=checkpoint_dir,
         progress=progress,
         canonical_exam=False,
     )
