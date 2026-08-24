@@ -36,6 +36,7 @@ roberta-pyramid-supplemental-practice = "roberta.learning.pyramid_supplemental_p
   "sources/*.md",
   "sources/*.gz.b64",
   "source_alignments/*.json",
+  "assets/*.svg",
 ]
 
 [tool.pytest.ini_options]
