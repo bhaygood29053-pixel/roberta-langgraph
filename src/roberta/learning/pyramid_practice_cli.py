@@ -82,6 +82,7 @@ def main() -> int:
     print(f"ACCURACY {report.accuracy:.4f}")
     print(f"REQUIRED_ACCURACY {report.required_accuracy:.4f}")
     print(f"CRITICAL_FAILURES {report.critical_failures}")
+    print(f"ALL_WEAKNESSES_PASSED {str(report.all_weaknesses_passed).lower()}")
     print(f"CRITICAL_WEAKNESSES_PASSED {str(report.critical_weaknesses_passed).lower()}")
     print(f"PRACTICE_PASSED {str(report.practice_passed).lower()}")
     print(f"RESULTS {output / 'practice_results.jsonl'}")
