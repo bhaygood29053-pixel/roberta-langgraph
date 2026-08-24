@@ -82,11 +82,10 @@ def _add_learning_to_chapter_cards(html: str, mastery: Mapping[str, object]) -> 
         if page_start < 0:
             continue
 
-        middle_start = start + len(chapter_prefix)
         replacement = (
             chapter_prefix
-            '<span class="chapter-learning-kicker">WHAT IS BEING LEARNED</span>'
-            f'<span class="chapter-learning-detail">{learning}</span>'
+            + '<span class="chapter-learning-kicker">WHAT IS BEING LEARNED</span>'
+            + f'<span class="chapter-learning-detail">{learning}</span>'
         )
         html = html[:start] + replacement + html[page_start:]
     return html
