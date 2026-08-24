@@ -11,7 +11,12 @@ import shutil
 import tempfile
 from typing import Any, Callable, Mapping, Sequence
 
-from .pyramid import CANONICAL_LEVEL_QUESTION_COUNT, Exercise, select_level_exercises
+from .pyramid import (
+    CANONICAL_LEVEL_QUESTION_COUNT,
+    Exercise,
+    SUPPORTED_CANONICAL_LEVEL_QUESTION_COUNTS,
+    select_level_exercises,
+)
 from .pyramid_exam import (
     CHECKPOINT_SCHEMA,
     GRADING_SEMANTICS,
@@ -138,7 +143,7 @@ def _historical_grade(raw: object, *, exercise_id: str, path: Path) -> GradedAns
         answer=answer,
         grade=grade_name,
         score=score,
-        correct=correct,
+        correct=grade_name == "PASS",
         failure_codes=codes,
         critical_failure=critical,
         grader_note=note,
@@ -250,10 +255,9 @@ def regrade_checkpoints(
         raise PyramidRegradeError("curriculum_id is required")
     if question_count <= 0:
         raise PyramidRegradeError("question_count must be positive")
-    if canonical_exam and question_count != CANONICAL_LEVEL_QUESTION_COUNT:
-        raise PyramidRegradeError(
-            f"canonical regrade requires exactly {CANONICAL_LEVEL_QUESTION_COUNT} questions"
-        )
+    if canonical_exam and question_count not in SUPPORTED_CANONICAL_LEVEL_QUESTION_COUNTS:
+        supported = ", ".join(str(value) for value in SUPPORTED_CANONICAL_LEVEL_QUESTION_COUNTS)
+        raise PyramidRegradeError(f"canonical regrade requires a supported question count: {supported}")
     try:
         exercises = select_level_exercises(
             exercise_bank,
@@ -276,8 +280,6 @@ def regrade_checkpoints(
             f"historical checkpoint batch set mismatch; missing={missing}, extra={extra}"
         )
 
-    # Validate every historical batch and capture its exact bytes before making
-    # any model call or writing any output artifact.
     historical_batches: list[tuple[tuple[Exercise, ...], str, bytes, tuple[GradedAnswer, ...]]] = []
     for batch, filename in zip(batches, expected_names, strict=True):
         data, grades = _load_historical_batch(input_root / filename, batch)
@@ -303,8 +305,9 @@ def regrade_checkpoints(
             progress(done, len(exercises))
 
     new_grades = tuple(grade for _, _, _, grades in new_batches for grade in grades)
-    old_outcome = summarize_exam(exercises, old_grades, canonical_exam=canonical_exam)
-    new_outcome = summarize_exam(exercises, new_grades, canonical_exam=canonical_exam)
+    strict_current_contract = canonical_exam and question_count == CANONICAL_LEVEL_QUESTION_COUNT
+    old_outcome = summarize_exam(exercises, old_grades, canonical_exam=strict_current_contract)
+    new_outcome = summarize_exam(exercises, new_grades, canonical_exam=strict_current_contract)
     transitions = Counter(
         f"{old.grade}->{new.grade}" for old, new in zip(old_grades, new_grades, strict=True)
     )
