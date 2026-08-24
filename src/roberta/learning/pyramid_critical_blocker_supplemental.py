@@ -3,9 +3,11 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+import sqlite3
 from typing import Mapping, Sequence
 
-from .pyramid import Exercise
+from .pyramid import Exercise, MIN_INTEGRITY_ACCURACY, get_level_spec
+from .pyramid_critical_revalidation import CRITICAL_REVALIDATION_CONTRACT
 from .pyramid_exam import GRADING_SEMANTICS
 from .pyramid_practice import TargetedPyramidPracticeError
 
@@ -14,6 +16,117 @@ CRITICAL_BLOCKER_SUPPLEMENTAL_CONTRACT = "roberta-pyramid-critical-blocker-suppl
 CRITICAL_BLOCKER_SUPPLEMENTAL_VERSION = "1.0.0"
 CRITICAL_BLOCKER_SUPPLEMENTAL_ID_PREFIX = "MB4E-SUP2-L01-"
 MB4E_SOURCE_REF = "mastering_blockchain_4e_2023"
+
+
+def validate_critical_blocker_gate(
+    *,
+    revalidation_report_path: str | Path,
+    ledger_path: str | Path,
+    curriculum_id: str,
+    level: int,
+) -> dict[str, object]:
+    """Prove ordinary canonical gates already pass before critical-only remediation.
+
+    The V3 revalidation report supplies corrected accuracy and authoritative remaining critical ids.
+    The canonical ledger supplies integrity and Boss results. The ledger is opened read-only.
+    """
+
+    report_path = Path(revalidation_report_path)
+    try:
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise TargetedPyramidPracticeError(f"cannot read critical revalidation report: {exc}") from exc
+    if not isinstance(report, Mapping):
+        raise TargetedPyramidPracticeError("critical revalidation report must be a JSON object")
+    if report.get("contract") != CRITICAL_REVALIDATION_CONTRACT:
+        raise TargetedPyramidPracticeError("critical revalidation report contract is invalid")
+    if report.get("output_grading_semantics") != GRADING_SEMANTICS:
+        raise TargetedPyramidPracticeError(
+            f"critical revalidation report must output {GRADING_SEMANTICS}"
+        )
+    if report.get("curriculum_id") != curriculum_id or report.get("level") != level:
+        raise TargetedPyramidPracticeError("critical revalidation report does not match curriculum/level")
+    run_seed = report.get("run_seed")
+    new_accuracy = report.get("new_accuracy")
+    new_critical_failures = report.get("new_critical_failures")
+    critical_ids_after = report.get("critical_ids_after")
+    if not isinstance(run_seed, str) or not run_seed:
+        raise TargetedPyramidPracticeError("critical revalidation report run_seed is invalid")
+    if isinstance(new_accuracy, bool) or not isinstance(new_accuracy, (int, float)):
+        raise TargetedPyramidPracticeError("critical revalidation report new_accuracy is invalid")
+    if isinstance(new_critical_failures, bool) or not isinstance(new_critical_failures, int):
+        raise TargetedPyramidPracticeError("critical revalidation report new_critical_failures is invalid")
+    if new_critical_failures <= 0:
+        raise TargetedPyramidPracticeError("critical-blocker mode requires at least one validated critical failure")
+    if (
+        not isinstance(critical_ids_after, list)
+        or len(critical_ids_after) != new_critical_failures
+        or not all(isinstance(item, str) and item for item in critical_ids_after)
+        or len(set(critical_ids_after)) != len(critical_ids_after)
+    ):
+        raise TargetedPyramidPracticeError("critical revalidation report critical_ids_after is invalid")
+    if report.get("new_passed") is not False:
+        raise TargetedPyramidPracticeError("critical-blocker mode is only valid for a still-failed revalidated run")
+
+    required_accuracy = get_level_spec(level).required_accuracy
+    if float(new_accuracy) < required_accuracy:
+        raise TargetedPyramidPracticeError(
+            f"critical-blocker mode requires accuracy >= {required_accuracy:.4f}; got {float(new_accuracy):.4f}"
+        )
+
+    ledger = Path(ledger_path)
+    if not ledger.is_file():
+        raise TargetedPyramidPracticeError(f"Pyramid ledger does not exist: {ledger}")
+    try:
+        connection = sqlite3.connect(f"file:{ledger.resolve()}?mode=ro", uri=True)
+        connection.row_factory = sqlite3.Row
+        rows = connection.execute(
+            """
+            SELECT r.run_id, r.curriculum_id, r.run_seed,
+                   lr.accuracy, lr.integrity_accuracy, lr.boss_passed, lr.critical_failures
+            FROM pyramid_runs AS r
+            JOIN level_results AS lr ON lr.run_id = r.run_id
+            WHERE r.curriculum_id=? AND r.run_seed=? AND lr.level=?
+            """,
+            (curriculum_id, run_seed, level),
+        ).fetchall()
+    except sqlite3.Error as exc:
+        raise TargetedPyramidPracticeError(f"cannot read Pyramid ledger in read-only mode: {exc}") from exc
+    finally:
+        try:
+            connection.close()
+        except (UnboundLocalError, sqlite3.Error):
+            pass
+    if len(rows) != 1:
+        raise TargetedPyramidPracticeError(
+            "critical revalidation report must match exactly one canonical ledger level result"
+        )
+    row = rows[0]
+    integrity_accuracy = float(row["integrity_accuracy"])
+    boss_passed = bool(row["boss_passed"])
+    if integrity_accuracy < MIN_INTEGRITY_ACCURACY:
+        raise TargetedPyramidPracticeError(
+            f"critical-blocker mode requires integrity >= {MIN_INTEGRITY_ACCURACY:.4f}; got {integrity_accuracy:.4f}"
+        )
+    if not boss_passed:
+        raise TargetedPyramidPracticeError("critical-blocker mode requires Boss PASS")
+
+    return {
+        "contract": "roberta-pyramid-critical-blocker-gate/v1",
+        "curriculum_id": curriculum_id,
+        "level": level,
+        "run_id": str(row["run_id"]),
+        "run_seed": run_seed,
+        "required_accuracy": required_accuracy,
+        "revalidated_accuracy": float(new_accuracy),
+        "integrity_accuracy": integrity_accuracy,
+        "boss_passed": boss_passed,
+        "validated_critical_failures": new_critical_failures,
+        "critical_ids": sorted(critical_ids_after),
+        "revalidation_report_sha256": hashlib.sha256(report_path.read_bytes()).hexdigest(),
+        "ledger_path": str(ledger),
+        "ledger_mutated": False,
+    }
 
 
 def mb4e_immutability_critical_blocker_bank(curriculum_id: str) -> tuple[Exercise, ...]:
