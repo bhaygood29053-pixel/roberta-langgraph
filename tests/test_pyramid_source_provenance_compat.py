@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import asdict
+
 import pytest
 
 from roberta.learning import pyramid_source_reconstruction as reconstruction
@@ -52,7 +54,7 @@ def test_basis_aware_adapter_preserves_pdf_pages_and_legacy_source_ref() -> None
     }
 
 
-def test_basis_aware_adapter_preserves_existing_book_page_representation() -> None:
+def test_basis_aware_adapter_preserves_existing_book_locator_public_type_and_shape() -> None:
     install_basis_aware_source_provenance()
 
     locator = reconstruction._locator(
@@ -63,9 +65,14 @@ def test_basis_aware_adapter_preserves_existing_book_page_representation() -> No
         }
     )
 
-    assert locator.page_basis == "book"
-    assert locator.book_pages == (12, 13)
-    assert locator.pdf_pages == ()
+    assert type(locator) is reconstruction.SourceProvenanceLocator
+    assert isinstance(locator, reconstruction.SourceProvenanceLocator)
+    assert not isinstance(locator, BasisAwareSourceProvenanceLocator)
+    assert asdict(locator) == {
+        "chapter": "Chapter 1",
+        "section": "Blocks",
+        "book_pages": (12, 13),
+    }
     assert reconstruction._locator_mapping(locator) == {
         "chapter": "Chapter 1",
         "section": "Blocks",
