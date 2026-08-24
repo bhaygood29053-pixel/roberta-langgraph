@@ -8,7 +8,14 @@ from typing import Any, Callable, Iterable, Mapping, Sequence
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from .pyramid import Exercise, LevelResult, MIN_INTEGRITY_ACCURACY, get_level_spec
+from .pyramid import (
+    CANONICAL_INTEGRITY_QUESTION_COUNT,
+    CANONICAL_LEVEL_QUESTION_COUNT,
+    Exercise,
+    LevelResult,
+    MIN_INTEGRITY_ACCURACY,
+    get_level_spec,
+)
 
 
 ANSWER_SYSTEM_PROMPT = """You are Roberta taking a closed-book blockchain reasoning examination.
@@ -701,10 +708,14 @@ def summarize_exam(
     boss_passed = bool(bosses) and all(ordered[item.exercise_id].grade == "PASS" for item in bosses)
     critical_failures = sum(1 for item in grades if item.critical_failure)
 
-    if canonical_exam and len(exercises) != 1000:
-        raise ValueError("canonical Pyramid levels require 1000 questions")
-    if canonical_exam and len(integrity_exercises) != 50:
-        raise ValueError("canonical Pyramid levels require 50 integrity questions")
+    if canonical_exam and len(exercises) != CANONICAL_LEVEL_QUESTION_COUNT:
+        raise ValueError(
+            f"canonical Pyramid levels require {CANONICAL_LEVEL_QUESTION_COUNT} questions"
+        )
+    if canonical_exam and len(integrity_exercises) != CANONICAL_INTEGRITY_QUESTION_COUNT:
+        raise ValueError(
+            f"canonical Pyramid levels require {CANONICAL_INTEGRITY_QUESTION_COUNT} integrity questions"
+        )
 
     passed = (
         accuracy >= spec.pass_accuracy
