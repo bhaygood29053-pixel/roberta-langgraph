@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 import hashlib
 import json
+import math
 from pathlib import Path
 import shutil
 import tempfile
@@ -95,23 +96,54 @@ def _load_saved_batch(path: Path, exercises: Sequence[Exercise]) -> tuple[Graded
     for row in rows:
         if not isinstance(row, Mapping):
             raise CriticalRevalidationError(f"invalid checkpoint grade entry: {path}")
-        exercise_id = str(row.get("exercise_id", "")).strip()
-        grade_name = str(row.get("grade", "")).strip().upper()
-        if grade_name not in GRADE_SCORES:
+
+        exercise_id_raw = row.get("exercise_id")
+        answer_raw = row.get("answer")
+        grade_raw = row.get("grade")
+        score_raw = row.get("score")
+        correct_raw = row.get("correct")
+        critical_raw = row.get("critical_failure")
+        grader_note_raw = row.get("grader_note")
+
+        if not isinstance(exercise_id_raw, str) or not exercise_id_raw.strip():
+            raise CriticalRevalidationError(f"checkpoint exercise_id must be a non-empty string: {path}")
+        exercise_id = exercise_id_raw.strip()
+        if exercise_id != exercise_id_raw:
+            raise CriticalRevalidationError(f"checkpoint exercise_id must be normalized: {path}")
+        if not isinstance(answer_raw, str) or not answer_raw.strip():
+            raise CriticalRevalidationError(f"checkpoint answer must be a non-empty string: {path}")
+        if not isinstance(grade_raw, str) or grade_raw not in GRADE_SCORES:
             raise CriticalRevalidationError(f"invalid checkpoint grade value: {path}")
-        raw_codes = row.get("failure_codes", [])
+        grade_name = grade_raw
+        if isinstance(score_raw, bool) or not isinstance(score_raw, (int, float)):
+            raise CriticalRevalidationError(f"checkpoint score must be numeric: {path}")
+        score = float(score_raw)
+        if not math.isfinite(score) or score != GRADE_SCORES[grade_name]:
+            raise CriticalRevalidationError(f"checkpoint score does not match grade semantics: {path}")
+        if not isinstance(correct_raw, bool) or correct_raw is not (grade_name == "PASS"):
+            raise CriticalRevalidationError(f"checkpoint correct flag does not match grade semantics: {path}")
+        if not isinstance(critical_raw, bool):
+            raise CriticalRevalidationError(f"checkpoint critical_failure must be boolean: {path}")
+        if not isinstance(grader_note_raw, str):
+            raise CriticalRevalidationError(f"checkpoint grader_note must be a string: {path}")
+
+        raw_codes = row.get("failure_codes")
         if not isinstance(raw_codes, list) or not all(isinstance(code, str) for code in raw_codes):
             raise CriticalRevalidationError(f"invalid checkpoint failure codes: {path}")
+        normalized_codes = tuple(sorted({code.strip() for code in raw_codes if code.strip()}))
+        if list(normalized_codes) != sorted(set(raw_codes)):
+            raise CriticalRevalidationError(f"checkpoint failure codes must be normalized and unique: {path}")
+
         result.append(
             GradedAnswer(
                 exercise_id=exercise_id,
-                answer=str(row.get("answer", "")),
+                answer=answer_raw,
                 grade=grade_name,
-                score=float(row.get("score", GRADE_SCORES[grade_name])),
-                correct=grade_name == "PASS",
-                failure_codes=tuple(sorted({code.strip() for code in raw_codes if code.strip()})),
-                critical_failure=bool(row.get("critical_failure", False)),
-                grader_note=str(row.get("grader_note", "")),
+                score=score,
+                correct=correct_raw,
+                failure_codes=normalized_codes,
+                critical_failure=critical_raw,
+                grader_note=grader_note_raw,
             )
         )
     if [item.exercise_id for item in result] != expected_ids:
