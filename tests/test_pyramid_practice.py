@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -17,7 +18,10 @@ from roberta.learning.pyramid_practice import (
     prepare_targeted_practice,
     run_targeted_practice,
 )
-from roberta.learning.pyramid_remediation import write_practice_jsonl
+from roberta.learning.pyramid_remediation import (
+    PYRAMID_REMEDIATION_PRACTICE_BINDING_CONTRACT,
+    write_practice_jsonl,
+)
 from roberta.learning.pyramid_source_reconstruction import (
     PYRAMID_SOURCE_RECONSTRUCTION_CONTRACT,
     PYRAMID_SOURCE_RECONSTRUCTION_NEXT_GATE,
@@ -143,6 +147,19 @@ def _write_inputs(tmp_path: Path) -> tuple[Path, Path, Path, Path]:
     return curriculum, practice, plan, reconstructions
 
 
+def _bind_plan_to_practice(plan: Path, practice: Path) -> None:
+    raw = json.loads(plan.read_text(encoding="utf-8"))
+    rows = [json.loads(line) for line in practice.read_text(encoding="utf-8").splitlines()]
+    raw.update({
+        "excluded_seen_exercise_count": 2,
+        "excluded_checkpoint_dirs": ["current", "prior"],
+        "practice_binding_contract": PYRAMID_REMEDIATION_PRACTICE_BINDING_CONTRACT,
+        "practice_exercise_ids": [row["exercise_id"] for row in rows],
+        "practice_sha256": hashlib.sha256(practice.read_bytes()).hexdigest(),
+    })
+    plan.write_text(json.dumps(raw), encoding="utf-8")
+
+
 def _grade(exercise_id: str, grade: str, *, critical_failure: bool = False) -> GradedAnswer:
     score = {"PASS": 1.0, "PARTIAL": 0.5, "FAIL": 0.0}[grade]
     return GradedAnswer(
@@ -173,6 +190,55 @@ def test_prepare_targeted_practice_binds_fresh_rows_and_source_grounded_weak_ite
     assert prepared.source_grounded_weak_items == 2
     assert prepared.critical_weakness_keys == {("benefits", "immutability")}
     assert not {item.exercise_id for item in prepared.exercises} & set(prepared.original_weak_ids)
+
+
+def test_prepare_targeted_practice_enforces_bound_practice_digest(tmp_path: Path) -> None:
+    curriculum, practice, plan, reconstructions = _write_inputs(tmp_path)
+    _bind_plan_to_practice(plan, practice)
+    lines = practice.read_text(encoding="utf-8").splitlines()
+    practice.write_text("\n".join(reversed(lines)) + "\n", encoding="utf-8")
+
+    with pytest.raises(TargetedPyramidPracticeError, match="SHA-256 does not match"):
+        prepare_targeted_practice(
+            curriculum_dir=curriculum,
+            practice_path=practice,
+            remediation_plan_path=plan,
+            reconstructions_path=reconstructions,
+        )
+
+
+def test_prepare_targeted_practice_enforces_bound_practice_ids_even_with_matching_digest(tmp_path: Path) -> None:
+    curriculum, practice, plan, reconstructions = _write_inputs(tmp_path)
+    _bind_plan_to_practice(plan, practice)
+    lines = practice.read_text(encoding="utf-8").splitlines()
+    practice.write_text("\n".join(reversed(lines)) + "\n", encoding="utf-8")
+    raw = json.loads(plan.read_text(encoding="utf-8"))
+    raw["practice_sha256"] = hashlib.sha256(practice.read_bytes()).hexdigest()
+    plan.write_text(json.dumps(raw), encoding="utf-8")
+
+    with pytest.raises(TargetedPyramidPracticeError, match="exercise ids do not match"):
+        prepare_targeted_practice(
+            curriculum_dir=curriculum,
+            practice_path=practice,
+            remediation_plan_path=plan,
+            reconstructions_path=reconstructions,
+        )
+
+
+def test_prepare_targeted_practice_requires_binding_for_cumulative_plan(tmp_path: Path) -> None:
+    curriculum, practice, plan, reconstructions = _write_inputs(tmp_path)
+    raw = json.loads(plan.read_text(encoding="utf-8"))
+    raw["excluded_seen_exercise_count"] = 2
+    raw["excluded_checkpoint_dirs"] = ["current", "prior"]
+    plan.write_text(json.dumps(raw), encoding="utf-8")
+
+    with pytest.raises(TargetedPyramidPracticeError, match="practice binding contract"):
+        prepare_targeted_practice(
+            curriculum_dir=curriculum,
+            practice_path=practice,
+            remediation_plan_path=plan,
+            reconstructions_path=reconstructions,
+        )
 
 
 def test_prepare_targeted_practice_rejects_tampered_practice_row(tmp_path: Path) -> None:
