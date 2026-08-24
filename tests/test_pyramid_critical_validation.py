@@ -7,7 +7,10 @@ from pathlib import Path
 import pytest
 
 from roberta.learning.pyramid import Exercise, select_level_exercises
-from roberta.learning.pyramid_critical_revalidation import revalidate_critical_checkpoints
+from roberta.learning.pyramid_critical_revalidation import (
+    CriticalRevalidationError,
+    revalidate_critical_checkpoints,
+)
 from roberta.learning.pyramid_exam import (
     CHECKPOINT_SCHEMA,
     GRADING_SEMANTICS,
@@ -120,6 +123,45 @@ def test_qualified_immutability_cannot_remain_critical_even_if_validator_repeats
                 assert item["initial_critical_failure"] is True
                 assert item["critical_deterministic_basis"] is False
                 assert "cannot be easily altered" in item["roberta_answer"]
+            return _Response(json.dumps({"grades": [
+                _row(item["exercise_id"], critical=True, note="Over-strict absolute-immutability claim.")
+            ]}))
+
+    model = OverStrictModel()
+    grades = grade_batch(model, (exercise,), answers)
+
+    assert model.calls == 2
+    assert grades[0].grade == "FAIL"
+    assert grades[0].critical_failure is False
+
+
+@pytest.mark.parametrize(
+    "answer",
+    (
+        "Accepted data cannot be altered easily.",
+        "Accepted data cannot be altered without consensus.",
+        "Accepted data cannot be altered or deleted without consensus.",
+    ),
+)
+def test_post_verb_or_conditional_immutability_qualifiers_cannot_remain_critical(answer: str) -> None:
+    exercise = _exercise(
+        "immut-post-verb-qualified",
+        forbidden_inferences=("Do not claim absolute immutability.",),
+    )
+    answers = {exercise.exercise_id: answer}
+
+    class OverStrictModel:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def invoke(self, messages):
+            self.calls += 1
+            payload = json.loads(messages[-1].content)
+            item = payload["items"][0]
+            if self.calls == 2:
+                assert item["initial_critical_failure"] is True
+                assert item["critical_deterministic_basis"] is False
+                assert item["roberta_answer"] == answer
             return _Response(json.dumps({"grades": [
                 _row(item["exercise_id"], critical=True, note="Over-strict absolute-immutability claim.")
             ]}))
@@ -346,6 +388,82 @@ def test_revalidation_writes_separate_namespace_and_never_mutates_inputs_or_ledg
     assert (output_dir / "critical_revalidation_report.json").is_file()
     output = json.loads((output_dir / "level_01_batch_0001.json").read_text(encoding="utf-8"))
     assert output["grading_semantics"] == GRADING_SEMANTICS
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    (
+        ("score", 1.0, "score does not match grade semantics"),
+        ("correct", True, "correct flag does not match grade semantics"),
+        ("critical_failure", "false", "critical_failure must be boolean"),
+        ("answer", 42, "answer must be a non-empty string"),
+        ("grader_note", False, "grader_note must be a string"),
+    ),
+)
+def test_revalidation_rejects_malformed_authoritative_fields_before_model_or_output(
+    tmp_path: Path,
+    field: str,
+    value: object,
+    message: str,
+) -> None:
+    exercise = _exercise("append-corrupt")
+    seed = "corrupt-seed"
+    selected = select_level_exercises(
+        (exercise,),
+        curriculum_id="mastering_blockchain_4e_2023_book01",
+        level=1,
+        run_seed=seed,
+        count=1,
+    )
+    input_dir = tmp_path / "input"
+    output_dir = tmp_path / "output"
+    input_dir.mkdir()
+    row: dict[str, object] = {
+        "exercise_id": exercise.exercise_id,
+        "answer": "A wrong but ordinary answer.",
+        "grade": "FAIL",
+        "score": 0.0,
+        "correct": False,
+        "failure_codes": ["factual_error"],
+        "critical_failure": False,
+        "grader_note": "Historical ordinary failure.",
+    }
+    row[field] = value
+    checkpoint = input_dir / "level_01_batch_0001.json"
+    checkpoint.write_text(
+        json.dumps(
+            {
+                "checkpoint_schema": CHECKPOINT_SCHEMA,
+                "grading_semantics": PREVIOUS_GRADING_SEMANTICS,
+                "exercise_ids": [item.exercise_id for item in selected],
+                "grades": [row],
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    original_sha = _sha(checkpoint)
+
+    class UnusedModel:
+        def invoke(self, messages):
+            raise AssertionError("malformed checkpoints must fail before model invocation")
+
+    with pytest.raises(CriticalRevalidationError, match=message):
+        revalidate_critical_checkpoints(
+            exercise_bank=(exercise,),
+            grader_model=UnusedModel(),
+            input_dir=input_dir,
+            output_dir=output_dir,
+            curriculum_id="mastering_blockchain_4e_2023_book01",
+            level=1,
+            run_seed=seed,
+            batch_size=1,
+            canonical_exam=False,
+            question_count=1,
+        )
+
+    assert _sha(checkpoint) == original_sha
+    assert not output_dir.exists()
 
 
 def test_revalidation_refuses_same_or_nested_output_namespace(tmp_path: Path) -> None:
