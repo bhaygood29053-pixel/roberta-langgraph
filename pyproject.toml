@@ -33,6 +33,7 @@ roberta-pyramid-practice = "roberta.learning.pyramid_practice_cli:main"
 roberta-pyramid-supplemental-practice = "roberta.learning.pyramid_supplemental_practice_cli:main"
 roberta-pyramid-critical-blocker-practice = "roberta.learning.pyramid_critical_blocker_supplemental_cli:main"
 roberta-pyramid-critical-retention = "roberta.learning.pyramid_critical_retention_cli:main"
+roberta-pyramid-critical-autofix = "roberta.learning.pyramid_critical_autofix_entry:main"
 
 [tool.setuptools.package-data]
 "roberta.learning" = [
