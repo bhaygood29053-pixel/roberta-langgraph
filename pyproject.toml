@@ -31,7 +31,11 @@ roberta-pyramid-migrate-provenance = "roberta.learning.pyramid_provenance_migrat
 roberta-pyramid-practice = "roberta.learning.pyramid_practice_cli:main"
 
 [tool.setuptools.package-data]
-"roberta.learning" = ["sources/*.md", "sources/*.gz.b64"]
+"roberta.learning" = [
+  "sources/*.md",
+  "sources/*.gz.b64",
+  "source_alignments/*.json",
+]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
