@@ -2,7 +2,7 @@
 
 Roberta is the top-level Oracle, policy-aware coordinator, and normal user-facing voice for the multi-agent system.
 
-Current accepted hierarchy:
+## Canonical architecture
 
 ```text
 User / transport
@@ -22,324 +22,166 @@ Roberta
         -> CMIS -> Solana providers
 ```
 
-Roberta does not call provider APIs directly and does not reproduce CMIS market, risk, verification, evidence-receipt, proof-score, or deterministic pre-trade calculations.
+Roberta owns orchestration, user policy, specialist selection, cross-chain coordination, approval boundaries, learning workflow coordination, and final synthesis. Chain Scouts own chain-specific planning and interpretation. CMIS owns deterministic freshness-sensitive facts, evidence, Evidence Receipts, Proof Scores, risk, capability eligibility, historical intelligence, and bounded analysis-only pre-trade calculations.
+
+Roberta does not call market providers directly and does not reproduce CMIS calculations to manufacture a second market fact.
 
 ## Repository boundary
 
-CMIS is maintained in the separate GitHub repository:
+CMIS is maintained separately at `bhaygood29053-pixel/cmis`.
+
+The CMIS repository was historically named Liquidity Scout. Its internal Python namespace still uses `liquidity_scout` for compatibility; that namespace does not create a separate authority layer.
+
+## Current accepted status — reconciled 2026-08-23
+
+Core Roberta milestones are accepted through:
+
+- Phase 1 Core Agent Loop;
+- Phase 2 Provider-Neutral Model Loop;
+- Phase 3 X1 Scout Boundary;
+- Phase 4 CMIS / X1 Provider Integration;
+- Phase 5 X1 Evidence Completeness as an explicitly bounded/fail-closed capability boundary;
+- Phase 6 Agentic X1 Scout Planning;
+- Phase 7A Thread / Checkpoint Persistence;
+- Phase 7B HXMP Durable Memory;
+- Phase 8 Oracle Policy;
+- Phase 9 Human in the Loop;
+- Phase 10 More Specialists / Providers;
+- Post-Phase-10 Evidence-Aware Intelligence & User Experience;
+- X1 decision-production readiness;
+- Solana read-only production readiness for the currently promoted Scout surface;
+- adoption/readiness of CMIS `concentration_change_intelligence/v1` through X1 Scout.
+
+Roberta Phase 11 Controlled Execution remains **locked / not started**.
+
+### Learning System
+
+Accepted Learning System foundations:
+
+1. Source ingestion — complete.
+2. Structure detection — complete.
+3. Structure-aware evidence chunking — complete.
+4. Lexical/embedding indexing foundation — complete.
+5. Retrieval + benchmark foundation — complete.
+6. Grounded answer + citation foundation — complete.
+7. Independent answer evaluation — complete.
+8. Provisional reflection + candidate lesson foundation — complete.
+9. Independent candidate-lesson verification — complete.
+10. Verified lesson retention — **specification accepted under #133/#134; runtime implementation still unaccepted**.
+
+`verified_for_learning` remains verification evidence only. It is not source truth, durable-memory promotion, governance authority, wallet authority, or execution authority.
+
+The draft Phase 10 implementation PR #136 remains blocked by five unresolved P1 findings: procedural-body eligibility, actual source-contradiction evaluation, trusted source-scope completeness, evidence/decision-bound lifecycle transitions, and recoverable duplicate provenance. Green CI does not override those review blockers.
+
+### Blockchain Reasoning Pyramid
+
+The Pyramid training/evaluation track is now a major accepted Roberta subsystem, but it remains separate from trusted Learning System retention.
+
+Accepted milestones include:
+
+- #149 — 20-level Blockchain Reasoning Pyramid, 1,000-question level contract, integrity/Boss gates, SQLite performance ledger, and Learning Command Center dashboard;
+- #150 — automated Pyramid exam/grading/checkpoint loop;
+- #151/#152/#154 — semantic-equivalence calibration, PASS/PARTIAL/FAIL scoring, and question-first grading with checkpoint schema v3;
+- #153 — bounded fenced-JSON response acceptance;
+- #155 — remediation analyzer and fresh-practice CLI;
+- #160 — 50-question Mastering Blockchain Level 1 smoke curriculum;
+- #162 — question-first grader hardening against reference anchoring;
+- #167 — one bounded missing-answer recovery for answer batches;
+- #169 — Pyramid weakness -> deterministic Learning System remediation handoff;
+- #171 — MB4E question-first grading semantics v2;
+- #173 — historical checkpoint regrade without regenerating Roberta answers;
+- #175 — one bounded corrective adjudication for invalid single-part `incomplete_reasoning`;
+- #177 — source-grounded Pyramid reconstruction using the accepted Learning System source/retrieval/evidence-packet path.
+
+Pyramid results are training/evaluation state. They do not automatically create Phase 8 candidates, Phase 9 verification results, Phase 10 retention decisions, verified lessons, source truth, HXMP writes, or execution authority.
+
+### Active Roberta work
+
+Current open work that is **not accepted yet**:
+
+- **#179 — MB4E legacy Level 1 provenance migration:** open and CI-green, but two unresolved P2 review findings remain: PDF-page locator support must exist in the core reconstruction API rather than only the CLI, and nested output directories must fail closed to avoid recursive staging/copy behavior.
+- **#141 — XenBlocks PoW source onboarding:** open and blocked by an unresolved P1 because the canonical Phase 1 artifact must preserve/hash the exact uploaded CRLF bytes rather than an LF-normalized derivative.
+- **#136 — Learning System Phase 10 retention implementation:** draft and blocked by five unresolved P1 findings described above.
+
+These branches must not be described as accepted `main` behavior until their review and merge gates pass.
+
+## Accepted Learning System sources
+
+The accepted static source registry is documented at [`docs/learning_sources/README.md`](./docs/learning_sources/README.md).
+
+Current accepted source onboarding on `main` includes:
+
+- X1 Blockchain Whitepaper v1.0;
+- XDEX documentation snapshot;
+- XEN Litepaper v1.7;
+- XEN Torrent / XENFT Litepaper v0.3;
+- XONE ERC20 Token v4;
+- *Mastering Blockchain, Fourth Edition* as an external exact-transcript integrity contract;
+- Solana whitepaper v0.8.13.
+
+Static source inclusion never grants live-state authority. Freshness-sensitive prices, liquidity, supply, wallet state, provider health, validator state, risk, fees, software versions, and other changing blockchain facts still require the authorized Scout -> CMIS -> Provider path.
+
+XenBlocks PoW documentation remains pending until #141 satisfies the exact-byte Phase 1 provenance contract and merges.
+
+## Source-of-truth documentation
+
+- [`docs/LANGGRAPH_ROADMAP.md`](./docs/LANGGRAPH_ROADMAP.md) — authoritative Roberta roadmap/status.
+- [`docs/LEARNING_SYSTEM.md`](./docs/LEARNING_SYSTEM.md) — Learning System umbrella/status and phase map.
+- [`docs/LEARNING_SYSTEM_STRUCTURE.md`](./docs/LEARNING_SYSTEM_STRUCTURE.md) — structure parsing contract.
+- [`docs/LEARNING_SYSTEM_CHUNKING.md`](./docs/LEARNING_SYSTEM_CHUNKING.md) — evidence chunking contract.
+- [`docs/LEARNING_SYSTEM_INDEXING.md`](./docs/LEARNING_SYSTEM_INDEXING.md) — indexing contract.
+- [`docs/LEARNING_SYSTEM_RETRIEVAL.md`](./docs/LEARNING_SYSTEM_RETRIEVAL.md) — retrieval contract.
+- [`docs/LEARNING_SYSTEM_GROUNDING.md`](./docs/LEARNING_SYSTEM_GROUNDING.md) — grounding/citation contract.
+- [`docs/LEARNING_SYSTEM_EVALUATION.md`](./docs/LEARNING_SYSTEM_EVALUATION.md) — answer evaluation contract.
+- [`docs/LEARNING_SYSTEM_REFLECTION.md`](./docs/LEARNING_SYSTEM_REFLECTION.md) — provisional reflection/candidate contract.
+- [`docs/LEARNING_SYSTEM_VERIFICATION.md`](./docs/LEARNING_SYSTEM_VERIFICATION.md) — candidate verification contract.
+- [`docs/LEARNING_SYSTEM_RETENTION.md`](./docs/LEARNING_SYSTEM_RETENTION.md) — accepted Phase 10 retention specification.
+- [`docs/learning_sources/README.md`](./docs/learning_sources/README.md) — accepted/pending static-source registry.
+- [`docs/ENGINEERING_WORKFLOW.md`](./docs/ENGINEERING_WORKFLOW.md) — repository-authoritative engineering workflow.
+- [`docs/TECHNOLOGY_RADAR.md`](./docs/TECHNOLOGY_RADAR.md) — accepted design/specification only; no Radar runtime is authorized.
+
+## Evidence and authority rules
+
+Core rules remain unchanged:
+
+1. Fresh accepted CMIS/provider evidence overrides remembered, checkpointed, book/RAG, Pyramid, or Learning System material for freshness-sensitive state.
+2. Missing evidence remains unknown/unavailable; it is never zero-filled or guessed.
+3. Proof Score and market risk are separate concepts.
+4. Provider-reported facts remain provider-reported until CMIS establishes accepted verification.
+5. Cross-chain evidence keeps chain-specific provenance and scope.
+6. Human approval binds one exact proposal/scope and is not reusable wallet authority.
+7. Learning, remediation, evaluation, policy, and pre-trade analysis do not imply execution permission.
+
+## Durable memory, training, and live truth
 
 ```text
-bhaygood29053-pixel/cmis
+LangGraph checkpoints -> current thread/workflow state
+HXMP durable memory    -> stable durable context under its own write/approval rules
+Learning System        -> static sources + separately gated verified learning
+Pyramid                -> training/evaluation/remediation state
+CMIS                   -> current deterministic verified market/blockchain evidence
+Policy code            -> deterministic rule results
+LLM                     -> explanation/synthesis, not trust root
 ```
 
-That repository was historically named `liquidity-scout`. The canonical project identity is now **CMIS — Cross-Chain Market Intelligence Service**.
-
-The CMIS implementation still uses the internal Python namespace `liquidity_scout` for compatibility. Repository identity and Python package identity are intentionally separate during the staged migration.
-
-## Current roadmap status
-
-- Phase 1 Core Agent Loop — complete
-- Phase 2 Provider-Neutral Model Loop — complete
-- Phase 3 X1 Scout Boundary — complete
-- Phase 4 CMIS / X1 Provider Integration — complete
-- Phase 5 X1 Evidence Completeness — bounded by explicit CMIS capability states
-- Phase 6 Agentic X1 Scout Planning — complete
-- Phase 7A Thread / Checkpoint Persistence — complete
-- Phase 7B HXMP Durable Memory — complete
-- Phase 8 Oracle Policy — complete
-- Phase 9 Human in the Loop — complete
-- Phase 10 More Specialists / Providers — complete
-- Post-Phase-10 Evidence-Aware Intelligence & User Experience — complete
-- **Learning System Phase 1 Source Ingestion — complete**
-- **Learning System Phase 2 Structure Detection — complete**
-- **Learning System Phase 3 Structure-Aware Evidence Chunking — complete**
-- **Learning System Phase 4 Indexing Foundation — complete**
-- **Learning System Phase 5 Retrieval Foundation — complete**
-- **Learning System Phase 6 Grounded Answer + Citation Foundation — complete**
-- **Learning System Phase 7 Answer Evaluation Foundation — complete**
-- **Learning System Phase 8 Provisional Reflection + Candidate Lesson Foundation — complete**
-- **Learning System Phase 9 Independent Candidate Lesson Verification — complete**
-- **Learning System Phase 10 Verified Lesson Retention Foundation — accepted/active under #133/#134; implementation not yet accepted**
-- Phase 11 Controlled Execution — **locked / not started**
-
-The **Roberta Learning System remains the primary development track**. Learning System Phase 10 now has an accepted retention contract under Issue #133 / PR #134, but implementation is still gated by deterministic verification and the independent three-axis review. Phase 9 `verified_for_learning` remains non-promoting until every Phase 10 retention gate succeeds. Existing CMIS, Chain Scout, transport, policy, memory, and approval functionality should remain stable unless a change is directly required to support the accepted Learning System gate or fix a proven defect.
-
-See [`docs/LANGGRAPH_ROADMAP.md`](./docs/LANGGRAPH_ROADMAP.md) for the authoritative Roberta roadmap, [`docs/LEARNING_SYSTEM.md`](./docs/LEARNING_SYSTEM.md) for source ingestion, [`docs/LEARNING_SYSTEM_STRUCTURE.md`](./docs/LEARNING_SYSTEM_STRUCTURE.md) for structure parsing, [`docs/LEARNING_SYSTEM_CHUNKING.md`](./docs/LEARNING_SYSTEM_CHUNKING.md) for evidence chunking, [`docs/LEARNING_SYSTEM_INDEXING.md`](./docs/LEARNING_SYSTEM_INDEXING.md) for indexing, [`docs/LEARNING_SYSTEM_RETRIEVAL.md`](./docs/LEARNING_SYSTEM_RETRIEVAL.md) for retrieval, [`docs/LEARNING_SYSTEM_GROUNDING.md`](./docs/LEARNING_SYSTEM_GROUNDING.md) for grounding/citation, [`docs/LEARNING_SYSTEM_EVALUATION.md`](./docs/LEARNING_SYSTEM_EVALUATION.md) for answer evaluation, [`docs/LEARNING_SYSTEM_REFLECTION.md`](./docs/LEARNING_SYSTEM_REFLECTION.md) for provisional reflection/candidate lessons, [`docs/LEARNING_SYSTEM_VERIFICATION.md`](./docs/LEARNING_SYSTEM_VERIFICATION.md) for independent candidate-lesson verification, and [`docs/LEARNING_SYSTEM_RETENTION.md`](./docs/LEARNING_SYSTEM_RETENTION.md) for the accepted Phase 10 retention contract.
-
-CMIS has its own execution-phase numbering. CMIS Phase 11 refers to its completed **read-only Verified Intelligence foundation**; that is separate from Roberta Phase 11 Controlled Execution.
-
-## Engineering workflow
-
-Meaningful Roberta changes follow the repository-authoritative workflow in [`docs/ENGINEERING_WORKFLOW.md`](./docs/ENGINEERING_WORKFLOW.md). It requires roadmap/issue gating, narrow tracer-bullet slices, behavior-first verification, exact-head deterministic testing, and independent **Spec**, **Code/Architecture**, and **Authority/Safety** review before merge.
-
-Green CI alone is not sufficient if a required review axis fails. The workflow preserves `User -> Roberta -> Chain Scout -> CMIS -> Provider` and does not widen Controlled Execution.
-
-## Learning System
-
-Issue #106 / PR #107 established deterministic provenance-preserving ingestion for approved UTF-8 sources:
-
-- exact original source bytes are retained behind a provider-neutral `SourceStore` interface;
-- `content_hash` is SHA-256 over the exact source bytes;
-- `source_id` is deterministic/content-addressed from canonical identity material;
-- identical re-ingestion is idempotent;
-- changed content creates a distinct immutable record rather than replacing prior source truth;
-- malformed source identity/state/metadata/UTF-8 input fails closed;
-- metadata is detached and recursively immutable;
-- static Learning System source records never authorize live state.
-
-Issue #109 / PR #110 added deterministic **structure-first Markdown parsing** over those exact Phase 1 artifacts:
-
-- the artifact hash is revalidated before parsing;
-- ATX heading hierarchy, repeated headings, parent relationships, structural paths, and exact 1-based source locations are preserved;
-- exact block text and original line endings are retained for preamble, paragraphs, simple lists, fenced code, and narrow pipe tables;
-- heading-looking text inside code fences remains code data;
-- every non-blank source line is deterministically accounted for exactly once as a heading or block;
-- unclosed fences become explicit `partial` structure with warnings, while heading-level jumps warn without synthetic headings;
-- document, section, block, and structure identities are deterministic/content-addressed;
-- all derived structure records explicitly deny live-state authority.
-
-Issue #112 / PR #113 added deterministic **structure-aware evidence chunking**:
-
-- the exact Phase 1 artifact is revalidated and canonical Phase 2 structure is recomputed before a supplied parsed document may be chunked;
-- adjacent same-section prose may group only when the exact source span fits the explicit `max_chars` policy;
-- code fences, lists, and tables remain atomic;
-- oversize prose splits only at source-line boundaries;
-- oversize source lines and atomic blocks are retained intact with explicit warnings instead of truncation;
-- `structure-aware-chunk/v1` requires zero overlap and validates that each Phase 2 structural-block line is covered exactly once;
-- chunks preserve source/document/section/block provenance, structural paths, exact line ranges, original source text, parser/chunker versions, and chunking parameters;
-- chunk ids and the chunk-set manifest are deterministic/content-addressed;
-- neighbor links are explicit contextual metadata and all chunk records deny live-state authority.
-
-PR #113 passed the full deterministic suite with **534 passed and 5 live/provider tests deselected**; all 14 new chunking tests passed.
-
-Issue #115 / PR #116 added the deterministic **indexing foundation** over canonical Phase 3 evidence chunks:
-
-- supplied chunk sets are not trusted blindly; canonical Phase 2 structure and Phase 3 chunks are recomputed before indexing;
-- `evidence-index/v1` creates deterministic lexical entries with explicit source/document/section/chunk provenance;
-- `unicode-word-casefold/v1` uses versioned Unicode NFKC normalization, casefolding, and ordered Unicode word tokens;
-- an optional typed `EmbeddingProvider` contract binds every request/result to the exact `chunk_id` and content hash;
-- embedding output is validated for exact provider/model/version/dimension, request identity, numeric type, and finite values;
-- malformed embedding output fails closed while provider runtime/unavailable states remain explicit `partial` results with no fabricated vector;
-- vector fingerprints and content-addressed index manifests are derived relevance metadata only, never source truth or live-state verification;
-- the included deterministic hash embedding provider is a test-contract adapter only, not a semantic production embedding model;
-- all index/provider records explicitly deny live-state authority.
-
-PR #116 passed the full deterministic suite with **548 passed and 5 live/provider tests deselected**; all new indexing regressions passed.
-
-Issue #118 / PR #119 added the deterministic **retrieval foundation** over validated Phase 4 indexes:
-
-- every corpus item revalidates canonical source/chunk/index integrity before retrieval rather than trusting caller-supplied index state;
-- query normalization matches the accepted Unicode analyzer and preserves exact query text separately from derived tokens;
-- exact source/document/section/authority/approval/chunk-kind filters never silently widen scope;
-- lexical and optional vector candidate channels remain separately observable;
-- vector candidates are eligible only under exact provider/model/version/dimension matching, with finite-vector and fingerprint validation;
-- deterministic Reciprocal Rank Fusion uses exact rational arithmetic and stable tie-breaking;
-- local-context diversity defers adjacent fragments when independent alternatives exist, with deferred chunk ids preserved explicitly;
-- contradictory cross-source evidence remains visible rather than being silently reconciled;
-- `ok`, `partial`, and `no_match` states preserve uncertainty without fabricated evidence;
-- every selected result preserves exact canonical chunk text and provenance;
-- deterministic benchmark helpers expose Recall@K, Precision@K, reciprocal rank, binary nDCG@K, evidence coverage, redundancy, source diversity, and filter correctness;
-- the deterministic hash embedding adapter proves only vector-channel mechanics and is not evidence of semantic retrieval quality;
-- all retrieval/query/metric records deny live-state authority.
-
-PR #119 passed the full deterministic suite with **566 passed and 5 live/provider tests deselected**; all new retrieval regressions passed.
-
-Issue #121 / PR #122 added the deterministic **grounded answer + citation foundation** over canonical Phase 5 retrieval:
-
-- packet construction reconstructs the exact Phase 5 retrieval from its typed query and requires exact equality before accepting evidence;
-- deterministic `E1...En` anchors bind exact retrieval/chunk/source/document/section/block identities, structural paths, source line ranges, text/content hashes, authority/approval metadata, and retrieval ranks;
-- content-addressed evidence-anchor, packet, and grounded-result identities make evidence-scope tampering detectable;
-- retrieved source text is serialized as `untrusted_evidence_data` and cannot become an instruction layer, expand tool permissions, authorize memory writes, or authorize execution;
-- supported claims must cite exact packet anchors, conflict claims require at least two anchors, and fabricated/unknown anchors fail closed;
-- `no_match` becomes explicit insufficiency and partial retrieval requires explicit disclosure;
-- cross-source presence is not silently upgraded into semantic contradiction;
-- structural citation validity remains separate from semantic proof: first-slice results preserve `semantic_support_verified=false` and `claim_coverage_verified=false`;
-- packet, candidate, and result records deny live-state authority, verified-memory promotion, and execution authority.
-
-PR #122 passed the full deterministic suite with **582 passed and 5 live/provider tests deselected**; all 16 new grounding regressions passed.
-
-Issue #124 / PR #125 added the deterministic **independent answer-evaluation foundation** over accepted Phase 6 grounded answers:
-
-- supplied `GroundedAnswerResult` records are reconstructed through the accepted Phase 6 validator before scoring;
-- approved golden cases are versioned, content-addressed, provenance-bearing evaluation labels rather than source truth;
-- retrieval coverage is measured separately from answer correctness/completeness so missing evidence is classified as `retrieval_failure` instead of a reasoning failure;
-- citation correctness, citation precision, citation completeness, unsupported-claim rate, answer correctness/completeness, limitation disclosure, insufficiency handling, conflict handling, and instruction compliance remain separate dimensions;
-- irrelevant-but-valid citations reduce precision without being mislabeled as fabricated citations;
-- deterministic aggregates keep retrieval-failure and answer-failure rates separate;
-- semantic groundedness remains `not_evaluated` without a separately accepted semantic evaluator adapter, and citation presence is never upgraded into semantic entailment;
-- calibration remains `not_applicable` or `not_evaluated` rather than inventing a confidence signal;
-- all golden-case/evaluation/aggregate records deny live-state authority, verified-memory promotion, and execution authority.
-
-PR #125 passed the full deterministic suite with **599 passed and 5 live/provider tests deselected**; all 17 new Phase 7 evaluation regressions passed.
-
-Issue #127 / PR #128 added the deterministic **provisional reflection + candidate lesson foundation** over canonical failed Phase 7 evaluations:
-
-- every supplied failed `EvaluationResult` is re-run through the accepted deterministic Phase 7 evaluator before reflection creation;
-- passing evaluations cannot manufacture reflections or candidate lessons;
-- accepted failure classifications map through the versioned deterministic diagnosis table into bounded diagnostic layers;
-- reflection, candidate core, candidate lifecycle state, verification plan, and bundle identities are content-addressed and tamper-sensitive;
-- generated reflection, lesson, and rationale text remains `generated_provisional` and cannot introduce evidence authority;
-- candidate evidence references are inherited only from the canonical Phase 6 packet/result path;
-- lifecycle is limited to `provisional`, `rejected`, and `superseded`; Phase 8 has no `verified` candidate state;
-- terminal lifecycle records must bind to the exact reconstructed initial provisional `candidate_state_id`, preventing forged predecessor chains;
-- deterministic verification plans bind required retests to the exact candidate/reflection/evaluation/golden-case/packet/result/retrieval identities and keep `promotion_authorized=false`;
-- all Phase 8 records deny live-state authority, trusted-memory promotion, governance mutation, and execution authority.
-
-PR #128 passed the full deterministic suite at its final head with **617 passed and 5 live/provider tests deselected**. The independent review finding on lifecycle-predecessor validation was fixed, regression-tested, and resolved before merge.
-
-Issue #129 / PR #131 added deterministic **independent candidate-lesson verification** over exact provisional Phase 8 learning-candidate bundles:
-
-- the complete Phase 8 bundle and lifecycle chain are canonically revalidated before any Phase 9 check runs;
-- only the exact `provisional` candidate state is eligible; rejected or superseded candidates cannot be resurrected;
-- every check comes only from the canonical Phase 8 `VerificationPlan` and preserves its exact order, identity, failure classification, diagnosed layer, and required identity references;
-- retests produce a fresh deterministic Phase 7 evaluation rather than accepting caller-supplied scores;
-- both retest packet/result absent yields explicit `inconclusive`, while exactly one supplied fails closed before unvalidated provenance can be recorded;
-- when an approved golden case pinned the original failed packet/retrieval identities, Phase 9 deterministically derives a content-addressed retest golden case that preserves the approved labels and rebinds only those non-null evidence pins to the observed retest identities;
-- original `golden_case_id` and derived `retest_golden_case_id` remain separately recorded;
-- per-check `pass`, `fail`, and `inconclusive` states aggregate to `verified_for_learning`, `rejected`, or `inconclusive`, with every required check required to pass before verification succeeds;
-- unavailable calibration/evaluator/unknown verification capabilities remain explicitly `inconclusive` rather than being guessed or silently passed;
-- generated reflection/candidate text cannot self-verify or replace evidence;
-- verification results are deterministic, content-addressed, exact-rebuild validated, and tamper-sensitive;
-- every verification/check result denies source-truth authority, live-state authority, durable-memory promotion, governance mutation, and execution authority.
-
-PR #131 passed the final exact-head deterministic suite with **640 passed and 5 live/provider tests deselected**. Independent Codex review identified two P1 defects during development—partial retest provenance and corrected retrievals blocked by original evidence pins. Both were fixed with focused regressions and resolved review threads; the final exact-head Codex review reported no major issues before merge.
-
-Learning System Phase 10 is now the **accepted active retention gate** under Issue #133 / PR #134. The accepted first slice is provider-neutral and in-memory only: it must revalidate exact Phase 8/9 state, prove procedural lesson eligibility, build a complete trusted contradiction/source snapshot, handle exact duplicates without losing provenance, preserve a categorical confidence basis, require exact human retention approval with one-time binding consumption, and maintain immutable lifecycle/audit identities. The implementation remains unaccepted until its independent Spec, Code/Architecture, and Authority/Safety review blockers are resolved and exact-head CI passes again.
-
-Phase 10 still does **not** authorize HXMP writes, source truth, current market/blockchain truth, source approval changes, CMIS/provider trust changes, protected governance mutation, wallet authority, transaction preparation/signing/broadcasting, custody, trading, or Controlled Execution. `verified_for_learning` remains non-promoting verification evidence until the Phase 10 retention gates succeed.
-
-The Learning System does not replace CMIS for changing market/blockchain state. Fresh accepted CMIS/provider evidence remains authoritative for current prices, liquidity, supply, wallet state, risk, and other freshness-sensitive facts.
-
-## Technology Radar design
-
-Issue #100 defines a future read-only roadmap-aware Technology Radar in [`docs/TECHNOLOGY_RADAR.md`](./docs/TECHNOLOGY_RADAR.md).
-
-The document is a **design/specification only**. No Radar runtime, source adapter, scheduler, dependency, autonomous adoption path, provider-trust change, or execution authority is currently authorized. The proposed Radar keeps trend strength, roadmap relevance, research-evidence quality, adoption risk, and license compatibility separate and routes any promising discovery back through the normal engineering workflow.
-
-A future implementation requires a separate accepted roadmap gate and implementation issue. Technology Radar implementation is not the current primary development track while the Learning System is being built.
-
-## Evidence-aware intelligence
-
-Roberta consumes the CMIS evidence-quality and capability contracts.
-
-Chain Scout reports preserve CMIS evidence context including, where available:
-
-- verification status;
-- proof strength and category reasons;
-- evidence scope;
-- freshness;
-- source disagreements;
-- limitations;
-- unresolved fields;
-- source provenance;
-- risk separately from proof strength.
-
-Roberta requires the CMIS capability manifest to advertise the accepted evidence receipt/proof-score contract and the read-only intelligence-foundation boundary required by the current Scout client.
-
-Provider-reported information remains provider-reported until CMIS records independent verification. Missing evidence remains unknown/unproven.
-
-Detailed behavior is documented in [`docs/EVIDENCE_AWARE_INTELLIGENCE.md`](./docs/EVIDENCE_AWARE_INTELLIGENCE.md).
-
-## Answer-first user experience
-
-Recommendation-style responses prioritize:
-
-1. conclusion / recommendation / blocker;
-2. the most important evidence-backed reasons;
-3. risk when CMIS actually provides a dedicated risk level;
-4. evidence quality / proof strength;
-5. important missing evidence;
-6. deeper technical evidence on request.
-
-Pre-trade responses use deterministic finalization rather than passing the structured result through a second free-form rewrite.
-
-`PASS`, `WARN`, and `BLOCK` are not automatically HIGH/MEDIUM/LOW risk levels. If CMIS does not provide a dedicated risk level, Roberta keeps risk unknown rather than inventing one.
-
-## Recommendation evidence planning
-
-Roberta deterministically identifies evidence needs for common questions such as:
-
-- buy/sell recommendations;
-- trade-size questions;
-- safer-asset comparisons;
-- what-changed questions;
-- liquidity-risk questions;
-- LP questions;
-- price-move questions.
-
-Chain Scouts incorporate allowed read-only evidence requirements into their deterministic planning. Recommendation wording cannot silently enable execution capability.
-
-## X1 evidence capability boundary
-
-Remaining X1 provider limitations are explicit CMIS capability states rather than facts Roberta may guess.
-
-Examples include facts that are:
-
-- independently verified;
-- bounded to a narrower evidence scope;
-- unavailable until semantics are proven.
-
-Roberta preserves those boundaries and does not upgrade missing or partial provider evidence through model interpretation.
-
-## Wallet / behavioral safety boundary
-
-CMIS now has a read-only Verified Intelligence foundation for neutral wallet-activity and concentration primitives. Those primitives are not automatically promoted into public Scout services.
-
-Roberta may not label a wallet as an insider, whale, bot, accumulator, distributor, market maker, manipulator, dumper, common owner, or equivalent unless a later accepted CMIS classification contract explicitly permits the label from proven evidence.
-
-Facts and interpretations remain separate.
-
-## Cross-chain evidence boundary
-
-X1 and Solana Scout reports preserve separate chain-specific evidence contexts.
-
-Roberta may compare evidence returned by each chain, but it may not:
-
-- merge source lists into one synthetic source set;
-- apply one chain's scope/freshness to another chain;
-- recompute CMIS proof strength;
-- recompute CMIS market risk;
-- create a synthetic cross-chain safety grade;
-- substitute X1 facts for missing Solana facts or vice versa.
-
-## Durable memory and policy
-
-HXMP and LangGraph checkpoints are not authoritative sources for current market facts.
-
-```text
-HXMP / durable memory -> stable context and explicit policy
-Learning System       -> static source knowledge and later verified learning state
-CMIS                  -> current verified facts and evidence
-Policy code           -> deterministic rule result
-LLM                    -> explanation / synthesis only
-```
-
-Fresh verified CMIS/provider evidence overrides remembered, checkpointed, or Learning System live-market snapshots; the Learning System must not create such snapshots as trusted source knowledge.
-
-## Human approval boundary
-
-Phase 9 supports resumable human review with exact proposal/scope binding.
-
-An approval means a human reviewed one exact proposal. It is not a reusable signing credential and does not grant broad future wallet authority.
+Phase 10 v1 is explicitly in-memory/provider-neutral and does **not** authorize HXMP writes. Any future verified-lesson persistence to HXMP requires a separate accepted gate reconciling the Learning System retention contract with wallet-bound HXMP write semantics.
 
 ## Controlled execution boundary
 
-Roberta Phase 11 has **not started**.
-
 Roberta currently has no authority for:
 
-- transaction construction as an execution path;
+- autonomous transaction construction as an execution path;
 - wallet signing;
-- transaction broadcasting;
+- broadcasting;
 - custody;
-- swap execution;
-- autonomous trading;
+- swaps/trading;
+- bridge value transfer;
 - autonomous value movement;
 - broad delegated wallet authority.
 
-Research, recommendations, deterministic policy, human review, Learning System output, and CMIS pre-trade analysis must not be interpreted as execution authorization.
+Controlled Execution remains locked.
 
-## Install
+## Installation
 
 ```bash
 python3 -m venv .venv
@@ -354,13 +196,25 @@ python -m pip install -e '.[dev,deepseek]'
 python -m pytest -v -m 'not live and not cmis_live'
 ```
 
-The deterministic suite covers the Oracle/tool loop, provider-neutral model injection, Chain Scout boundaries, CMIS capability validation, X1 and Solana evidence isolation, policy, persistence, durable-memory adapters, human approval, evidence-aware response contracts, Learning System source ingestion, structure-first parsing, structure-aware evidence chunking, deterministic indexing, deterministic retrieval/benchmark foundations, deterministic grounding/citation validation, deterministic answer evaluation, provisional reflection/candidate-lesson lifecycle integrity, and independent candidate-lesson verification. Phase 10 retention tests are under active implementation and are not an accepted completion signal until the independent review gate passes.
+Live/provider tests remain opt-in and separate from the deterministic gate.
+
+## Pyramid commands
+
+The repository exposes Pyramid commands for the accepted training path, including:
+
+```text
+roberta-pyramid-run
+roberta-pyramid-dashboard
+roberta-pyramid-remediate
+roberta-pyramid-regrade
+roberta-pyramid-source-reconstruct
+```
+
+Migration tooling proposed by PR #179 is not accepted until that PR merges.
 
 ## Provider-backed CMIS
 
-The CMIS implementation is maintained in the separate `bhaygood29053-pixel/cmis` repository.
-
-Start CMIS there with its current compatibility module path:
+Start CMIS from the separate repository using its compatibility module path:
 
 ```bash
 python -m liquidity_scout.cmis.http
@@ -387,8 +241,6 @@ Run explicit CMIS integration tests while CMIS is running:
 RUN_LIVE_CMIS_TESTS=1 python -m pytest -v -m cmis_live
 ```
 
-Live tests should verify contracts/provenance rather than hard-code current market values.
-
 ## Model runtime
 
 Set `DEEPSEEK_API_KEY` for the configured DeepSeek runtime path.
@@ -398,8 +250,6 @@ Opt-in live-model tests:
 ```bash
 RUN_LIVE_MODEL_TESTS=1 python -m pytest -v -m live
 ```
-
-Model-provider tests remain separate from deterministic provider/CMIS evidence verification.
 
 ## Local Roberta HTTP bridge
 
@@ -422,28 +272,20 @@ Health check:
 curl -s http://127.0.0.1:8766/healthz
 ```
 
-The message endpoint is `POST /v1/roberta`. Transport callers provide the user message; they do not provide tool names, CMIS operations, market facts, proof scores, risk values, or execution controls.
+The message endpoint is `POST /v1/roberta`. Transport callers provide user messages; they do not provide CMIS truth, proof scores, risk values, or execution controls.
 
-A non-loopback bind should require `ROBERTA_API_KEY` and Bearer authentication.
-
-## MoltGrid / Signal topology
-
-The accepted user-facing topology is:
+## Local topology
 
 ```text
 CMIS        127.0.0.1:8765
   ↓
 Roberta     127.0.0.1:8766
   ↓
-MoltGrid / Signal listener
+MoltGrid / Signal transport
 ```
 
-Roberta is the normal conversational voice. The transport layer owns admission/reply linkage/duplicate protection; Chain Scouts own chain-specific investigation; CMIS owns deterministic facts, evidence, proof quality, and risk.
+Roberta is the normal conversational voice. If Roberta is unavailable, transport should report an availability failure rather than substitute raw CMIS output as the user-facing answer.
 
-If Roberta is unavailable, the normal user-facing transport should report availability failure rather than exposing raw CMIS output as the conversational response.
+---
 
-## Near-term boundary
-
-The deterministic pre-trade trade-size milestone previously tracked as CMIS Issue #99 is complete. Roberta consumes CMIS's structured result and explains it; it does not duplicate the calculation.
-
-Learning System implementation through **Phase 9 independent candidate-lesson verification is complete**. **Phase 10 verified lesson retention is now the accepted active gate under #133/#134, but its runtime implementation is not yet accepted.** It remains in-memory/provider-neutral only and must pass its outstanding independent review gates before any verified lesson can become trusted within recorded retention scope. Future HXMP lesson persistence, wallet/behavioral interpretation, early-warning adoption, additional cross-chain expansion, Technology Radar implementation, and any eventual controlled execution remain separately gated and must not be inferred from the existing foundation.
+**Roberta coordinates and learns under evidence boundaries. CMIS verifies current facts. Controlled Execution remains locked.**
