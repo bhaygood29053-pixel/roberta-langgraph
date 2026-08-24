@@ -4,7 +4,10 @@ import argparse
 import json
 
 from .curriculum_io import validate_package
-from .pyramid import CANONICAL_LEVEL_QUESTION_COUNT
+from .pyramid import (
+    LEGACY_CANONICAL_LEVEL_QUESTION_COUNT,
+    SUPPORTED_CANONICAL_LEVEL_QUESTION_COUNTS,
+)
 from .pyramid_adjudicator_retry import create_pyramid_runtime_model
 from .pyramid_regrade import regrade_checkpoints
 
@@ -26,6 +29,13 @@ def main() -> None:
     parser.add_argument("--seed", required=True, help="Original Pyramid run seed")
     parser.add_argument("--batch-size", type=int, default=10, help="Historical questions per checkpoint batch")
     parser.add_argument(
+        "--question-count",
+        type=int,
+        choices=SUPPORTED_CANONICAL_LEVEL_QUESTION_COUNTS,
+        default=LEGACY_CANONICAL_LEVEL_QUESTION_COUNT,
+        help="Historical canonical question count (default: 1000 for pre-migration checkpoints)",
+    )
+    parser.add_argument(
         "--input-checkpoints",
         required=True,
         help="Historical seed checkpoint directory containing v1 grading state",
@@ -46,7 +56,7 @@ def main() -> None:
     print(f"CURRICULUM {curriculum_id}")
     print(f"LEVEL {args.level}")
     print(f"SEED {args.seed}")
-    print(f"QUESTIONS {CANONICAL_LEVEL_QUESTION_COUNT}")
+    print(f"QUESTIONS {args.question_count}")
     print(f"INPUT_CHECKPOINTS {args.input_checkpoints}")
     print(f"OUTPUT_CHECKPOINTS {args.output_checkpoints}")
 
@@ -60,6 +70,7 @@ def main() -> None:
         level=args.level,
         run_seed=args.seed,
         batch_size=args.batch_size,
+        question_count=args.question_count,
         canonical_exam=True,
         progress=_progress,
     )
