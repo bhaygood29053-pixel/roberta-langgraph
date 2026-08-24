@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from .curriculum_io import validate_package
 from .pyramid_adjudicator_retry import create_pyramid_runtime_model
 from .pyramid_answer_recovery import MissingAnswerRetryModel
 from .pyramid_critical_blocker_supplemental import (
@@ -12,6 +13,7 @@ from .pyramid_critical_blocker_supplemental import (
     CRITICAL_BLOCKER_SUPPLEMENTAL_VERSION,
     build_critical_checkpoint_view,
     mb4e_immutability_critical_blocker_bank,
+    validate_critical_blocker_gate,
 )
 from .pyramid_grounded_practice import (
     GROUNDED_PRACTICE_CHECKPOINT_NAMESPACE,
@@ -35,6 +37,8 @@ def _parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--curriculum", required=True)
     parser.add_argument("--checkpoints", required=True, help="Current V3 critical-revalidated checkpoint directory")
+    parser.add_argument("--critical-revalidation-report", required=True, help="V3 critical_revalidation_report.json")
+    parser.add_argument("--ledger", required=True, help="Read-only Pyramid training ledger")
     parser.add_argument("--reconstructions", required=True, help="Source-grounded reconstructions for current critical blockers")
     parser.add_argument(
         "--inherit-remediation-plan",
@@ -75,6 +79,18 @@ def main() -> int:
     if args.batch_size <= 0:
         raise SystemExit("--batch-size must be positive")
 
+    try:
+        manifest, _ = validate_package(args.curriculum)
+        curriculum_id = str(manifest["curriculum_id"])
+        gate_evidence = validate_critical_blocker_gate(
+            revalidation_report_path=args.critical_revalidation_report,
+            ledger_path=args.ledger,
+            curriculum_id=curriculum_id,
+            level=1,
+        )
+    except (ValueError, RuntimeError) as exc:
+        raise SystemExit(str(exc)) from exc
+
     output = Path(args.output)
     if not args.dry_run and output.exists() and any(output.iterdir()):
         raise SystemExit(f"critical-blocker supplemental output already exists and is not empty: {output}")
@@ -86,6 +102,10 @@ def main() -> int:
                 source_dir=args.checkpoints,
                 output_dir=critical_view,
             )
+            if critical_manifest.get("critical_exercise_ids") != gate_evidence.get("critical_ids"):
+                raise RuntimeError(
+                    "critical revalidation report critical ids do not match current V3 checkpoint blockers"
+                )
             preparation = prepare_supplemental_targeted_practice(
                 curriculum_dir=args.curriculum,
                 checkpoint_dir=critical_view,
@@ -94,9 +114,7 @@ def main() -> int:
                 exclude_checkpoint_dirs=args.exclude_checkpoints,
                 questions_per_weakness=args.questions_per_weakness,
                 seed=args.seed,
-                supplemental_bank=mb4e_immutability_critical_blocker_bank(
-                    str(json.loads((Path(args.curriculum) / "manifest.json").read_text(encoding="utf-8"))["curriculum_id"])
-                ),
+                supplemental_bank=mb4e_immutability_critical_blocker_bank(curriculum_id),
             )
             prepared = preparation.prepared
             contexts = load_grounded_practice_contexts(
@@ -123,6 +141,7 @@ def main() -> int:
             "critical_blocker_contract": CRITICAL_BLOCKER_SUPPLEMENTAL_CONTRACT,
             "critical_blocker_version": CRITICAL_BLOCKER_SUPPLEMENTAL_VERSION,
             "critical_blocker_mode": True,
+            "critical_blocker_gate": gate_evidence,
             "critical_checkpoint_source": critical_manifest,
             "minimum_questions_per_weakness": 10,
             "canonical_attempt_authorized_before_practice": False,
@@ -133,6 +152,11 @@ def main() -> int:
     print(f"VERSION {CRITICAL_BLOCKER_SUPPLEMENTAL_VERSION}")
     print(f"CURRICULUM {prepared.curriculum_id}")
     print(f"LEVEL {prepared.level}")
+    print("CRITICAL_BLOCKER_GATE_VERIFIED true")
+    print(f"GATE_REVALIDATED_ACCURACY {float(gate_evidence['revalidated_accuracy']):.4f}")
+    print(f"GATE_INTEGRITY_ACCURACY {float(gate_evidence['integrity_accuracy']):.4f}")
+    print(f"GATE_BOSS_PASSED {str(gate_evidence['boss_passed']).lower()}")
+    print(f"GATE_VALIDATED_CRITICAL_FAILURES {gate_evidence['validated_critical_failures']}")
     print(f"CURRENT_CRITICAL_ITEMS {len(preparation.current_weak_ids)}")
     print(f"ACTIVE_CRITICAL_WEAKNESSES {len(preparation.current_weakness_keys)}")
     print(f"SUPPLEMENTAL_QUESTIONS {len(prepared.exercises)}")
