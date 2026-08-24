@@ -351,6 +351,20 @@ def migrate_legacy_mb4e_curriculum(
         checkpoints_dir,
         set(after_ids),
     )
+    report = PyramidProvenanceMigrationReport(
+        curriculum_id=str(legacy_manifest["curriculum_id"]),
+        source_key=source_key,
+        input_dir=str(input_root),
+        output_dir=str(output_root),
+        exercise_count_before=len(raw_rows),
+        exercise_count_after=len(migrated_rows),
+        provenance_count=len(provenance_rows),
+        exercise_ids_identical=before_ids == after_ids,
+        question_text_identical=before_questions == after_questions,
+        semantic_fields_identical=semantics_identical,
+        checkpoint_compatible=checkpoint_compatible,
+        checkpoint_exercise_count=checkpoint_exercise_count,
+    )
 
     output_root.parent.mkdir(parents=True, exist_ok=True)
     stage = Path(tempfile.mkdtemp(prefix=f".{output_root.name}.tmp-", dir=output_root.parent))
@@ -374,6 +388,10 @@ def migrate_legacy_mb4e_curriculum(
         with (stage / "provenance.jsonl").open("w", encoding="utf-8") as handle:
             for row in provenance_rows:
                 handle.write(json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n")
+        (stage / "migration_report.json").write_text(
+            json.dumps(report.to_mapping(), ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
 
         migrated_manifest, migrated_exercises = validate_package(stage)
         if str(migrated_manifest["curriculum_id"]) != str(legacy_manifest["curriculum_id"]):
@@ -385,22 +403,4 @@ def migrate_legacy_mb4e_curriculum(
         shutil.rmtree(stage, ignore_errors=True)
         raise
 
-    report = PyramidProvenanceMigrationReport(
-        curriculum_id=str(legacy_manifest["curriculum_id"]),
-        source_key=source_key,
-        input_dir=str(input_root),
-        output_dir=str(output_root),
-        exercise_count_before=len(raw_rows),
-        exercise_count_after=len(migrated_rows),
-        provenance_count=len(provenance_rows),
-        exercise_ids_identical=before_ids == after_ids,
-        question_text_identical=before_questions == after_questions,
-        semantic_fields_identical=semantics_identical,
-        checkpoint_compatible=checkpoint_compatible,
-        checkpoint_exercise_count=checkpoint_exercise_count,
-    )
-    (output_root / "migration_report.json").write_text(
-        json.dumps(report.to_mapping(), ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
     return report
