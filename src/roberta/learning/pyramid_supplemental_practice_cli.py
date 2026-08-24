@@ -4,8 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
-from roberta.models import create_runtime_model
-
+from .pyramid_adjudicator_retry import create_pyramid_runtime_model
 from .pyramid_answer_recovery import MissingAnswerRetryModel
 from .pyramid_grounded_practice import (
     GROUNDED_PRACTICE_CHECKPOINT_NAMESPACE,
@@ -146,7 +145,7 @@ def main() -> int:
     output.mkdir(parents=True, exist_ok=True)
     _write_manifest(output / "supplemental_manifest.json", manifest_payload)
 
-    model = create_runtime_model()
+    model = create_pyramid_runtime_model()
     answer_model = MissingAnswerRetryModel(model, recover_unexpected_initial_ids=True)
     report = run_grounded_targeted_practice(
         prepared=prepared,

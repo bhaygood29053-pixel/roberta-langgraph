@@ -6,10 +6,9 @@ import json
 from pathlib import Path
 import secrets
 
-from roberta.models import create_runtime_model
-
 from .curriculum_io import validate_package
 from .pyramid import CANONICAL_LEVEL_QUESTION_COUNT, select_level_exercises
+from .pyramid_adjudicator_retry import create_pyramid_runtime_model
 from .pyramid_answer_recovery import MissingAnswerRetryModel
 from .pyramid_exam import run_exam
 from .training_ledger import PyramidTrainingLedger
@@ -121,7 +120,7 @@ def main() -> None:
     elif canonical:
         print(f"RESUME_RUN_ID {run_id}")
 
-    model = create_runtime_model()
+    model = create_pyramid_runtime_model()
     answer_model = MissingAnswerRetryModel(model)
     checkpoint_dir = Path(args.checkpoint_dir) / curriculum_id / str(seed)
     outcome = run_exam(
