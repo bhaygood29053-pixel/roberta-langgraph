@@ -15,11 +15,25 @@ class MissingAnswerRetryModel:
     repairs a structurally incomplete answer response by issuing one bounded
     missing-only retry. Existing ``answer_batch`` validation still decides whether
     the merged response is acceptable, so malformed, duplicate, empty, unexpected,
-    or still-missing answers fail closed.
+    or still-missing answers fail closed by default.
+
+    Targeted practice may opt into ``recover_unexpected_initial_ids``. In that mode,
+    unexpected rows in the *initial* response are discarded only when at least one
+    expected exercise is missing, and the adapter retries exactly those missing
+    exercise ids once. The recovery response itself is never filtered, so any
+    unexpected, duplicate, empty, or still-missing recovery id continues to fail
+    closed in ``answer_batch``. Canonical Pyramid callers keep the conservative
+    default.
     """
 
-    def __init__(self, model: Any) -> None:
+    def __init__(
+        self,
+        model: Any,
+        *,
+        recover_unexpected_initial_ids: bool = False,
+    ) -> None:
         self._model = model
+        self._recover_unexpected_initial_ids = recover_unexpected_initial_ids
 
     def invoke(self, messages: Sequence[object], *args: object, **kwargs: object) -> object:
         response = self._model.invoke(messages, *args, **kwargs)
@@ -35,13 +49,21 @@ class MissingAnswerRetryModel:
         expected_ids = [str(item["exercise_id"]).strip() for item in exercises]
         expected = set(expected_ids)
         returned_ids: list[str] = []
+        valid_rows: list[object] = []
+        saw_unexpected = False
         for row in parsed["answers"]:
             if not isinstance(row, Mapping):
                 return response
             exercise_id = str(row.get("exercise_id", "")).strip()
-            if not exercise_id or exercise_id not in expected:
+            if not exercise_id:
                 return response
+            if exercise_id not in expected:
+                if not self._recover_unexpected_initial_ids:
+                    return response
+                saw_unexpected = True
+                continue
             returned_ids.append(exercise_id)
+            valid_rows.append(row)
 
         if len(returned_ids) != len(set(returned_ids)):
             return response
@@ -49,6 +71,10 @@ class MissingAnswerRetryModel:
         returned = set(returned_ids)
         missing_ids = [exercise_id for exercise_id in expected_ids if exercise_id not in returned]
         if not missing_ids:
+            # Never hide an unexpected extra when the expected batch is already
+            # complete; the ordinary answer_batch validator must see and reject it.
+            return response
+        if saw_unexpected and not self._recover_unexpected_initial_ids:
             return response
 
         missing = set(missing_ids)
@@ -73,7 +99,7 @@ class MissingAnswerRetryModel:
                 "Roberta missing-answer recovery must return an object containing an answers array"
             )
 
-        combined = list(parsed["answers"]) + list(retry_parsed["answers"])
+        combined = valid_rows + list(retry_parsed["answers"])
         return AIMessage(content=json.dumps({"answers": combined}, ensure_ascii=False))
 
     @staticmethod

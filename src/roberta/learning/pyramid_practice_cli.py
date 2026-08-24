@@ -65,7 +65,10 @@ def main() -> int:
         return 0
 
     model = create_runtime_model()
-    answer_model = MissingAnswerRetryModel(model)
+    answer_model = MissingAnswerRetryModel(
+        model,
+        recover_unexpected_initial_ids=True,
+    )
     report = run_targeted_practice(
         prepared=prepared,
         answer_model=answer_model,
