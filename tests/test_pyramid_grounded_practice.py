@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -108,10 +109,24 @@ def _prepared() -> PreparedTargetedPractice:
     )
 
 
+def _canonical_hash(value: object) -> str:
+    return hashlib.sha256(
+        json.dumps(
+            value,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        ).encode("utf-8")
+    ).hexdigest()
+
+
 def _write_reconstruction(tmp_path: Path, *, text: str = "Source evidence about immutability.") -> Path:
     weak = _bank()[0]
     path = tmp_path / "reconstructions.jsonl"
-    row = {
+    transcript_sha = "a" * 64
+    source_id = "source-a-id"
+    material = {
         "reconstruction_contract": PYRAMID_SOURCE_RECONSTRUCTION_CONTRACT,
         "reconstruction_version": PYRAMID_SOURCE_RECONSTRUCTION_VERSION,
         "curriculum_id": CURRICULUM_ID,
@@ -120,11 +135,16 @@ def _write_reconstruction(tmp_path: Path, *, text: str = "Source evidence about 
         "concept": weak.concept,
         "subconcept": weak.subconcept,
         "question": weak.question,
+        "source_id": source_id,
+        "source_content_hash": transcript_sha,
+        "source_transcript_sha256": transcript_sha,
         "source_grounded": True,
         "evidence_packet_status": "ok",
         "evidence_anchors": [
             {
                 "anchor_id": "E1",
+                "source_id": source_id,
+                "source_approval_status": "approved",
                 "text": text,
                 "fusion_rank": 1,
             }
@@ -137,6 +157,12 @@ def _write_reconstruction(tmp_path: Path, *, text: str = "Source evidence about 
         "retention_authorized": False,
         "governance_mutation_authorized": False,
         "execution_authorized": False,
+    }
+    digest = _canonical_hash(material)
+    row = {
+        "reconstruction_id": f"pyrrecon_{digest}",
+        "reconstruction_hash": digest,
+        **material,
     }
     path.write_text(json.dumps(row) + "\n", encoding="utf-8")
     return path
@@ -154,7 +180,9 @@ def test_loader_rebinds_source_evidence_to_original_curriculum_weakness(tmp_path
 
     assert len(contexts) == 1
     assert contexts[0].key == ("benefits", "immutability")
-    assert contexts[0].anchors == (("E1", "Source evidence about immutability."),)
+    assert contexts[0].anchors == (
+        ("weak-1:E1", "Source evidence about immutability."),
+    )
 
 
 def test_loader_rejects_reconstruction_without_source_text(tmp_path: Path) -> None:
@@ -162,6 +190,21 @@ def test_loader_rejects_reconstruction_without_source_text(tmp_path: Path) -> No
     reconstructions = _write_reconstruction(tmp_path, text="")
 
     with pytest.raises(TargetedPyramidPracticeError, match="evidence text is missing"):
+        load_grounded_practice_contexts(
+            curriculum_dir=curriculum,
+            reconstructions_path=reconstructions,
+            prepared=_prepared(),
+        )
+
+
+def test_loader_rejects_tampered_source_text_before_prompt_injection(tmp_path: Path) -> None:
+    curriculum = _write_curriculum(tmp_path)
+    reconstructions = _write_reconstruction(tmp_path)
+    row = json.loads(reconstructions.read_text(encoding="utf-8"))
+    row["evidence_anchors"][0]["text"] = "Tampered source evidence."
+    reconstructions.write_text(json.dumps(row) + "\n", encoding="utf-8")
+
+    with pytest.raises(TargetedPyramidPracticeError, match="content hash is invalid"):
         load_grounded_practice_contexts(
             curriculum_dir=curriculum,
             reconstructions_path=reconstructions,
@@ -217,7 +260,7 @@ def test_answer_adapter_injects_matching_source_evidence_without_grading_referen
     context = GroundedPracticeContext(
         concept="benefits",
         subconcept="immutability",
-        anchors=(("E1", "Canonical source excerpt."),),
+        anchors=(("weak-1:E1", "Canonical source excerpt."),),
     )
     adapter = GroundedPracticeAnswerModel(capture, (context,))
     request = {
@@ -238,7 +281,7 @@ def test_answer_adapter_injects_matching_source_evidence_without_grading_referen
     remediation = exercise_payload["remediation_context"]
     assert remediation["contract"] == GROUNDED_PRACTICE_CONTEXT_CONTRACT
     assert remediation["source_evidence"] == [
-        {"anchor_id": "E1", "text": "Canonical source excerpt."}
+        {"anchor_id": "weak-1:E1", "text": "Canonical source excerpt."}
     ]
     assert "expected_answer" not in exercise_payload
     assert "reference_reasoning_points" not in exercise_payload
@@ -270,7 +313,7 @@ def test_grounded_targeted_practice_uses_new_checkpoint_namespace(tmp_path: Path
     context = GroundedPracticeContext(
         concept="benefits",
         subconcept="immutability",
-        anchors=(("E1", "Canonical source excerpt."),),
+        anchors=(("weak-1:E1", "Canonical source excerpt."),),
     )
 
     report = run_grounded_targeted_practice(
