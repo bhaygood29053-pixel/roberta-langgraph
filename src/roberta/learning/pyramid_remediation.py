@@ -67,7 +67,19 @@ def load_seen_exercise_ids(checkpoint_dirs: Iterable[str | Path]) -> tuple[str, 
     return tuple(sorted(seen))
 
 
-def load_weak_items(checkpoint_dir: str | Path) -> tuple[WeakItem, ...]:
+def load_weak_items(
+    checkpoint_dir: str | Path,
+    *,
+    critical_only: bool = False,
+    required_grading_semantics: str | None = None,
+) -> tuple[WeakItem, ...]:
+    """Load unresolved checkpoint items, optionally restricted to validated critical blockers.
+
+    The default preserves historical behavior. Critical-only filtering is explicit and can
+    also require an exact grading-semantics contract so callers cannot accidentally treat
+    pre-validation critical proposals as authoritative blockers.
+    """
+
     items: list[WeakItem] = []
     for path in _checkpoint_paths(checkpoint_dir):
         raw_bytes = path.read_bytes()
@@ -75,15 +87,28 @@ def load_weak_items(checkpoint_dir: str | Path) -> tuple[WeakItem, ...]:
         checkpoint_sha256 = hashlib.sha256(raw_bytes).hexdigest()
         checkpoint_schema = str(raw.get("checkpoint_schema", ""))
         grading_semantics = str(raw.get("grading_semantics", ""))
-        for grade in raw.get("grades", []):
-            if grade.get("grade") == "PASS" and not grade.get("critical_failure"):
+        if required_grading_semantics is not None and grading_semantics != required_grading_semantics:
+            raise ValueError(
+                "checkpoint grading semantics must equal "
+                f"{required_grading_semantics} for critical-blocker mode: {path}"
+            )
+        grades = raw.get("grades", [])
+        if not isinstance(grades, list):
+            raise ValueError(f"checkpoint grades must be an array: {path}")
+        for grade in grades:
+            if not isinstance(grade, dict):
+                raise ValueError(f"checkpoint grade must be an object: {path}")
+            is_critical = grade.get("critical_failure") is True
+            if critical_only and not is_critical:
+                continue
+            if grade.get("grade") == "PASS" and not is_critical:
                 continue
             items.append(
                 WeakItem(
                     exercise_id=str(grade.get("exercise_id", "")),
                     grade=str(grade.get("grade", "FAIL")).upper(),
                     score=float(grade.get("score", 0.0)),
-                    critical_failure=bool(grade.get("critical_failure", False)),
+                    critical_failure=is_critical,
                     failure_codes=tuple(str(code) for code in grade.get("failure_codes", [])),
                     answer=str(grade.get("answer", "")),
                     grader_note=str(grade.get("grader_note", "")),
