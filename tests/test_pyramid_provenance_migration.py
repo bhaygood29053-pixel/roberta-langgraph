@@ -173,6 +173,19 @@ def test_migration_rejects_existing_output_instead_of_overwriting(tmp_path: Path
         migrate_legacy_mb4e_curriculum(curriculum_dir=legacy, output_dir=output)
 
 
+def test_migration_rejects_output_nested_inside_historical_package(tmp_path: Path) -> None:
+    legacy = _write_legacy_package(tmp_path)
+    nested_output = legacy / "migrated"
+
+    with pytest.raises(PyramidProvenanceMigrationError, match="outside the legacy curriculum tree"):
+        migrate_legacy_mb4e_curriculum(
+            curriculum_dir=legacy,
+            output_dir=nested_output,
+        )
+
+    assert not nested_output.exists()
+
+
 def test_provenance_rejects_ambiguous_mixed_page_basis(tmp_path: Path) -> None:
     legacy = _write_legacy_package(tmp_path)
     output = tmp_path / "migrated"
