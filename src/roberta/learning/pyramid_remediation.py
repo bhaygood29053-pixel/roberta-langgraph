@@ -11,6 +11,9 @@ from typing import Iterable, Sequence
 from .pyramid import Exercise
 
 
+PYRAMID_REMEDIATION_PRACTICE_BINDING_CONTRACT = "roberta-pyramid-remediation-practice-binding/v1"
+
+
 @dataclass(frozen=True, slots=True)
 class WeakItem:
     exercise_id: str
@@ -31,18 +34,36 @@ def _checkpoint_paths(checkpoint_dir: str | Path) -> tuple[Path, ...]:
 
 
 def load_seen_exercise_ids(checkpoint_dirs: Iterable[str | Path]) -> tuple[str, ...]:
-    """Return every exercise id observed in one or more checkpoint directories."""
+    """Return every exercise id observed in one or more checkpoint directories.
+
+    Every supplied directory is an explicit freshness boundary, so missing, empty,
+    unreadable, or malformed checkpoint sets fail closed instead of silently
+    weakening the cumulative exclusion set.
+    """
 
     seen: set[str] = set()
     for checkpoint_dir in checkpoint_dirs:
-        for path in _checkpoint_paths(checkpoint_dir):
-            raw = json.loads(path.read_bytes().decode("utf-8"))
-            for grade in raw.get("grades", []):
+        root = Path(checkpoint_dir)
+        if not root.is_dir():
+            raise ValueError(f"checkpoint directory does not exist: {root}")
+        paths = _checkpoint_paths(root)
+        if not paths:
+            raise ValueError(f"checkpoint directory contains no Pyramid checkpoints: {root}")
+        for path in paths:
+            try:
+                raw = json.loads(path.read_bytes().decode("utf-8"))
+            except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+                raise ValueError(f"cannot read exclusion checkpoint {path}: {exc}") from exc
+            grades = raw.get("grades")
+            if not isinstance(grades, list):
+                raise ValueError(f"exclusion checkpoint grades must be an array: {path}")
+            for grade in grades:
                 if not isinstance(grade, dict):
-                    continue
+                    raise ValueError(f"exclusion checkpoint grade must be an object: {path}")
                 exercise_id = str(grade.get("exercise_id", "")).strip()
-                if exercise_id:
-                    seen.add(exercise_id)
+                if not exercise_id:
+                    raise ValueError(f"exclusion checkpoint grade has empty exercise_id: {path}")
+                seen.add(exercise_id)
     return tuple(sorted(seen))
 
 
