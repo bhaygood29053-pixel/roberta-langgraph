@@ -168,12 +168,16 @@ def select_level_exercises(
     if count != CANONICAL_LEVEL_QUESTION_COUNT:
         return tuple(rng.sample(eligible, count))
 
+    overlapping_bosses = [item for item in eligible if item.boss_question and item.integrity_question]
+    if overlapping_bosses:
+        raise ValueError(f"level {level} Boss Questions cannot also be integrity questions")
+
     bosses = [item for item in eligible if item.boss_question]
     if not bosses:
         raise ValueError(f"level {level} needs at least one Boss Question")
     boss = rng.choice(bosses)
 
-    integrity_pool = [item for item in eligible if item.integrity_question and item.exercise_id != boss.exercise_id]
+    integrity_pool = [item for item in eligible if item.integrity_question]
     if len(integrity_pool) < CANONICAL_INTEGRITY_QUESTION_COUNT:
         raise ValueError(
             f"level {level} needs at least {CANONICAL_INTEGRITY_QUESTION_COUNT} non-Boss integrity questions; "
