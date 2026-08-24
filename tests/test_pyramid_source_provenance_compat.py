@@ -9,6 +9,24 @@ from roberta.learning.pyramid_source_provenance_compat import (
 )
 
 
+def test_learning_package_installs_pdf_locator_support_for_programmatic_reconstruction_api() -> None:
+    # Importing the Learning package is the normal boundary even for callers
+    # that request the reconstruction submodule directly. The compatibility
+    # seam must already be active before a caller invokes the builder.
+    assert getattr(reconstruction, "_basis_aware_source_provenance_installed", False) is True
+
+    locator = reconstruction._locator(
+        {
+            "chapter": "Chapter 1",
+            "section": "legacy PDF provenance",
+            "pdf_pages": [34, 35],
+            "legacy_source_ref": "MB4E-CH1-P34-35-FIXTURE",
+        }
+    )
+    assert isinstance(locator, BasisAwareSourceProvenanceLocator)
+    assert reconstruction._locator_mapping(locator)["pdf_pages"] == [34, 35]
+
+
 def test_basis_aware_adapter_preserves_pdf_pages_and_legacy_source_ref() -> None:
     install_basis_aware_source_provenance()
 
