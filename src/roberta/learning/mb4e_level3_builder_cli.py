@@ -11,6 +11,7 @@ import tempfile
 from typing import Mapping, Sequence
 
 from .curriculum_io import CurriculumPackageError, validate_package
+from .mb4e_level2_factory import build_level2_bank
 from .mb4e_level3_factory import (
     CURRICULUM_ID,
     INTEGRITY_COUNT,
@@ -91,6 +92,19 @@ def _provenance_name(manifest: Mapping[str, object]) -> str:
     if raw.get("source_key") != "mastering_blockchain_4e_2023":
         raise Level3BuildError("unexpected Mastering Blockchain source_provenance.source_key")
     return name
+
+
+def _assert_required_level2(existing: Sequence[object]) -> None:
+    current = tuple(item for item in existing if getattr(item, "level", None) == 2)
+    expected = build_level2_bank(CURRICULUM_ID)
+    if not current:
+        raise Level3BuildError(
+            "Level 2 exercise bank is missing; install the deterministic Mastering Blockchain Level 2 bank before Level 3"
+        )
+    if current != expected:
+        raise Level3BuildError(
+            "Level 2 exercise bank does not exactly match the deterministic Mastering Blockchain Level 2 bank; refusing to install Level 3"
+        )
 
 
 def _assert_existing_level3(existing: Sequence[object], generated: Sequence[object]) -> bool:
@@ -287,6 +301,7 @@ def main() -> int:
             raise Level3BuildError(
                 f"builder only supports {CURRICULUM_ID}; found {manifest.get('curriculum_id')}"
             )
+        _assert_required_level2(existing)
         provenance_name = _provenance_name(manifest)
         generated = build_level3_bank(CURRICULUM_ID)
         already_present = _assert_existing_level3(existing, generated)
