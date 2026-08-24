@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 
@@ -10,6 +11,7 @@ from .pyramid_learning_handoff import (
     write_pyramid_learning_handoffs_jsonl,
 )
 from .pyramid_remediation import (
+    PYRAMID_REMEDIATION_PRACTICE_BINDING_CONTRACT,
     build_remediation_plan,
     load_seen_exercise_ids,
     load_weak_items,
@@ -46,8 +48,8 @@ def main() -> int:
 
     plan = build_remediation_plan(exercises, weak_items)
     exclusion_dirs = [args.checkpoints, *args.exclude_checkpoints]
-    excluded_seen_ids = load_seen_exercise_ids(exclusion_dirs)
     try:
+        excluded_seen_ids = load_seen_exercise_ids(exclusion_dirs)
         practice = select_fresh_practice(
             exercises,
             weak_items,
@@ -72,6 +74,10 @@ def main() -> int:
     plan_path = output / "remediation_plan.json"
     practice_path = output / "practice_questions.jsonl"
     handoff_path = output / "learning_handoffs.jsonl"
+
+    write_practice_jsonl(practice_path, practice)
+    practice_sha256 = hashlib.sha256(practice_path.read_bytes()).hexdigest()
+    practice_exercise_ids = [item.exercise_id for item in practice]
     plan_payload = {
         "curriculum_id": manifest["curriculum_id"],
         "seed": args.seed,
@@ -79,10 +85,12 @@ def main() -> int:
         "learning_handoff_count": len(handoffs),
         "excluded_seen_exercise_count": len(excluded_seen_ids),
         "excluded_checkpoint_dirs": [str(Path(item)) for item in exclusion_dirs],
+        "practice_binding_contract": PYRAMID_REMEDIATION_PRACTICE_BINDING_CONTRACT,
+        "practice_exercise_ids": practice_exercise_ids,
+        "practice_sha256": practice_sha256,
         **plan,
     }
     plan_path.write_text(json.dumps(plan_payload, ensure_ascii=False, indent=2), encoding="utf-8")
-    write_practice_jsonl(practice_path, practice)
     write_pyramid_learning_handoffs_jsonl(handoff_path, handoffs)
 
     print(f"CURRICULUM {manifest['curriculum_id']}")
@@ -90,6 +98,7 @@ def main() -> int:
     print(f"WEAKNESSES {plan['weakness_count']}")
     print(f"EXCLUDED_SEEN_EXERCISES {len(excluded_seen_ids)}")
     print(f"FRESH_PRACTICE {len(practice)}")
+    print(f"PRACTICE_SHA256 {practice_sha256}")
     print(f"LEARNING_HANDOFFS {len(handoffs)}")
     print(f"PLAN {plan_path}")
     print(f"PRACTICE {practice_path}")
