@@ -11,6 +11,9 @@ from typing import Iterable, Sequence
 from .pyramid import Exercise
 
 
+PYRAMID_REMEDIATION_PRACTICE_BINDING_CONTRACT = "roberta-pyramid-remediation-practice-binding/v1"
+
+
 @dataclass(frozen=True, slots=True)
 class WeakItem:
     exercise_id: str
@@ -26,10 +29,47 @@ class WeakItem:
     grading_semantics: str = ""
 
 
+def _checkpoint_paths(checkpoint_dir: str | Path) -> tuple[Path, ...]:
+    return tuple(sorted(Path(checkpoint_dir).glob("level_*_batch_*.json")))
+
+
+def load_seen_exercise_ids(checkpoint_dirs: Iterable[str | Path]) -> tuple[str, ...]:
+    """Return every exercise id observed in one or more checkpoint directories.
+
+    Every supplied directory is an explicit freshness boundary, so missing, empty,
+    unreadable, or malformed checkpoint sets fail closed instead of silently
+    weakening the cumulative exclusion set.
+    """
+
+    seen: set[str] = set()
+    for checkpoint_dir in checkpoint_dirs:
+        root = Path(checkpoint_dir)
+        if not root.is_dir():
+            raise ValueError(f"checkpoint directory does not exist: {root}")
+        paths = _checkpoint_paths(root)
+        if not paths:
+            raise ValueError(f"checkpoint directory contains no Pyramid checkpoints: {root}")
+        for path in paths:
+            try:
+                raw = json.loads(path.read_bytes().decode("utf-8"))
+            except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+                raise ValueError(f"cannot read exclusion checkpoint {path}: {exc}") from exc
+            grades = raw.get("grades")
+            if not isinstance(grades, list):
+                raise ValueError(f"exclusion checkpoint grades must be an array: {path}")
+            for grade in grades:
+                if not isinstance(grade, dict):
+                    raise ValueError(f"exclusion checkpoint grade must be an object: {path}")
+                exercise_id = str(grade.get("exercise_id", "")).strip()
+                if not exercise_id:
+                    raise ValueError(f"exclusion checkpoint grade has empty exercise_id: {path}")
+                seen.add(exercise_id)
+    return tuple(sorted(seen))
+
+
 def load_weak_items(checkpoint_dir: str | Path) -> tuple[WeakItem, ...]:
-    root = Path(checkpoint_dir)
     items: list[WeakItem] = []
-    for path in sorted(root.glob("level_*_batch_*.json")):
+    for path in _checkpoint_paths(checkpoint_dir):
         raw_bytes = path.read_bytes()
         raw = json.loads(raw_bytes.decode("utf-8"))
         checkpoint_sha256 = hashlib.sha256(raw_bytes).hexdigest()
@@ -106,23 +146,48 @@ def select_fresh_practice(
     *,
     per_weakness: int = 5,
     seed: str = "remediation",
+    excluded_exercise_ids: Iterable[str] = (),
 ) -> tuple[Exercise, ...]:
     if per_weakness <= 0:
         raise ValueError("per_weakness must be positive")
     by_id = {item.exercise_id: item for item in exercises}
-    seen = {item.exercise_id for item in weak_items}
-    weak_keys = {(by_id[item.exercise_id].concept, by_id[item.exercise_id].subconcept) for item in weak_items if item.exercise_id in by_id}
+    weak_ids = {item.exercise_id for item in weak_items}
+    excluded = {
+        exercise_id.strip()
+        for exercise_id in excluded_exercise_ids
+        if isinstance(exercise_id, str) and exercise_id.strip()
+    }
+    excluded.update(weak_ids)
+    weak_keys = {
+        (by_id[item.exercise_id].concept, by_id[item.exercise_id].subconcept)
+        for item in weak_items
+        if item.exercise_id in by_id
+    }
     rng = random.Random(seed)
     selected: list[Exercise] = []
+    exhausted_by_history: list[tuple[str, str]] = []
     for key in sorted(weak_keys):
-        pool = [
-            item for item in exercises
+        legacy_pool = [
+            item
+            for item in exercises
             if (item.concept, item.subconcept) == key
-            and item.exercise_id not in seen
+            and item.exercise_id not in weak_ids
             and not item.boss_question
         ]
+        pool = [item for item in legacy_pool if item.exercise_id not in excluded]
         rng.shuffle(pool)
-        selected.extend(pool[:per_weakness])
+        chosen = pool[:per_weakness]
+        if not chosen:
+            if legacy_pool:
+                exhausted_by_history.append(key)
+            continue
+        selected.extend(chosen)
+    if exhausted_by_history:
+        labels = [f"{concept}/{subconcept}" for concept, subconcept in exhausted_by_history]
+        raise ValueError(
+            "cumulative checkpoint history exhausted fresh practice for remediation weaknesses: "
+            + ", ".join(labels)
+        )
     return tuple(selected)
 
 

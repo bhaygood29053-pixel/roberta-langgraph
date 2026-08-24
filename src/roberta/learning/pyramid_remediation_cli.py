@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 
@@ -9,13 +10,29 @@ from .pyramid_learning_handoff import (
     build_pyramid_learning_handoffs,
     write_pyramid_learning_handoffs_jsonl,
 )
-from .pyramid_remediation import build_remediation_plan, load_weak_items, select_fresh_practice, write_practice_jsonl
+from .pyramid_remediation import (
+    PYRAMID_REMEDIATION_PRACTICE_BINDING_CONTRACT,
+    build_remediation_plan,
+    load_seen_exercise_ids,
+    load_weak_items,
+    select_fresh_practice,
+    write_practice_jsonl,
+)
 
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Build a targeted Pyramid remediation plan from checkpoint results.")
     parser.add_argument("--curriculum", default="curricula/mastering_blockchain_4e_2023")
     parser.add_argument("--checkpoints", default=".roberta/pyramid_checkpoints/mastering_blockchain_4e_2023_book01/smoke")
+    parser.add_argument(
+        "--exclude-checkpoints",
+        action="append",
+        default=[],
+        help=(
+            "Additional checkpoint directory whose exercise ids must be excluded from fresh practice. "
+            "May be supplied more than once."
+        ),
+    )
     parser.add_argument("--output", default=".roberta/pyramid_remediation/mastering_blockchain_4e_2023_book01")
     parser.add_argument("--practice-per-weakness", type=int, default=5)
     parser.add_argument("--seed", default="remediation-001")
@@ -30,12 +47,18 @@ def main() -> int:
         raise SystemExit("No PARTIAL/FAIL/critical checkpoint items found; nothing to remediate.")
 
     plan = build_remediation_plan(exercises, weak_items)
-    practice = select_fresh_practice(
-        exercises,
-        weak_items,
-        per_weakness=args.practice_per_weakness,
-        seed=args.seed,
-    )
+    exclusion_dirs = [args.checkpoints, *args.exclude_checkpoints]
+    try:
+        excluded_seen_ids = load_seen_exercise_ids(exclusion_dirs)
+        practice = select_fresh_practice(
+            exercises,
+            weak_items,
+            per_weakness=args.practice_per_weakness,
+            seed=args.seed,
+            excluded_exercise_ids=excluded_seen_ids,
+        )
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
     approved_source_refs = manifest.get("approved_source_refs")
     if not isinstance(approved_source_refs, list):
         raise SystemExit("Validated curriculum manifest is missing approved_source_refs.")
@@ -51,21 +74,31 @@ def main() -> int:
     plan_path = output / "remediation_plan.json"
     practice_path = output / "practice_questions.jsonl"
     handoff_path = output / "learning_handoffs.jsonl"
+
+    write_practice_jsonl(practice_path, practice)
+    practice_sha256 = hashlib.sha256(practice_path.read_bytes()).hexdigest()
+    practice_exercise_ids = [item.exercise_id for item in practice]
     plan_payload = {
         "curriculum_id": manifest["curriculum_id"],
         "seed": args.seed,
         "practice_question_count": len(practice),
         "learning_handoff_count": len(handoffs),
+        "excluded_seen_exercise_count": len(excluded_seen_ids),
+        "excluded_checkpoint_dirs": [str(Path(item)) for item in exclusion_dirs],
+        "practice_binding_contract": PYRAMID_REMEDIATION_PRACTICE_BINDING_CONTRACT,
+        "practice_exercise_ids": practice_exercise_ids,
+        "practice_sha256": practice_sha256,
         **plan,
     }
     plan_path.write_text(json.dumps(plan_payload, ensure_ascii=False, indent=2), encoding="utf-8")
-    write_practice_jsonl(practice_path, practice)
     write_pyramid_learning_handoffs_jsonl(handoff_path, handoffs)
 
     print(f"CURRICULUM {manifest['curriculum_id']}")
     print(f"WEAK_ITEMS {plan['weak_item_count']}")
     print(f"WEAKNESSES {plan['weakness_count']}")
+    print(f"EXCLUDED_SEEN_EXERCISES {len(excluded_seen_ids)}")
     print(f"FRESH_PRACTICE {len(practice)}")
+    print(f"PRACTICE_SHA256 {practice_sha256}")
     print(f"LEARNING_HANDOFFS {len(handoffs)}")
     print(f"PLAN {plan_path}")
     print(f"PRACTICE {practice_path}")
