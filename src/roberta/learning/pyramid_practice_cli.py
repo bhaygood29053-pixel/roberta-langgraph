@@ -3,8 +3,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from roberta.models import create_runtime_model
-
+from .pyramid_adjudicator_retry import create_pyramid_runtime_model
 from .pyramid_answer_recovery import MissingAnswerRetryModel
 from .pyramid_grounded_practice import (
     GROUNDED_PRACTICE_CHECKPOINT_NAMESPACE,
@@ -85,7 +84,7 @@ def main() -> int:
         print("EXECUTION_AUTHORIZED false")
         return 0
 
-    model = create_runtime_model()
+    model = create_pyramid_runtime_model()
     answer_model = MissingAnswerRetryModel(
         model,
         recover_unexpected_initial_ids=True,
