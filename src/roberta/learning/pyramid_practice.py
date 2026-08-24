@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import hashlib
 import json
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
@@ -8,6 +9,7 @@ from typing import Any, Callable, Mapping, Sequence
 from .curriculum_io import validate_package
 from .pyramid import Exercise, get_level_spec
 from .pyramid_exam import GradedAnswer, run_exam
+from .pyramid_remediation import PYRAMID_REMEDIATION_PRACTICE_BINDING_CONTRACT
 from .pyramid_source_reconstruction import (
     PYRAMID_SOURCE_RECONSTRUCTION_CONTRACT,
     PYRAMID_SOURCE_RECONSTRUCTION_NEXT_GATE,
@@ -210,7 +212,13 @@ def _parse_remediation_plan(
     plan_path: str | Path,
     *,
     curriculum_id: str,
-) -> tuple[dict[WeaknessKey, int], tuple[str, ...], int]:
+) -> tuple[
+    dict[WeaknessKey, int],
+    tuple[str, ...],
+    int,
+    tuple[str, ...] | None,
+    str | None,
+]:
     raw = _read_json_object(plan_path, label="remediation plan")
     if raw.get("curriculum_id") != curriculum_id:
         raise TargetedPyramidPracticeError(
@@ -278,7 +286,48 @@ def _parse_remediation_plan(
         raise TargetedPyramidPracticeError(
             "remediation practice_question_count must be a positive integer"
         )
-    return critical_counts, tuple(original_ids), practice_count
+
+    binding_markers = (
+        "practice_binding_contract",
+        "practice_exercise_ids",
+        "practice_sha256",
+        "excluded_seen_exercise_count",
+        "excluded_checkpoint_dirs",
+    )
+    has_binding_metadata = any(field in raw for field in binding_markers)
+    if not has_binding_metadata:
+        return critical_counts, tuple(original_ids), practice_count, None, None
+
+    if raw.get("practice_binding_contract") != PYRAMID_REMEDIATION_PRACTICE_BINDING_CONTRACT:
+        raise TargetedPyramidPracticeError(
+            "remediation plan practice binding contract is missing or unsupported"
+        )
+    practice_ids = raw.get("practice_exercise_ids")
+    if (
+        not isinstance(practice_ids, list)
+        or len(practice_ids) != practice_count
+        or not all(isinstance(value, str) and value for value in practice_ids)
+        or len(practice_ids) != len(set(practice_ids))
+    ):
+        raise TargetedPyramidPracticeError(
+            "remediation practice_exercise_ids must be unique strings matching practice_question_count"
+        )
+    practice_sha256 = raw.get("practice_sha256")
+    if (
+        not isinstance(practice_sha256, str)
+        or len(practice_sha256) != 64
+        or any(character not in "0123456789abcdef" for character in practice_sha256)
+    ):
+        raise TargetedPyramidPracticeError(
+            "remediation practice_sha256 must be a lowercase SHA-256 digest"
+        )
+    return (
+        critical_counts,
+        tuple(original_ids),
+        practice_count,
+        tuple(practice_ids),
+        practice_sha256,
+    )
 
 
 def _validate_reconstruction_coverage(
@@ -347,7 +396,20 @@ def _resolve_practice_exercises(
     weakness_keys: set[WeaknessKey],
     original_weak_ids: set[str],
     expected_count: int,
+    expected_practice_ids: tuple[str, ...] | None = None,
+    expected_practice_sha256: str | None = None,
 ) -> tuple[Exercise, ...]:
+    if expected_practice_sha256 is not None:
+        source = Path(practice_path)
+        try:
+            actual_sha256 = hashlib.sha256(source.read_bytes()).hexdigest()
+        except OSError as exc:
+            raise TargetedPyramidPracticeError(f"cannot read targeted practice: {exc}") from exc
+        if actual_sha256 != expected_practice_sha256:
+            raise TargetedPyramidPracticeError(
+                "targeted practice SHA-256 does not match remediation plan binding"
+            )
+
     rows = _read_jsonl(practice_path, label="targeted practice")
     if len(rows) != expected_count:
         raise TargetedPyramidPracticeError(
@@ -430,6 +492,12 @@ def _resolve_practice_exercises(
         selected_ids.add(exercise_id)
         selected.append(exercise)
 
+    if expected_practice_ids is not None:
+        actual_ids = tuple(item.exercise_id for item in selected)
+        if actual_ids != expected_practice_ids:
+            raise TargetedPyramidPracticeError(
+                "targeted practice exercise ids do not match remediation plan binding"
+            )
     if represented != weakness_keys:
         missing = sorted(
             weakness_keys - represented,
@@ -455,7 +523,13 @@ def prepare_targeted_practice(
 ) -> PreparedTargetedPractice:
     manifest, bank = validate_package(curriculum_dir)
     curriculum_id = str(manifest["curriculum_id"])
-    critical_counts, original_weak_ids, expected_count = _parse_remediation_plan(
+    (
+        critical_counts,
+        original_weak_ids,
+        expected_count,
+        expected_practice_ids,
+        expected_practice_sha256,
+    ) = _parse_remediation_plan(
         remediation_plan_path,
         curriculum_id=curriculum_id,
     )
@@ -470,6 +544,8 @@ def prepare_targeted_practice(
         weakness_keys=set(critical_counts),
         original_weak_ids=set(original_weak_ids),
         expected_count=expected_count,
+        expected_practice_ids=expected_practice_ids,
+        expected_practice_sha256=expected_practice_sha256,
     )
     return PreparedTargetedPractice(
         curriculum_id=curriculum_id,
