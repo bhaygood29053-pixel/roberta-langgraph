@@ -130,12 +130,13 @@ def select_fresh_practice(
     if per_weakness <= 0:
         raise ValueError("per_weakness must be positive")
     by_id = {item.exercise_id: item for item in exercises}
+    weak_ids = {item.exercise_id for item in weak_items}
     excluded = {
         exercise_id.strip()
         for exercise_id in excluded_exercise_ids
         if isinstance(exercise_id, str) and exercise_id.strip()
     }
-    excluded.update(item.exercise_id for item in weak_items)
+    excluded.update(weak_ids)
     weak_keys = {
         (by_id[item.exercise_id].concept, by_id[item.exercise_id].subconcept)
         for item in weak_items
@@ -143,25 +144,27 @@ def select_fresh_practice(
     }
     rng = random.Random(seed)
     selected: list[Exercise] = []
-    uncovered: list[tuple[str, str]] = []
+    exhausted_by_history: list[tuple[str, str]] = []
     for key in sorted(weak_keys):
-        pool = [
+        legacy_pool = [
             item
             for item in exercises
             if (item.concept, item.subconcept) == key
-            and item.exercise_id not in excluded
+            and item.exercise_id not in weak_ids
             and not item.boss_question
         ]
+        pool = [item for item in legacy_pool if item.exercise_id not in excluded]
         rng.shuffle(pool)
         chosen = pool[:per_weakness]
         if not chosen:
-            uncovered.append(key)
+            if legacy_pool:
+                exhausted_by_history.append(key)
             continue
         selected.extend(chosen)
-    if uncovered:
-        labels = [f"{concept}/{subconcept}" for concept, subconcept in uncovered]
+    if exhausted_by_history:
+        labels = [f"{concept}/{subconcept}" for concept, subconcept in exhausted_by_history]
         raise ValueError(
-            "no fresh practice questions remain for remediation weaknesses: "
+            "cumulative checkpoint history exhausted fresh practice for remediation weaknesses: "
             + ", ".join(labels)
         )
     return tuple(selected)
