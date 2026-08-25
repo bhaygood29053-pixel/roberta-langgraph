@@ -122,7 +122,10 @@ def test_rendered_dashboard_uses_declared_eight_level_pyramid() -> None:
     assert 'data-level="9"' not in rendered
     assert "8 LEVELS REQUIRED" in rendered
     assert "Math.min(ts,h+1)" in rendered
-    assert "nh+' / '+(nd?nt:'?')" in rendered
+    assert "Boolean(d.pyramid_total_levels_declared)?Number(d.pyramid_total_levels||ts):'?'" in rendered
+    assert "Number(d.pyramid_total_levels||ts)!==ts" in rendered
+    assert "nt!==ts" not in rendered
+    assert "nd!==td" not in rendered
 
 
 def test_rendered_dashboard_shows_unknown_total_until_roberta_declares() -> None:
