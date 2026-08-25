@@ -16,7 +16,12 @@ from roberta.learning.mb4e_level2_factory import (
     level2_provenance_records,
     level2_source_map,
 )
-from roberta.learning.pyramid import PYRAMID_CONTRACT, select_level_exercises
+from roberta.learning.pyramid import (
+    CANONICAL_INTEGRITY_QUESTION_COUNT,
+    CANONICAL_LEVEL_QUESTION_COUNT,
+    PYRAMID_CONTRACT,
+    select_level_exercises,
+)
 
 
 ARTIFACT_SHA = "a" * 64
@@ -158,11 +163,11 @@ def test_complete_staged_level2_package_passes_validate_package(tmp_path) -> Non
         level=2,
         run_seed="mb4e-level2-provenance-integration",
     )
-    assert len(selected) == 1000
+    assert len(selected) == CANONICAL_LEVEL_QUESTION_COUNT == 300
     assert sum(
         not exercise.integrity_question and not exercise.boss_question
         for exercise in selected
-    ) == 949
-    assert sum(exercise.integrity_question for exercise in selected) == 50
+    ) == CANONICAL_LEVEL_QUESTION_COUNT - CANONICAL_INTEGRITY_QUESTION_COUNT - 1 == 249
+    assert sum(exercise.integrity_question for exercise in selected) == CANONICAL_INTEGRITY_QUESTION_COUNT == 50
     assert sum(exercise.boss_question for exercise in selected) == 1
     assert selected[-1].boss_question is True

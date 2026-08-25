@@ -10,8 +10,8 @@ def test_ledger_tracks_progress_failure_and_history(tmp_path) -> None:
 
     level_one = evaluate_level(
         level=1,
-        total_questions=1000,
-        correct_questions=900,
+        total_questions=300,
+        correct_questions=270,
         integrity_total=50,
         integrity_correct=49,
         boss_passed=True,
@@ -21,8 +21,8 @@ def test_ledger_tracks_progress_failure_and_history(tmp_path) -> None:
 
     level_two = evaluate_level(
         level=2,
-        total_questions=1000,
-        correct_questions=700,
+        total_questions=300,
+        correct_questions=210,
         integrity_total=50,
         integrity_correct=48,
         boss_passed=True,
@@ -47,8 +47,8 @@ def test_ledger_rejects_skipped_level(tmp_path) -> None:
     run_id = ledger.start_run("book001", "seed-1")
     level_two = evaluate_level(
         level=2,
-        total_questions=1000,
-        correct_questions=900,
+        total_questions=300,
+        correct_questions=270,
         integrity_total=50,
         integrity_correct=50,
         boss_passed=True,
