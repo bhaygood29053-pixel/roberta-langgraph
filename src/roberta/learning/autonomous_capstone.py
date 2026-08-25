@@ -1,10 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-import hashlib
-import json
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 from .curriculum_io import validate_package
 from .pyramid import Exercise, MIN_INTEGRITY_ACCURACY, get_level_spec
@@ -45,8 +43,9 @@ def build_source_capstone(
     if str(manifest["curriculum_id"]) != plan.curriculum_id:
         raise AutonomousCapstoneError("capstone plan does not match curriculum")
     by_level: dict[int, list[Exercise]] = {}
+    required_levels = set(plan.required_capability_levels)
     for item in bank:
-        if item.level in plan.required_capabilities:
+        if item.level in required_levels:
             by_level.setdefault(item.level, []).append(item)
     missing = [stage.capability_level for stage in plan.stages if stage.capability_level not in by_level]
     if missing:
