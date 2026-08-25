@@ -84,7 +84,9 @@ def test_source_stage_progression_allows_noncontiguous_capability_levels(tmp_pat
     assert second["status"] == "mastered"
     assert progress is not None
     assert [row["capability_level"] for row in progress["stages"]] == [1, 3]
-    assert run["highest_level_passed"] == 3
+    # Global capability progress remains the highest contiguous prefix. Capability 2
+    # was not passed, so the source-specific capability-3 stage must not imply it was.
+    assert run["highest_level_passed"] == 1
     assert run["status"] == "mastered"
 
 
