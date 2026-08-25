@@ -159,7 +159,6 @@ def augment_dashboard_data(data: Mapping[str, object], mastery: Mapping[str, obj
 def _pyramid_rows(highest: int, latest_status: str, total_levels: int, declared: bool) -> str:
     rows: list[str] = []
     frontier = min(total_levels, highest + 1) if latest_status == "active" else highest
-    denominator = str(total_levels) if declared else "?"
     span = max(total_levels - 1, 1)
     for level in range(total_levels, 0, -1):
         if level <= highest:
@@ -253,13 +252,13 @@ def adapt_dashboard_html(html: str, data: Mapping[str, object], mastery: Mapping
     html = html.replace(";function cls(s){", f";var ts={total},td={declared_js};function cls(s){{", 1)
     html = html.replace("Math.min(20,h+1)", "Math.min(ts,h+1)", 1)
     html = html.replace(
-        "nr=Number(d.run_count||0);document.getElementById('highest').textContent=nh+' / 20';",
-        "nr=Number(d.run_count||0),nt=Number(d.pyramid_total_levels||ts),nd=Boolean(d.pyramid_total_levels_declared);document.getElementById('highest').textContent=nh+' / '+(nd?nt:'?');",
+        "document.getElementById('highest').textContent=nh+' / 20';",
+        "document.getElementById('highest').textContent=nh+' / '+(Boolean(d.pyramid_total_levels_declared)?Number(d.pyramid_total_levels||ts):'?');",
         1,
     )
     html = html.replace(
         "if(nr!==rc||nh!==hs||ns!==st)location.reload()",
-        "if(nr!==rc||nh!==hs||ns!==st||nt!==ts||nd!==td)location.reload()",
+        "if(nr!==rc||nh!==hs||ns!==st||Number(d.pyramid_total_levels||ts)!==ts||Boolean(d.pyramid_total_levels_declared)!==td)location.reload()",
         1,
     )
     return html
