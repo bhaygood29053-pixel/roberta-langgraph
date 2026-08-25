@@ -15,6 +15,7 @@ from roberta.learning.source_mastery import (
 def test_mb4e_plan_selects_only_capabilities_supported_by_source() -> None:
     plan = build_mb4e_source_mastery_plan(source_title="Mastering Blockchain, Fourth Edition")
 
+    assert plan.planner == "roberta-mb4e-source-mastery-planner/v2"
     assert plan.required_stage_count == 14
     assert plan.required_capability_levels == (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 17)
     assert plan.excluded_capability_levels == (12, 15, 16, 18, 19, 20)
