@@ -467,7 +467,16 @@ class PyramidTrainingLedger:
                     """,
                     (completed, source_status, run_id),
                 )
-                highest = max(int(run["highest_level_passed"]), result.level)
+                passed_rows = db.execute(
+                    "SELECT level FROM level_results WHERE run_id=? AND passed=1",
+                    (run_id,),
+                ).fetchall()
+                passed_levels = {int(row["level"]) for row in passed_rows}
+                highest = 0
+                for candidate in range(1, 21):
+                    if candidate not in passed_levels:
+                        break
+                    highest = candidate
                 if source_status == "mastered":
                     db.execute(
                         """
