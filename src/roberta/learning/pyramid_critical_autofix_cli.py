@@ -43,7 +43,7 @@ def _parser() -> argparse.ArgumentParser:
         "--checkpoint-dir",
         help=(
             "Exact failed checkpoint directory or a checkpoint root containing curriculum/seed. "
-            "When omitted, .roberta/pyramid_checkpoints*/<curriculum>/<seed> is discovered."
+            "Question-count namespaces such as q300 are resolved from the recorded failed run."
         ),
     )
     parser.add_argument(
@@ -82,6 +82,10 @@ def _checkpoint_hashes(root: Path) -> tuple[tuple[str, str], ...]:
     return tuple((str(path), _sha256(path)) for path in paths)
 
 
+def _has_checkpoints(path: Path) -> bool:
+    return path.is_dir() and any(path.glob("level_*_batch_*.json"))
+
+
 def _ledger_hash(path: Path) -> str:
     if not path.is_file():
         raise PyramidLearnedConceptError(f"Pyramid ledger does not exist: {path}")
@@ -100,7 +104,8 @@ def _failed_run(
         db.row_factory = sqlite3.Row
         query = """
             SELECT r.run_id, r.run_seed, r.status, r.started_at,
-                   lr.passed, lr.accuracy, lr.integrity_accuracy, lr.boss_passed, lr.critical_failures
+                   lr.passed, lr.accuracy, lr.integrity_accuracy, lr.boss_passed,
+                   lr.critical_failures, lr.result_json
             FROM pyramid_runs AS r
             JOIN level_results AS lr ON lr.run_id = r.run_id
             WHERE r.curriculum_id=? AND lr.level=? AND r.status='failed'
@@ -129,6 +134,18 @@ def _failed_run(
     integrity = float(row["integrity_accuracy"])
     boss = bool(row["boss_passed"])
     criticals = int(row["critical_failures"])
+    try:
+        result_payload = json.loads(str(row["result_json"]))
+    except json.JSONDecodeError as exc:
+        raise PyramidLearnedConceptError("failed canonical ledger result_json is invalid") from exc
+    if not isinstance(result_payload, Mapping):
+        raise PyramidLearnedConceptError("failed canonical ledger result_json must be an object")
+    question_count_raw = result_payload.get("total_questions")
+    if isinstance(question_count_raw, bool) or not isinstance(question_count_raw, int) or question_count_raw <= 0:
+        raise PyramidLearnedConceptError(
+            "failed canonical ledger result_json must record a positive total_questions"
+        )
+    question_count = int(question_count_raw)
     if bool(row["passed"]):
         raise PyramidLearnedConceptError("autofix is only valid for a failed canonical level")
     if accuracy < required:
@@ -151,6 +168,7 @@ def _failed_run(
         "boss_passed": boss,
         "critical_failures": criticals,
         "required_accuracy": required,
+        "question_count": question_count,
     }
 
 
@@ -159,28 +177,58 @@ def _resolve_checkpoint_dir(
     supplied: str | None,
     curriculum_id: str,
     seed: str,
+    question_count: int,
 ) -> Path:
+    if question_count <= 0:
+        raise PyramidLearnedConceptError("failed canonical question count must be positive")
+    namespace = f"q{question_count}"
     if supplied:
         root = Path(supplied)
-        exact = root / curriculum_id / seed
-        if exact.is_dir():
-            return exact
-        if root.is_dir() and tuple(root.glob("level_*_batch_*.json")):
-            return root
-        raise PyramidLearnedConceptError(f"cannot resolve supplied checkpoint directory: {root}")
-    candidates = tuple(
-        sorted(
-            path
-            for path in Path(".roberta").glob(f"pyramid_checkpoints*/{curriculum_id}/{seed}")
-            if path.is_dir()
+        candidates = (
+            root / curriculum_id / seed / namespace,
+            root / curriculum_id / seed,
+            root / namespace,
+            root,
         )
-    )
+        for candidate in candidates:
+            if _has_checkpoints(candidate):
+                return candidate
+        raise PyramidLearnedConceptError(f"cannot resolve supplied checkpoint directory: {root}")
+
+    candidates: list[Path] = []
+    for seed_root in sorted(Path(".roberta").glob(f"pyramid_checkpoints*/{curriculum_id}/{seed}")):
+        namespaced = seed_root / namespace
+        if _has_checkpoints(namespaced):
+            candidates.append(namespaced)
+        elif _has_checkpoints(seed_root):
+            candidates.append(seed_root)
     if len(candidates) != 1:
         raise PyramidLearnedConceptError(
             "could not uniquely auto-discover failed checkpoint directory; "
             f"found {[str(item) for item in candidates]}"
         )
     return candidates[0]
+
+
+def _reconstruct_failed_exam(
+    bank: tuple,
+    *,
+    curriculum_id: str,
+    seed: str,
+    question_count: int,
+) -> tuple:
+    try:
+        return select_level_exercises(
+            bank,
+            curriculum_id=curriculum_id,
+            level=1,
+            run_seed=seed,
+            count=question_count,
+        )
+    except ValueError as exc:
+        raise PyramidLearnedConceptError(
+            f"cannot reconstruct failed {question_count}-question canonical exam: {exc}"
+        ) from exc
 
 
 def _current_critical_keys(
@@ -274,10 +322,12 @@ def main() -> int:
             seed=args.seed,
         )
         seed = str(run["run_seed"])
+        question_count = int(run["question_count"])
         checkpoint_dir = _resolve_checkpoint_dir(
             supplied=args.checkpoint_dir,
             curriculum_id=curriculum_id,
             seed=seed,
+            question_count=question_count,
         )
         checkpoint_before = _checkpoint_hashes(checkpoint_dir)
         weak_items = load_weak_items(
@@ -313,6 +363,8 @@ def main() -> int:
     print("LEVEL 1")
     print(f"RUN_ID {run['run_id']}")
     print(f"SEED {seed}")
+    print(f"CANONICAL_QUESTIONS {question_count}")
+    print(f"CHECKPOINT_DIR {checkpoint_dir}")
     print(f"GATE_ACCURACY {float(run['accuracy']):.4f}")
     print(f"GATE_INTEGRITY_ACCURACY {float(run['integrity_accuracy']):.4f}")
     print(f"GATE_BOSS_PASSED {str(run['boss_passed']).lower()}")
@@ -337,13 +389,15 @@ def main() -> int:
         return 0
 
     critical_ids = {item.exercise_id for item in weak_items}
-    selected = select_level_exercises(
-        bank,
-        curriculum_id=curriculum_id,
-        level=1,
-        run_seed=seed,
-        count=1000,
-    )
+    try:
+        selected = _reconstruct_failed_exam(
+            bank,
+            curriculum_id=curriculum_id,
+            seed=seed,
+            question_count=question_count,
+        )
+    except PyramidLearnedConceptError as exc:
+        raise SystemExit(str(exc)) from exc
     probe = tuple(item for item in selected if item.exercise_id in critical_ids)
     if len(probe) != len(critical_ids):
         raise SystemExit("cannot reconstruct exact failed critical exercise set for transfer probe")
@@ -355,6 +409,7 @@ def main() -> int:
         json.dumps(
             {
                 "seed": seed,
+                "canonical_question_count": question_count,
                 "critical_ids": [item.exercise_id for item in probe],
                 "concept_hashes": [item.concept_hash for item in promoted],
             },
@@ -405,6 +460,8 @@ def main() -> int:
             "level": 1,
             "run_id": run["run_id"],
             "run_seed": seed,
+            "canonical_question_count": question_count,
+            "checkpoint_dir": str(checkpoint_dir),
             "original_critical_failures": len(weak_items),
             "critical_exercise_ids": sorted(critical_ids),
             "critical_weaknesses": [
