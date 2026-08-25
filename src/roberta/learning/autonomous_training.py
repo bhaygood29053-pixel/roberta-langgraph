@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import asdict
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -48,6 +47,18 @@ class TrainingHardStop(AutonomousTrainingError):
     pass
 
 
+def _pid_alive(pid: int) -> bool:
+    if pid <= 0:
+        return False
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
 class JobStore:
     def __init__(self, root: Path, job_id: str) -> None:
         self.root = root / job_id
@@ -57,14 +68,39 @@ class JobStore:
         self.lock_path = self.root / "controller.lock"
         self._lock_fd: int | None = None
 
+    def _open_lock(self) -> None:
+        self._lock_fd = os.open(self.lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+        os.write(self._lock_fd, f"{os.getpid()}\n".encode("ascii"))
+
     def acquire(self) -> None:
         try:
-            self._lock_fd = os.open(self.lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
-            os.write(self._lock_fd, str(os.getpid()).encode("ascii"))
+            self._open_lock()
+            return
+        except FileExistsError:
+            pass
+
+        try:
+            raw = self.lock_path.read_text(encoding="ascii").strip()
+            owner_pid = int(raw)
+        except (OSError, UnicodeDecodeError, ValueError) as exc:
+            raise AutonomousTrainingError(
+                f"autonomous training job {self.root.name} has an unreadable lock {self.lock_path}; refusing to guess whether another trainer is active"
+            ) from exc
+        if _pid_alive(owner_pid):
+            raise AutonomousTrainingError(
+                f"autonomous training job {self.root.name} is already running under pid {owner_pid}"
+            )
+
+        # A prior trainer crashed or the machine/WSL instance restarted. Recover
+        # only when the recorded owner process provably no longer exists.
+        try:
+            self.lock_path.unlink()
+            self._open_lock()
         except FileExistsError as exc:
             raise AutonomousTrainingError(
-                f"autonomous training job {self.root.name} is already locked; remove {self.lock_path} only if no trainer process is running"
+                f"autonomous training job {self.root.name} lock was reclaimed by another process"
             ) from exc
+        self.event("stale_lock_recovered", previous_pid=owner_pid, new_pid=os.getpid())
 
     def release(self) -> None:
         if self._lock_fd is not None:
@@ -152,8 +188,6 @@ def find_matching_curriculum(
         return None
     if len(candidates) == 1:
         return candidates[0]
-    # Prefer the unique package with an active run so an existing training history
-    # can resume without ambiguity.
     try:
         db = sqlite3.connect(f"file:{Path(ledger_path).resolve()}?mode=ro", uri=True)
         active_ids = {str(row[0]) for row in db.execute("SELECT curriculum_id FROM pyramid_runs WHERE status='active'")}
@@ -192,11 +226,14 @@ def _load_or_make_plan(
         plan = load_source_mastery_plan(plan_path)
         if curriculum_id is not None and plan.curriculum_id != curriculum_id:
             raise TrainingHardStop("existing source mastery plan does not match curriculum")
+        if curriculum_root.exists():
+            package_key = package_source_key_for(curriculum_root, source)
+            if plan.source_key != package_key:
+                raise TrainingHardStop(
+                    f"existing source mastery plan is bound to {plan.source_key}, but curriculum provenance is bound to {package_key}"
+                )
         return plan
     plan = generate_source_mastery_plan(model, source=source, curriculum_id=curriculum_id)
-    # For a new package the plan is published atomically with the first generated
-    # stage. Existing packages may safely receive the plan file here because it is
-    # separate from the training ledger and immutable by content hash thereafter.
     if curriculum_root.exists():
         write_source_mastery_plan(plan_path, plan)
     return plan
@@ -217,8 +254,21 @@ def _answer_model(model: Any, learned: tuple) -> MissingAnswerRetryModel:
     return MissingAnswerRetryModel(base, recover_unexpected_initial_ids=True)
 
 
-def _progress_printer(prefix: str) -> Callable[[int, int], None]:
+def _progress_printer(
+    prefix: str,
+    *,
+    job: JobStore | None = None,
+    state: dict[str, object] | None = None,
+    activity: str | None = None,
+) -> Callable[[int, int], None]:
     def progress(done: int, total: int) -> None:
+        if state is not None:
+            state["question_progress_done"] = done
+            state["question_progress_total"] = total
+            if activity is not None:
+                state["current_activity"] = activity
+            if job is not None:
+                job.write(state)
         print(f"{prefix} {done}/{total} ({(done / total) * 100:.1f}%)", flush=True)
     return progress
 
@@ -233,6 +283,8 @@ def _run_stage_attempt(
     attempt: int,
     checkpoint_root: Path,
     batch_size: int,
+    job: JobStore | None = None,
+    state: dict[str, object] | None = None,
 ) -> ExamOutcome:
     manifest, bank = validate_package(curriculum_root)
     stage = plan.stages[stage_number - 1]
@@ -250,7 +302,12 @@ def _run_stage_attempt(
         grader_model=model,
         batch_size=batch_size,
         checkpoint_dir=checkpoint_root / f"stage_{stage_number:02d}" / f"attempt_{attempt:02d}" / "q300",
-        progress=_progress_printer("TRAINING_PROGRESS"),
+        progress=_progress_printer(
+            "TRAINING_PROGRESS",
+            job=job,
+            state=state,
+            activity="canonical_exam",
+        ),
         canonical_exam=True,
     )
 
@@ -354,6 +411,8 @@ def _state_base(
         "current_activity": "initializing",
         "current_stage": 1,
         "completed_stages": 0,
+        "question_progress_done": 0,
+        "question_progress_total": 0,
         "human_intervention_required": False,
         "hard_stop_reason": None,
         "started_at": datetime.now(timezone.utc).isoformat(),
@@ -390,7 +449,9 @@ def run_autonomous_training(
             package_source_key_for(curriculum_root, source)
     else:
         match = find_matching_curriculum(source, ledger_path=ledger_path)
-        curriculum_root = match if match is not None else (Path.home() / ".roberta" / "curricula" / f"autonomous_{source.original_sha256[:24]}")
+        curriculum_root = match if match is not None else (
+            Path.home() / ".roberta" / "curricula" / f"autonomous_{source.original_sha256[:24]}"
+        )
 
     model = model_factory()
     curriculum_id: str | None = None
@@ -429,7 +490,14 @@ def run_autonomous_training(
         )
         if state.get("source_artifact_sha256") != source.original_sha256 or state.get("source_plan_hash") != plan.plan_hash:
             raise TrainingHardStop("durable autonomous job binding does not match selected source/plan")
-        state.update({"status": "running", "human_intervention_required": False, "hard_stop_reason": None, "completed_stages": completed})
+        state.update(
+            {
+                "status": "running",
+                "human_intervention_required": False,
+                "hard_stop_reason": None,
+                "completed_stages": completed,
+            }
+        )
         job.write(state)
         job.event("autonomous_training_started", profile=profile, completed_stages=completed)
         print(f"AUTONOMOUS_JOB {job_id}")
@@ -450,6 +518,8 @@ def run_autonomous_training(
                     "current_chapters": list(stage.source_chapters),
                     "current_activity": "preparing_stage_bank",
                     "completed_stages": stage_number - 1,
+                    "question_progress_done": 0,
+                    "question_progress_total": CANONICAL_LEVEL_QUESTION_COUNT,
                 }
             )
             job.write(state)
@@ -464,9 +534,21 @@ def run_autonomous_training(
             )
             passed = False
             for attempt in range(1, int(limits["stage_attempts"]) + 1):
-                state.update({"current_activity": "canonical_exam", "stage_attempt": attempt})
+                state.update(
+                    {
+                        "current_activity": "canonical_exam",
+                        "stage_attempt": attempt,
+                        "question_progress_done": 0,
+                        "question_progress_total": CANONICAL_LEVEL_QUESTION_COUNT,
+                    }
+                )
                 job.write(state)
-                job.event("stage_exam_started", stage=stage_number, capability_level=stage.capability_level, attempt=attempt)
+                job.event(
+                    "stage_exam_started",
+                    stage=stage_number,
+                    capability_level=stage.capability_level,
+                    attempt=attempt,
+                )
                 print(
                     f"SOURCE_STAGE {stage_number}/{plan.required_stage_count} CAPABILITY {stage.capability_level} {json.dumps(stage.capability_name)} ATTEMPT {attempt}",
                     flush=True,
@@ -480,6 +562,8 @@ def run_autonomous_training(
                     attempt=attempt,
                     checkpoint_root=job.root / "checkpoints",
                     batch_size=batch_size,
+                    job=job,
+                    state=state,
                 )
                 result = outcome.level_result
                 job.event(
@@ -518,6 +602,7 @@ def run_autonomous_training(
                             "last_integrity_accuracy": result.integrity_accuracy,
                             "stage_attempt": attempt,
                             "current_activity": "stage_passed",
+                            "question_progress_done": CANONICAL_LEVEL_QUESTION_COUNT,
                         }
                     )
                     job.write(state)
@@ -526,11 +611,16 @@ def run_autonomous_training(
                     passed = True
                     break
 
-                # Failed attempts are durable autonomous-training evidence only. They
-                # do not mutate source_stage_results, do not terminate the Pyramid run,
-                # and do not erase the completed source-stage prefix.
+                # Failed attempts remain immutable autonomous-training evidence only.
+                # They never terminate the authoritative source-mastery run and never
+                # erase the completed source-stage prefix.
                 report = _weakness_report(outcome)
-                report_path = job.root / "remediation" / f"stage_{stage_number:02d}" / f"attempt_{attempt:02d}.json"
+                report_path = (
+                    job.root
+                    / "remediation"
+                    / f"stage_{stage_number:02d}"
+                    / f"attempt_{attempt:02d}.json"
+                )
                 _write_json(report_path, report)
                 ledger.record_failures(run_id, stage.capability_level, outcome.failure_counts)
                 state.update(
@@ -539,10 +629,16 @@ def run_autonomous_training(
                         "last_stage_accuracy": result.accuracy,
                         "last_integrity_accuracy": result.integrity_accuracy,
                         "last_remediation_report": str(report_path),
+                        "question_progress_done": CANONICAL_LEVEL_QUESTION_COUNT,
                     }
                 )
                 job.write(state)
-                job.event("automatic_remediation_prepared", stage=stage_number, attempt=attempt, report=str(report_path))
+                job.event(
+                    "automatic_remediation_prepared",
+                    stage=stage_number,
+                    attempt=attempt,
+                    report=str(report_path),
+                )
                 print(f"AUTOMATIC_REMEDIATION {report_path}", flush=True)
             if not passed:
                 raise TrainingHardStop(
@@ -553,7 +649,15 @@ def run_autonomous_training(
         if progress is None:
             raise TrainingHardStop("source mastery ledger binding disappeared")
         if str(progress["status"]) == "mastered":
-            state.update({"status": "mastered", "current_activity": "complete", "completed_stages": plan.required_stage_count})
+            state.update(
+                {
+                    "status": "mastered",
+                    "current_activity": "complete",
+                    "completed_stages": plan.required_stage_count,
+                    "question_progress_done": 0,
+                    "question_progress_total": 0,
+                }
+            )
             job.write(state)
             job.event("source_mastered_without_capstone")
             return state
@@ -562,7 +666,15 @@ def run_autonomous_training(
 
         capstone_passed = False
         for attempt in range(1, int(limits["capstone_attempts"]) + 1):
-            state.update({"current_activity": "source_capstone", "capstone_attempt": attempt, "completed_stages": plan.required_stage_count})
+            state.update(
+                {
+                    "current_activity": "source_capstone",
+                    "capstone_attempt": attempt,
+                    "completed_stages": plan.required_stage_count,
+                    "question_progress_done": 0,
+                    "question_progress_total": 60,
+                }
+            )
             job.write(state)
             job.event("source_capstone_started", attempt=attempt)
             capstone_result, outcome = run_source_capstone(
@@ -572,9 +684,17 @@ def run_autonomous_training(
                 grader_model=model,
                 checkpoint_dir=job.root / "capstone" / f"attempt_{attempt:02d}",
                 batch_size=batch_size,
-                progress=_progress_printer("CAPSTONE_PROGRESS"),
+                progress=_progress_printer(
+                    "CAPSTONE_PROGRESS",
+                    job=job,
+                    state=state,
+                    activity="source_capstone",
+                ),
             )
-            _write_json(job.root / "capstone" / f"attempt_{attempt:02d}" / "capstone_result.json", capstone_result.to_mapping())
+            _write_json(
+                job.root / "capstone" / f"attempt_{attempt:02d}" / "capstone_result.json",
+                capstone_result.to_mapping(),
+            )
             job.event("source_capstone_finished", attempt=attempt, **capstone_result.to_mapping())
             if capstone_result.passed:
                 ledger.mark_source_capstone_passed(run_id, plan.plan_hash)
@@ -591,32 +711,48 @@ def run_autonomous_training(
                 "completed_stages": plan.required_stage_count,
                 "capstone_passed": True,
                 "human_intervention_required": False,
+                "question_progress_done": 60,
+                "question_progress_total": 60,
             }
         )
         job.write(state)
         job.event("source_mastered", completed_stages=plan.required_stage_count, capstone_passed=True)
         print("SOURCE_MASTERED", flush=True)
         return state
-    except (TrainingHardStop, AutonomousCurriculumError, AutonomousSourceError, CurriculumPackageError, PyramidLearnedConceptError, ValueError) as exc:
+    except Exception as exc:
         state = job.load() or {
             "job_id": job_id,
             "source_key": source.source_key,
             "source_title": source.title,
+            "source_artifact_sha256": source.original_sha256,
             "curriculum_id": plan.curriculum_id,
             "curriculum_path": str(curriculum_root),
             "source_plan_hash": plan.plan_hash,
             "profile": profile,
         }
+        known = isinstance(
+            exc,
+            (
+                TrainingHardStop,
+                AutonomousCurriculumError,
+                AutonomousSourceError,
+                CurriculumPackageError,
+                PyramidLearnedConceptError,
+                ValueError,
+            ),
+        )
+        reason = str(exc) if known else f"{type(exc).__name__}: {exc}"
         state.update(
             {
                 "status": "hard_stopped",
                 "current_activity": "hard_stop",
                 "human_intervention_required": True,
-                "hard_stop_reason": str(exc),
+                "hard_stop_reason": reason,
+                "unexpected_error_type": None if known else type(exc).__name__,
             }
         )
         job.write(state)
-        job.event("hard_stop", reason=str(exc))
-        raise TrainingHardStop(str(exc)) from exc
+        job.event("hard_stop" if known else "unexpected_hard_stop", reason=reason)
+        raise TrainingHardStop(reason) from exc
     finally:
         job.release()
