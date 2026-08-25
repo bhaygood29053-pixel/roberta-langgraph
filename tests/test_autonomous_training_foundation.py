@@ -21,6 +21,7 @@ from roberta.learning.autonomous_source import (
     import_source,
     resolve_local_trusted_source,
 )
+from roberta.learning.autonomous_training import JobStore
 from roberta.learning.curriculum_io import validate_package
 from roberta.learning.dashboard_autonomous_training import (
     insert_autonomous_training_panel,
@@ -216,6 +217,21 @@ def test_source_capstone_is_separate_cross_stage_exam(source, tmp_path) -> None:
     assert capstone[-1].boss_question
 
 
+def test_stale_job_lock_recovers_without_operator_cleanup(tmp_path) -> None:
+    job = JobStore(tmp_path, "at_stale")
+    # PID values this large are outside the hosted test process range and should
+    # prove absent on normal Linux/WSL systems.
+    job.lock_path.write_text("2147483647\n", encoding="ascii")
+    job.acquire()
+    try:
+        assert job.lock_path.read_text(encoding="ascii").strip().isdigit()
+        events = job.events_path.read_text(encoding="utf-8")
+        assert "stale_lock_recovered" in events
+    finally:
+        job.release()
+    assert not job.lock_path.exists()
+
+
 def test_dashboard_surfaces_latest_autonomous_job(tmp_path) -> None:
     db = tmp_path / ".roberta" / "pyramid_training.sqlite3"
     db.parent.mkdir(parents=True)
@@ -235,6 +251,8 @@ def test_dashboard_surfaces_latest_autonomous_job(tmp_path) -> None:
         "current_chapters": [3, 4],
         "completed_stages": 3,
         "required_stages": 14,
+        "question_progress_done": 180,
+        "question_progress_total": 300,
         "human_intervention_required": False,
     }
     (state_dir / "state.json").write_text(json.dumps(state), encoding="utf-8")
@@ -245,4 +263,6 @@ def test_dashboard_surfaces_latest_autonomous_job(tmp_path) -> None:
     assert "Autonomous Training" in rendered
     assert "Selected Book" in rendered
     assert "3/14 stages" in rendered
+    assert "180/300" in rendered
+    assert "60.0%" in rendered
     assert "NOT REQUIRED" in rendered
