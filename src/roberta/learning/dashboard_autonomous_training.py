@@ -58,12 +58,21 @@ def insert_autonomous_training_panel(
         completed = int(state.get("completed_stages") or 0)
         required = int(state.get("required_stages") or 0)
         progress = 0.0 if required <= 0 else min(100.0, (completed / required) * 100.0)
+        question_done = int(state.get("question_progress_done") or 0)
+        question_total = int(state.get("question_progress_total") or 0)
+        question_text = f"{question_done}/{question_total}" if question_total > 0 else "—"
+        question_pct = 0.0 if question_total <= 0 else min(100.0, (question_done / question_total) * 100.0)
         status = _value(state, "status").replace("_", " ").upper()
         intervention = "REQUIRED" if bool(state.get("human_intervention_required")) else "NOT REQUIRED"
         stop_reason = _value(state, "hard_stop_reason", "")
         stop_html = (
             f'<div style="margin-top:10px;padding:10px;border-radius:8px;background:rgba(127,29,29,.25)"><strong>Hard stop:</strong> {escape(stop_reason)}</div>'
             if stop_reason
+            else ""
+        )
+        question_bar = (
+            f'<div style="margin-top:12px"><div style="display:flex;justify-content:space-between;font-size:12px;opacity:.72"><span>Current exam</span><span>{question_text} ({question_pct:.1f}%)</span></div><div style="margin-top:5px;height:6px;background:rgba(148,163,184,.18);border-radius:999px;overflow:hidden"><div style="height:100%;width:{question_pct:.1f}%;background:linear-gradient(90deg,#a78bfa,#38bdf8)"></div></div></div>'
+            if question_total > 0
             else ""
         )
         panel = f"""
@@ -79,11 +88,13 @@ def insert_autonomous_training_panel(
   <div style="margin-top:16px;height:9px;background:rgba(148,163,184,.18);border-radius:999px;overflow:hidden">
     <div style="height:100%;width:{progress:.1f}%;background:linear-gradient(90deg,#38bdf8,#22c55e)"></div>
   </div>
+  {question_bar}
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-top:14px">
     <div><div style="opacity:.6;font-size:12px">Source mastery</div><strong>{completed}/{required} stages</strong></div>
     <div><div style="opacity:.6;font-size:12px">Current stage</div><strong>{escape(_value(state, 'current_stage'))}</strong></div>
     <div><div style="opacity:.6;font-size:12px">Capability</div><strong>{escape(_value(state, 'current_capability_name'))}</strong></div>
     <div><div style="opacity:.6;font-size:12px">Activity</div><strong>{escape(_value(state, 'current_activity').replace('_', ' '))}</strong></div>
+    <div><div style="opacity:.6;font-size:12px">Exam progress</div><strong>{escape(question_text)}</strong></div>
     <div><div style="opacity:.6;font-size:12px">Chapters</div><strong>{escape(_value(state, 'current_chapters'))}</strong></div>
     <div><div style="opacity:.6;font-size:12px">Human intervention</div><strong>{escape(intervention)}</strong></div>
   </div>
