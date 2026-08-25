@@ -19,7 +19,7 @@ from .source_mastery import (
 CURRICULUM_ID = "mastering_blockchain_4e_2023_book01"
 SOURCE_KEY = "mastering_blockchain_4e_2023"
 PLAN_FILENAME = "source_mastery_plan.json"
-PLANNER = "roberta-mb4e-source-mastery-planner/v1"
+PLANNER = "roberta-mb4e-source-mastery-planner/v2"
 PLANNER_BASIS = (
     "Full-source scope analysis of Mastering Blockchain, Fourth Edition (2023), using the book's "
     "table of contents, chapter descriptions, and source-grounded curriculum provenance. Capabilities "
@@ -34,7 +34,7 @@ PLANNER_BASIS = (
 _STAGE_DEFINITIONS: tuple[tuple[int, tuple[int, ...], str], ...] = (
     (1, (1, 2), "The source explicitly teaches blockchain foundations, distributed systems, decentralization, and core terminology."),
     (2, (1, 5, 6, 9, 13, 14), "The source materially covers blocks, nodes, consensus, finality, Bitcoin/Ethereum architecture, and enterprise ledger mechanics."),
-    (3, (6, 9, 14), "The source explicitly teaches Bitcoin, Ethereum, and Hyperledger transaction lifecycles, structures, validation, and execution."),
+    (3, (6, 9, 13, 14), "The source explicitly teaches Bitcoin, Ethereum, post-Merge Ethereum, and Hyperledger transaction lifecycles, structures, validation, and execution."),
     (4, (3, 4, 18), "Dedicated cryptography chapters cover hashes, symmetric/asymmetric primitives, keys, signatures, zero-knowledge systems, and privacy constructs."),
     (5, (8, 11, 12), "Dedicated smart-contract and Ethereum development chapters cover contract reasoning, tooling, deployment, ABI interaction, and Web3 execution."),
     (6, (15,), "The tokenization chapter explicitly covers token classes, supply/economic concepts, tokenomics, and token engineering."),
