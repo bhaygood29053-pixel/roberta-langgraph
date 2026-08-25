@@ -25,6 +25,7 @@ def test_mb4e_plan_selects_only_capabilities_supported_by_source() -> None:
     assert plan.stages[0].capability_level == 1
     assert plan.stages[1].capability_level == 2
     assert plan.stages[2].capability_level == 3
+    assert plan.stages[2].source_chapters == (6, 9, 13, 14)
 
 
 def test_mb4e_plan_preserves_completed_level_1_and_2_as_first_two_stages() -> None:
