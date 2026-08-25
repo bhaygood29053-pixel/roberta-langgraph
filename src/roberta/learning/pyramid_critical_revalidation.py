@@ -9,7 +9,12 @@ import shutil
 import tempfile
 from typing import Any, Callable, Mapping, Sequence
 
-from .pyramid import CANONICAL_LEVEL_QUESTION_COUNT, Exercise, select_level_exercises
+from .pyramid import (
+    CANONICAL_LEVEL_QUESTION_COUNT,
+    Exercise,
+    SUPPORTED_CANONICAL_LEVEL_QUESTION_COUNTS,
+    select_level_exercises,
+)
 from .pyramid_exam import (
     CHECKPOINT_SCHEMA,
     GRADING_SEMANTICS,
@@ -178,8 +183,11 @@ def revalidate_critical_checkpoints(
 ) -> CriticalRevalidationReport:
     if batch_size <= 0:
         raise ValueError("batch_size must be positive")
-    if canonical_exam and question_count != CANONICAL_LEVEL_QUESTION_COUNT:
-        raise ValueError("canonical critical revalidation requires 1000 questions")
+    if canonical_exam and question_count not in SUPPORTED_CANONICAL_LEVEL_QUESTION_COUNTS:
+        supported = ", ".join(str(value) for value in SUPPORTED_CANONICAL_LEVEL_QUESTION_COUNTS)
+        raise ValueError(
+            f"canonical critical revalidation requires a supported question count: {supported}"
+        )
 
     input_root = Path(input_dir)
     output_root = Path(output_dir)
@@ -234,8 +242,9 @@ def revalidate_critical_checkpoints(
         if input_hashes_after != input_hashes_before:
             raise CriticalRevalidationError("input checkpoints changed during read-only revalidation")
 
-        old_outcome = summarize_exam(selected, old_all, canonical_exam=canonical_exam)
-        new_outcome = summarize_exam(selected, new_all, canonical_exam=canonical_exam)
+        strict_current_contract = canonical_exam and question_count == CANONICAL_LEVEL_QUESTION_COUNT
+        old_outcome = summarize_exam(selected, old_all, canonical_exam=strict_current_contract)
+        new_outcome = summarize_exam(selected, new_all, canonical_exam=strict_current_contract)
         old_critical = tuple(item.exercise_id for item in old_all if item.critical_failure)
         new_critical = tuple(item.exercise_id for item in new_all if item.critical_failure)
         report = CriticalRevalidationReport(

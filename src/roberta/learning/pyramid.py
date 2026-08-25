@@ -7,7 +7,12 @@ from typing import Iterable, Mapping, Sequence
 
 
 PYRAMID_CONTRACT = "roberta-pyramid-curriculum/v1"
-CANONICAL_LEVEL_QUESTION_COUNT = 1000
+CANONICAL_LEVEL_QUESTION_COUNT = 300
+LEGACY_CANONICAL_LEVEL_QUESTION_COUNT = 1000
+SUPPORTED_CANONICAL_LEVEL_QUESTION_COUNTS = (
+    CANONICAL_LEVEL_QUESTION_COUNT,
+    LEGACY_CANONICAL_LEVEL_QUESTION_COUNT,
+)
 CANONICAL_INTEGRITY_QUESTION_COUNT = 50
 MIN_INTEGRITY_ACCURACY = 0.90
 
@@ -165,15 +170,19 @@ def select_level_exercises(
         raise ValueError(f"level {level} needs at least {count} eligible exercises; found {len(eligible)}")
 
     rng = random.Random(derive_level_seed(run_seed, curriculum_id, level))
-    if count != CANONICAL_LEVEL_QUESTION_COUNT:
+    if count not in SUPPORTED_CANONICAL_LEVEL_QUESTION_COUNTS:
         return tuple(rng.sample(eligible, count))
+
+    overlapping_bosses = [item for item in eligible if item.boss_question and item.integrity_question]
+    if overlapping_bosses:
+        raise ValueError(f"level {level} Boss Questions cannot also be integrity questions")
 
     bosses = [item for item in eligible if item.boss_question]
     if not bosses:
         raise ValueError(f"level {level} needs at least one Boss Question")
     boss = rng.choice(bosses)
 
-    integrity_pool = [item for item in eligible if item.integrity_question and item.exercise_id != boss.exercise_id]
+    integrity_pool = [item for item in eligible if item.integrity_question]
     if len(integrity_pool) < CANONICAL_INTEGRITY_QUESTION_COUNT:
         raise ValueError(
             f"level {level} needs at least {CANONICAL_INTEGRITY_QUESTION_COUNT} non-Boss integrity questions; "
@@ -181,7 +190,13 @@ def select_level_exercises(
         )
     integrity = rng.sample(integrity_pool, CANONICAL_INTEGRITY_QUESTION_COUNT)
     selected_ids = {boss.exercise_id, *(item.exercise_id for item in integrity)}
-    ordinary_pool = [item for item in eligible if item.exercise_id not in selected_ids]
+    ordinary_pool = [
+        item
+        for item in eligible
+        if item.exercise_id not in selected_ids
+        and not item.integrity_question
+        and not item.boss_question
+    ]
     ordinary_count = count - CANONICAL_INTEGRITY_QUESTION_COUNT - 1
     if len(ordinary_pool) < ordinary_count:
         raise ValueError(f"level {level} does not contain enough remaining exercises for a canonical exam")
@@ -205,8 +220,9 @@ def evaluate_level(
     spec = get_level_spec(level)
     if total_questions <= 0:
         raise ValueError("total_questions must be positive")
-    if canonical_exam and total_questions != CANONICAL_LEVEL_QUESTION_COUNT:
-        raise ValueError(f"canonical Pyramid levels require {CANONICAL_LEVEL_QUESTION_COUNT} questions")
+    if canonical_exam and total_questions not in SUPPORTED_CANONICAL_LEVEL_QUESTION_COUNTS:
+        supported = ", ".join(str(value) for value in SUPPORTED_CANONICAL_LEVEL_QUESTION_COUNTS)
+        raise ValueError(f"canonical Pyramid levels require a supported question count: {supported}")
     if canonical_exam and integrity_total != CANONICAL_INTEGRITY_QUESTION_COUNT:
         raise ValueError(f"canonical Pyramid levels require {CANONICAL_INTEGRITY_QUESTION_COUNT} integrity questions")
     if not 0 <= correct_questions <= total_questions:

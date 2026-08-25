@@ -28,6 +28,23 @@ def _progress(done: int, total: int) -> None:
     print(f"PROGRESS {done}/{total} ({percent:.1f}%)", flush=True)
 
 
+def _checkpoint_run_dir(
+    root: str | Path,
+    *,
+    curriculum_id: str,
+    seed: str,
+    question_count: int,
+) -> Path:
+    """Namespace restart checkpoints by selected exam size.
+
+    Pre-migration 1,000-question checkpoints remain in the legacy seed root and are
+    never consumed by new 300-question runs. New and future canonical attempts use
+    an explicit q<count> subdirectory so changing an exam contract cannot silently
+    collide with historical batch identities.
+    """
+    return Path(root) / curriculum_id / str(seed) / f"q{question_count}"
+
+
 def _load_learned_memory(
     *,
     supplied_path: str | None,
@@ -83,8 +100,11 @@ def _select_or_exit(
                 f"REQUIRED {count}",
                 f"DETAIL {exc}",
             ]
-            if curriculum_id == "mastering_blockchain_4e_2023_book01" and level == 2:
-                lines.append(f'BUILD_COMMAND roberta-pyramid-build-mb4e-level2 --curriculum "{curriculum_path}"')
+            if curriculum_id == "mastering_blockchain_4e_2023_book01":
+                if level == 2:
+                    lines.append(f'BUILD_COMMAND roberta-pyramid-build-mb4e-level2 --curriculum "{curriculum_path}"')
+                elif level == 3:
+                    lines.append(f'BUILD_COMMAND roberta-pyramid-build-mb4e-level3 --curriculum "{curriculum_path}"')
             lines.append(f"NEXT_GATE build_level_{level}_curriculum")
             raise SystemExit("\n".join(lines)) from exc
         raise
@@ -186,7 +206,12 @@ def main() -> None:
 
     model = create_pyramid_runtime_model()
     answer_model = _build_answer_model(model, learned)
-    checkpoint_dir = Path(args.checkpoint_dir) / curriculum_id / str(seed)
+    checkpoint_dir = _checkpoint_run_dir(
+        args.checkpoint_dir,
+        curriculum_id=curriculum_id,
+        seed=str(seed),
+        question_count=len(selected),
+    )
     outcome = run_exam(
         exercises=selected,
         answer_model=answer_model,
