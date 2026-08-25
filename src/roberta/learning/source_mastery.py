@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 import hashlib
 import json
 from pathlib import Path
@@ -172,7 +172,7 @@ def make_source_mastery_plan(
         excluded_capability_levels=excluded,
         plan_hash="",
     )
-    plan = SourceMasteryPlan(**{**asdict(provisional), "plan_hash": compute_plan_hash(provisional)})
+    plan = replace(provisional, plan_hash=compute_plan_hash(provisional))
     plan.validate()
     return plan
 
@@ -188,6 +188,8 @@ def load_source_mastery_plan(path: str | Path) -> SourceMasteryPlan:
     raw_stages = raw.get("stages")
     if not isinstance(raw_stages, list):
         raise SourceMasteryPlanError("source mastery plan stages must be an array")
+    if not all(isinstance(item, Mapping) for item in raw_stages):
+        raise SourceMasteryPlanError("every source mastery plan stage must be an object")
     try:
         stages = tuple(
             SourceMasteryStage(
@@ -199,7 +201,6 @@ def load_source_mastery_plan(path: str | Path) -> SourceMasteryPlan:
                 rationale=str(item["rationale"]),
             )
             for item in raw_stages
-            if isinstance(item, Mapping)
         )
         plan = SourceMasteryPlan(
             contract=str(raw["contract"]),
