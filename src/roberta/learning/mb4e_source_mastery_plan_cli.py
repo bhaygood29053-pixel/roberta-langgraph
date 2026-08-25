@@ -19,7 +19,7 @@ from .source_mastery import (
 CURRICULUM_ID = "mastering_blockchain_4e_2023_book01"
 SOURCE_KEY = "mastering_blockchain_4e_2023"
 PLAN_FILENAME = "source_mastery_plan.json"
-PLANNER = "roberta-mb4e-source-mastery-planner/v1"
+PLANNER = "roberta-mb4e-source-mastery-planner/v2"
 PLANNER_BASIS = (
     "Full-source scope analysis of Mastering Blockchain, Fourth Edition (2023), using the book's "
     "table of contents, chapter descriptions, and source-grounded curriculum provenance. Capabilities "
