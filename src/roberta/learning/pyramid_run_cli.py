@@ -211,6 +211,8 @@ def main() -> None:
 
     if args.batch_size <= 0:
         parser.error("--batch-size must be positive")
+    if args.stage is not None and args.stage <= 0:
+        parser.error("--stage must be positive")
     if args.smoke_count is not None and not 1 <= args.smoke_count < CANONICAL_LEVEL_QUESTION_COUNT:
         parser.error(f"--smoke-count must be between 1 and {CANONICAL_LEVEL_QUESTION_COUNT - 1}")
 
