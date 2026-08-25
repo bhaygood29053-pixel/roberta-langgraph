@@ -7,6 +7,7 @@ from pathlib import Path
 import secrets
 
 from .curriculum_io import validate_package
+from .mb4e_source_mastery_plan_cli import build_mb4e_source_mastery_plan
 from .pyramid import CANONICAL_LEVEL_QUESTION_COUNT, select_level_exercises
 from .pyramid_adjudicator_retry import create_pyramid_runtime_model
 from .pyramid_answer_recovery import MissingAnswerRetryModel
@@ -83,6 +84,7 @@ def _load_source_mastery_plan(
     curriculum_id: str,
     supplied_path: str | None,
     disabled: bool,
+    source_title: str | None = None,
 ) -> tuple[Path | None, SourceMasteryPlan | None]:
     if disabled:
         if supplied_path is not None:
@@ -107,6 +109,14 @@ def _load_source_mastery_plan(
         raise SourceMasteryPlanError(
             f"source mastery plan belongs to {plan.curriculum_id}, expected {curriculum_id}"
         )
+    if curriculum_id == MB4E_CURRICULUM_ID:
+        expected = build_mb4e_source_mastery_plan(
+            source_title=source_title or plan.source_title
+        )
+        if plan != expected:
+            raise SourceMasteryPlanError(
+                "Mastering Blockchain source mastery plan does not match the deterministic planner output; refusing to run"
+            )
     return path, plan
 
 
@@ -226,6 +236,7 @@ def main() -> None:
             curriculum_id=curriculum_id,
             supplied_path=args.source_mastery_plan,
             disabled=args.without_source_mastery_plan,
+            source_title=str(manifest.get("source_title") or manifest.get("title") or ""),
         )
     except SourceMasteryPlanError as exc:
         parser.error(str(exc))
