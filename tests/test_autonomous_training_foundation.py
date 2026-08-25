@@ -26,7 +26,7 @@ from roberta.learning.dashboard_autonomous_training import (
     insert_autonomous_training_panel,
     load_autonomous_training_status,
 )
-from roberta.learning.pyramid import select_level_exercises
+from roberta.learning.pyramid import get_level_spec, select_level_exercises
 from roberta.learning.source_mastery import SourceMasteryStage, make_source_mastery_plan
 
 
@@ -82,11 +82,12 @@ def source(tmp_path, monkeypatch):
 
 
 def _stage() -> SourceMasteryStage:
+    spec = get_level_spec(7)
     return SourceMasteryStage(
         stage=1,
         capability_level=7,
-        capability_name="Liquidity",
-        domain="Liquidity",
+        capability_name=spec.name,
+        domain=spec.domain,
         source_chapters=(1,),
         rationale="The selected source directly explains liquidity pools.",
     )
