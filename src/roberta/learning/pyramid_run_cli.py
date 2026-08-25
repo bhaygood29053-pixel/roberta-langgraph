@@ -13,7 +13,12 @@ from .pyramid_answer_recovery import MissingAnswerRetryModel
 from .pyramid_exam import run_exam
 from .pyramid_learned_concept_answer import PyramidLearnedConceptAnswerModel
 from .pyramid_learned_concepts import PyramidLearnedConceptError, load_learned_concepts
+from .source_mastery import SourceMasteryPlan, SourceMasteryPlanError, load_source_mastery_plan
 from .training_ledger import PyramidTrainingLedger
+
+
+MB4E_CURRICULUM_ID = "mastering_blockchain_4e_2023_book01"
+SOURCE_MASTERY_PLAN_FILENAME = "source_mastery_plan.json"
 
 
 def _active_run(ledger: PyramidTrainingLedger, curriculum_id: str) -> dict[str, object] | None:
@@ -72,6 +77,39 @@ def _build_answer_model(model: object, learned: tuple) -> MissingAnswerRetryMode
     return MissingAnswerRetryModel(answer_base, recover_unexpected_initial_ids=True)
 
 
+def _load_source_mastery_plan(
+    *,
+    curriculum_path: str,
+    curriculum_id: str,
+    supplied_path: str | None,
+    disabled: bool,
+) -> tuple[Path | None, SourceMasteryPlan | None]:
+    if disabled:
+        if supplied_path is not None:
+            raise SourceMasteryPlanError(
+                "--source-mastery-plan cannot be combined with --without-source-mastery-plan"
+            )
+        return None, None
+
+    path = Path(supplied_path) if supplied_path is not None else Path(curriculum_path) / SOURCE_MASTERY_PLAN_FILENAME
+    if not path.exists():
+        if supplied_path is not None:
+            raise SourceMasteryPlanError(f"source mastery plan does not exist: {path}")
+        if curriculum_id == MB4E_CURRICULUM_ID:
+            raise SourceMasteryPlanError(
+                "Mastering Blockchain requires its frozen source mastery plan before the next canonical run. "
+                f'Run: roberta-pyramid-plan-mb4e-source --curriculum "{curriculum_path}"'
+            )
+        return path, None
+
+    plan = load_source_mastery_plan(path)
+    if plan.curriculum_id != curriculum_id:
+        raise SourceMasteryPlanError(
+            f"source mastery plan belongs to {plan.curriculum_id}, expected {curriculum_id}"
+        )
+    return path, plan
+
+
 def _select_or_exit(
     bank: tuple,
     *,
@@ -100,7 +138,7 @@ def _select_or_exit(
                 f"REQUIRED {count}",
                 f"DETAIL {exc}",
             ]
-            if curriculum_id == "mastering_blockchain_4e_2023_book01":
+            if curriculum_id == MB4E_CURRICULUM_ID:
                 if level == 2:
                     lines.append(f'BUILD_COMMAND roberta-pyramid-build-mb4e-level2 --curriculum "{curriculum_path}"')
                 elif level == 3:
@@ -110,16 +148,63 @@ def _select_or_exit(
         raise
 
 
+def _source_stage_selection(
+    *,
+    parser: argparse.ArgumentParser,
+    ledger: PyramidTrainingLedger,
+    plan: SourceMasteryPlan,
+    active: dict[str, object] | None,
+    requested_stage: int | None,
+    requested_level: int | None,
+    requested_seed: str | None,
+) -> tuple[int, int, str, str | None]:
+    if active is not None:
+        run_id = str(active["run_id"])
+        completed = ledger.preview_source_mastery_completed_stages(run_id, plan)
+        expected_stage = completed + 1
+        if expected_stage > plan.required_stage_count:
+            progress = ledger.source_mastery_progress(run_id)
+            if progress is not None and str(progress["status"]) == "stages_complete":
+                raise SystemExit("SOURCE_STAGES_COMPLETE\nNEXT_GATE source_capstone")
+            raise SystemExit("SOURCE_MASTERY_STAGES_ALREADY_COMPLETE")
+        stage_number = requested_stage or expected_stage
+        if stage_number != expected_stage:
+            parser.error(
+                f"active source mastery run expects stage {expected_stage}, not stage {stage_number}"
+            )
+        active_seed = str(active["run_seed"])
+        if requested_seed is not None and str(requested_seed) != active_seed:
+            parser.error("--seed does not match the active Pyramid run")
+        seed = active_seed
+    else:
+        run_id = None
+        stage_number = requested_stage or 1
+        if stage_number != 1:
+            parser.error("a new source mastery run must begin at source stage 1")
+        seed = requested_seed or secrets.token_hex(8)
+
+    stage = plan.stages[stage_number - 1]
+    level = stage.capability_level
+    if requested_level is not None and requested_level != level:
+        parser.error(
+            f"source stage {stage_number} maps to capability level {level}, not level {requested_level}"
+        )
+    return stage_number, level, seed, run_id
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run a scored Roberta Pyramid level against a validated curriculum package.")
     parser.add_argument("--curriculum", required=True, help="Curriculum package directory")
     parser.add_argument("--db", default=".roberta/pyramid_training.sqlite3", help="Pyramid SQLite training ledger")
-    parser.add_argument("--level", type=int, help="Level to run; defaults to the active run's next level or 1")
+    parser.add_argument("--level", type=int, help="Capability level to run. With a source mastery plan this must match the current source stage.")
+    parser.add_argument("--stage", type=int, help="Source mastery stage to run; defaults to the next required stage when a frozen plan is present")
     parser.add_argument("--seed", help="Run seed. A new random seed is generated for a new run when omitted.")
     parser.add_argument("--batch-size", type=int, default=10, help="Questions per model batch (default: 10)")
     parser.add_argument("--checkpoint-dir", default=".roberta/pyramid_checkpoints", help="Root directory for restart-safe batch checkpoints")
     parser.add_argument("--learned-concepts", help="Verified Pyramid learned-concepts store. When omitted, .roberta/pyramid_learned_concepts/<curriculum_id>.json is used if present.")
     parser.add_argument("--without-learned-concepts", action="store_true", help="Explicitly disable verified Pyramid learned-concept retrieval for this run.")
+    parser.add_argument("--source-mastery-plan", help="Frozen source mastery plan. Defaults to <curriculum>/source_mastery_plan.json when present.")
+    parser.add_argument("--without-source-mastery-plan", action="store_true", help="Explicitly use the legacy fixed 20-level ladder instead of a source-specific plan.")
     parser.add_argument("--dry-run", action="store_true", help="Validate and select the exam without making model calls or writing a run")
     parser.add_argument("--smoke-count", type=int, help="Run a non-canonical sample for model/evaluator testing; results are not written to the ledger")
     args = parser.parse_args()
@@ -133,9 +218,35 @@ def main() -> None:
     curriculum_id = str(manifest["curriculum_id"])
     ledger = PyramidTrainingLedger(args.db)
     active = _active_run(ledger, curriculum_id)
+    try:
+        source_plan_path, source_plan = _load_source_mastery_plan(
+            curriculum_path=args.curriculum,
+            curriculum_id=curriculum_id,
+            supplied_path=args.source_mastery_plan,
+            disabled=args.without_source_mastery_plan,
+        )
+    except SourceMasteryPlanError as exc:
+        parser.error(str(exc))
+    if args.stage is not None and source_plan is None:
+        parser.error("--stage requires a frozen source mastery plan")
 
+    source_stage: int | None = None
     if args.smoke_count is not None:
-        level = args.level or 1
+        if source_plan is not None:
+            if active is not None:
+                completed = ledger.preview_source_mastery_completed_stages(str(active["run_id"]), source_plan)
+                source_stage = args.stage or min(completed + 1, source_plan.required_stage_count)
+            else:
+                source_stage = args.stage or 1
+            if not 1 <= source_stage <= source_plan.required_stage_count:
+                parser.error("source mastery stage is outside the frozen plan")
+            level = source_plan.stages[source_stage - 1].capability_level
+            if args.level is not None and args.level != level:
+                parser.error(
+                    f"source stage {source_stage} maps to capability level {level}, not level {args.level}"
+                )
+        else:
+            level = args.level or 1
         seed = args.seed or "smoke"
         selected = _select_or_exit(
             bank,
@@ -148,7 +259,17 @@ def main() -> None:
         canonical = False
         run_id = None
     else:
-        if active is not None:
+        if source_plan is not None:
+            source_stage, level, seed, run_id = _source_stage_selection(
+                parser=parser,
+                ledger=ledger,
+                plan=source_plan,
+                active=active,
+                requested_stage=args.stage,
+                requested_level=args.level,
+                requested_seed=args.seed,
+            )
+        elif active is not None:
             expected_level = int(active["highest_level_passed"]) + 1
             level = args.level or expected_level
             if level != expected_level:
@@ -184,6 +305,15 @@ def main() -> None:
         parser.error(str(exc))
 
     print(f"CURRICULUM {curriculum_id}")
+    if source_plan is not None:
+        assert source_stage is not None
+        stage_spec = source_plan.stages[source_stage - 1]
+        print(f"SOURCE_MASTERY_PLAN {source_plan_path}")
+        print(f"SOURCE_PLAN_HASH {source_plan.plan_hash}")
+        print(f"SOURCE_STAGE {source_stage}/{source_plan.required_stage_count}")
+        print(f"SOURCE_CAPABILITY {stage_spec.capability_level}")
+        print(f"SOURCE_CAPABILITY_NAME {json.dumps(stage_spec.capability_name)}")
+        print("SOURCE_CHAPTERS " + ",".join(str(value) for value in stage_spec.source_chapters))
     print(f"LEVEL {level}")
     print(f"SEED {seed}")
     print(f"QUESTIONS {len(selected)}")
@@ -195,6 +325,10 @@ def main() -> None:
         print(f"LEARNED_CONCEPTS_STORE {learned_path}")
 
     if args.dry_run:
+        if source_plan is not None and active is not None:
+            completed = ledger.preview_source_mastery_completed_stages(str(active["run_id"]), source_plan)
+            print(f"SOURCE_COMPLETED_STAGES {completed}")
+            print("SOURCE_PLAN_BOUND false")
         print("DRY_RUN VALID")
         return
 
@@ -203,6 +337,18 @@ def main() -> None:
         print(f"RUN_ID {run_id}")
     elif canonical:
         print(f"RESUME_RUN_ID {run_id}")
+
+    if canonical and source_plan is not None:
+        assert run_id is not None
+        assert source_stage is not None
+        binding = ledger.bind_source_mastery_plan(run_id, source_plan)
+        expected_completed = source_stage - 1
+        if int(binding["completed_stage_count"]) != expected_completed:
+            raise SystemExit(
+                "source mastery binding changed the expected stage; refusing to run against inconsistent progress"
+            )
+        print("SOURCE_PLAN_BOUND true")
+        print(f"SOURCE_COMPLETED_STAGES {binding['completed_stage_count']}")
 
     model = create_pyramid_runtime_model()
     answer_model = _build_answer_model(model, learned)
@@ -229,10 +375,37 @@ def main() -> None:
 
     if canonical:
         assert run_id is not None
-        ledger.record_level_result(run_id, result)
+        if source_plan is not None:
+            assert source_stage is not None
+            source_state = ledger.record_source_stage_result(
+                run_id,
+                source_plan,
+                source_stage,
+                result,
+            )
+        else:
+            source_state = None
+            ledger.record_level_result(run_id, result)
         ledger.record_failures(run_id, level, outcome.failure_counts)
         print(f"LEDGER_RECORDED {args.db}")
-        if result.passed and level < 20:
+
+        if source_plan is not None:
+            if result.passed and source_stage < source_plan.required_stage_count:
+                next_stage = source_plan.stages[source_stage]
+                print(f"SOURCE_STAGE_PASSED {source_stage}")
+                print(f"SOURCE_COMPLETED_STAGES {source_state['completed_stage_count']}")
+                print(f"NEXT_SOURCE_STAGE {next_stage.stage}")
+                print(f"NEXT_CAPABILITY {next_stage.capability_level}")
+                print(f"NEXT_CAPABILITY_NAME {json.dumps(next_stage.capability_name)}")
+            elif result.passed and source_plan.source_capstone_required:
+                print("SOURCE_STAGES_COMPLETE")
+                print("SOURCE_CAPSTONE_REQUIRED true")
+                print("NEXT_GATE source_capstone")
+            elif result.passed:
+                print("SOURCE_MASTERED")
+            else:
+                print("SOURCE_MASTERY_RUN_FAILED — next attempt starts at source stage 1 with a new seed")
+        elif result.passed and level < 20:
             print(f"UNLOCKED_LEVEL {level + 1}")
         elif result.passed:
             print("PYRAMID_MASTERED")
