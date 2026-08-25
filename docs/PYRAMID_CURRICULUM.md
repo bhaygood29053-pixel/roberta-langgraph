@@ -1,325 +1,244 @@
-# Roberta Blockchain Reasoning Pyramid — Curriculum Contract v1
+# Roberta Blockchain Reasoning Pyramid — Curriculum and Source-Mastery Contract
 
-Status: first implementation contract for Issue #148.
+Last reconciled: 2026-08-25 (America/New_York)
+
+Status: **accepted living contract**. The original 20-level Pyramid is the reusable global capability taxonomy; source-specific mastery plans define which capabilities an individual source must actually prove.
 
 ## Purpose
 
-The Pyramid is a **training and evaluation environment** for Roberta's Learning System. It converts approved book/reference material into progressively harder, randomized reasoning exercises and measures whether Roberta generalizes across unseen questions.
+The Pyramid is a training and evaluation environment for Roberta. It converts approved reference material into source-traceable, progressively harder reasoning exercises and measures whether Roberta generalizes across unseen questions.
 
-It is not a source-truth authority, a replacement for RAG, or a replacement for CMIS.
+It is not source-truth authority, a replacement for RAG, a replacement for CMIS, or an execution system.
 
 ```text
-Book / approved reference material
-        ↓
-source manifest + concept map
-        ↓
-source mastery planner
-        ↓
-required source-specific capability stages
-        ↓
-learning objectives
-        ↓
-exercise bank + grading rubrics
-        ↓
-Pyramid runner
-        ↓
-Roberta answers
-        ↓
-deterministic / rubric evaluation
-        ↓
-training ledger + failure patterns
-        ↓
-Learning System candidate-lesson path
-        ↓
-separate Phase 10 retention gate when available
+approved source material
+  -> exact source/provenance contract
+  -> source mastery plan
+  -> required source stages mapped to global capabilities
+  -> learning objectives
+  -> large source-grounded exercise banks
+  -> canonical stage exam
+  -> grading / failure analysis
+  -> remediation / source-grounded practice when needed
+  -> source-stage ledger
+  -> final source capstone
 ```
 
 ## Authority boundary
 
-The canonical live-data hierarchy remains:
-
 ```text
-User -> Roberta -> Chain Scout -> CMIS -> Chain Provider
+User -> Roberta -> Chain Scout -> CMIS -> Chain Provider / verified source
 ```
 
-The Pyramid may teach concepts and reusable procedures, but it must not turn book text, remembered values, exercise answers, or retained lessons into current blockchain truth. Fresh accepted CMIS/provider evidence overrides RAG, training examples, and learned historical/live values for freshness-sensitive facts.
+The Pyramid may teach static concepts and reusable procedures. It cannot turn book text, expected answers, learned concepts, checkpoints, or training scores into current blockchain truth.
 
-Missing evidence is not zero. Proof Score is separate from risk. `pre_trade_check` remains analysis-only. Nothing in this subsystem grants transaction construction, signing, broadcasting, custody, trading, bridge transfer, wallet authority, HXMP writes, or Controlled Execution.
+Fresh accepted CMIS/provider evidence overrides static learning material for freshness-sensitive facts. Missing evidence remains unknown. Proof Score remains separate from risk.
 
-## Book conversion package
+No Pyramid operation grants transaction construction, signing, broadcasting, custody, trading, bridge transfer, wallet authority, HXMP write authority, or Controlled Execution.
 
-Every source book is converted into a versioned curriculum directory:
+## Curriculum package
+
+A source-aware curriculum may contain:
 
 ```text
 curricula/<curriculum_id>/
   manifest.json
   source_mastery_plan.json
-  concepts.json
-  objectives.json
+  source_map*.json
+  objectives*.json
   exercises.jsonl
-  validation.jsonl
-  held_out_test.jsonl
-  rubrics.json
-  failure_codes.json
+  provenance.jsonl
+  rubrics / failure-policy material where applicable
 ```
 
-The source manifest must preserve at minimum:
+The manifest/source contracts preserve source identity, edition/version, approved source key, immutable hashes, chapter/section/page-location mapping, authority/approval state, and known limitations.
 
-- `curriculum_id` and curriculum contract version;
-- book/source identity, title, author, edition, publication date when known;
-- source/corpus ids used by Roberta's approved knowledge boundary;
-- chapter/section/page-or-location mapping where legally and technically available;
-- ingestion timestamp/version;
-- source status and limitations.
-
-Generated exercise text is generated curriculum material. It does not become source evidence merely because it was derived from a book.
+Generated exercise text is transformed curriculum material. It does not become source evidence merely because it was derived from the source.
 
 ## Exercise contract
 
-Canonical v1 exercise records use:
-
-```json
-{
-  "exercise_id": "book001-l07-000431",
-  "curriculum_id": "book001",
-  "level": 7,
-  "concept": "liquidity",
-  "subconcept": "price_impact",
-  "difficulty": 7,
-  "question_type": "adversarial",
-  "question": "...",
-  "expected_answer": "...",
-  "required_reasoning_points": ["..."],
-  "forbidden_inferences": ["..."],
-  "source_refs": ["source/chapter/section"],
-  "grading_rubric_id": "liquidity_reasoning_v1",
-  "integrity_question": false,
-  "boss_question": false,
-  "requires_live_data": false
-}
-```
-
-Required invariants:
-
-1. exercise ids are unique within a curriculum;
-2. level is `1..20`;
-3. question text is non-empty;
-4. every exercise traces to at least one concept and source reference or an explicitly approved synthetic/adversarial derivation of a sourced concept;
-5. `requires_live_data=true` means the expected behavior must require the normal Scout -> CMIS path rather than a stored book value;
-6. exercises must not encode wallet/execution authority.
-
-## Twenty capability levels
-
-The 20 levels are a **global blockchain capability taxonomy**, not a mandatory checklist for every source.
-
-| Level | Domain | Primary capability | Pass accuracy |
-|---:|---|---|---:|
-| 1 | Fundamentals | definitions and basic distinctions | 85% |
-| 2 | Blockchain mechanics | blocks, nodes, consensus | 85% |
-| 3 | Transactions | transaction lifecycle | 85% |
-| 4 | Cryptography | hashes, keys, signatures | 85% |
-| 5 | Smart contracts | contract/program reasoning | 85% |
-| 6 | Tokenomics | supply, inflation, burns, dilution | 88% |
-| 7 | Liquidity | pools, depth, slippage, price impact | 88% |
-| 8 | Market structure | price, volume, market cap, FDV | 88% |
-| 9 | DeFi | AMMs, staking, lending | 88% |
-| 10 | Advanced DeFi | liquidations, bridges, complex protocols | 88% |
-| 11 | On-chain analysis | accounts, transactions, flows | 90% |
-| 12 | Wallet relationships | interaction without ownership overclaim | 90% |
-| 13 | Risk reasoning | multi-dimensional risk | 90% |
-| 14 | Adversarial analysis | misleading premises and traps | 90% |
-| 15 | Evidence forensics | provenance and conflicting evidence | 90% |
-| 16 | Intelligence synthesis | multiple evidence streams | 92% |
-| 17 | Cross-chain reasoning | chain-specific semantics | 92% |
-| 18 | Complex investigations | open multi-step investigations | 92% |
-| 19 | Red-team mastery | deliberately deceptive cases | 92% |
-| 20 | Grandmaster | full-system synthesis | 95% |
-
-### Source-specific mastery plan
-
-Before formal source mastery training continues beyond the initial pilot, Roberta must analyze the **full scope of the source** and freeze a `source_mastery_plan.json`.
-
-The plan maps sequential **source mastery stages** to the reusable capability taxonomy above. A source may require any supported subset of the 20 capabilities; unrelated capabilities must be explicitly excluded rather than fabricated merely to reach Level 20.
-
-A frozen plan must contain at minimum:
-
-- canonical source identity and curriculum identity;
-- planner contract/version and analysis basis;
-- contiguous source stage numbers `1..N`;
-- one unique global capability level per stage;
-- source chapters supporting every required stage;
-- an explicit accounting of all excluded global capability levels;
-- 300 canonical questions per required stage;
-- a complete-source coverage assertion;
-- a deterministic plan hash;
-- whether a final source capstone is required.
-
-The source plan must be frozen before the runner uses it. It must not silently change after exam progress exists. A changed source edition, materially changed source scope, or changed planner contract requires a new plan identity/review rather than rewriting historical mastery.
-
-**Source mastery** and **global blockchain mastery** are separate measurements:
+Exercises bind at minimum:
 
 ```text
-source mastery = every required source stage passed + source capstone passed
-
-global blockchain mastery = broader capability achievement across the 20-level library
+exercise_id
+curriculum_id
+level / mapped capability
+concept
+subconcept
+question
+expected_answer
+required_reasoning_points
+forbidden_inferences
+source_refs
+grading_rubric_id
+integrity_question
+boss_question
+requires_live_data
 ```
 
-A source is never required to exercise a capability that it does not materially teach. Conversely, a source cannot be declared mastered merely because all currently built exercise banks passed if full-source coverage has not been analyzed and frozen.
+Required rules include:
 
-Each new canonical stage attempt requires all of:
+1. exercise IDs are unique within the curriculum;
+2. the mapped global capability level is valid;
+3. question text is non-empty;
+4. exercises trace to approved source refs or an explicitly approved synthetic/adversarial transformation of sourced concepts;
+5. `requires_live_data=true` requires the normal Scout -> CMIS path rather than a stored source value;
+6. exercises cannot encode wallet/execution authority;
+7. expected answers/reasoning points are grader guidance, not source evidence.
 
-- exactly **300 scored exercises** for the canonical exam;
-- exactly **249 ordinary questions, 50 integrity questions, and 1 Boss Question**;
-- accuracy at or above the mapped capability threshold;
-- integrity-question accuracy of at least 90%;
-- Boss Question pass;
-- zero critical integrity failures.
+## Global 20-capability taxonomy
 
-A critical integrity failure includes fabricating evidence, replacing missing evidence with a numeric/boolean fact, overriding fresh accepted CMIS/provider evidence with memory/RAG, converting Proof Score into risk, unsupported beneficial-ownership claims, or claiming execution/authorization that did not occur.
+| Capability | Domain | Pass accuracy |
+|---:|---|---:|
+| 1 | Fundamentals | 85% |
+| 2 | Blockchain mechanics | 85% |
+| 3 | Transactions | 85% |
+| 4 | Cryptography | 85% |
+| 5 | Smart contracts | 85% |
+| 6 | Tokenomics | 88% |
+| 7 | Liquidity | 88% |
+| 8 | Market structure | 88% |
+| 9 | DeFi | 88% |
+| 10 | Advanced DeFi | 88% |
+| 11 | On-chain analysis | 90% |
+| 12 | Wallet relationships | 90% |
+| 13 | Risk reasoning | 90% |
+| 14 | Adversarial analysis | 90% |
+| 15 | Evidence forensics | 90% |
+| 16 | Intelligence synthesis | 92% |
+| 17 | Cross-chain reasoning | 92% |
+| 18 | Complex investigations | 92% |
+| 19 | Red-team mastery | 92% |
+| 20 | Grandmaster | 95% |
+
+These are reusable capabilities. They are not a mandatory 20-step syllabus for every source.
+
+## Source-specific mastery plan
+
+Before a source-aware run progresses, Roberta freezes a `source_mastery_plan.json` that accounts for the **full source scope**.
+
+A valid plan requires:
+
+- exact source/curriculum identity;
+- planner contract/version and basis;
+- contiguous source-stage ordinals `1..N`;
+- one unique global capability per required stage;
+- source chapters supporting every stage;
+- explicit excluded global capabilities;
+- 300 canonical questions per required stage;
+- complete-source coverage assertion;
+- deterministic plan hash;
+- source-capstone requirement state.
+
+Required and excluded capabilities together account for all 20 capability levels.
+
+A source cannot be declared mastered merely because the currently built banks passed if the frozen full-source plan still has required stages or a required capstone outstanding.
+
+## Canonical stage exam
+
+Every **new** canonical source-stage attempt uses exactly:
+
+```text
+300 scored questions
+249 ordinary
+50 integrity
+1 Boss Question, last
+```
+
+A stage passes only when all accepted gates succeed:
+
+- weighted/accepted accuracy at or above the mapped capability threshold;
+- integrity accuracy at least 90%;
+- Boss PASS;
+- zero validated critical failures.
+
+Critical failures include evidence fabrication, converting missing evidence into a fact, overriding fresh CMIS/provider evidence with memory/source text, Proof Score/risk confusion, unsupported ownership claims, or invented execution/authorization.
+
+## Legacy 1,000-question compatibility
+
+Historical canonical Level 1/2 attempts used 1,000 questions. Those results/checkpoints remain immutable audit history.
+
+Explicit legacy reconstruction preserves:
+
+```text
+949 ordinary
+50 integrity
+1 Boss
+```
+
+New q300 checkpoints are namespaced separately so they cannot collide with legacy checkpoint layouts. Historical results may be mapped into source-stage history but are never rewritten as 300-question attempts.
 
 ## Randomization and anti-memorization
 
-A Pyramid run has a unique `run_id` and seed. Every capability attempt derives its own deterministic selection seed from the run seed plus capability identity. Given the same curriculum snapshot, seed, and canonical question-count contract, selection must reproduce exactly; a new run uses a new seed and therefore a different sample.
+A run and stage selection are deterministic from the exact curriculum snapshot plus seed. Reusing the same inputs reproduces the selection; a new seed produces a new sample where the bank permits.
 
-The exercise bank should be materially larger than the **300 questions selected for a stage** so multiple seeds can draw varied canonical exams. Exact question reuse across a failed run should be minimized, and held-out final tests must never be used to generate retained lessons.
+Exercise banks should be larger than the 300-question canonical exam so later attempts can draw different questions.
 
-Question generation should progressively shift from recall toward application, evidence evaluation, adversarial reasoning, and multi-step investigation.
+Remediation uses cumulative seen-ID exclusions. Already-seen PASS questions are excluded along with failed questions. If canonical fresh practice is exhausted, only separately accepted supplemental practice may continue; silent question reuse is not allowed.
 
-### Legacy 1,000-question migration compatibility
-
-Before the 300-question contract was adopted, canonical Pyramid levels used 1,000 questions. Those historical results and checkpoints remain immutable audit history and are **not** reinterpreted as 300-question attempts.
-
-The runtime default for all new canonical attempts is 300. The value 1,000 is retained only as an explicit legacy reconstruction size for historical regrade, critical-revalidation, critical-autofix, or other audit/remediation workflows that must reproduce a pre-migration exam from its original seed. Legacy reconstruction preserves the historical **949 ordinary + 50 integrity + 1 Boss** selection contract.
-
-New canonical checkpoints are namespaced by question count (for example, `q300`) so they cannot collide with pre-migration seed-root checkpoints.
-
-## Failure and reset rule
-
-Passing one required source stage unlocks the next stage in the frozen source mastery plan.
-
-If Roberta fails any required stage:
+## Remediation and critical learning
 
 ```text
-current source mastery run = failed
-next source mastery run starts at source stage 1
+canonical failure
+  -> weakness analysis
+  -> source-grounded reconstruction
+  -> source-grounded fresh practice
+  -> supplemental fresh practice if needed
+  -> closed-book critical retention when critical-origin learning is involved
+  -> curriculum-scoped learned concept only after exact gates
 ```
 
-The game reset does **not** revoke independently verified lessons. It resets progression, not legitimate learning. Any Phase 10 retained lesson remains governed by its own scope/lifecycle contract and may later be superseded or revoked only through that contract.
+A perfect **source-grounded** critical practice run is a prerequisite, not authority for a new canonical attempt. Critical-origin learning must also pass the accepted source-free closed-book retention gate.
 
-## Dataset separation
-
-For source-derived curriculum generation, keep explicit training, validation, and held-out test partitions. A recommended initial split is:
-
-```text
-70% training/practice
-15% validation
-15% held-out testing
-```
-
-No held-out answer may be copied into a candidate lesson or placed in RAG to improve the same exam.
-
-## Grading dimensions
-
-Rubrics should score at least:
-
-- factual correctness;
-- reasoning correctness;
-- source/evidence fidelity;
-- uncertainty handling;
-- unsupported-inference avoidance;
-- explanation quality;
-- chain/temporal semantics where applicable.
-
-Normal grading should evaluate concise justification and evidence use. It must not require disclosure of private chain-of-thought.
+Curriculum-scoped learned concepts can support matching canonical answer generation only after their exact verification/transfer gates. They do not become general HXMP memory, source truth, current live truth, or CMIS truth.
 
 ## Failure taxonomy
 
-Canonical starter codes:
+Canonical failure categories include factual/calculation errors, unsupported inference, missing evidence treated as zero, Proof Score/risk confusion, account/owner confusion, stale facts, source-conflict mishandling, excessive certainty, failure to request evidence, hallucinated facts, misunderstood questions, chain/temporal semantics errors, incomplete reasoning, authority-boundary violations, and execution-boundary violations.
 
-```text
-F01 factual_error
-F02 calculation_error
-F03 unsupported_inference
-F04 missing_evidence_treated_as_zero
-F05 proof_risk_confusion
-F06 account_owner_confusion
-F07 stale_fact_used
-F08 source_conflict_mishandled
-F09 excessive_certainty
-F10 failed_to_request_evidence
-F11 hallucinated_fact
-F12 misunderstood_question
-F13 chain_semantics_confusion
-F14 temporal_reasoning_error
-F15 incomplete_reasoning
-F16 authority_boundary_violation
-F17 execution_boundary_violation
-```
+Failure codes are observations for remediation/evaluation. They do not authorize durable retention.
 
-Failure codes are observations for training analysis. They do not by themselves authorize durable lesson retention.
+## Training ledger
 
-## Learning System bridge
+The SQLite ledger records training/evaluation state, not trusted source/live truth.
 
-The Pyramid ledger may surface recurring failure patterns to the Learning System as candidate training evidence. It must not create `VerifiedLessonRecord` state directly.
+Accepted source-aware ledger behavior preserves historical `pyramid_runs` / `level_results` and adds source-mastery run/stage state. Historical results are mapped into source stages rather than rewritten.
 
-The intended future path is:
+The bound source-plan hash is immutable for a run.
 
-```text
-repeated failure pattern
-  -> diagnosis/reflection
-  -> candidate lesson
-  -> Phase 9 verification
-  -> Phase 10 contradiction/dedup/confidence/human-approval gates
-  -> verified lesson (only if every gate passes)
-```
+## Dashboard
 
-Until Phase 10 runtime retention is accepted, the Pyramid records performance and failure evidence only.
+The Learning Command Center is read-only over the ledger/source plan/curriculum metadata. It may show source title, stage progress, mapped capability, contributing chapters/pages, what is being learned, scores/failures/history, and capstone state.
 
-## Training ledger contract
+It cannot modify the source plan, ledger, Learning System retention, CMIS/provider state, policy, or execution authority.
 
-The v1 ledger is local SQLite and records only training/evaluation metadata:
+## Current Mastering Blockchain 4e source plan
 
-- Pyramid runs;
-- level results;
-- accuracy/integrity/Boss/critical-failure state;
-- failure-code counts;
-- progression/highest-level history.
+The deterministic MB4E planner defines **14 required source stages**:
 
-It deliberately does not become RAG, HXMP, current market truth, or a verified-lesson store.
+| Stage | Capability | Chapters |
+|---:|---|---|
+| 1 | Fundamentals | 1, 2 |
+| 2 | Blockchain Mechanics | 1, 5, 6, 9, 13, 14 |
+| 3 | Transactions | 6, 9, 13, 14 |
+| 4 | Cryptography | 3, 4, 18 |
+| 5 | Smart Contracts | 8, 11, 12 |
+| 6 | Tokenomics | 15 |
+| 7 | Liquidity | 21 |
+| 8 | Market Structure | 21 |
+| 9 | DeFi | 21 |
+| 10 | Advanced DeFi | 19, 21 |
+| 11 | On-chain Analysis | 7, 10, 12 |
+| 12 | Risk Reasoning | 18, 19, 21 |
+| 13 | Adversarial Analysis | 19 |
+| 14 | Cross-chain Reasoning | 17, 19, 21 |
 
-Source-mastery runner integration may add source-stage progress metadata, but historical level results remain immutable and must be mapped rather than rewritten.
+Excluded from this source: capabilities `12,15,16,18,19,20`.
 
-## Dashboard contract
+Final source capstone: **required**.
 
-The dashboard is read-only over the training ledger and source mastery plan. It may display:
+Accepted bank construction is currently present through **Stage 6 / Tokenomics**. This is curriculum availability, not a claim that Roberta has mastered through Stage 6.
 
-- source material being mastered;
-- required source mastery stages and mapped capabilities;
-- completed/current/remaining source stages;
-- chapters supporting the current stage;
-- current and historical scores;
-- pass/fail history;
-- learning curve;
-- failure-mode ranking;
-- source mastery completion visualization;
-- global capability progress as a separate view.
+## Core rule
 
-The dashboard must not mutate learning records, approve lessons, call CMIS providers, alter policy, or trigger execution.
-
-## First-book pilot
-
-The first book should begin with a smaller pilot before producing a massive bank:
-
-1. convert source to manifest/concepts/objectives;
-2. analyze the full source and freeze its source mastery plan;
-3. generate question banks only for the capabilities the source materially teaches;
-4. run a **300-exercise canonical pilot** for a tested stage and validate grading/failure labels;
-5. expand each tested stage's bank beyond 300 only after leakage, duplication, source-traceability, and evaluator quality are acceptable;
-6. begin formal source mastery runs once each required stage has at least **300 eligible unique exercises**, includes the required 50 integrity questions and a separate Boss Question, and preferably has a substantially larger ordinary bank for seed variation;
-7. declare the source mastered only after every frozen required stage and the source capstone pass.
-
-The long-term target is a reusable factory:
-
-```text
-Source -> standardized curriculum package -> source mastery planner -> required capability stages -> randomized Pyramid -> source capstone -> measured failures -> Learning System -> independently verified improvement
-```
+**The Pyramid measures source-grounded reasoning under strict provenance and authority boundaries. A source is mastered only by passing its frozen required stages and capstone; the system becomes more capable by proving learning, not by relabeling generated material as truth.**
