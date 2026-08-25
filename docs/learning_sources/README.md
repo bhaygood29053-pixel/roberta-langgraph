@@ -1,8 +1,8 @@
 # Roberta Learning System — Static Source Registry
 
-Last reconciled: 2026-08-23 (America/New_York)
+Last reconciled: 2026-08-25 (America/New_York)
 
-This registry records human-readable source-onboarding status. Runtime truth still comes from the exact source contracts and code on `main`; this document does not promote an unmerged source or create live-state authority.
+This registry records human-readable source-onboarding status. Runtime truth still comes from exact source contracts/code on `main`; this document does not promote an unmerged source or create live-state authority.
 
 ## Authority rule
 
@@ -11,64 +11,94 @@ Static Learning System sources are evidence/knowledge inputs only. They do not b
 Fresh accepted chain evidence follows:
 
 ```text
-User -> Roberta -> Chain Scout -> CMIS -> Chain Provider
+User -> Roberta -> Chain Scout -> CMIS -> Chain Provider / verified source
 ```
 
-Source text is always treated as data, never as a permission layer. Embedded instructions cannot authorize tools, credentials, memory writes, governance changes, wallet actions, transactions, or Controlled Execution.
+Source text is data, never a permission layer. Embedded instructions cannot authorize tools, credentials, memory writes, governance changes, wallet actions, transactions, or Controlled Execution.
 
 ## Accepted sources on `main`
 
-| Source key / source | Status | Static source role | Notes |
+| Source key / source | Status | Static role | Notes |
 | --- | --- | --- | --- |
-| `x1_blockchain_whitepaper_v1_0` / X1 Blockchain Whitepaper v1.0 | Accepted | Primary static protocol/architecture documentation | Onboarded by PR #138. Static provenance does not establish current X1 runtime/market state. |
-| XDEX documentation snapshot | Accepted | Static documentation snapshot; authority class remains bounded by its accepted source contract | Onboarded in PR #147. Contradictory source statements remain visible rather than silently reconciled. |
-| XEN Litepaper v1.7 | Accepted | Primary static project documentation | Onboarded in PR #147 from deterministic PDF transcript provenance. |
-| XEN Torrent / XENFT Litepaper v0.3 | Accepted | Primary static project documentation | Onboarded in PR #147 from deterministic PDF transcript provenance. |
-| XONE ERC20 Token v4 | Accepted | Static documentation with unknown/bounded source authority pending any stronger independent publisher/origin proof | Onboarded in PR #147. Source inclusion is not provider/live-state verification. |
-| `mastering_blockchain_4e_2023` / *Mastering Blockchain, Fourth Edition* | Accepted external integrity contract | Secondary educational reference | Onboarded in PR #147. The full copyrighted transcript is not republished; callers must supply exact bytes matching the pinned transcript contract. |
-| Solana whitepaper v0.8.13 | Accepted | Primary static protocol documentation | Onboarded in PR #147 from deterministic PDF transcript provenance. |
+| `x1_blockchain_whitepaper_v1_0` / X1 Blockchain Whitepaper v1.0 | Accepted | Primary static protocol/architecture documentation | Onboarded by #138; no live-state authority. |
+| XDEX documentation snapshot | Accepted | Static documentation snapshot | Onboarded by #147; contradictory statements remain visible rather than silently reconciled. |
+| XEN Litepaper v1.7 | Accepted | Primary static project documentation | Onboarded by #147 using deterministic PDF transcript provenance. |
+| XEN Torrent / XENFT Litepaper v0.3 | Accepted | Primary static project documentation | Onboarded by #147 using deterministic PDF transcript provenance. |
+| XONE ERC20 Token v4 | Accepted | Static documentation with bounded/unknown publisher authority | Onboarded by #147; source inclusion is not provider/live verification. |
+| `mastering_blockchain_4e_2023` / *Mastering Blockchain, Fourth Edition* | Accepted external integrity contract | Secondary educational/reference source | Full copyrighted transcript is not republished; runtime must provide exact bytes matching the pinned transcript contract. |
+| Solana whitepaper v0.8.13 | Accepted | Primary static protocol documentation | Onboarded by #147 using deterministic PDF transcript provenance. |
 
-Detailed accepted provenance for the six-source batch is in [`USER_SUPPLIED_BLOCKCHAIN_SOURCE_BATCH_2026_08_21.md`](./USER_SUPPLIED_BLOCKCHAIN_SOURCE_BATCH_2026_08_21.md).
+Detailed six-source provenance: [`USER_SUPPLIED_BLOCKCHAIN_SOURCE_BATCH_2026_08_21.md`](./USER_SUPPLIED_BLOCKCHAIN_SOURCE_BATCH_2026_08_21.md).
 
-Detailed X1 whitepaper provenance is in [`X1_BLOCKCHAIN_WHITEPAPER_V1_0.md`](./X1_BLOCKCHAIN_WHITEPAPER_V1_0.md).
+Detailed X1 whitepaper provenance: [`X1_BLOCKCHAIN_WHITEPAPER_V1_0.md`](./X1_BLOCKCHAIN_WHITEPAPER_V1_0.md).
 
-## Pending / unaccepted sources
+## Pending / unaccepted source
 
 ### XenBlocks PoW documentation — PR #141
 
-Status: **pending / P1 blocked / not accepted on `main`**.
+Status: **P1 blocked / not accepted**.
 
-The source onboarding currently fails the Phase 1 exact-byte contract because the implementation ingests an LF-normalized derivative instead of preserving/hashing the exact uploaded CRLF bytes as the canonical source artifact.
+The current branch ingests an LF-normalized derivative instead of preserving/hashing the exact uploaded CRLF bytes as the canonical Phase 1 artifact.
 
-Acceptance requires:
-
-1. exact uploaded UTF-8 bytes retained as the canonical artifact;
-2. `content_hash` / `artifact_ref` derived from those exact bytes;
-3. any LF-normalized representation treated only as a derived parsing artifact;
-4. exact-head deterministic CI;
-5. independent review with no blocker;
-6. merge to `main`.
+Acceptance requires the original uploaded UTF-8 bytes to be the canonical retained artifact/content identity; any LF form may be a derived parsing representation only. Exact-head CI, independent review, and merge remain required after the provenance fix.
 
 Until then XenBlocks PoW material must not be listed as an accepted Learning System source.
 
-## MB4E curriculum/provenance relationship
+## MB4E source and curriculum relationship
 
-The accepted `mastering_blockchain_4e_2023` source contract is distinct from any Pyramid curriculum package derived from that source.
+The accepted `mastering_blockchain_4e_2023` source contract is distinct from every Pyramid exercise bank derived from it.
 
-Pyramid exercises are transformed training/evaluation material and are not source evidence. They may contain source references/locators, but expected answers, reasoning points, grader notes, scores, and practice questions do not become source truth.
+Pyramid questions, expected answers, reasoning points, grader notes, scores, supplemental practice, and learned concepts are transformed training/evaluation material. They are **not source evidence**.
 
-PR #179 proposes a migration of the legacy MB4E Level 1 curriculum package to stronger canonical source binding while preserving historical semantic identity and explicit PDF-page coordinate basis. That migration remains unaccepted until its open review findings are fixed and the PR merges.
+### Accepted legacy provenance migration
+
+Issue #178 / PR #179 accepted the migration of the historical MB4E Level 1 package to canonical source binding without rewriting its historical exercise semantics or checkpoints.
+
+The accepted migration preserves explicit PDF-page basis. PDF page coordinates are not relabeled as printed book pages.
+
+### Accepted PDF alignment / retrieval scope
+
+For supported MB4E remediation ranges, repository metadata binds PDF-page -> transcript-line alignment to exact PDF/transcript hashes. Provenance scope is resolved before retrieval/ranking, and selected chunks/evidence anchors must be fully contained in the declared range.
+
+This metadata strengthens evidence scope; it does not make the source current/live truth.
+
+## MB4E frozen source mastery plan
+
+The accepted source-specific planner maps the full book into **14 required source stages** using global Pyramid capabilities:
+
+```text
+1,2,3,4,5,6,7,8,9,10,11,13,14,17
+```
+
+Explicitly excluded for this source:
+
+```text
+12,15,16,18,19,20
+```
+
+Every required stage uses the current 300-question canonical exam contract and the final source capstone remains required.
+
+Accepted curriculum-bank construction currently reaches:
+
+- Stage 1 Fundamentals — historical Level 1/provenance foundation;
+- Stage 2 Blockchain Mechanics — 1,206 questions;
+- Stage 3 Transactions;
+- Stage 4 Cryptography — 415 questions;
+- Stage 5 Smart Contracts — 493 questions;
+- Stage 6 Tokenomics — 493 questions.
+
+These banks are derived learning material. Their existence does not establish that Roberta has passed/mastered those stages.
 
 ## PDF transcript rule
 
-For PDF-derived sources, the repository may preserve a deterministic transcript as a derived ingestible artifact under the accepted extraction profile. Transcript provenance must remain distinguishable from the original PDF artifact/provenance; no transcript is allowed to masquerade as byte-identical PDF content.
+For PDF-derived sources, the repository may preserve a deterministic transcript as a derived ingestible artifact under an accepted extraction profile. Transcript provenance must remain distinguishable from the original PDF artifact/provenance; no transcript may masquerade as byte-identical PDF content.
 
 ## Plain UTF-8 upload rule
 
-For an original UTF-8 text/Markdown upload, Phase 1 requires the exact uploaded bytes to be retained and hashed. Line-ending normalization may be useful downstream, but it cannot replace the canonical original artifact unless a separate accepted source contract explicitly defines that derivative as the source being onboarded.
+For an original UTF-8 text/Markdown upload, Phase 1 requires exact uploaded bytes to be retained and hashed. Line-ending normalization may support downstream parsing, but it cannot replace the canonical original artifact unless a separately accepted source contract explicitly defines the derivative as the source.
 
 ## Live-state boundary
 
-Even an accepted `primary` static source may describe values or configuration that later change. Static authority classification does not mean live-state authorization.
+Even an accepted `primary` static source may contain statements that later become stale. Static authority classification never means live-state authorization.
 
-When a question depends on current state, Roberta must use the authorized current-evidence path rather than relying on this registry, a book, a whitepaper, Pyramid memory, or cached source text.
+When a question depends on current state, Roberta must use the authorized current-evidence path rather than relying on this registry, a book, a whitepaper, Pyramid state, learned concepts, or cached source text.
