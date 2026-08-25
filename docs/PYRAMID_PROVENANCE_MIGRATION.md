@@ -1,16 +1,18 @@
 # Pyramid legacy source-provenance migration
 
-Issue #178 / PR #179 define the migration gate for the historical local Mastering Blockchain Fourth Edition Level 1 Pyramid package.
+Last reconciled: 2026-08-25 (America/New_York)
+
+Status: **accepted / merged under Issue #178 / PR #179**.
 
 ## Purpose
 
-The original `mastering_blockchain_4e_2023_book01` package was used for a canonical 1,000-question Level 1 run before the accepted Learning System source-provenance contract existed. That historical package and its checkpoints remain audit inputs and must not be rewritten merely to satisfy a newer contract.
+The historical local *Mastering Blockchain, Fourth Edition* Level 1 Pyramid package was used for a canonical 1,000-question run before the accepted Learning System source-provenance contract existed.
 
-The migration therefore creates a **new package**. It preserves the historical curriculum id and exercise semantics while adding the canonical Learning System source binding required for source-grounded remediation.
+The migration preserves that historical package/checkpoint history as immutable audit input and creates a **new provenance-bearing package** with the same curriculum/exercise semantics plus the canonical Learning System source binding.
 
 ## Preservation contract
 
-Migration must preserve, in original order:
+The accepted migration preserves, in original order:
 
 - every `exercise_id`;
 - every question;
@@ -19,26 +21,38 @@ Migration must preserve, in original order:
 - concept/subconcept, question type, difficulty, rubric id, integrity/Boss flags, and live-data flag;
 - all legacy section source refs.
 
-The only exercise-field extension is adding `mastering_blockchain_4e_2023` to `source_refs`.
+The intentional exercise-field extension is the canonical source key:
 
-Historical checkpoint files are read-only. The migration may verify that checkpoint exercise ids still resolve in the migrated bank, but it cannot rewrite checkpoint bytes or rerun Roberta's answers.
+```text
+mastering_blockchain_4e_2023
+```
+
+Historical checkpoint files remain read-only. The migration may verify checkpoint exercise IDs against the migrated bank, but it does not rewrite checkpoint bytes or rerun Roberta's answers.
 
 ## Page-coordinate boundary
 
-The legacy `source_map.json` identifies its ranges as **PDF pages**. Those values are not silently upgraded to printed-book page numbers.
+The legacy source map identifies its ranges as **PDF pages**. Those values are not silently relabeled as printed-book page numbers.
 
-Source-provenance locators therefore support exactly one explicit coordinate field:
+Source-provenance locators support exactly one explicit coordinate basis:
 
-- `book_pages` for verified printed-book coordinates; or
-- `pdf_pages` for PDF-document coordinates.
+```text
+book_pages
+pdf_pages
+```
 
-A locator containing both or neither fails closed. Legacy migration emits `pdf_pages` and retains the original `legacy_source_ref`. The migration also verifies that the numeric page range encoded in the legacy alias exactly matches its `source_map.json` `PDF pages X-Y:` declaration.
+Both or neither fails closed. The MB4E legacy migration emits `pdf_pages` and retains the original legacy source-ref alias.
 
-This coordinate metadata is provenance only. It does not create source truth, live-state truth, or any execution authority.
+The range encoded in each legacy alias must agree with its source-map PDF-page declaration.
 
-## Local migration
+Basis-aware locator handling is available to the core reconstruction path, not only the CLI wrapper, so migrated packages behave consistently for programmatic and console callers.
 
-After PR #179 is accepted and pulled locally:
+## Atomic migration output
+
+The migration validates historical input before derivation, rejects output paths equal to or nested under the historical package, writes the complete migrated package and `migration_report.json` inside staging, validates staging, and only then atomically publishes the output directory.
+
+A failed report/package write must not leave a misleading partially published migrated package.
+
+## Local migration reference
 
 ```bash
 roberta-pyramid-migrate-provenance \
@@ -47,7 +61,7 @@ roberta-pyramid-migrate-provenance \
   --checkpoints .roberta/pyramid_regraded/mastering_blockchain_4e_2023_book01/3f5f278c645b9e73
 ```
 
-Expected historical-bank result for the known local package:
+For the known historical bank the expected preservation shape is:
 
 ```text
 EXERCISES_BEFORE 1206
@@ -62,50 +76,31 @@ HISTORICAL_CHECKPOINTS_MUTATED false
 PDF_PAGE_BASIS_PRESERVED true
 ```
 
-Do not continue if any identity/preservation gate is false.
+## Regenerated remediation artifacts
 
-## Regenerate remediation handoffs
+Because `source_refs` are identity-bearing handoff data, pre-migration handoff JSONL must not be hand-edited. Remediation artifacts are regenerated from the same preserved/regraded checkpoint evidence against the migrated curriculum.
 
-The pre-migration handoff JSONL binds the old exercise `source_refs`. Because the migrated exercises intentionally add the canonical source key, handoffs must be regenerated from the same regraded v2 checkpoints rather than edited in place.
-
-Use a new output directory:
-
-```bash
-roberta-pyramid-remediate \
-  --curriculum curricula/mastering_blockchain_4e_2023_provenance \
-  --checkpoints .roberta/pyramid_regraded/mastering_blockchain_4e_2023_book01/3f5f278c645b9e73 \
-  --output .roberta/pyramid_remediation/mastering_blockchain_4e_2023_book01/3f5f278c645b9e73-provenance \
-  --practice-per-weakness 5 \
-  --seed remediation-l1-20260823-01
-```
-
-For the known regrade, the expected weak-item/handoff count remains 109. The generated handoff identities may change because source refs are part of the handoff contract; the checkpoint bytes and Roberta answers do not change.
+The regenerated handoff IDs may differ because the canonical source binding is part of the content-addressed handoff contract. Historical checkpoint bytes and Roberta answers remain unchanged.
 
 ## Source-grounded reconstruction
 
-The Mastering Blockchain source is an external exact transcript. The repository stores the immutable source identity and hashes but not the copyrighted transcript bytes.
+The full copyrighted MB4E transcript is not stored in the repository. Runtime reconstruction requires the exact externally supplied transcript bytes matching the pinned source integrity contract.
 
-After regeneration:
+The reconstruction remains remediation evidence only. It does not declare a weakness mastered, promote a general verified lesson, mutate HXMP, change CMIS/provider authority, or authorize execution.
 
-```bash
-roberta-pyramid-source-reconstruct \
-  --curriculum curricula/mastering_blockchain_4e_2023_provenance \
-  --handoffs .roberta/pyramid_remediation/mastering_blockchain_4e_2023_book01/3f5f278c645b9e73-provenance/learning_handoffs.jsonl \
-  --checkpoints .roberta/pyramid_regraded/mastering_blockchain_4e_2023_book01/3f5f278c645b9e73 \
-  --output .roberta/pyramid_reconstruction/mastering_blockchain_4e_2023_book01/3f5f278c645b9e73-provenance \
-  --source-transcript "$MB4E_TRANSCRIPT" \
-  --top-k 5
-```
+## Later accepted provenance hardening
 
-The reconstruction remains remediation evidence only. It does not declare a weakness corrected, create a verified lesson, mutate HXMP, change CMIS/provider authority, or authorize Controlled Execution.
+The accepted migration is now complemented by later Pyramid provenance safeguards:
 
-## Acceptance gates
+- exact PDF and transcript digest binding;
+- verified PDF-page -> transcript-line alignment for supported MB4E remediation windows;
+- PDF provenance scope resolution **before** lexical/vector ranking;
+- fail-closed behavior for missing/tampered/unmapped page ranges;
+- strict full-containment checks so candidate chunks and final evidence anchors cannot extend outside the declared provenance range;
+- preservation of `book_pages` backward compatibility for sources using that coordinate basis.
 
-PR acceptance requires:
+These mechanisms strengthen evidence scope. They do not convert static book material into current/live blockchain truth.
 
-1. targeted migration/provenance tests;
-2. full deterministic suite: `python -m pytest -v -m 'not live and not cmis_live'`;
-3. independent Spec Fidelity review;
-4. independent Code/Architecture Quality review;
-5. independent Authority/Safety Boundary review;
-6. no unresolved blocker before merge.
+## Authority boundary
+
+The provenance migration and alignment system cannot authorize source approval changes, live-state facts, general durable-memory promotion, CMIS/provider trust mutation, governance changes, wallet signing, transaction preparation/broadcasting, custody, trading, bridge transfer, or Controlled Execution.
