@@ -114,4 +114,4 @@ def test_level8_boss_synthesizes_market_structure_without_live_claims() -> None:
     assert "clearing and settlement" in boss.question.lower()
     assert "amm" in boss.question.lower()
     assert "clob" in boss.question.lower()
-    assert "live order books" in " ".join(boss.forbidden_inferences).lower()
+    assert "current order-book depth" in " ".join(boss.forbidden_inferences).lower()
