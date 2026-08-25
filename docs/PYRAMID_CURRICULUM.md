@@ -13,11 +13,15 @@ Book / approved reference material
         ↓
 source manifest + concept map
         ↓
+source mastery planner
+        ↓
+required source-specific capability stages
+        ↓
 learning objectives
         ↓
 exercise bank + grading rubrics
         ↓
-20-level Pyramid runner
+Pyramid runner
         ↓
 Roberta answers
         ↓
@@ -49,6 +53,7 @@ Every source book is converted into a versioned curriculum directory:
 ```text
 curricula/<curriculum_id>/
   manifest.json
+  source_mastery_plan.json
   concepts.json
   objectives.json
   exercises.jsonl
@@ -103,7 +108,9 @@ Required invariants:
 5. `requires_live_data=true` means the expected behavior must require the normal Scout -> CMIS path rather than a stored book value;
 6. exercises must not encode wallet/execution authority.
 
-## Twenty levels
+## Twenty capability levels
+
+The 20 levels are a **global blockchain capability taxonomy**, not a mandatory checklist for every source.
 
 | Level | Domain | Primary capability | Pass accuracy |
 |---:|---|---|---:|
@@ -128,11 +135,42 @@ Required invariants:
 | 19 | Red-team mastery | deliberately deceptive cases | 92% |
 | 20 | Grandmaster | full-system synthesis | 95% |
 
-Each new canonical level attempt requires all of:
+### Source-specific mastery plan
+
+Before formal source mastery training continues beyond the initial pilot, Roberta must analyze the **full scope of the source** and freeze a `source_mastery_plan.json`.
+
+The plan maps sequential **source mastery stages** to the reusable capability taxonomy above. A source may require any supported subset of the 20 capabilities; unrelated capabilities must be explicitly excluded rather than fabricated merely to reach Level 20.
+
+A frozen plan must contain at minimum:
+
+- canonical source identity and curriculum identity;
+- planner contract/version and analysis basis;
+- contiguous source stage numbers `1..N`;
+- one unique global capability level per stage;
+- source chapters supporting every required stage;
+- an explicit accounting of all excluded global capability levels;
+- 300 canonical questions per required stage;
+- a complete-source coverage assertion;
+- a deterministic plan hash;
+- whether a final source capstone is required.
+
+The source plan must be frozen before the runner uses it. It must not silently change after exam progress exists. A changed source edition, materially changed source scope, or changed planner contract requires a new plan identity/review rather than rewriting historical mastery.
+
+**Source mastery** and **global blockchain mastery** are separate measurements:
+
+```text
+source mastery = every required source stage passed + source capstone passed
+
+global blockchain mastery = broader capability achievement across the 20-level library
+```
+
+A source is never required to exercise a capability that it does not materially teach. Conversely, a source cannot be declared mastered merely because all currently built exercise banks passed if full-source coverage has not been analyzed and frozen.
+
+Each new canonical stage attempt requires all of:
 
 - exactly **300 scored exercises** for the canonical exam;
 - exactly **249 ordinary questions, 50 integrity questions, and 1 Boss Question**;
-- accuracy at or above the level threshold;
+- accuracy at or above the mapped capability threshold;
 - integrity-question accuracy of at least 90%;
 - Boss Question pass;
 - zero critical integrity failures.
@@ -141,9 +179,9 @@ A critical integrity failure includes fabricating evidence, replacing missing ev
 
 ## Randomization and anti-memorization
 
-A Pyramid run has a unique `run_id` and seed. Every level derives its own deterministic selection seed from the run seed plus level identity. Given the same curriculum snapshot, seed, and canonical question-count contract, selection must reproduce exactly; a new run uses a new seed and therefore a different sample.
+A Pyramid run has a unique `run_id` and seed. Every capability attempt derives its own deterministic selection seed from the run seed plus capability identity. Given the same curriculum snapshot, seed, and canonical question-count contract, selection must reproduce exactly; a new run uses a new seed and therefore a different sample.
 
-The exercise bank should be materially larger than the **300 questions selected for a level** so multiple seeds can draw varied canonical exams. Exact question reuse across a failed run should be minimized, and held-out final tests must never be used to generate retained lessons.
+The exercise bank should be materially larger than the **300 questions selected for a stage** so multiple seeds can draw varied canonical exams. Exact question reuse across a failed run should be minimized, and held-out final tests must never be used to generate retained lessons.
 
 Question generation should progressively shift from recall toward application, evidence evaluation, adversarial reasoning, and multi-step investigation.
 
@@ -157,13 +195,13 @@ New canonical checkpoints are namespaced by question count (for example, `q300`)
 
 ## Failure and reset rule
 
-Passing Level N unlocks Level N+1 within the current run.
+Passing one required source stage unlocks the next stage in the frozen source mastery plan.
 
-If Roberta fails any level:
+If Roberta fails any required stage:
 
 ```text
-current Pyramid run = failed
-next Pyramid run starts at Level 1
+current source mastery run = failed
+next source mastery run starts at source stage 1
 ```
 
 The game reset does **not** revoke independently verified lessons. It resets progression, not legitimate learning. Any Phase 10 retained lesson remains governed by its own scope/lifecycle contract and may later be superseded or revoked only through that contract.
@@ -249,16 +287,22 @@ The v1 ledger is local SQLite and records only training/evaluation metadata:
 
 It deliberately does not become RAG, HXMP, current market truth, or a verified-lesson store.
 
+Source-mastery runner integration may add source-stage progress metadata, but historical level results remain immutable and must be mapped rather than rewritten.
+
 ## Dashboard contract
 
-The dashboard is read-only over the training ledger. It may display:
+The dashboard is read-only over the training ledger and source mastery plan. It may display:
 
-- current/highest Pyramid level;
+- source material being mastered;
+- required source mastery stages and mapped capabilities;
+- completed/current/remaining source stages;
+- chapters supporting the current stage;
 - current and historical scores;
 - pass/fail history;
 - learning curve;
 - failure-mode ranking;
-- Pyramid completion visualization.
+- source mastery completion visualization;
+- global capability progress as a separate view.
 
 The dashboard must not mutate learning records, approve lessons, call CMIS providers, alter policy, or trigger execution.
 
@@ -267,13 +311,15 @@ The dashboard must not mutate learning records, approve lessons, call CMIS provi
 The first book should begin with a smaller pilot before producing a massive bank:
 
 1. convert source to manifest/concepts/objectives;
-2. generate enough questions to exercise all 20 level contracts, with strongest density around the book's actual subject matter;
-3. run a **300-exercise canonical pilot** for a tested level and validate grading/failure labels;
-4. expand each tested level's bank beyond 300 only after leakage, duplication, source-traceability, and evaluator quality are acceptable;
-5. begin formal Pyramid runs once each tested level has at least **300 eligible unique exercises**, includes the required 50 integrity questions and a separate Boss Question, and preferably has a substantially larger ordinary bank for seed variation.
+2. analyze the full source and freeze its source mastery plan;
+3. generate question banks only for the capabilities the source materially teaches;
+4. run a **300-exercise canonical pilot** for a tested stage and validate grading/failure labels;
+5. expand each tested stage's bank beyond 300 only after leakage, duplication, source-traceability, and evaluator quality are acceptable;
+6. begin formal source mastery runs once each required stage has at least **300 eligible unique exercises**, includes the required 50 integrity questions and a separate Boss Question, and preferably has a substantially larger ordinary bank for seed variation;
+7. declare the source mastered only after every frozen required stage and the source capstone pass.
 
 The long-term target is a reusable factory:
 
 ```text
-Book -> standardized curriculum package -> randomized Pyramid -> measured failures -> Learning System -> independently verified improvement
+Source -> standardized curriculum package -> source mastery planner -> required capability stages -> randomized Pyramid -> source capstone -> measured failures -> Learning System -> independently verified improvement
 ```
