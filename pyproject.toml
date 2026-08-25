@@ -36,6 +36,7 @@ roberta-pyramid-critical-retention = "roberta.learning.pyramid_critical_retentio
 roberta-pyramid-critical-autofix = "roberta.learning.pyramid_critical_autofix_entry:main"
 roberta-pyramid-build-mb4e-level2 = "roberta.learning.mb4e_level2_builder_cli:main"
 roberta-pyramid-build-mb4e-level3 = "roberta.learning.mb4e_level3_builder_cli:main"
+roberta-pyramid-plan-mb4e-source = "roberta.learning.mb4e_source_mastery_plan_cli:main"
 
 [tool.setuptools.package-data]
 "roberta.learning" = [
