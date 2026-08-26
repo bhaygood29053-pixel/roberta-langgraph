@@ -50,7 +50,6 @@ ORDINARY_VARIANTS_PER_TARGET = 13
 INTEGRITY_COUNT = 50
 MIN_TARGETS = 20
 MAX_TARGETS = 36
-_MAX_GENERATION_CHUNKS = 10
 _CHUNK_CHARS = 18000
 
 
@@ -204,7 +203,7 @@ def _page_chunks(pages: Sequence[SourcePage]) -> tuple[str, ...]:
             current += rendered
     if current:
         chunks.append(current)
-    return tuple(chunks[:_MAX_GENERATION_CHUNKS])
+    return tuple(chunks)
 
 
 def _page_lookup(pages: Sequence[SourcePage]) -> dict[int, str]:
@@ -288,9 +287,15 @@ def generate_stage_targets(
     pages = _chapter_pages(source, stage.source_chapters)
     by_page = _page_lookup(pages)
     chapter_map = load_chapter_map(source)
-    candidates: list[GeneratedTarget] = []
-    seen_semantics: set[tuple[str, str]] = set()
-    for chunk_number, chunk in enumerate(_page_chunks(pages), start=1):
+    chunks = _page_chunks(pages)
+    if len(chunks) > MAX_TARGETS:
+        raise AutonomousCurriculumError(
+            f"stage material spans {len(chunks)} generation chunks, exceeding the {MAX_TARGETS}-target coverage budget; split the stage"
+        )
+    candidates_by_chunk: list[list[GeneratedTarget]] = []
+    for chunk_number, chunk in enumerate(chunks, start=1):
+        chunk_candidates: list[GeneratedTarget] = []
+        seen_semantics: set[tuple[str, str]] = set()
         payload = {
             "contract": TARGET_GENERATOR_CONTRACT,
             "task": "Propose 4 to 7 distinct learning targets for this capability from only this source chunk.",
@@ -327,7 +332,7 @@ def generate_stage_targets(
             try:
                 candidate = _validate_candidate(
                     item,
-                    index=len(candidates) + 1,
+                    index=sum(len(items) for items in candidates_by_chunk) + len(chunk_candidates) + 1,
                     stage=stage,
                     pages=by_page,
                     chapter_map=chapter_map,
@@ -336,20 +341,43 @@ def generate_stage_targets(
             except AutonomousCurriculumError:
                 # Candidate-level invalidity is rejection, not a reason to trust a repair.
                 continue
+            if _norm(candidate.evidence_quote) not in _norm(chunk):
+                continue
             semantic_key = (candidate.concept, candidate.subconcept)
             if semantic_key in seen_semantics:
                 continue
             seen_semantics.add(semantic_key)
-            candidates.append(candidate)
-        if len(candidates) >= MAX_TARGETS:
-            break
+            chunk_candidates.append(candidate)
+        if not chunk_candidates:
+            raise AutonomousCurriculumError(
+                f"source-grounded target generation requires at least one exact-evidence target for source chunk {chunk_number} of {len(chunks)}"
+            )
+        candidates_by_chunk.append(chunk_candidates)
+
+    # Reserve one slot for every source chunk before filling the remaining
+    # bounded target budget. This makes late-stage material impossible to omit.
+    candidates: list[GeneratedTarget] = []
+    selected_ids: set[str] = set()
+    for chunk_number, chunk_candidates in enumerate(candidates_by_chunk, start=1):
+        chosen = next((item for item in chunk_candidates if item.target_id not in selected_ids), None)
+        if chosen is None:
+            raise AutonomousCurriculumError(
+                f"source chunk {chunk_number} has no distinct target within the stage coverage budget"
+            )
+        candidates.append(chosen)
+        selected_ids.add(chosen.target_id)
+    for chunk_candidates in candidates_by_chunk:
+        for candidate in chunk_candidates:
+            if len(candidates) >= MAX_TARGETS:
+                break
+            if candidate.target_id not in selected_ids:
+                candidates.append(candidate)
+                selected_ids.add(candidate.target_id)
 
     if len(candidates) < MIN_TARGETS:
         raise AutonomousCurriculumError(
             f"source-grounded target generation produced {len(candidates)} exact-evidence targets; at least {MIN_TARGETS} are required"
         )
-    candidates = candidates[:MAX_TARGETS]
-
     verification = _invoke_json(
         model,
         _VERIFY_SYSTEM,
@@ -375,6 +403,13 @@ def generate_stage_targets(
         raise AutonomousCurriculumError("target support verifier requires accepted_ids array")
     accepted = set(accepted_raw)
     verified = tuple(item for item in candidates if item.target_id in accepted)
+    selected_id_set = {item.target_id for item in candidates}
+    for chunk_number, chunk_candidates in enumerate(candidates_by_chunk, start=1):
+        selected_chunk_ids = {item.target_id for item in chunk_candidates} & selected_id_set
+        if not selected_chunk_ids & accepted:
+            raise AutonomousCurriculumError(
+                f"independent support verification accepted no target for source chunk {chunk_number} of {len(chunks)}"
+            )
     if len(verified) < MIN_TARGETS:
         raise AutonomousCurriculumError(
             f"independent support verification accepted {len(verified)} targets; at least {MIN_TARGETS} are required"
@@ -804,6 +839,7 @@ def generate_source_mastery_plan(
     *,
     source: AutonomousSource,
     curriculum_id: str | None = None,
+    source_key: str | None = None,
 ) -> SourceMasteryPlan:
     outlines, chapter_map = _outline_payloads(source)
     taxonomy = [
@@ -893,7 +929,7 @@ def generate_source_mastery_plan(
     generated_id = curriculum_id or f"autonomous_{source.original_sha256[:24]}"
     return make_source_mastery_plan(
         curriculum_id=generated_id,
-        source_key=source.source_key,
+        source_key=source_key or source.source_key,
         source_title=source.title,
         planner=PLAN_GENERATOR_CONTRACT,
         planner_basis=(
