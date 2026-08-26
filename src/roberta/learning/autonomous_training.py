@@ -220,19 +220,47 @@ def _load_or_make_plan(
     source: AutonomousSource,
     curriculum_root: Path,
     curriculum_id: str | None,
+    plan_cache_path: Path,
 ) -> SourceMasteryPlan:
     plan_path = curriculum_root / "source_mastery_plan.json"
-    if plan_path.exists():
-        plan = load_source_mastery_plan(plan_path)
+
+    def validate_plan(plan: SourceMasteryPlan, *, package_bound: bool) -> SourceMasteryPlan:
         if curriculum_id is not None and plan.curriculum_id != curriculum_id:
             raise TrainingHardStop("existing source mastery plan does not match curriculum")
-        if curriculum_root.exists():
-            package_key = package_source_key_for(curriculum_root, source)
-            if plan.source_key != package_key:
-                raise TrainingHardStop(
-                    f"existing source mastery plan is bound to {plan.source_key}, but curriculum provenance is bound to {package_key}"
-                )
+        expected_source_key = (
+            package_source_key_for(curriculum_root, source)
+            if package_bound
+            else source.source_key
+        )
+        if plan.source_key != expected_source_key:
+            location = "curriculum provenance" if package_bound else "selected autonomous source"
+            raise TrainingHardStop(
+                f"existing source mastery plan is bound to {plan.source_key}, but {location} is bound to {expected_source_key}"
+            )
         return plan
+
+    if plan_path.exists():
+        plan = validate_plan(load_source_mastery_plan(plan_path), package_bound=True)
+        if plan_cache_path.exists():
+            cached = load_source_mastery_plan(plan_cache_path)
+            if cached.plan_hash != plan.plan_hash:
+                raise TrainingHardStop(
+                    "durable autonomous job plan does not match the installed curriculum plan"
+                )
+        else:
+            write_source_mastery_plan(plan_cache_path, plan)
+        return plan
+
+    if plan_cache_path.exists():
+        package_bound = curriculum_root.exists()
+        plan = validate_plan(
+            load_source_mastery_plan(plan_cache_path),
+            package_bound=package_bound,
+        )
+        if package_bound:
+            write_source_mastery_plan(plan_path, plan)
+        return plan
+
     plan_source_key = package_source_key_for(curriculum_root, source) if curriculum_root.exists() else source.source_key
     plan = generate_source_mastery_plan(
         model,
@@ -240,6 +268,10 @@ def _load_or_make_plan(
         curriculum_id=curriculum_id,
         source_key=plan_source_key,
     )
+    # Persist the frozen plan under the already-held job lock before binding the
+    # authoritative ledger or attempting first-stage package publication. A crash
+    # anywhere after this point can therefore resume with the exact same plan hash.
+    write_source_mastery_plan(plan_cache_path, plan)
     if curriculum_root.exists():
         write_source_mastery_plan(plan_path, plan)
     return plan
@@ -475,6 +507,7 @@ def run_autonomous_training(
             source=source,
             curriculum_root=curriculum_root,
             curriculum_id=curriculum_id,
+            plan_cache_path=job.root / "source_mastery_plan.json",
         )
         if plan.curriculum_id != intended_curriculum_id:
             raise TrainingHardStop(
