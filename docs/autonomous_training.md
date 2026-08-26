@@ -35,13 +35,13 @@ Profiles change retry depth, not provenance or passing standards.
 For every next source stage Roberta:
 
 1. validates the immutable source and frozen source-mastery plan;
-2. sends every source page through bounded planning chunks before asserting complete coverage;
+2. sends every source page, including front matter before the first detected chapter, through bounded planning chunks before asserting complete coverage;
 3. uses any already-installed valid stage bank;
 4. if the bank is missing, reads only the stage's declared source chapters;
 5. asks the model for a bounded set of candidate learning targets;
 6. requires a short verbatim evidence quote and exact page for every target;
 7. deterministically rejects candidates whose quote is absent from that page or whose page is outside the cited chapter;
-8. runs a separate support-verification pass and requires at least 20 accepted targets;
+8. runs a separate support-verification pass, requires at least 20 accepted targets, and requires every assigned source chunk to retain a verified target;
 9. expands accepted targets with deterministic question templates;
 10. creates 50 integrity exercises and one Boss exercise;
 11. validates the generated package and canonical 300-question selection before atomic publication;
@@ -60,7 +60,7 @@ When every frozen source stage passes, Roberta runs a separate 60-question sourc
 - 10 integrity questions
 - 1 final Boss
 
-The capstone requires at least 90% overall accuracy (or the higher applicable capability threshold), at least 90% integrity, Boss PASS, and zero critical failures. Only then does the existing source-mastery ledger `mark_source_capstone_passed` contract mark the source mastered.
+The capstone answer lane can use only previously verified, curriculum-scoped learned concepts routed from the source-stage references represented by each synthesis question; the final Boss may use all verified concepts from the frozen plan. The capstone requires at least 90% overall accuracy (or the higher applicable capability threshold), at least 90% integrity, Boss PASS, and zero critical failures. Only then does the existing source-mastery ledger `mark_source_capstone_passed` contract mark the source mastered.
 
 ## Durable local state
 
@@ -76,7 +76,7 @@ Default training jobs:
 .roberta/autonomous_training/<job_id>/
 ```
 
-Each job contains restart-safe `state.json`, append-only `events.jsonl`, checkpoint directories, remediation/retention/promotion evidence, and capstone results. An operating-system advisory lock prevents two controller processes from advancing the same job concurrently. The kernel releases ownership automatically after crashes or termination; the persistent lock file records diagnostic PID metadata but is never unlinked for ownership changes.
+Each job contains restart-safe `state.json`, append-only `events.jsonl`, checkpoint directories, remediation/retention/promotion evidence, and capstone results. An operating-system advisory lock is acquired before plan creation and prevents two controller processes from advancing the same job concurrently. The kernel releases ownership automatically after crashes or termination; the persistent lock file records diagnostic PID metadata but is never unlinked for ownership changes. Source-registry updates use a separate advisory transaction lock and unique atomic replacement files so concurrent imports cannot discard one another.
 
 Check the latest state with:
 
