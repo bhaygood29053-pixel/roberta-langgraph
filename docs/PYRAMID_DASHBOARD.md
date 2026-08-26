@@ -1,6 +1,6 @@
 # Roberta Learning Command Center
 
-Last reconciled: 2026-08-25 (America/New_York)
+Last reconciled: 2026-08-26 (America/New_York)
 
 The Learning Command Center is a local **read-only** observability surface over Roberta's Pyramid training ledger, source-mastery plan, curriculum metadata, and Roberta bridge health.
 
@@ -85,7 +85,7 @@ capstone-required/outstanding state
 
 The panel deliberately does **not** expose exercise `expected_answer` fields as teaching content.
 
-Bank construction and actual mastery are displayed as different concepts. The presence of a Stage 6 bank, for example, does not mean Stage 6 has been passed.
+Bank construction and actual mastery are displayed as different concepts. The presence of a Stage 8 bank, for example, does not mean Stage 8 has been passed.
 
 ## Ledger and plan ownership
 
