@@ -1,6 +1,6 @@
 # Roberta Learning System
 
-Last reconciled: 2026-08-25 (America/New_York)
+Last reconciled: 2026-08-26 (America/New_York)
 
 Status: **Phases 1-9 accepted; Phase 10 retention specification accepted but implementation still blocked/unaccepted.**
 
@@ -128,7 +128,7 @@ The plan cannot silently change after a run is bound. Historical fixed-level res
 
 For *Mastering Blockchain, Fourth Edition*, the accepted deterministic plan has 14 required stages mapped to capabilities `1,2,3,4,5,6,7,8,9,10,11,13,14,17`, with capabilities `12,15,16,18,19,20` explicitly excluded and a final source capstone required.
 
-Accepted curriculum-bank construction currently reaches Stage 6 / Tokenomics. Bank construction is not evidence that the source stage has been passed.
+Accepted curriculum-bank construction currently reaches **Stage 8 / Market Structure**. Stage 7 / Liquidity and Stage 8 / Market Structure are accepted on `main`; Stages 9-14 plus the final source capstone remain unaccepted build milestones. Bank construction is not evidence that a source stage has been passed.
 
 ## MB4E provenance and reconstruction state
 
