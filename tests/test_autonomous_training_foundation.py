@@ -14,20 +14,28 @@ from roberta.learning.autonomous_curriculum import (
     build_generated_stage_bank,
     generate_stage_targets,
     install_generated_stage,
+    _outline_payloads,
+    _validate_candidate,
 )
 from roberta.learning.autonomous_resolver import install_autonomous_trusted_source_resolver
 from roberta.learning.autonomous_source import (
     get_autonomous_source,
     import_source,
     resolve_local_trusted_source,
+    AutonomousSourceError,
+    load_chapter_map,
+    load_source_pages,
 )
 from roberta.learning.autonomous_training import JobStore
+from roberta.learning.autonomous_remediation import run_autonomous_remediation
 from roberta.learning.curriculum_io import validate_package
 from roberta.learning.dashboard_autonomous_training import (
     insert_autonomous_training_panel,
     load_autonomous_training_status,
 )
-from roberta.learning.pyramid import get_level_spec, select_level_exercises
+from roberta.learning.pyramid import Exercise, get_level_spec, select_level_exercises
+from roberta.learning.pyramid_exam import GradedAnswer, summarize_exam
+from roberta.learning.pyramid_learned_concepts import load_learned_concepts
 from roberta.learning.source_mastery import SourceMasteryStage, make_source_mastery_plan
 
 
@@ -116,6 +124,149 @@ def test_autonomous_source_import_is_hash_bound_and_idempotent(source) -> None:
     assert trusted is not None
     assert trusted.source_artifact_sha256 == source.original_sha256
     assert trusted.source_transcript_sha256 == source.transcript_sha256
+
+
+def test_autonomous_source_rejects_tampered_derived_evidence(source) -> None:
+    pages = Path(source.pages_path)
+    original = pages.read_text(encoding="utf-8")
+    pages.write_text(original.replace("pooled reserves", "fabricated reserves"), encoding="utf-8")
+    with pytest.raises(AutonomousSourceError, match="pages hash changed"):
+        get_autonomous_source(source.source_key)
+
+
+def test_planner_payloads_cover_every_page(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("ROBERTA_AUTONOMOUS_SOURCE_ROOT", str(tmp_path / "source-registry"))
+    selected = tmp_path / "complete.md"
+    selected.write_text(
+        "\f".join(
+            f"# Chapter 1 Complete Coverage\n\nUnique material from page {page}. " + ("detail " * 3000)
+            for page in range(1, 7)
+        ),
+        encoding="utf-8",
+    )
+    complete = import_source(selected, title="Complete Source", authority_class="primary")
+    payloads, chapter_map = _outline_payloads(complete)
+    joined = "\n".join(payloads)
+    assert chapter_map[1][:2] == (1, 6)
+    for page in range(1, 7):
+        assert f"PAGE {page}]]" in joined
+        assert f"Unique material from page {page}." in joined
+
+
+def test_target_page_must_belong_to_cited_chapter(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("ROBERTA_AUTONOMOUS_SOURCE_ROOT", str(tmp_path / "source-registry"))
+    selected = tmp_path / "chapters.md"
+    selected.write_text(
+        "# Chapter 1 First\n\nEvidence from the first chapter is long enough to validate exactly."
+        "\f# Chapter 2 Second\n\nEvidence from the second chapter is also long enough to validate exactly.",
+        encoding="utf-8",
+    )
+    multi = import_source(selected, title="Two Chapters", authority_class="primary")
+    pages = {item.page: item.text for item in load_source_pages(multi)}
+    stage = SourceMasteryStage(
+        stage=1,
+        capability_level=7,
+        capability_name=get_level_spec(7).name,
+        domain=get_level_spec(7).domain,
+        source_chapters=(1, 2),
+        rationale="Both chapters support the stage.",
+    )
+    raw = {
+        "concept": "chapter_binding",
+        "subconcept": "wrong_chapter",
+        "principle": "The first chapter provides the cited evidence.",
+        "evidence_quote": "Evidence from the first chapter is long enough to validate exactly.",
+        "page": 1,
+        "chapter": 2,
+        "section": "Second",
+        "required_points": ["Preserve exact chapter/page provenance."],
+        "forbidden_inferences": [],
+    }
+    with pytest.raises(AutonomousCurriculumError, match="outside cited chapter"):
+        _validate_candidate(
+            raw,
+            index=1,
+            stage=stage,
+            pages=pages,
+            chapter_map=load_chapter_map(multi),
+            package_source_key=multi.source_key,
+        )
+
+
+def test_failed_attempt_runs_verified_remediation_before_memory_promotion(
+    tmp_path, monkeypatch
+) -> None:
+    exercise = Exercise(
+        exercise_id="AUTO-WEAK-1",
+        curriculum_id="autonomous_test",
+        level=7,
+        concept="liquidity_depth",
+        subconcept="pooled_reserves",
+        question="Explain pooled reserves.",
+        expected_answer="Liquidity depth depends on assets committed to pooled reserves.",
+        source_refs=("local_source", "AUTO-S01-source"),
+        required_reasoning_points=("Connect depth to pooled reserves.",),
+    )
+    failed = summarize_exam(
+        (exercise,),
+        (
+            GradedAnswer(
+                exercise_id=exercise.exercise_id,
+                answer="I do not know.",
+                grade="FAIL",
+                score=0.0,
+                correct=False,
+            ),
+        ),
+        canonical_exam=False,
+    )
+    lanes: list[str] = []
+
+    def passing_exam(*, exercises, answer_model, **kwargs):
+        lanes.append("base" if answer_model is model else "memory")
+        grades = tuple(
+            GradedAnswer(
+                exercise_id=item.exercise_id,
+                answer=item.expected_answer,
+                grade="PASS",
+                score=1.0,
+                correct=True,
+            )
+            for item in exercises
+        )
+        return summarize_exam(exercises, grades, canonical_exam=False)
+
+    model = object()
+    monkeypatch.setattr(
+        "roberta.learning.autonomous_remediation.run_exam", passing_exam
+    )
+    checkpoints = tmp_path / "failed"
+    checkpoints.mkdir()
+    (checkpoints / "level_07_batch_0001.json").write_text("{}", encoding="utf-8")
+    learned_path = tmp_path / "learned.json"
+    promoted = run_autonomous_remediation(
+        curriculum_id="autonomous_test",
+        level=7,
+        bank=(exercise,),
+        failed_outcome=failed,
+        model=model,
+        output_dir=tmp_path / "remediation",
+        failed_checkpoint_dir=checkpoints,
+        learned_concepts_path=learned_path,
+        batch_size=10,
+    )
+    assert lanes == ["memory", "base", "memory"]
+    assert len(promoted) == 1
+    stored = load_learned_concepts(
+        learned_path, curriculum_id="autonomous_test", level=7
+    )
+    assert stored == promoted
+    promotion = json.loads(
+        (tmp_path / "remediation" / "promotion.json").read_text(encoding="utf-8")
+    )
+    assert promotion["transfer_passed"] is True
+    assert promotion["general_durable_memory_promotion_authorized"] is False
+    assert promotion["execution_authorized"] is False
 
 
 def test_generated_targets_require_exact_source_evidence(source) -> None:

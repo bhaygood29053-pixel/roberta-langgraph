@@ -39,6 +39,8 @@ class AutonomousSource:
     original_page_count: int
     original_sha256: str
     transcript_sha256: str
+    pages_sha256: str
+    chapter_map_sha256: str
     original_path: str
     transcript_path: str
     pages_path: str
@@ -70,6 +72,8 @@ class AutonomousSource:
             "original_page_count": self.original_page_count,
             "original_sha256": self.original_sha256,
             "transcript_sha256": self.transcript_sha256,
+            "pages_sha256": self.pages_sha256,
+            "chapter_map_sha256": self.chapter_map_sha256,
             "original_path": self.original_path,
             "transcript_path": self.transcript_path,
             "pages_path": self.pages_path,
@@ -133,6 +137,8 @@ def _source_from_mapping(raw: Mapping[str, object]) -> AutonomousSource:
             original_page_count=int(raw["original_page_count"]),
             original_sha256=str(raw["original_sha256"]),
             transcript_sha256=str(raw["transcript_sha256"]),
+            pages_sha256=str(raw["pages_sha256"]),
+            chapter_map_sha256=str(raw["chapter_map_sha256"]),
             original_path=str(raw["original_path"]),
             transcript_path=str(raw["transcript_path"]),
             pages_path=str(raw["pages_path"]),
@@ -145,7 +151,15 @@ def _source_from_mapping(raw: Mapping[str, object]) -> AutonomousSource:
         raise AutonomousSourceError("autonomous source authority_class is invalid")
     if source.original_page_count <= 0:
         raise AutonomousSourceError("autonomous source page count must be positive")
-    if not re.fullmatch(r"[0-9a-f]{64}", source.original_sha256) or not re.fullmatch(r"[0-9a-f]{64}", source.transcript_sha256):
+    if any(
+        re.fullmatch(r"[0-9a-f]{64}", digest) is None
+        for digest in (
+            source.original_sha256,
+            source.transcript_sha256,
+            source.pages_sha256,
+            source.chapter_map_sha256,
+        )
+    ):
         raise AutonomousSourceError("autonomous source digest is invalid")
     return source
 
@@ -178,12 +192,17 @@ def verify_autonomous_source(source: AutonomousSource) -> None:
     original = Path(source.original_path)
     transcript = Path(source.transcript_path)
     pages_path = Path(source.pages_path)
-    if not original.is_file() or not transcript.is_file() or not pages_path.is_file():
+    chapter_map_path = Path(source.chapter_map_path)
+    if not all(path.is_file() for path in (original, transcript, pages_path, chapter_map_path)):
         raise AutonomousSourceError(f"autonomous source {source.source_key} is missing durable artifacts")
     if _sha256_file(original) != source.original_sha256:
         raise AutonomousSourceError(f"autonomous source {source.source_key} original artifact hash changed")
     if _sha256_file(transcript) != source.transcript_sha256:
         raise AutonomousSourceError(f"autonomous source {source.source_key} transcript hash changed")
+    if _sha256_file(pages_path) != source.pages_sha256:
+        raise AutonomousSourceError(f"autonomous source {source.source_key} extracted pages hash changed")
+    if _sha256_file(chapter_map_path) != source.chapter_map_sha256:
+        raise AutonomousSourceError(f"autonomous source {source.source_key} chapter map hash changed")
     pages = load_source_pages(source, verify_hashes=False)
     if len(pages) != source.original_page_count:
         raise AutonomousSourceError(f"autonomous source {source.source_key} page count changed")
@@ -301,6 +320,8 @@ def import_source(
     )
     _atomic_json(chapter_path, _chapter_map(pages))
     transcript_sha = _sha256_file(transcript)
+    pages_sha = _sha256_file(pages_path)
+    chapter_map_sha = _sha256_file(chapter_path)
     imported_at = datetime.now(timezone.utc).isoformat()
     source = AutonomousSource(
         source_key=source_key,
@@ -312,6 +333,8 @@ def import_source(
         original_page_count=len(pages),
         original_sha256=original_sha,
         transcript_sha256=transcript_sha,
+        pages_sha256=pages_sha,
+        chapter_map_sha256=chapter_map_sha,
         original_path=str(original_copy),
         transcript_path=str(transcript),
         pages_path=str(pages_path),
@@ -344,6 +367,8 @@ def load_source_pages(source: AutonomousSource | str, *, verify_hashes: bool = T
         transcript = Path(record.transcript_path)
         if _sha256_file(original) != record.original_sha256 or _sha256_file(transcript) != record.transcript_sha256:
             raise AutonomousSourceError("autonomous source integrity check failed")
+        if _sha256_file(Path(record.pages_path)) != record.pages_sha256:
+            raise AutonomousSourceError("autonomous source extracted pages integrity check failed")
     try:
         lines = Path(record.pages_path).read_text(encoding="utf-8").splitlines()
     except OSError as exc:
@@ -366,6 +391,8 @@ def load_source_pages(source: AutonomousSource | str, *, verify_hashes: bool = T
 
 def load_chapter_map(source: AutonomousSource | str) -> dict[int, tuple[int, int, str]]:
     record = get_autonomous_source(source) if isinstance(source, str) else source
+    if _sha256_file(Path(record.chapter_map_path)) != record.chapter_map_sha256:
+        raise AutonomousSourceError("autonomous source chapter map integrity check failed")
     try:
         raw = json.loads(Path(record.chapter_map_path).read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:

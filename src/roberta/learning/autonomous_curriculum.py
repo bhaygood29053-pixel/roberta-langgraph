@@ -217,6 +217,7 @@ def _validate_candidate(
     index: int,
     stage: SourceMasteryStage,
     pages: Mapping[int, str],
+    chapter_map: Mapping[int, tuple[int, int, str]],
     package_source_key: str,
 ) -> GeneratedTarget:
     def text(name: str, *, max_len: int = 2000) -> str:
@@ -240,6 +241,11 @@ def _validate_candidate(
         raise AutonomousCurriculumError(f"target {index} page/chapter must be integers") from exc
     if chapter not in stage.source_chapters:
         raise AutonomousCurriculumError(f"target {index} cites chapter {chapter} outside source stage {stage.stage}")
+    chapter_bounds = chapter_map.get(chapter)
+    if chapter_bounds is None or not chapter_bounds[0] <= page <= chapter_bounds[1]:
+        raise AutonomousCurriculumError(
+            f"target {index} cites page {page} outside cited chapter {chapter}"
+        )
     page_text = pages.get(page)
     if page_text is None:
         raise AutonomousCurriculumError(f"target {index} cites page {page} outside the selected stage material")
@@ -281,6 +287,7 @@ def generate_stage_targets(
 ) -> tuple[GeneratedTarget, ...]:
     pages = _chapter_pages(source, stage.source_chapters)
     by_page = _page_lookup(pages)
+    chapter_map = load_chapter_map(source)
     candidates: list[GeneratedTarget] = []
     seen_semantics: set[tuple[str, str]] = set()
     for chunk_number, chunk in enumerate(_page_chunks(pages), start=1):
@@ -323,6 +330,7 @@ def generate_stage_targets(
                     index=len(candidates) + 1,
                     stage=stage,
                     pages=by_page,
+                    chapter_map=chapter_map,
                     package_source_key=package_source_key,
                 )
             except AutonomousCurriculumError:
@@ -756,17 +764,39 @@ def install_generated_stage(
     }
 
 
-def _outline_payload(source: AutonomousSource) -> tuple[str, dict[int, tuple[int, int, str]]]:
+def _outline_payloads(
+    source: AutonomousSource,
+) -> tuple[tuple[str, ...], dict[int, tuple[int, int, str]]]:
+    """Return bounded planner payloads that collectively cover every source page."""
+
     pages = load_source_pages(source)
     chapter_map = load_chapter_map(source)
-    parts: list[str] = []
+    chunks: list[str] = []
+    current = ""
     for chapter, (start, end, title) in sorted(chapter_map.items()):
-        selected_numbers = sorted({start, min(end, start + 1), max(start, end - 1), end})
-        for page_number in selected_numbers:
+        for page_number in range(start, end + 1):
             page = pages[page_number - 1]
-            excerpt = page.text[:3500]
-            parts.append(f"[[CHAPTER {chapter} | {title} | PAGE {page_number}]]\n{excerpt}")
-    return "\n\n".join(parts)[:120000], chapter_map
+            marker = f"[[CHAPTER {chapter} | {title} | PAGE {page_number}]]\n"
+            body_size = max(1, _CHUNK_CHARS - len(marker) - 2)
+            segments = tuple(
+                page.text[offset : offset + body_size]
+                for offset in range(0, max(1, len(page.text)), body_size)
+            )
+            for segment in segments:
+                rendered = marker + segment
+                if current and len(current) + len(rendered) + 2 > _CHUNK_CHARS:
+                    chunks.append(current)
+                    current = ""
+                if len(rendered) > _CHUNK_CHARS:
+                    raise AutonomousCurriculumError(
+                        f"planner page segment for page {page_number} exceeds context budget"
+                    )
+                current = rendered if not current else current + "\n\n" + rendered
+    if current:
+        chunks.append(current)
+    if not chunks:
+        raise AutonomousCurriculumError("source mastery planner has no source material")
+    return tuple(chunks), chapter_map
 
 
 def generate_source_mastery_plan(
@@ -775,18 +805,25 @@ def generate_source_mastery_plan(
     source: AutonomousSource,
     curriculum_id: str | None = None,
 ) -> SourceMasteryPlan:
-    outline, chapter_map = _outline_payload(source)
+    outlines, chapter_map = _outline_payloads(source)
     taxonomy = [
         {"level": level, "name": get_level_spec(level).name, "domain": get_level_spec(level).domain}
         for level in range(1, 21)
     ]
-    raw = _invoke_json(
-        model,
-        _PLAN_SYSTEM,
-        {
+    pages = _page_lookup(load_source_pages(source))
+    seen_levels: set[int] = set()
+    stages_by_level: dict[int, dict[str, object]] = {}
+    level_order: list[int] = []
+    for chunk_number, outline in enumerate(outlines, start=1):
+        raw = _invoke_json(
+            model,
+            _PLAN_SYSTEM,
+            {
             "contract": PLAN_GENERATOR_CONTRACT,
             "task": "Select only materially supported capabilities and order them from foundational to advanced source mastery.",
             "source_title": source.title,
+            "coverage_chunk": chunk_number,
+            "coverage_chunk_count": len(outlines),
             "taxonomy": taxonomy,
             "available_chapters": [
                 {"chapter": chapter, "title": title, "start_page": start, "end_page": end}
@@ -804,32 +841,42 @@ def generate_source_mastery_plan(
                 ]
             },
             "source_outline": outline,
-        },
-        label="source mastery planner",
-    )
-    stages_raw = raw.get("stages")
-    if not isinstance(stages_raw, list) or not stages_raw:
-        raise AutonomousCurriculumError("source mastery planner returned no stages")
-    pages = _page_lookup(load_source_pages(source))
-    seen_levels: set[int] = set()
+            },
+            label=f"source mastery planner coverage chunk {chunk_number}",
+        )
+        stages_raw = raw.get("stages")
+        if not isinstance(stages_raw, list):
+            raise AutonomousCurriculumError("source mastery planner requires a stages array")
+        for raw_stage in stages_raw:
+            if not isinstance(raw_stage, Mapping):
+                continue
+            try:
+                level = int(raw_stage["capability_level"])
+                chapters = tuple(sorted({int(value) for value in raw_stage["source_chapters"]}))
+                rationale = str(raw_stage["rationale"]).strip()
+                evidence = str(raw_stage["evidence_quote"]).strip()
+                page = int(raw_stage["page"])
+            except (KeyError, TypeError, ValueError):
+                continue
+            if level not in range(1, 21) or not chapters or any(ch not in chapter_map for ch in chapters):
+                continue
+            if page not in pages or len(_norm(evidence)) < 20 or _norm(evidence) not in _norm(pages[page]):
+                continue
+            if not any(chapter_map[ch][0] <= page <= chapter_map[ch][1] for ch in chapters):
+                continue
+            if level not in seen_levels:
+                seen_levels.add(level)
+                level_order.append(level)
+                stages_by_level[level] = {"chapters": set(chapters), "rationale": rationale, "page": page}
+            else:
+                existing_chapters = stages_by_level[level]["chapters"]
+                assert isinstance(existing_chapters, set)
+                existing_chapters.update(chapters)
     stages: list[SourceMasteryStage] = []
-    for raw_stage in stages_raw:
-        if not isinstance(raw_stage, Mapping):
-            continue
-        try:
-            level = int(raw_stage["capability_level"])
-            chapters = tuple(sorted({int(value) for value in raw_stage["source_chapters"]}))
-            rationale = str(raw_stage["rationale"]).strip()
-            evidence = str(raw_stage["evidence_quote"]).strip()
-            page = int(raw_stage["page"])
-        except (KeyError, TypeError, ValueError):
-            continue
-        if level in seen_levels or level not in range(1, 21) or not chapters or any(ch not in chapter_map for ch in chapters):
-            continue
-        if page not in pages or len(_norm(evidence)) < 20 or _norm(evidence) not in _norm(pages[page]):
-            continue
-        if not any(chapter_map[ch][0] <= page <= chapter_map[ch][1] for ch in chapters):
-            continue
+    for level in level_order:
+        material = stages_by_level[level]
+        chapters_raw = material["chapters"]
+        assert isinstance(chapters_raw, set)
         spec = get_level_spec(level)
         stages.append(
             SourceMasteryStage(
@@ -837,11 +884,10 @@ def generate_source_mastery_plan(
                 capability_level=level,
                 capability_name=spec.name,
                 domain=spec.domain,
-                source_chapters=chapters,
-                rationale=rationale or f"Source evidence on page {page} supports {spec.name}.",
+                source_chapters=tuple(sorted(int(value) for value in chapters_raw)),
+                rationale=str(material["rationale"]) or f"Source evidence on page {material['page']} supports {spec.name}.",
             )
         )
-        seen_levels.add(level)
     if not stages:
         raise AutonomousCurriculumError("no source mastery stage survived exact evidence validation")
     generated_id = curriculum_id or f"autonomous_{source.original_sha256[:24]}"
@@ -850,7 +896,10 @@ def generate_source_mastery_plan(
         source_key=source.source_key,
         source_title=source.title,
         planner=PLAN_GENERATOR_CONTRACT,
-        planner_basis="model-proposed capability coverage with exact local evidence-span validation",
+        planner_basis=(
+            "complete-page model-proposed capability coverage with exact local evidence-span validation; "
+            f"pages_sha256={source.pages_sha256}; planner_chunks={len(outlines)}"
+        ),
         stages=tuple(stages),
         coverage_complete=True,
         source_capstone_required=True,

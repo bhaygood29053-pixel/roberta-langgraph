@@ -18,6 +18,10 @@ from .autonomous_curriculum import (
     package_source_key_for,
 )
 from .autonomous_source import AutonomousSource, AutonomousSourceError, import_source
+from .autonomous_remediation import (
+    AutonomousRemediationError,
+    run_autonomous_remediation,
+)
 from .curriculum_io import CurriculumPackageError, validate_package
 from .pyramid import CANONICAL_LEVEL_QUESTION_COUNT, select_level_exercises
 from .pyramid_adjudicator_retry import create_pyramid_runtime_model
@@ -327,7 +331,7 @@ def _weakness_report(outcome: ExamOutcome) -> dict[str, object]:
             }
             for item in weak
         ],
-        "next_action": "fresh closed-book canonical retry after automatic weakness diagnosis",
+        "next_action": "source-grounded practice, closed-book retention, transfer verification, then canonical retry",
         "source_context_injected_into_canonical_retry": False,
     }
 
@@ -640,6 +644,64 @@ def run_autonomous_training(
                     report=str(report_path),
                 )
                 print(f"AUTOMATIC_REMEDIATION {report_path}", flush=True)
+                if attempt < int(limits["stage_attempts"]):
+                    _, validated_bank = validate_package(curriculum_root)
+                    remediation_root = (
+                        job.root
+                        / "remediation"
+                        / f"stage_{stage_number:02d}"
+                        / f"attempt_{attempt:02d}"
+                    )
+                    failed_checkpoints = (
+                        job.root
+                        / "checkpoints"
+                        / f"stage_{stage_number:02d}"
+                        / f"attempt_{attempt:02d}"
+                        / "q300"
+                    )
+                    learned_path = Path(
+                        f".roberta/pyramid_learned_concepts/{plan.curriculum_id}.json"
+                    )
+                    try:
+                        promoted = run_autonomous_remediation(
+                            curriculum_id=plan.curriculum_id,
+                            level=stage.capability_level,
+                            bank=validated_bank,
+                            failed_outcome=outcome,
+                            model=model,
+                            output_dir=remediation_root,
+                            failed_checkpoint_dir=failed_checkpoints,
+                            learned_concepts_path=learned_path,
+                            batch_size=batch_size,
+                        )
+                    except AutonomousRemediationError as exc:
+                        job.event(
+                            "automatic_remediation_failed",
+                            stage=stage_number,
+                            attempt=attempt,
+                            reason=str(exc),
+                        )
+                        raise TrainingHardStop(
+                            f"stage {stage_number} remediation could not satisfy verified learning gates: {exc}"
+                        ) from exc
+                    state.update(
+                        {
+                            "current_activity": "remediation_promoted",
+                            "last_promoted_concepts": len(promoted),
+                            "learned_concepts_store": str(learned_path),
+                        }
+                    )
+                    job.write(state)
+                    job.event(
+                        "automatic_remediation_promoted",
+                        stage=stage_number,
+                        attempt=attempt,
+                        promoted_concepts=len(promoted),
+                    )
+                    print(
+                        f"AUTOMATIC_REMEDIATION_PROMOTED {len(promoted)}",
+                        flush=True,
+                    )
             if not passed:
                 raise TrainingHardStop(
                     f"stage {stage_number} ({stage.capability_name}) did not pass after {limits['stage_attempts']} autonomous attempts"

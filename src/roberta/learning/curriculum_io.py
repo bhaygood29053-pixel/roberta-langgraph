@@ -432,7 +432,12 @@ def _default_trusted_source_resolver(source_key: str) -> TrustedSourceBinding | 
     try:
         spec = get_user_source_spec(source_key)
     except SourceIngestionError:
-        return None
+        # Autonomous sources are registered independently of curriculum packages.
+        # Resolve them here so every existing Pyramid command sees the same trusted
+        # binding rather than relying on entry-point-local monkey patches.
+        from .autonomous_source import resolve_local_trusted_source
+
+        return resolve_local_trusted_source(source_key)
     return TrustedSourceBinding(
         source_artifact_sha256=spec.original_sha256,
         source_transcript_sha256=spec.transcript_sha256,
