@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping, Sequence
+
+from langchain_core.messages import HumanMessage
 
 from .curriculum_io import validate_package
 from .pyramid import Exercise, MIN_INTEGRITY_ACCURACY, get_level_spec
 from .pyramid_exam import ExamOutcome, run_exam
+from .pyramid_learned_concepts import LearnedConcept, PyramidLearnedConceptError
 from .source_mastery import SourceMasteryPlan
 
 
@@ -19,6 +23,96 @@ CAPSTONE_REQUIRED_ACCURACY = 0.90
 
 class AutonomousCapstoneError(RuntimeError):
     pass
+
+
+class SourceCapstoneLearnedConceptAnswerModel:
+    """Route verified stage memories into the capstone exercises they support."""
+
+    def __init__(
+        self,
+        model: Any,
+        *,
+        plan: SourceMasteryPlan,
+        exercises: Sequence[Exercise],
+        concepts: Sequence[LearnedConcept],
+    ) -> None:
+        if any(item.curriculum_id != plan.curriculum_id for item in concepts):
+            raise PyramidLearnedConceptError("capstone learned concepts do not match curriculum")
+        allowed_levels = set(plan.required_capability_levels)
+        if any(item.level not in allowed_levels for item in concepts):
+            raise PyramidLearnedConceptError("capstone learned concept level is outside the source plan")
+        self._model = model
+        all_concepts = tuple(concepts)
+        routes: dict[str, tuple[LearnedConcept, ...]] = {}
+        for exercise in exercises:
+            if exercise.boss_question:
+                matched = all_concepts
+            else:
+                exercise_refs = set(exercise.source_refs)
+                matched = tuple(
+                    item
+                    for item in all_concepts
+                    if (set(item.source_refs) - {plan.source_key}) & exercise_refs
+                )
+            if matched:
+                routes[exercise.exercise_id] = matched
+        self._routes = routes
+
+    def invoke(self, messages: Sequence[object], *args: object, **kwargs: object) -> object:
+        if not messages:
+            return self._model.invoke(messages, *args, **kwargs)
+        content = getattr(messages[-1], "content", None)
+        if not isinstance(content, str):
+            return self._model.invoke(messages, *args, **kwargs)
+        try:
+            request = json.loads(content)
+        except json.JSONDecodeError:
+            return self._model.invoke(messages, *args, **kwargs)
+        if not isinstance(request, Mapping) or not isinstance(request.get("exercises"), list):
+            return self._model.invoke(messages, *args, **kwargs)
+
+        augmented: list[dict[str, object]] = []
+        injected = 0
+        for raw in request["exercises"]:
+            if not isinstance(raw, Mapping):
+                raise PyramidLearnedConceptError("capstone answer exercise must be an object")
+            if any(
+                field in raw
+                for field in (
+                    "expected_answer",
+                    "reference_reasoning_points",
+                    "forbidden_inferences",
+                    "remediation_context",
+                    "source_evidence",
+                )
+            ):
+                raise PyramidLearnedConceptError(
+                    "capstone answer request contains prohibited grading/source material"
+                )
+            item = dict(raw)
+            exercise_id = item.get("exercise_id")
+            routed = self._routes.get(exercise_id) if isinstance(exercise_id, str) else None
+            if routed:
+                item["learned_concept_memories"] = [
+                    {
+                        "contract": "roberta-source-capstone-learned-memory/v1",
+                        "principle": memory.principle,
+                    }
+                    for memory in routed
+                ]
+                injected += 1
+            augmented.append(item)
+        if injected == 0:
+            return self._model.invoke(messages, *args, **kwargs)
+        rewritten = dict(request)
+        rewritten["instruction"] = (
+            str(request.get("instruction", ""))
+            + " Use learned_concept_memories when present. They are previously verified internal curriculum knowledge, not source evidence, live state, or answer keys. Answer the synthesis independently and do not mention the memory objects."
+        ).strip()
+        rewritten["exercises"] = augmented
+        updated = list(messages)
+        updated[-1] = HumanMessage(content=json.dumps(rewritten, ensure_ascii=False))
+        return self._model.invoke(updated, *args, **kwargs)
 
 
 @dataclass(frozen=True, slots=True)
@@ -159,10 +253,18 @@ def run_source_capstone(
     answer_model: Any,
     grader_model: Any,
     checkpoint_dir: str | Path,
+    learned_concepts: Sequence[LearnedConcept] = (),
     batch_size: int = 10,
     progress=None,
 ) -> tuple[CapstoneResult, ExamOutcome]:
     exercises = build_source_capstone(curriculum_dir=curriculum_dir, plan=plan)
+    if learned_concepts:
+        answer_model = SourceCapstoneLearnedConceptAnswerModel(
+            answer_model,
+            plan=plan,
+            exercises=exercises,
+            concepts=learned_concepts,
+        )
     outcome = run_exam(
         exercises=exercises,
         answer_model=answer_model,
