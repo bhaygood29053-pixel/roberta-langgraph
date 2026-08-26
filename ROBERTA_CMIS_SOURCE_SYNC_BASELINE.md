@@ -2,6 +2,8 @@
 
 Last reconciled: 2026-08-25 (America/New_York)
 
+Merge verified: 2026-08-26 — paired Roberta PR #226 and CMIS PR #269 are merged on both `main` branches.
+
 This file is the compact cross-project synchronization baseline for Roberta documentation. It does not replace `docs/CMIS_CONTRACT.md`, `docs/CMIS_ROADMAP_SYNC_2026-08-17.md`, or `docs/LANGGRAPH_ROADMAP.md`.
 
 ## Canonical authority path
