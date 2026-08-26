@@ -78,6 +78,14 @@ from .reflection import (
     validate_reflection_record,
 )
 from .reflection_api import create_candidate_lesson, transition_candidate_lesson
+from .promotion import (
+    LEARNING_KNOWLEDGE_CLASSIFICATION_CONTRACT,
+    VERIFIED_LEARNED_KNOWLEDGE,
+    KnowledgePromotionError,
+    VerifiedKnowledgeClassification,
+    authorize_operational_trust,
+    classify_verified_learned_knowledge,
+)
 from .retention import (
     CONTRADICTION_SNAPSHOT_CONTRACT,
     RETENTION_APPROVAL_ACTION,
@@ -196,6 +204,7 @@ __all__ = [
     "INDEX_CONTRACT",
     "LEARNING_DIAGNOSIS_VERSION",
     "LEXICAL_ANALYZER_CONTRACT",
+    "LEARNING_KNOWLEDGE_CLASSIFICATION_CONTRACT",
     "PROMPT_SAFETY_CONTRACT",
     "REFLECTION_CONTRACT",
     "RETENTION_APPROVAL_ACTION",
@@ -208,6 +217,7 @@ __all__ = [
     "USER_SOURCE_SPECS",
     "VERIFICATION_PLAN_CONTRACT",
     "VERIFIED_LESSON_CONTRACT",
+    "VERIFIED_LEARNED_KNOWLEDGE",
     "VERIFIER_VERSION",
     "X1_WHITEPAPER_AUTHORS",
     "X1_WHITEPAPER_PDF_PAGE_COUNT",
@@ -249,6 +259,7 @@ __all__ = [
     "InMemoryVerifiedLessonStore",
     "IngestionResult",
     "LearningCandidateBundle",
+    "KnowledgePromotionError",
     "LessonScope",
     "LexicalIndexEntry",
     "PARSER_CONTRACT",
@@ -284,11 +295,14 @@ __all__ = [
     "VerificationPlan",
     "VerifiedLessonRecord",
     "VerifiedLessonState",
+    "VerifiedKnowledgeClassification",
     "aggregate_evaluation_results",
+    "authorize_operational_trust",
     "build_evidence_index",
     "build_evidence_packet",
     "build_learning_candidate_bundle",
     "chunk_parsed_document",
+    "classify_verified_learned_knowledge",
     "create_candidate_lesson",
     "create_reflection_record",
     "diagnose_failure_layers",
