@@ -34,8 +34,7 @@ gzip/base64 transport representation only; runtime reconstructs the gzip bytes,
 checks the pinned gzip digest, decompresses them, checks the original source
 digest, and only then permits UTF-8 ingestion.
 
-The PDF inputs use deterministic derivative transcripts because the accepted
-Learning System source contract is UTF-8 text rather than PDF. The extraction
+The PDF inputs use deterministic derivative transcripts because this **curated batch onboarding path** feeds the existing UTF-8 Phase 1 source store rather than directly training from PDF bytes. The extraction
 profile for this batch is:
 
 `poppler-pdftotext-layout-clean-c0/v1`
@@ -50,6 +49,8 @@ summarization, or claim reconciliation.
 For repository-packaged transcripts, runtime verifies the whole packaged gzip
 SHA-256 before decompression and the exact transcript SHA-256 before UTF-8
 decode/Phase 1 ingestion.
+
+Merged PR #228 later added a **separate autonomous local-source intake path** that can accept a selected PDF directly, preserve/hash the original PDF, and deterministically extract page text for source mastery. That newer path does not retroactively replace or weaken this batch's pinned PDF/transcript provenance contract.
 
 ## Copyrighted external reference boundary
 
@@ -104,7 +105,7 @@ content is excluded.
 
 The package transport is not itself the evidence identity. Evidence identity is
 the exact post-integrity-check UTF-8 artifact retained by the existing Phase 1
-`ingest_utf8_source` contract.
+`ingest_utf8_source` contract for this curated batch path.
 
 ## Acceptance
 
