@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import fcntl
 import hashlib
 import json
 import os
@@ -72,50 +73,43 @@ class JobStore:
         self.lock_path = self.root / "controller.lock"
         self._lock_fd: int | None = None
 
-    def _open_lock(self) -> None:
-        self._lock_fd = os.open(self.lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
-        os.write(self._lock_fd, f"{os.getpid()}\n".encode("ascii"))
-
     def acquire(self) -> None:
+        if self._lock_fd is not None:
+            raise AutonomousTrainingError(f"autonomous training job {self.root.name} lock is already held")
+        fd = os.open(self.lock_path, os.O_CREAT | os.O_RDWR, 0o600)
         try:
-            self._open_lock()
-            return
-        except FileExistsError:
-            pass
-
-        try:
-            raw = self.lock_path.read_text(encoding="ascii").strip()
-            owner_pid = int(raw)
-        except (OSError, UnicodeDecodeError, ValueError) as exc:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as exc:
+            os.close(fd)
             raise AutonomousTrainingError(
-                f"autonomous training job {self.root.name} has an unreadable lock {self.lock_path}; refusing to guess whether another trainer is active"
+                f"autonomous training job {self.root.name} is already running"
             ) from exc
-        if _pid_alive(owner_pid):
-            raise AutonomousTrainingError(
-                f"autonomous training job {self.root.name} is already running under pid {owner_pid}"
-            )
-
-        # A prior trainer crashed or the machine/WSL instance restarted. Recover
-        # only when the recorded owner process provably no longer exists.
         try:
-            self.lock_path.unlink()
-            self._open_lock()
-        except FileExistsError as exc:
-            raise AutonomousTrainingError(
-                f"autonomous training job {self.root.name} lock was reclaimed by another process"
-            ) from exc
-        self.event("stale_lock_recovered", previous_pid=owner_pid, new_pid=os.getpid())
+            os.lseek(fd, 0, os.SEEK_SET)
+            previous_raw = os.read(fd, 64).decode("ascii").strip()
+            previous_pid = int(previous_raw) if previous_raw else None
+        except (UnicodeDecodeError, ValueError):
+            previous_pid = None
+        try:
+            os.ftruncate(fd, 0)
+            os.lseek(fd, 0, os.SEEK_SET)
+            os.write(fd, f"{os.getpid()}\n".encode("ascii"))
+            os.fsync(fd)
+        except OSError:
+            fcntl.flock(fd, fcntl.LOCK_UN)
+            os.close(fd)
+            raise
+        self._lock_fd = fd
+        if previous_pid is not None and previous_pid != os.getpid() and not _pid_alive(previous_pid):
+            self.event("stale_lock_recovered", previous_pid=previous_pid, new_pid=os.getpid())
 
     def release(self) -> None:
         if self._lock_fd is not None:
             try:
+                fcntl.flock(self._lock_fd, fcntl.LOCK_UN)
                 os.close(self._lock_fd)
             finally:
                 self._lock_fd = None
-        try:
-            self.lock_path.unlink()
-        except FileNotFoundError:
-            pass
 
     def load(self) -> dict[str, object] | None:
         if not self.state_path.exists():
@@ -171,6 +165,8 @@ def _curriculum_candidates(source: AutonomousSource, root: Path | None = None) -
         return []
     candidates: list[Path] = []
     for manifest_path in sorted(base.glob("*/manifest.json")):
+        if ".backup-before-autonomous-stage" in manifest_path.parent.name:
+            continue
         try:
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
@@ -237,7 +233,13 @@ def _load_or_make_plan(
                     f"existing source mastery plan is bound to {plan.source_key}, but curriculum provenance is bound to {package_key}"
                 )
         return plan
-    plan = generate_source_mastery_plan(model, source=source, curriculum_id=curriculum_id)
+    plan_source_key = package_source_key_for(curriculum_root, source) if curriculum_root.exists() else source.source_key
+    plan = generate_source_mastery_plan(
+        model,
+        source=source,
+        curriculum_id=curriculum_id,
+        source_key=plan_source_key,
+    )
     if curriculum_root.exists():
         write_source_mastery_plan(plan_path, plan)
     return plan
