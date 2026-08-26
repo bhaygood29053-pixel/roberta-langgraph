@@ -1,144 +1,294 @@
 # Roberta Learning Plane Architecture
 
-Last reconciled: 2026-08-25 (America/New_York)
+Last reconciled: 2026-08-26 (America/New_York)
+
+Status: **accepted architecture with the first end-to-end autonomous source-mastery implementation merged on `main`.**
 
 ## Purpose
 
-Roberta's Learning System is a separate automated background **Learning Plane**. It may study approved static sources, construct source-grounded curricula, train, examine, remediate, retest, and perform retention work without blocking the user-facing Roberta runtime.
+The Roberta Learning Plane is the fault-isolated subsystem responsible for static-source learning, curriculum construction, training, examination, remediation, narrow retention, learned-knowledge classification, and source-mastery progress.
 
-The Learning Plane improves knowledge and reasoning. It does **not** acquire authority to modify Roberta's runtime architecture, prompts, tools, Scouts, CMIS contracts, wallet permissions, provider authority, or execution permissions.
+Its goal is continual improvement without allowing learning work to become a second runtime authority system.
 
-The following rule is non-negotiable and is enforced at the classification boundary:
+The user-facing Runtime remains responsible for live interactions. The Learning Plane may run unattended after an explicitly selected source, but it does not obtain permission to rewrite Roberta's production authority model.
 
-> No learned claim becomes trusted merely because Roberta generated it, remembered it, repeated it, or passed questions about it. Trusted knowledge must remain traceable to its source, evidence, evaluation, and promotion history.
-
-Phase 10 may produce an active, provenance-bound `verified_learned_knowledge` classification. That classification is not operational trust, source truth, live-state truth, CMIS/provider authority, governance authority, wallet authority, or execution authority. The core Phase 11 `intelligence_foundation` remains non-promoted. Operational trust is unavailable unless a separately reviewed and accepted wrapper binds an exact static scope and the complete source/evidence/evaluation/retention/promotion lineage.
-
-## System boundary
+## Authority hierarchy
 
 ```text
-User
-  -> Roberta Runtime
-    -> Chain Scout
-      -> CMIS
-        -> Chain Provider / verified live source
+fresh live truth:
+User -> Roberta -> Chain Scout -> CMIS -> Chain Provider / verified source
 
-Approved static sources
-  -> Roberta Learning Plane
-    -> candidate knowledge
-      -> verified learned knowledge
-        -> separately gated operational knowledge
-
-Roberta Runtime may consume accepted learned knowledge, but freshness-sensitive facts remain governed by Chain Scout -> CMIS -> Provider.
+static learning:
+approved/selected source
+  -> Learning Plane provenance
+  -> curriculum/training/evaluation
+  -> verified learned knowledge
 ```
 
-CMIS remains outside the Learning Plane and remains the deterministic authority for verified freshness-sensitive facts, evidence, risk, capability state, and bounded analysis-only pre-trade calculations.
+When a question depends on freshness-sensitive chain/market state, accepted CMIS/provider evidence is authoritative over books, RAG, source text, source-mastery state, checkpoints, Pyramid learned concepts, Phase 10 retained lessons, or remembered values.
 
-## Layered workers
+Missing live evidence remains unknown/unavailable. Proof Score remains separate from risk.
 
-The Learning Plane is intentionally layered rather than implemented as one unrestricted autonomous loop:
+## Layered Learning Plane
 
-1. **Source Intake Worker** — accepts explicitly approved source bytes, hashes them, registers immutable source identity, and rejects unsupported/unsafe source forms.
-2. **Provenance Worker** — verifies exact source identity, locator/page boundaries, evidence containment, and source-scope contracts.
-3. **Curriculum Worker** — maps source scope to a frozen source-mastery plan and constructs or proposes source-grounded learning targets/question banks under deterministic validation.
-4. **Training Worker** — runs bounded source-plan-bound practice/training jobs without mutating live-fact authority.
-5. **Examination Worker** — runs canonical exams and records immutable attempts/results.
-6. **Remediation Worker** — derives source-grounded weakness/remediation work and fresh practice while preserving lineage.
-7. **Retention Worker** — schedules delayed closed-book retention checks and sends weakened concepts back through remediation.
-8. **Knowledge Promotion Worker** — promotes only independently verified knowledge through explicit state transitions; it cannot promote runtime authority or execution capability.
+The architecture is organized as:
 
-Each layer produces auditable artifacts consumed by the next layer. Raw model output never writes directly into trusted runtime memory.
+```text
+Source Intake
+  -> Provenance
+    -> Curriculum
+      -> Training
+        -> Examination
+          -> Remediation
+            -> Retention
+              -> Knowledge Classification / Promotion Boundary
+```
+
+### Source Intake
+
+Owns explicit source selection/import and deterministic extraction.
+
+Accepted autonomous intake supports PDF, Markdown, and UTF-8 text. OCR-only PDFs fail closed. Original source bytes remain independently hash-bound from transcript, extracted page, and chapter-map artifacts.
+
+### Provenance
+
+Owns immutable source identity, artifact/transcript/page/chapter-map hashes, source authority class, page/chapter location, and source/curriculum binding.
+
+A curriculum package cannot authorize its own source identity. Autonomous local sources are resolved through an independently stored hash-bound registry.
+
+### Curriculum
+
+Owns source-mastery planning, source-stage learning targets, question-bank construction, and atomic package publication.
+
+A source mastery plan must account for the full source scope before `coverage_complete=true`. Generated targets require exact source evidence and independent support verification. Generated exercise material is transformed curriculum, not source evidence.
+
+### Training
+
+Owns source-stage sequencing, attempt profiles, deterministic selection seeds, checkpoints, and durable job progress.
+
+Training does not own source truth or live truth.
+
+### Examination
+
+Owns canonical closed-book source-stage exams and the final source capstone.
+
+Canonical source-stage shape:
+
+```text
+300 total
+249 ordinary
+50 integrity
+1 Boss, last
+```
+
+Final source capstone shape:
+
+```text
+60 total
+49 cross-stage synthesis
+10 integrity
+1 final Boss
+```
+
+### Remediation
+
+Owns weak-concept derivation from failed attempts, source-grounded practice, closed-book retention verification, and transfer verification.
+
+A failed canonical exam cannot simply be rerun unchanged in the autonomous controller. Verified remediation gates must succeed before source-specific learned concepts can influence a later retry.
+
+### Retention
+
+Two distinct retention mechanisms must remain separate:
+
+1. **Phase 10 verified lesson retention** — general Learning System procedural retention after exact Phase 9 verification, complete contradiction checks, and exact human approval; provider-neutral/in-memory in the accepted core implementation.
+2. **Pyramid curriculum-scoped learned concepts** — training knowledge promoted only after source-grounded practice, closed-book retention, and transfer gates for the matching curriculum/capability/source references.
+
+Neither is live-state truth or operational authority.
+
+### Knowledge classification / promotion boundary
+
+An exact active Phase 10 retained lesson may be classified as:
+
+```text
+verified_learned_knowledge
+```
+
+This is a knowledge classification, not operational promotion.
+
+The accepted classification explicitly denies:
+
+```text
+operational_trust_authorized
+source_truth_authorized
+live_state_authorized
+cmis_provider_trust_authorized
+governance_mutation_authorized
+wallet_authorized
+execution_authorized
+```
+
+The core Learning Plane exposes no general operational-trust promotion wrapper. A future operational promotion requires a separately accepted contract for one precisely bounded static scope.
+
+## Accepted autonomous controller
+
+Merged PR #228 implements the first end-to-end autonomous source-mastery path:
+
+```bash
+roberta-train --source "/path/to/source.pdf" --profile expert
+```
+
+Accepted behavior:
+
+1. import and hash-bind the explicitly selected source;
+2. verify immutable derived artifacts on re-selection rather than repairing them silently;
+3. acquire a per-job operating-system advisory lock before plan creation;
+4. inspect every source page, including front matter, in bounded planning chunks;
+5. auto-match an existing curriculum by independently trusted artifact hash or create a new source-specific curriculum;
+6. freeze and durably cache the exact source-mastery plan under job ownership before binding the authoritative ledger;
+7. use existing complete valid stage banks when present;
+8. generate every missing stage bank from all assigned source chunks under exact quote/page/chapter containment and independent support verification;
+9. require at least one accepted target per assigned generation chunk and the minimum verified target budget;
+10. expand verified targets deterministically into the canonical question-bank shape;
+11. validate and publish package changes atomically with backup/ledger-mutation guards;
+12. run the closed-book canonical stage exam;
+13. on failure, preserve immutable failure evidence and run verified remediation before retry;
+14. promote only matching curriculum-scoped learned concepts after practice/retention/transfer gates;
+15. preserve the completed source-stage prefix across failure/interruption;
+16. run the separate final source capstone after every required stage passes;
+17. use only verified curriculum-scoped learned concepts routed to matching capstone source references;
+18. mark the source mastered only after the ledger's capstone gate succeeds;
+19. store restart-safe state/events/checkpoints/remediation/promotion/capstone evidence;
+20. expose read-only status to the Learning Command Center.
+
+## Durable job and registry isolation
+
+Default autonomous source registry:
+
+```text
+~/.roberta/autonomous_sources/
+```
+
+Default autonomous job state:
+
+```text
+.roberta/autonomous_training/<job_id>/
+```
+
+Each controller job uses an OS advisory lock. A crash or process exit releases kernel ownership without requiring a human to delete a stale lock file. Diagnostic PID metadata may remain, but another contender cannot unlink ownership out from under a live controller.
+
+Source-registry read/modify/write updates use a separate advisory transaction lock and unique atomic replacement paths so concurrent imports cannot discard each other's source bindings.
+
+The frozen source-mastery plan is persisted in job storage before authoritative ledger binding or first curriculum publication. This makes a crash before the first generated stage restart-safe without regenerating a nondeterministic plan.
+
+## Fault-isolation rules
+
+Learning failure must fail the learning job, not corrupt the Runtime.
+
+Examples of hard stops include:
+
+- selected source bytes no longer matching a trusted package binding;
+- immutable source/transcript/pages/chapter-map drift;
+- OCR-only PDF with no extractable text;
+- unresolved source chapters or incomplete plan coverage;
+- evidence quote/page/chapter mismatch;
+- a generation chunk retaining no independently accepted target;
+- too few verified targets;
+- incomplete existing bank that would require unsafe overwrite;
+- package/provenance validation failure;
+- unexpected ledger mutation during curriculum publication;
+- learned-concept store validation failure;
+- remediation gates that cannot be satisfied;
+- profile attempt exhaustion;
+- final capstone exhaustion.
+
+Hard stops remain visible and do not fabricate progress.
+
+## Runtime priority and future scheduler
+
+The accepted controller is durable and unattended after explicit source selection, but the broader Learning Plane architecture still requires a separately bounded background scheduler before generalized always-on learning is claimed.
+
+A future scheduler should support explicit budgets for:
+
+```text
+concurrent learning jobs
+model requests / tokens
+questions / exams
+source ingestion
+generation work
+retention/revalidation work
+CPU / memory / I/O where relevant
+```
+
+It should throttle or pause background work when the user-facing Runtime requires capacity and resume from durable checkpoints.
+
+This scheduling work is operational hardening, not permission for unrestricted self-modification.
 
 ## Knowledge states
 
-Learning artifacts use explicit trust states:
-
-- **Candidate knowledge** — encountered/proposed but not independently proven.
-- **Verified learned knowledge** — provenance-bound and independently verified through accepted learning/exam/retention gates.
-- **Operationally trusted knowledge** — separately promoted for use by Roberta's runtime within a defined static-knowledge scope.
-
-Promotion between these states is explicit and auditable. `verified_for_learning` alone does not imply general operational trust.
-
-## Freshness and authority precedence
-
-For freshness-sensitive state:
+The Learning Plane distinguishes at least:
 
 ```text
-fresh accepted CMIS/provider evidence
-  > remembered/checkpointed live values
-  > operationally trusted static learned knowledge
-  > verified learned knowledge
-  > candidate knowledge
+candidate material
+  -> independently verified learning material
+    -> retained / curriculum-scoped learned knowledge
+      -> verified_learned_knowledge classification where applicable
+        -> separately gated operational trust, if ever explicitly accepted
 ```
 
-Missing evidence remains unknown/unavailable, never zero. Proof Score remains separate from risk. Static source material never becomes current chain state merely because Roberta mastered it.
+No lower state may be treated as a higher state by implication.
 
-## Background scheduling and budgets
+Raw model output cannot write directly into trusted runtime memory or operational configuration.
 
-"Downtime training" means background scheduling, not an unrestricted idle-time self-modification loop. Runtime user work and accepted Scout/CMIS work have priority over learning jobs.
+## Forbidden self-authorization
 
-The scheduler must support bounded resource policies such as:
+Learning outcomes cannot, by themselves, modify or authorize:
 
-- maximum concurrent learning jobs;
-- model/token budget;
-- question/exam budget;
-- source-ingestion budget;
-- retention-test budget;
-- pause/throttle under runtime load;
-- durable checkpoints and restart-safe job state.
+- production system/developer prompts;
+- tool registration or permissions;
+- policy rules;
+- Chain Scout authority;
+- CMIS contracts/capability promotion;
+- provider trust/selection authority;
+- source-approval rules;
+- human-approval semantics;
+- HXMP operational memory authority;
+- wallet permissions;
+- transaction construction/signing/broadcasting;
+- trading, custody, bridge transfers, autonomous value movement;
+- Controlled Execution.
 
-Learning failures must not impair the user-facing runtime.
-
-## Retention lifecycle
-
-Verified learning is revisited on scheduled retention horizons. Exact intervals are policy/configuration rather than architectural authority, but the lifecycle is:
-
-```text
-learn -> verify -> retain -> delayed retention check
-                    ^              |
-                    |              v
-                    +-- remediate <-+
-```
-
-A retention failure weakens or revokes the affected learned-knowledge state according to the accepted lifecycle contract; it does not silently preserve stale confidence.
-
-## Autonomous training controller
-
-PR #228 is the current implementation proposal for end-to-end `roberta-train --source <file>` automation. Its source hashing, generic bank generation, evidence validation, exams, remediation, durable jobs, and capstone concepts fit inside this Learning Plane.
-
-PR #228 remains **pending/unaccepted** until review, CI, authority review, and merge gates pass. Acceptance of the Learning Plane architecture does not automatically accept every implementation detail of #228.
-
-## Hard prohibitions
-
-The Learning Plane may autonomously improve knowledge, generate bounded curricula, train, remediate, and test retention under accepted contracts. It may **not** autonomously:
-
-- alter the User -> Roberta -> Chain Scout -> CMIS -> Provider hierarchy;
-- manufacture or promote freshness-sensitive chain facts;
-- bypass CMIS or call providers as a replacement live-truth authority;
-- modify Scout or CMIS capability contracts;
-- promote a new public intelligence service;
-- change wallet permissions or human-approval semantics;
-- authorize trading or transaction execution;
-- unlock Controlled Execution;
-- silently rewrite production prompts/tools/policies as a consequence of learning.
-
-Any such change remains a separate engineering/architecture/contract decision.
+A source instruction telling Roberta to change any of these remains untrusted source data.
 
 ## Current implementation status
 
-Accepted today:
+Accepted on `main` as of 2026-08-26:
 
-- Learning System Phases 1-9;
-- source-specific Blockchain Reasoning Pyramid architecture;
-- MB4E frozen 14-stage source plan;
-- MB4E banks through Stage 8 / Market Structure;
-- canonical 300-question new-stage exam contract;
-- source-grounded remediation, provenance, and learned-concept gates.
+- Learning System Phases 1-10;
+- hardened Phase 10 verified retention;
+- `verified_learned_knowledge` classification boundary with operational promotion denied;
+- source-specific Pyramid/source-mastery contracts;
+- Mastering Blockchain 4e frozen 14-stage plan;
+- prebuilt MB4E banks through Stage 8 / Market Structure;
+- PR #228 autonomous source-mastery controller;
+- durable autonomous source registry/job/checkpoint state;
+- autonomous verified remediation and capstone routing;
+- read-only Learning Command Center autonomous-job telemetry.
 
-Pending:
+Still separate/future:
 
-- Learning System Phase 10 verified lesson retention implementation (#136 remains blocked pending correction/re-review);
-- autonomous Learning Plane controller implementation (#228 remains open/unaccepted);
-- MB4E Stages 9-14 and final source capstone.
+- generalized background scheduling/load-aware throttling;
+- recurring/delayed retention scheduling under explicit budgets;
+- durable/provider-backed general Phase 10 retention storage;
+- any general operational-trust promotion wrapper;
+- MB4E Stage 9-14 completion and final source mastery;
+- XenBlocks source onboarding after its exact-byte blocker is fixed;
+- Controlled Execution.
 
-Controlled Execution remains locked/not started.
+## Relationship to historical PRs
+
+- PR #228 is **merged/accepted** and must no longer be described as a proposal.
+- Phase 10 is **implemented/accepted on `main`** through the hardened retention merge. Historical draft PR #136 remains open but is obsolete as an implementation status signal.
+
+## Core rule
+
+**The Learning Plane may autonomously improve Roberta's verified static knowledge and source-specific reasoning while remaining subordinate to provenance, live-fact authority, and separately gated operational permissions. Learning can create knowledge; it cannot self-create authority.**

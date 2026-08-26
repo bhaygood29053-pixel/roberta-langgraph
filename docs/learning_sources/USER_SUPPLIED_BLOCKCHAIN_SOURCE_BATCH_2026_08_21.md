@@ -1,6 +1,8 @@
 # User-Supplied Blockchain Source Batch — 2026-08-21
 
-Status: implementation candidate for Issue #142. Static Learning System evidence only.
+Last reconciled: 2026-08-26 (America/New_York)
+
+Status: **accepted on `main` via merged PR #147 for Issue #142. Static Learning System evidence only.**
 
 ## Purpose
 
@@ -32,8 +34,7 @@ gzip/base64 transport representation only; runtime reconstructs the gzip bytes,
 checks the pinned gzip digest, decompresses them, checks the original source
 digest, and only then permits UTF-8 ingestion.
 
-The PDF inputs use deterministic derivative transcripts because the accepted
-Learning System source contract is UTF-8 text rather than PDF. The extraction
+The PDF inputs use deterministic derivative transcripts because this **curated batch onboarding path** feeds the existing UTF-8 Phase 1 source store rather than directly training from PDF bytes. The extraction
 profile for this batch is:
 
 `poppler-pdftotext-layout-clean-c0/v1`
@@ -48,6 +49,8 @@ summarization, or claim reconciliation.
 For repository-packaged transcripts, runtime verifies the whole packaged gzip
 SHA-256 before decompression and the exact transcript SHA-256 before UTF-8
 decode/Phase 1 ingestion.
+
+Merged PR #228 later added a **separate autonomous local-source intake path** that can accept a selected PDF directly, preserve/hash the original PDF, and deterministically extract page text for source mastery. That newer path does not retroactively replace or weaken this batch's pinned PDF/transcript provenance contract.
 
 ## Copyrighted external reference boundary
 
@@ -102,14 +105,12 @@ content is excluded.
 
 The package transport is not itself the evidence identity. Evidence identity is
 the exact post-integrity-check UTF-8 artifact retained by the existing Phase 1
-`ingest_utf8_source` contract.
+`ingest_utf8_source` contract for this curated batch path.
 
 ## Acceptance
 
-This document and implementation remain candidates until the exact PR head has:
+Issue #142 was implemented and accepted by merged PR #147 on 2026-08-22 after its exact-head deterministic suite and independent acceptance review completed without an unresolved blocker.
 
-1. passed `python -m pytest -v -m 'not live and not cmis_live'`; and
-2. passed independent review on Spec Fidelity, Code / Architecture Quality,
-   and Authority / Safety Boundary.
+The six sources in this batch are therefore accepted for the narrow static Learning System scope defined above. That acceptance does not widen their source authority, create live-state authority, or bypass current Scout -> CMIS -> provider evidence requirements.
 
-Issue: #142.
+Future source revisions or replacement artifacts require new exact provenance/integrity review rather than silently changing these pinned source identities.

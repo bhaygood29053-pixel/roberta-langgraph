@@ -1,208 +1,239 @@
 # Roberta Learning System
 
-Last reconciled: 2026-08-25 (America/New_York)
+Last reconciled: 2026-08-26 (America/New_York)
 
-Status: **Phases 1-9 accepted; Phase 10 retention specification accepted but implementation still blocked/unaccepted.**
+Status: **Learning System Phases 1-10 accepted on `main`; autonomous source-grounded Learning Plane controller accepted.**
 
 ## Purpose
 
-The Roberta Learning System provides an evidence-grounded path from approved static sources through retrieval, evaluation, reflection, candidate verification, and separately gated retention.
+Roberta's Learning System converts explicitly approved static sources into source-traceable knowledge and reasoning practice under strict provenance, evaluation, retention, and authority boundaries.
 
-It is not a replacement for CMIS live truth. It is not an automatic self-training, memory-promotion, or execution-authority path.
-
-## Canonical authority boundary
+It is not a shortcut around the live-truth hierarchy:
 
 ```text
-User / transport
-  -> Roberta
-    -> Chain Scout
-      -> CMIS
-        -> Chain Provider / verified source
+User -> Roberta -> Chain Scout -> CMIS -> Chain Provider / verified source
 ```
 
-Learning System source records are static source knowledge. They are not authoritative for changing prices, liquidity, supply, wallet state, validator state, provider health, software versions, fees, risk, or other freshness-sensitive blockchain state.
+Static learning may improve Roberta's knowledge and reasoning. It does not become current blockchain truth, CMIS/provider authority, policy authority, wallet authority, or execution authority merely because Roberta read, generated, remembered, repeated, or passed questions about it.
 
-Fresh accepted CMIS/provider evidence remains authoritative for freshness-sensitive facts.
+## Accepted phase map
 
-## Accepted Learning System pipeline
+### Phase 1 — Exact source ingestion
+
+Accepted source bytes are preserved under an explicit source identity and hash contract.
+
+For an original UTF-8 text/Markdown upload, the exact uploaded bytes are the canonical artifact. Line-ending normalization may be a derived parsing representation but cannot silently replace the original artifact identity.
+
+For PDF-derived sources, the original PDF and deterministic transcript remain distinguishable artifacts with independent provenance.
+
+### Phase 2 — Structure detection
+
+Roberta derives deterministic document structure needed for retrieval and learning while preserving source location and without inventing unsupported semantics.
+
+### Phase 3 — Structure-aware chunking
+
+Chunks retain source identity, location, section/chapter context, and lineage needed for downstream evidence checks.
+
+### Phase 4 — Indexing
+
+Lexical indexing is accepted. Optional embedding/vector implementations may be used behind the same evidence contract; an embedding match never upgrades authority.
+
+### Phase 5 — Retrieval
+
+Retrieval selects source material under deterministic source/scope filters and benchmarkable ranking behavior. Retrieval output is evidence material, not permission or current-state truth.
+
+### Phase 6 — Grounding
+
+Grounded answer packets bind claims to retrieved evidence/citations. Unsupported expansion is rejected or disclosed as unknown.
+
+### Phase 7 — Independent evaluation
+
+Answers are independently evaluated against evidence-aware criteria rather than trusting the answering model's self-assessment.
+
+### Phase 8 — Reflection / candidate lessons
+
+Roberta may derive provisional lessons from evaluated work. Candidate lessons are not durable trusted knowledge.
+
+### Phase 9 — Independent candidate-lesson verification
+
+A candidate may become `verified_for_learning` only after the accepted verification contract independently rechecks its source/evidence/evaluation lineage and contradiction conditions.
+
+`verified_for_learning` remains learning verification evidence; by itself it is not source truth, live truth, operational trust, HXMP authority, or execution authority.
+
+### Phase 10 — Verified lesson retention
+
+Phase 10 is accepted on `main` as a narrow deterministic retention boundary.
+
+Only an exact eligible Phase 9 result may be prepared for retention. The accepted implementation requires, among other gates:
+
+- the exact accepted Phase 9 contract/version and status;
+- procedural lesson scope rather than arbitrary factual promotion;
+- complete source and active-lesson contradiction snapshots;
+- no unresolved contradiction blockers;
+- no exact active duplicate;
+- exact human approval bound to the prepared retention record;
+- immutable source/verification/approval lineage;
+- deterministic lifecycle state (`active`, `superseded`, or `revoked`);
+- provider-neutral in-memory retention rather than implicit HXMP persistence.
+
+The old draft PR #136 remains open historical work, but it is no longer the Phase 10 implementation source of truth. The hardened Phase 10 implementation is accepted on `main`.
+
+See `docs/LEARNING_SYSTEM_RETENTION.md`.
+
+## Knowledge classification boundary
+
+The Learning Plane includes a separate fail-closed classification boundary in `roberta.learning.promotion`.
+
+An exact active Phase 10 retained lesson may be classified as:
 
 ```text
-exact approved source artifact
-  -> Phase 1 source ingestion
-  -> Phase 2 structure detection
-  -> Phase 3 evidence chunking
-  -> Phase 4 indexing
-  -> Phase 5 retrieval
-  -> Phase 6 evidence packet + grounded citations
-  -> Phase 7 independent answer evaluation
-  -> Phase 8 provisional reflection + candidate lesson
-  -> Phase 9 independent candidate verification
-  -> Phase 10 separately gated verified-lesson retention
+verified_learned_knowledge
 ```
 
-### Phase 1 — Source ingestion ✅
+The classification binds the exact lesson hash, lifecycle state, retention decision/preparation, Phase 9 verification, source IDs, contradiction snapshot, and human approval.
 
-Accepted properties include exact original UTF-8 byte preservation, SHA-256 content identity, deterministic/content-addressed source identity, immutable records, idempotent re-ingestion, fail-closed malformed/conflicting state, and `live_state_authorized=false`.
+It explicitly does **not** authorize:
 
-For an original UTF-8 upload, a normalized derivative cannot replace the exact uploaded bytes as the canonical artifact. This remains the blocker on XenBlocks PoW PR #141.
+```text
+operational trust
+source truth
+live state
+CMIS/provider trust
+governance mutation
+wallet authority
+execution
+```
 
-### Phase 2 — Structure detection ✅
+General operational promotion is unavailable in the core Learning Plane. `authorize_operational_trust(...)` fails closed until a separately accepted promotion wrapper exists for a precisely bounded static scope.
 
-See [`LEARNING_SYSTEM_STRUCTURE.md`](./LEARNING_SYSTEM_STRUCTURE.md). The accepted Markdown parser preserves source hierarchy, block structure, exact source locations/text, warnings/partial state, and content-addressed identities without inventing structure.
+## Autonomous Learning Plane
 
-### Phase 3 — Structure-aware evidence chunking ✅
+The accepted Learning System now includes an autonomous source-mastery controller from merged PR #228.
 
-See [`LEARNING_SYSTEM_CHUNKING.md`](./LEARNING_SYSTEM_CHUNKING.md). Canonical source/structure state is revalidated before chunking. Chunks preserve provenance and exact source coverage and are derived evidence units, not source truth.
+```bash
+roberta-train --source "/path/to/source.pdf" --profile expert
+```
 
-### Phase 4 — Indexing foundation ✅
+After the user explicitly selects a PDF, Markdown, or UTF-8 text source, the controller can autonomously continue the source-mastery workflow without ordinary stage-by-stage intervention.
 
-See [`LEARNING_SYSTEM_INDEXING.md`](./LEARNING_SYSTEM_INDEXING.md). Deterministic lexical indexing is accepted. Embeddings remain behind an exact provider/model/version/dimension/request contract; the deterministic hash adapter proves interface mechanics only.
+Accepted behavior includes:
 
-### Phase 5 — Retrieval + benchmark foundation ✅
+1. hash and durably register the original source plus derived transcript/pages/chapter map;
+2. reject OCR-only PDFs and immutable-artifact drift;
+3. inspect every source page, including front matter, before asserting complete plan coverage;
+4. auto-match an existing curriculum by exact source artifact hash or create a source-specific curriculum;
+5. freeze and durably cache the exact source-mastery plan before authoritative ledger binding;
+6. generate missing stage learning targets from every assigned source chunk;
+7. require exact evidence quote + page + chapter containment and independent support verification;
+8. expand verified targets into validated canonical exercise banks and publish them atomically;
+9. run the closed-book 300-question canonical source-stage exam;
+10. on failure, derive source-bound weakness material and require source-grounded practice;
+11. require a separate unaugmented closed-book retention lane and learned-concept transfer verification before promotion/retry;
+12. preserve failed attempts and completed source-stage history immutably;
+13. route only verified curriculum-scoped learned concepts into later matching attempts;
+14. run a separate 60-question final source capstone before source mastery;
+15. persist restart-safe job state, checkpoints, events, locks, and status telemetry.
 
-See [`LEARNING_SYSTEM_RETRIEVAL.md`](./LEARNING_SYSTEM_RETRIEVAL.md). Retrieval revalidates canonical corpus/index state, preserves filters/provenance and separate lexical/vector channels, exposes explicit degraded/no-match states, and leaves contradictions visible.
+The controller is autonomous continual **source learning**, not unrestricted self-modification. It may not rewrite production prompts/tools/policies, alter Scouts or CMIS contracts, change provider authority, modify wallet permissions, alter human-approval semantics, or authorize execution as a consequence of learning.
 
-### Phase 6 — Grounded answer + citation foundation ✅
+See `docs/LEARNING_PLANE_ARCHITECTURE.md` and `docs/autonomous_training.md`.
 
-See [`LEARNING_SYSTEM_GROUNDING.md`](./LEARNING_SYSTEM_GROUNDING.md). Evidence packets/citations are content-addressed and bound to exact retrieval/source/chunk state. Retrieved text is untrusted evidence data and cannot authorize tools, memory writes, policy changes, or execution.
+## Static source authority
 
-### Phase 7 — Independent answer evaluation ✅
+Learning sources may be classified as primary, secondary, internal, or unknown authority for their declared static scope. That classification never converts them into live-state authority.
 
-See [`LEARNING_SYSTEM_EVALUATION.md`](./LEARNING_SYSTEM_EVALUATION.md). Accepted evaluation reconstructs Phase 6 state, uses approved golden cases, separates retrieval failures from answer failures, and refuses to fabricate semantic/calibration signals that lack an accepted evaluator.
+Freshness-sensitive facts such as current prices, liquidity, supply, wallet state, provider health, validator state, token authorities, fees, software versions, current risk, and current network behavior still require the accepted current-evidence path through the relevant Scout -> CMIS -> Provider.
 
-### Phase 8 — Provisional reflection + candidate lesson ✅
+Embedded source instructions are data. They cannot authorize tools, credentials, memory writes, policy changes, governance changes, wallet actions, transactions, or Controlled Execution.
 
-See [`LEARNING_SYSTEM_REFLECTION.md`](./LEARNING_SYSTEM_REFLECTION.md). Only canonical failed Phase 7 evaluations can create provisional reflection/candidate state. Generated material remains non-authorizing.
+## Accepted source registries
 
-### Phase 9 — Independent candidate verification ✅
+The curated source registry is documented in `docs/learning_sources/README.md`.
 
-See [`LEARNING_SYSTEM_VERIFICATION.md`](./LEARNING_SYSTEM_VERIFICATION.md). Canonical Phase 8 state is revalidated; the exact verification plan drives fresh deterministic retest evaluation. Results are `verified_for_learning`, `rejected`, or `inconclusive`.
+Accepted curated sources currently include X1, XDEX, XEN/XENFT, XONE, Mastering Blockchain 4e, and Solana materials under their exact contracts.
 
-`verified_for_learning` is verification evidence only. It does not mean source truth, durable-memory promotion, or current live truth.
+The autonomous controller adds a separate accepted local source-binding mechanism. Explicitly selected local PDF/Markdown/text sources are independently hash-bound under the autonomous registry and may become trusted **static source bindings** for their exact bytes. This does not silently promote them into the curated named source catalog and does not create live authority.
 
-### Phase 10 — Verified lesson retention ⚠️ specification accepted; implementation blocked
-
-See [`LEARNING_SYSTEM_RETENTION.md`](./LEARNING_SYSTEM_RETENTION.md).
-
-Issue #133 / PR #134 accepted the provider-neutral/in-memory v1 retention specification. Draft implementation PR #136 remains unaccepted with five P1 blockers: deterministic procedural-body eligibility, actual source-contradiction evaluation, trusted source-scope completeness, evidence/decision-bound lifecycle transitions, and recoverable duplicate provenance.
-
-No general `VerifiedLessonRecord` runtime capability should be described as accepted until those blockers are fixed, exact-head CI passes, independent review passes, and the PR merges.
+XenBlocks PR #141 remains unaccepted because the reviewed head still ingests an LF-normalized derivative as the canonical content artifact instead of the exact uploaded CRLF bytes required by Phase 1.
 
 ## Blockchain Reasoning Pyramid relationship
 
-The Pyramid is a separate source-mastery training/evaluation subsystem. It may generate evidence about Roberta's performance and curriculum-scoped learned concepts, but it cannot skip the Learning System authority gates.
-
-Accepted learning bridge:
+The Pyramid is the Learning System's source-specific training/evaluation environment. It is not a second source of truth.
 
 ```text
-Pyramid answer/grade
-  -> weakness/remediation analysis
-  -> deterministic learning handoff
-  -> source-grounded reconstruction
-  -> source-grounded targeted practice
-  -> closed-book retention/transfer gates when required
-  -> curriculum-scoped learned concept when exact Pyramid gates pass
+approved source
+  -> exact provenance
+  -> frozen source mastery plan
+  -> source-grounded exercise banks
+  -> canonical stage exams
+  -> verified remediation/retention/transfer
+  -> source-stage ledger
+  -> final source capstone
 ```
 
-That curriculum-scoped learned-concept mechanism is **not** Phase 10 general verified-lesson retention. It is restricted to the Pyramid answer path for matching curriculum/concept/subconcept and does not become HXMP, source truth, current live truth, CMIS/provider trust, governance authority, or execution authority.
+The reusable global taxonomy has 20 capabilities, but an individual source is assigned only the capabilities materially supported by that source.
 
-Grader notes remain diagnostic-only. Expected/reference answers remain evaluation guidance. Practice questions remain remediation scaffolding. Source excerpts are used only in the explicitly source-grounded practice path and are not injected into canonical closed-book exams.
+For *Mastering Blockchain, Fourth Edition*, the frozen plan requires 14 source stages. Accepted prebuilt bank construction is present through Stage 8 / Market Structure. Stages 9-14 are not yet separately accepted prebuilt repository banks, although the accepted autonomous controller may generate missing banks at runtime from the exact selected source under its validation contract.
 
-## Source-specific mastery plans
+Bank existence is not mastery. Source mastery requires every frozen required stage plus the required capstone to pass in the authoritative source-plan-bound ledger.
 
-The Pyramid now uses a frozen source-specific plan where present. See [`ROBERTA_SOURCE_MASTERY_PLAN.md`](./ROBERTA_SOURCE_MASTERY_PLAN.md) and [`PYRAMID_CURRICULUM.md`](./PYRAMID_CURRICULUM.md).
+## Retention versus Pyramid learned concepts
 
-A source mastery plan binds:
+Two narrow learning-memory mechanisms exist and must not be conflated:
 
-- exact curriculum and source identity;
-- sequential source-stage ordinals;
-- unique mappings to the reusable 20-capability Pyramid taxonomy;
-- source chapters/rationale per required stage;
-- explicit excluded capabilities;
-- 300 canonical questions per required stage;
-- complete-source coverage assertion;
-- deterministic plan hash;
-- source-capstone requirement.
+- **Phase 10 verified retained lessons** — provider-neutral/in-memory general Learning System retention after the exact Phase 9 + contradiction + human-approval contract.
+- **Pyramid learned concepts** — curriculum-scoped training knowledge produced only after Pyramid-specific practice/retention/transfer gates.
 
-The plan cannot silently change after a run is bound. Historical fixed-level results are mapped, not rewritten.
+Neither mechanism is general HXMP memory or live-state authority. Neither may self-promote to operational trust.
 
-For *Mastering Blockchain, Fourth Edition*, the accepted deterministic plan has 14 required stages mapped to capabilities `1,2,3,4,5,6,7,8,9,10,11,13,14,17`, with capabilities `12,15,16,18,19,20` explicitly excluded and a final source capstone required.
+## Storage and durability boundaries
 
-Accepted curriculum-bank construction currently reaches Stage 6 / Tokenomics. Bank construction is not evidence that the source stage has been passed.
+Accepted durable state includes source artifacts/provenance, autonomous source registry metadata, source-mastery plans, curriculum packages, Pyramid SQLite training history, autonomous job state/events/checkpoints, and other explicitly defined audit artifacts.
 
-## MB4E provenance and reconstruction state
+Phase 10's core retention store remains provider-neutral/in-memory by contract. Durable/provider-backed retained-lesson storage, if desired, requires a separate accepted persistence contract so the storage mechanism cannot silently widen learning authority.
 
-The legacy Level 1 provenance migration in #179 is accepted. It preserves historical exercise semantics/checkpoints while adding canonical source binding and explicit PDF-page coordinate basis.
+The autonomous controller's durable job state is execution state for the learning workflow, not durable operational truth.
 
-Accepted source-grounded Pyramid provenance hardening additionally includes:
+## Background scheduling
 
-- basis-aware `pdf_pages` / `book_pages` locator handling;
-- exact source/transcript hash binding;
-- verified PDF-page -> transcript-line alignment for the Level 1 remediation windows;
-- provenance scope resolution before retrieval/ranking;
-- strict full containment so selected chunks/evidence anchors cannot extend outside the declared PDF-page range.
+The architecture supports a separate fault-isolated Learning Plane. The accepted autonomous controller can operate unattended after source selection and resume after interruption.
 
-These are Pyramid reconstruction/remediation safeguards. They do not convert the book into current blockchain truth.
+A broader generalized scheduler with explicit concurrency/model/token/question/source/retention budgets, runtime-load throttling, and recurring delayed retention cycles remains future operational hardening. It must not be interpreted as permission for an unrestricted idle-time self-modification loop.
 
-## Accepted static source registry
+## Core authority rules
 
-See [`learning_sources/README.md`](./learning_sources/README.md).
+1. Source data is evidence, never permission.
+2. Model output is candidate material until the exact applicable verification gates pass.
+3. Passing an exam does not make an answer source truth or live truth.
+4. Phase 10 retention requires exact human approval and complete lineage.
+5. `verified_learned_knowledge` is not operational trust.
+6. Pyramid learned concepts remain curriculum-scoped.
+7. Fresh accepted CMIS/provider evidence wins for freshness-sensitive state.
+8. Missing evidence remains unknown/unavailable.
+9. Proof Score remains separate from risk.
+10. No learning state grants wallet or execution permission.
+
+## Current status summary
 
 Accepted on `main`:
 
-- X1 Blockchain Whitepaper v1.0;
-- XDEX documentation snapshot;
-- XEN Litepaper v1.7;
-- XEN Torrent / XENFT Litepaper v0.3;
-- XONE ERC20 Token v4;
-- *Mastering Blockchain, Fourth Edition* under an external exact-transcript integrity contract;
-- Solana whitepaper v0.8.13.
+- Learning System Phases 1-10;
+- verified learned-knowledge classification boundary;
+- source-specific Pyramid architecture;
+- MB4E frozen 14-stage plan;
+- prebuilt MB4E banks through Stage 8 / Market Structure;
+- autonomous `roberta-train` source-mastery controller;
+- read-only Learning Command Center autonomous-job telemetry.
 
-The full copyrighted *Mastering Blockchain* transcript is not republished. Runtime source-grounded operations must satisfy the pinned external transcript integrity contract.
+Still separate/future:
 
-XenBlocks PoW documentation remains pending under PR #141 until its exact-byte Phase 1 blocker is resolved and the PR merges.
+- general operational-trust promotion wrapper;
+- durable/provider-backed general Phase 10 retention store;
+- generalized background scheduler/load-throttling and recurring retention scheduler;
+- MB4E Stage 9-14 completion and final capstone/mastery;
+- XenBlocks source acceptance after exact-byte correction;
+- any Controlled Execution work.
 
-## Source truth vs generated material
+## Core rule
 
-```text
-approved source artifact/chunk -> evidence data
-model answer                   -> generated answer
-Pyramid expected answer        -> evaluation guidance
-Pyramid grader note            -> diagnostic material
-Pyramid practice question      -> remediation scaffolding
-Pyramid learned concept        -> curriculum-scoped answer aid after exact practice/retention gates
-Phase 7 result                 -> evaluation state
-Phase 8 reflection/lesson      -> generated provisional material
-Phase 9 verification result    -> verification evidence
-Phase 10 retained lesson       -> only after every accepted retention gate
-```
-
-Generated material never retroactively becomes source evidence merely because it was useful, graded highly, or verified under a narrower contract.
-
-## Storage boundaries
-
-```text
-Phase 1 SourceStore              -> source artifacts/provenance
-LangGraph checkpoint             -> workflow/thread state
-Pyramid SQLite ledger            -> training/source-stage performance history
-Pyramid learned-concept store    -> curriculum-scoped static training concepts only
-Phase 10 v1 retention store      -> proposed provider-neutral/in-memory general retention state
-HXMP                              -> separate durable-memory system with wallet-bound write semantics
-CMIS                              -> current deterministic blockchain/market evidence
-```
-
-## Non-goals / authority denial
-
-The Learning System and Pyramid do not by themselves authorize:
-
-- current price/liquidity/supply/wallet/risk claims;
-- source approval changes from generated text;
-- CMIS/provider trust changes;
-- protected governance mutation;
-- credential/tool-permission expansion;
-- wallet signing;
-- transaction preparation/broadcasting;
-- custody/trading/bridge value transfer;
-- Controlled Execution.
-
-Controlled Execution remains locked.
+**Roberta can autonomously learn, test, retain, and reuse verified static knowledge, but learning never self-authorizes truth or power. Provenance and verification control knowledge; Scout -> CMIS -> Provider controls fresh chain truth; operational and execution authority remain separately gated.**

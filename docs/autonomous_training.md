@@ -1,5 +1,9 @@
 # Roberta Autonomous Source Mastery
 
+Last reconciled: 2026-08-26 (America/New_York)
+
+Status: **accepted on `main` via merged PR #228**.
+
 Roberta can run a source-mastery job from one selected local source without normal stage-by-stage operator intervention.
 
 ## One-command workflow
@@ -52,13 +56,25 @@ For every next source stage Roberta:
 
 A failed autonomous attempt does **not** erase the completed source-stage prefix and is not promoted into the authoritative source-stage result table. A weakness report alone cannot trigger another identical retry: verified remediation must complete first. Only a passing canonical attempt advances source mastery.
 
+## Frozen-plan restart safety
+
+For a newly created autonomous curriculum, the controller acquires the job lock and freezes the source-mastery plan before authoritative ledger binding.
+
+The exact plan is written to durable job storage:
+
+```text
+.roberta/autonomous_training/<job_id>/source_mastery_plan.json
+```
+
+before the first generated curriculum stage is published. If target generation, package publication, or the process fails before the curriculum directory exists, the next invocation reloads this exact cached plan rather than generating a new nondeterministic model plan. Once a curriculum package exists, the job-cached plan and package plan must agree by plan hash or the controller fails closed.
+
 ## Final source capstone
 
 When every frozen source stage passes, Roberta runs a separate 60-question source capstone:
 
-- 49 cross-stage synthesis questions
-- 10 integrity questions
-- 1 final Boss
+- 49 cross-stage synthesis questions;
+- 10 integrity questions;
+- 1 final Boss.
 
 The capstone answer lane can use only previously verified, curriculum-scoped learned concepts routed from the source-stage references represented by each synthesis question; the final Boss may use all verified concepts from the frozen plan. The capstone requires at least 90% overall accuracy (or the higher applicable capability threshold), at least 90% integrity, Boss PASS, and zero critical failures. Only then does the existing source-mastery ledger `mark_source_capstone_passed` contract mark the source mastered.
 
@@ -76,7 +92,11 @@ Default training jobs:
 .roberta/autonomous_training/<job_id>/
 ```
 
-Each job contains restart-safe `state.json`, append-only `events.jsonl`, checkpoint directories, remediation/retention/promotion evidence, and capstone results. An operating-system advisory lock is acquired before plan creation and prevents two controller processes from advancing the same job concurrently. The kernel releases ownership automatically after crashes or termination; the persistent lock file records diagnostic PID metadata but is never unlinked for ownership changes. Source-registry updates use a separate advisory transaction lock and unique atomic replacement files so concurrent imports cannot discard one another.
+Each job contains restart-safe `state.json`, append-only `events.jsonl`, the frozen job plan, checkpoint directories, remediation/retention/promotion evidence, and capstone results.
+
+An operating-system advisory lock is acquired before plan creation and prevents two controller processes from advancing the same job concurrently. The kernel releases ownership automatically after crashes or termination; the persistent lock file records diagnostic PID metadata but is never unlinked for ownership changes.
+
+Source-registry updates use a separate advisory transaction lock and unique atomic replacement files so concurrent imports cannot discard one another.
 
 Check the latest state with:
 
@@ -86,24 +106,44 @@ roberta-train --status
 
 ## Learning Command Center
 
-`roberta-pyramid-dashboard` reads autonomous state without mutating it and displays the selected source, profile, job status, current activity, source-stage progress, capability, chapters, and whether human intervention is required.
+`roberta-pyramid-dashboard` reads autonomous state without mutating it and displays the selected source, profile, job status, current activity, source-stage progress, capability, chapters, question progress, and whether human intervention is required.
+
+The dashboard does not advance or repair the job.
 
 ## Hard-stop rules
 
 Autonomous training stops rather than fabricates or silently broadens authority when, for example:
 
 - selected source bytes do not match an existing curriculum source binding;
+- an immutable source/transcript/pages/chapter-map artifact changed;
 - a PDF has no extractable text;
 - required source chapters cannot be resolved;
 - too few exact-evidence learning targets survive verification;
+- any assigned generation chunk retains no independently accepted target;
 - a package or provenance validation fails;
 - an existing partial stage bank would need to be overwritten;
+- the durable job plan and package plan disagree;
 - learned-concept memory fails its existing verification contract;
+- verified remediation cannot satisfy its gates;
 - the stage exhausts the selected profile's autonomous attempts;
 - the final source capstone exhausts its attempts.
 
 Normal academic misses are handled automatically up to the profile limit. Provenance/integrity failures remain visible hard stops.
 
+## Accepted scope versus future scheduler
+
+The merged controller is autonomous after explicit source selection and is restart-safe. It is not yet a claim that Roberta runs an unrestricted always-on background learning daemon.
+
+A generalized Learning Plane scheduler with explicit concurrency/model/token/question/source/retention budgets and load-aware Runtime throttling remains separate future operational hardening.
+
 ## Authority boundary
 
-Autonomous source material remains static learning evidence only. It does not authorize current market state, wallet state, transactions, execution, governance changes, CMIS/provider claims, or other live facts. Generated curriculum installation hashes the Pyramid ledger before and after and refuses unexpected ledger mutation.
+Autonomous source material remains static learning evidence only. It does not authorize current market state, wallet state, transactions, execution, governance changes, CMIS/provider claims, prompt/tool/policy mutation, Scout changes, or other live facts.
+
+Generated curriculum installation hashes the Pyramid ledger before and after and refuses unexpected ledger mutation.
+
+Verified curriculum-scoped learned concepts remain training knowledge, not source evidence, live truth, general HXMP memory, or operational trust.
+
+## Core rule
+
+**Roberta may autonomously master an explicitly selected static source under immutable provenance and verification gates; that autonomy ends at the learning boundary and never self-creates live or operational authority.**

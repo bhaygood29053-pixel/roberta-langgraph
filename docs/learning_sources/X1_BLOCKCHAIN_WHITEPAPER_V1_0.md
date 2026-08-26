@@ -1,6 +1,8 @@
 # X1 Blockchain Whitepaper v1.0 — Learning System Source Manifest
 
-Status: approved static Learning System source onboarding for Issue #137.
+Last reconciled: 2026-08-26 (America/New_York)
+
+Status: **accepted static Learning System source onboarding for Issue #137.**
 
 ## Source identity
 
@@ -12,11 +14,13 @@ Status: approved static Learning System source onboarding for Issue #137.
 - Supplied PDF page count: **13**
 - Supplied PDF SHA-256: `a9023893572e057c62628c50e3fd9c3827fe6eec88ae8862e318375233a7e316`
 
-The PDF was supplied directly by the user for Learning System onboarding. The current accepted Learning System parser profile is UTF-8 Markdown, not PDF. This source package therefore does **not** claim that the PDF binary itself has been ingested through Phase 1 or parsed through Phase 2.
+The PDF was supplied directly by the user for Learning System onboarding. This source's **curated package loader** uses a pinned UTF-8 Markdown transcription rather than directly ingesting the PDF through the original Phase 1 text-source path. This source package therefore does **not** claim that the PDF binary itself was the Phase 1 stored text artifact for this curated onboarding.
+
+Merged PR #228 later added a separate autonomous local-source path that can accept a selected PDF directly, preserve/hash the original PDF, and deterministically extract pages for source mastery. That newer generic intake path does not retroactively change this whitepaper package's established PDF/transcript provenance contract.
 
 ## Ingestible artifact
 
-The ingestible artifact is the deterministic concatenation, in numeric order, of:
+The ingestible artifact for this curated source package is the deterministic concatenation, in numeric order, of:
 
 - `src/roberta/learning/sources/x1_blockchain_whitepaper_v1_0.part0.md`
 - `src/roberta/learning/sources/x1_blockchain_whitepaper_v1_0.part1.md`
@@ -42,7 +46,7 @@ status = approved
 knowledge_scope = static_architecture_and_protocol_design
 ```
 
-The user request to add the supplied whitepaper is the approval basis for this source onboarding. This approval applies to inclusion as static source material; it does not grant the document any live-state or execution authority.
+The original user request to add the supplied whitepaper is the approval basis for this source onboarding. This approval applies to inclusion as static source material; it does not grant the document any live-state or execution authority.
 
 ## Authority boundary
 
@@ -59,4 +63,6 @@ Fresh accepted X1 Scout -> CMIS -> X1 Provider evidence remains authoritative fo
 
 ## Non-goals
 
-This source onboarding does not add a general PDF parser, OCR pipeline, PDF structure contract, semantic figure interpreter, HXMP promotion path, CMIS trust change, or Controlled Execution capability.
+This curated source onboarding does not itself add a general PDF parser, OCR pipeline, semantic figure interpreter, HXMP promotion path, CMIS trust change, or Controlled Execution capability.
+
+The separate accepted autonomous PDF intake from PR #228 remains subject to its own immutable source/provenance, no-OCR-only, source-mastery, and authority-boundary contracts.
