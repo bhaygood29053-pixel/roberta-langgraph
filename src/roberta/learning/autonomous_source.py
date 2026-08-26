@@ -307,6 +307,19 @@ def import_source(
     pages_path = destination / "pages.jsonl"
     chapter_path = destination / "chapter_map.json"
 
+    registry = _load_registry()
+    sources = registry["sources"]
+    assert isinstance(sources, dict)
+    existing = sources.get(source_key)
+    if isinstance(existing, Mapping):
+        prior = _source_from_mapping(existing)
+        if prior.original_sha256 != original_sha:
+            raise AutonomousSourceError("autonomous source identity collision")
+        # Re-selection is strictly read-only. Verify every immutable artifact
+        # before returning and never repair or replace trusted derivations in place.
+        verify_autonomous_source(prior)
+        return prior
+
     if original_copy.exists() and _sha256_file(original_copy) != original_sha:
         raise AutonomousSourceError("existing autonomous source copy conflicts with selected source")
     if not original_copy.exists():
@@ -343,18 +356,6 @@ def import_source(
     )
     verify_autonomous_source(source)
 
-    registry = _load_registry()
-    sources = registry["sources"]
-    assert isinstance(sources, dict)
-    existing = sources.get(source_key)
-    if isinstance(existing, Mapping):
-        prior = _source_from_mapping(existing)
-        if prior.original_sha256 != source.original_sha256:
-            raise AutonomousSourceError("autonomous source identity collision")
-        # Re-selection is idempotent; keep the original immutable provenance date.
-        source = prior
-        verify_autonomous_source(source)
-        return source
     sources[source_key] = source.to_mapping()
     _atomic_json(_registry_path(), registry)
     return source

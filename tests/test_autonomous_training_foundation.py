@@ -132,6 +132,8 @@ def test_autonomous_source_rejects_tampered_derived_evidence(source) -> None:
     pages.write_text(original.replace("pooled reserves", "fabricated reserves"), encoding="utf-8")
     with pytest.raises(AutonomousSourceError, match="pages hash changed"):
         get_autonomous_source(source.source_key)
+    with pytest.raises(AutonomousSourceError, match="pages hash changed"):
+        import_source(source.original_path, title=source.title, authority_class="primary")
 
 
 def test_planner_payloads_cover_every_page(tmp_path, monkeypatch) -> None:
