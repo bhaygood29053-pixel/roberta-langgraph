@@ -10,6 +10,7 @@ requires-python = ">=3.11"
 dependencies = [
   "langgraph",
   "langchain-core",
+  "pypdf>=5",
 ]
 
 [project.optional-dependencies]
@@ -23,7 +24,7 @@ roberta-readiness = "roberta.readiness_cli:main"
 roberta-readiness-replay = "roberta.readiness_replay_cli:main"
 roberta-solana-readiness-replay = "roberta.readiness_solana_replay_cli:main"
 roberta-pyramid-dashboard = "roberta.learning.pyramid_dashboard_source_entry:main"
-roberta-pyramid-run = "roberta.learning.pyramid_run_cli:main"
+roberta-pyramid-run = "roberta.learning.pyramid_run_entry:main"
 roberta-pyramid-remediate = "roberta.learning.pyramid_remediation_cli:main"
 roberta-pyramid-regrade = "roberta.learning.pyramid_regrade_cli:main"
 roberta-pyramid-critical-revalidate = "roberta.learning.pyramid_critical_revalidation_cli:main"
@@ -42,6 +43,7 @@ roberta-pyramid-build-mb4e-level6 = "roberta.learning.mb4e_level6_builder_cli:ma
 roberta-pyramid-build-mb4e-level7 = "roberta.learning.mb4e_level7_builder_cli:main"
 roberta-pyramid-build-mb4e-level8 = "roberta.learning.mb4e_level8_builder_cli:main"
 roberta-pyramid-plan-mb4e-source = "roberta.learning.mb4e_source_mastery_plan_cli:main"
+roberta-train = "roberta.learning.autonomous_training_entry:main"
 
 [tool.setuptools.package-data]
 "roberta.learning" = [
