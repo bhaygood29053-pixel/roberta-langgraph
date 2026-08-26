@@ -1,5 +1,7 @@
 # Roberta Project Status — 2026-08-25
 
+Status re-verified: 2026-08-26 (America/New_York)
+
 ## Accepted on `main`
 
 - Core LangGraph platform phases through Phase 10 and post-Phase-10 evidence-aware UX are complete.
@@ -8,6 +10,7 @@
 - Learning System Phases 1-9 are complete; Phase 10 retention specification is accepted but implementation remains blocked pending correction/re-review.
 - Blockchain Reasoning Pyramid source-specific mastery architecture is accepted, with a frozen 14-stage Mastering Blockchain 4e plan and canonical 300-question stage contract.
 - MB4E source banks are accepted through Stage 8 / Market Structure: Stage 7 / Liquidity merged in PR #225 and Stage 8 / Market Structure merged in PR #227.
+- Paired Roberta PR #226 and CMIS PR #269 architecture/source-sync reconciliation is merged on both `main` branches.
 - Controlled Execution remains locked/not started.
 
 ## Target Learning Plane architecture
@@ -24,7 +27,6 @@ See `docs/LEARNING_PLANE_ARCHITECTURE.md`.
 
 ## Active/pending work
 
-- PR #226 is the paired Roberta architecture/source-sync reconciliation and now also carries the Learning Plane roadmap/source-of-truth update; it remains pending until merged.
 - PR #228 proposes the first end-to-end autonomous Learning Plane controller (`roberta-train --source <file>`). It preserves existing Levels 1-8 and can generically generate missing later-stage banks, but remains open/unaccepted until independent implementation/provenance/authority review and merge gates pass.
 - Build/accept MB4E Stages 9-14 and the final source capstone before declaring source mastery.
 - Fix Learning System Phase 10 implementation PR #136 before general retained lessons or broad operational-knowledge promotion can be accepted.
