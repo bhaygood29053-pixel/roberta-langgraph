@@ -2,12 +2,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import fcntl
 import hashlib
 import json
 import os
 from pathlib import Path
 import re
 import shutil
+import tempfile
+from contextlib import contextmanager
 from typing import Mapping, Sequence
 
 from .curriculum_io import TrustedSourceBinding
@@ -105,9 +108,33 @@ def _sha256_file(path: Path) -> str:
 
 def _atomic_json(path: Path, value: object) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_suffix(path.suffix + ".tmp")
-    temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    temporary.replace(path)
+    fd, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        temporary.replace(path)
+    finally:
+        try:
+            temporary.unlink()
+        except FileNotFoundError:
+            pass
+
+
+@contextmanager
+def _registry_transaction():
+    root = source_root()
+    root.mkdir(parents=True, exist_ok=True)
+    lock_path = root / "registry.lock"
+    fd = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o600)
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        yield
+    finally:
+        fcntl.flock(fd, fcntl.LOCK_UN)
+        os.close(fd)
 
 
 def _load_registry() -> dict[str, object]:
@@ -264,6 +291,12 @@ def _chapter_map(pages: Sequence[SourcePage]) -> dict[str, object]:
             "detection": "single-logical-source",
         }
     ordered = sorted((page, chapter, title) for chapter, (page, title) in starts.items())
+    # Front matter is source material too. Attach pages before the first detected
+    # chapter heading to that first logical chapter so no page escapes planning,
+    # target generation, or the final coverage assertion.
+    first_page, first_chapter, first_title = ordered[0]
+    if first_page > 1:
+        ordered[0] = (1, first_chapter, first_title)
     chapters: dict[str, object] = {}
     for index, (start, chapter, title) in enumerate(ordered):
         end = ordered[index + 1][0] - 1 if index + 1 < len(ordered) else len(pages)
@@ -356,8 +389,21 @@ def import_source(
     )
     verify_autonomous_source(source)
 
-    sources[source_key] = source.to_mapping()
-    _atomic_json(_registry_path(), registry)
+    with _registry_transaction():
+        # Reload while holding registry ownership so concurrent imports of
+        # different sources merge rather than replacing one another's snapshots.
+        registry = _load_registry()
+        sources = registry["sources"]
+        assert isinstance(sources, dict)
+        existing = sources.get(source_key)
+        if isinstance(existing, Mapping):
+            prior = _source_from_mapping(existing)
+            if prior.original_sha256 != source.original_sha256:
+                raise AutonomousSourceError("autonomous source identity collision")
+            verify_autonomous_source(prior)
+            return prior
+        sources[source_key] = source.to_mapping()
+        _atomic_json(_registry_path(), registry)
     return source
 
 
