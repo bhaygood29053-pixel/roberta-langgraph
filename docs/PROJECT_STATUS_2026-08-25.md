@@ -7,12 +7,13 @@
 - X1 Scout adoption/readiness of CMIS `concentration_change_intelligence/v1` is complete.
 - Learning System Phases 1-9 are complete; Phase 10 retention specification is accepted but implementation remains blocked pending correction/re-review.
 - Blockchain Reasoning Pyramid source-specific mastery architecture is accepted, with a frozen 14-stage Mastering Blockchain 4e plan and canonical 300-question stage contract.
-- MB4E source banks are accepted through Stage 6 / Tokenomics; Stage 2 provenance integration fix #214 is merged.
+- MB4E source banks are accepted through Stage 8 / Market Structure: Stage 7 / Liquidity merged in PR #225 and Stage 8 / Market Structure merged in PR #227. Stage 2 provenance integration fix #214 remains accepted.
 - Controlled Execution remains locked/not started.
 
 ## Active/pending work
 
-- Continue building MB4E stages 7-14 and final source capstone before declaring source mastery.
+- Build/accept MB4E stages 9-14 and the final source capstone before declaring source mastery.
+- PR #228 proposes an autonomous source-grounded training controller that would preserve existing Levels 1-8 and generically generate missing later-stage banks; it remains open/unaccepted until review and merge gates pass.
 - Fix Learning System Phase 10 implementation PR #136 before general retained lessons can be accepted.
 - Fix XenBlocks source exact-byte provenance before onboarding is accepted.
 - Future X1Labs Intelligence Scout planning remains unaccepted until its authority/freshness routing issues are resolved and separately gated.
