@@ -1,6 +1,6 @@
 # Roberta LangGraph Roadmap
 
-Last reconciled: 2026-08-25 (America/New_York)
+Last reconciled: 2026-08-26 (America/New_York)
 
 This is the authoritative living roadmap for Roberta. Open branches are not accepted behavior until their contract, deterministic verification, review, and merge gates pass.
 
@@ -46,7 +46,8 @@ Accepted/completed:
 - post-Phase-10 evidence-aware intelligence/user experience;
 - X1 decision-production readiness;
 - Solana read-only readiness for the accepted Scout surface;
-- X1 Scout adoption/readiness of CMIS `concentration_change_intelligence/v1`.
+- X1 Scout adoption/readiness of CMIS `concentration_change_intelligence/v1`;
+- paired Roberta PR #226 / CMIS PR #269 architecture and source-of-truth reconciliation.
 
 Roberta Phase 11 — Controlled Execution remains **LOCKED / NOT STARTED**.
 
@@ -214,7 +215,7 @@ Roberta consumes accepted CMIS capability contracts only through the relevant Ch
 
 ## Near-term allowed sequence
 
-1. Merge the paired architecture/source-sync reconciliation only after exact-head CI/review passes.
+1. Preserve the now-merged paired Roberta #226 / CMIS #269 source-sync baseline as the current cross-project authority contract.
 2. Treat the Learning Plane architecture as the target for automated source mastery while keeping current accepted runtime behavior unchanged.
 3. Independently review/fix/accept PR #228 as the first Learning Plane automation implementation; do not infer acceptance from green tests alone.
 4. Complete MB4E Stages 9-14 and the final source capstone, manually or through separately accepted automation, before declaring MB4E mastered.
