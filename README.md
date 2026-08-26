@@ -12,11 +12,11 @@ User / transport
         -> Chain Provider / verified source
 ```
 
-Current chain specialists include X1 Scout and Solana Scout. Roberta owns orchestration, user policy, specialist selection, cross-chain coordination, approval boundaries, learning workflow, and final synthesis. Chain Scouts own chain-specific planning and interpretation. CMIS owns deterministic freshness-sensitive blockchain/market facts, evidence, Evidence Receipts, Proof Scores, risk, capability state, historical intelligence, and bounded analysis-only pre-trade calculations.
+Current chain specialists include X1 Scout and Solana Scout. Roberta owns orchestration, user policy, specialist selection, cross-chain coordination, approval boundaries, learning coordination, and final synthesis. Chain Scouts own chain-specific planning and interpretation. CMIS owns deterministic freshness-sensitive blockchain/market facts, evidence, Evidence Receipts, Proof Scores, risk, capability state, historical intelligence, and bounded analysis-only pre-trade calculations.
 
 Roberta does not call market providers as a trust shortcut and does not reproduce CMIS calculations to manufacture a second market fact.
 
-## Current accepted status — reconciled 2026-08-25
+## Current accepted status — reconciled 2026-08-26
 
 Core Roberta platform work is accepted through Phase 10 plus the post-Phase-10 evidence-aware user experience. X1 decision-production readiness, Solana read-only readiness for the accepted Scout surface, and adoption of CMIS `concentration_change_intelligence/v1` through X1 Scout are accepted.
 
@@ -24,7 +24,7 @@ Core Roberta platform work is accepted through Phase 10 plus the post-Phase-10 e
 
 ### Learning System
 
-Learning System Phases 1-9 are accepted:
+Learning System Phases 1-10 are accepted on `main`:
 
 1. exact source ingestion;
 2. structure detection;
@@ -34,13 +34,30 @@ Learning System Phases 1-9 are accepted:
 6. grounded evidence packets and citations;
 7. independent answer evaluation;
 8. provisional reflection + candidate lessons;
-9. independent candidate-lesson verification.
+9. independent candidate-lesson verification;
+10. narrow verified-lesson retention with contradiction checks, exact human approval, lifecycle state, and fail-closed authority boundaries.
 
-Phase 10 verified-lesson retention has an accepted specification under #133/#134, but runtime implementation PR #136 remains **draft / not merge-ready** with five unresolved P1 blockers. `verified_for_learning` therefore remains verification evidence rather than general trusted durable memory.
+The old Phase 10 draft PR #136 remains open historical work, but it is no longer the implementation source of truth. Hardened Phase 10 retention is accepted on `main`.
+
+An exact active retained lesson may be classified as `verified_learned_knowledge` with complete retention/source/verification/approval lineage. That classification does **not** grant source truth, live-state truth, CMIS/provider trust, governance mutation, wallet authority, execution authority, or general operational trust. General operational promotion remains unavailable without a separately accepted wrapper.
+
+### Autonomous Learning Plane
+
+PR #228 merged on 2026-08-26. Roberta now has an accepted autonomous source-grounded Learning Plane controller:
+
+```bash
+roberta-train --source "/path/to/source.pdf" --profile expert
+```
+
+After a source is explicitly selected, Roberta can hash-bind and durably register it, inspect the full source, freeze a source-specific mastery plan, generate missing validated stage banks, run canonical exams, perform verified remediation/closed-book retention/transfer checks, reuse verified curriculum-scoped learned concepts, resume interrupted jobs, and run the final source capstone.
+
+This is autonomous continual source learning, not unrestricted self-modification. Static source material cannot modify Roberta prompts/tools/policies, Scouts, CMIS contracts, provider authority, wallet permissions, human-approval semantics, or execution authority.
+
+See [`docs/LEARNING_PLANE_ARCHITECTURE.md`](./docs/LEARNING_PLANE_ARCHITECTURE.md) and [`docs/autonomous_training.md`](./docs/autonomous_training.md).
 
 ### Blockchain Reasoning Pyramid
 
-The Pyramid is now a source-specific mastery system rather than a requirement that every source traverse all 20 global capability levels.
+The Pyramid is a source-specific mastery system rather than a requirement that every source traverse all 20 global capability levels.
 
 Accepted architecture:
 
@@ -50,29 +67,31 @@ approved source
   -> source-specific stages mapped to the 20-capability taxonomy
   -> large source-grounded exercise banks
   -> 300-question canonical stage exam
-  -> remediation / source-grounded practice / closed-book retention where needed
+  -> verified remediation / closed-book retention / transfer where needed
   -> next required source stage
   -> final source capstone
 ```
 
 The new canonical stage exam contract is **300 questions**: 249 ordinary + 50 integrity + 1 Boss, with the Boss last. Historical 1,000-question Level 1/2 runs remain immutable audit history and are reconstructed only through explicit legacy paths.
 
-For *Mastering Blockchain, Fourth Edition*, the frozen source plan requires **14 source stages** mapped to global capabilities `1,2,3,4,5,6,7,8,9,10,11,13,14,17`; capabilities `12,15,16,18,19,20` are explicitly excluded from this source. A final source capstone is still required before the source can be declared mastered.
+For *Mastering Blockchain, Fourth Edition*, the frozen source plan requires **14 source stages** mapped to global capabilities `1,2,3,4,5,6,7,8,9,10,11,13,14,17`; capabilities `12,15,16,18,19,20` are explicitly excluded from this source. A final source capstone is required before the source can be declared mastered.
 
-Accepted MB4E curriculum construction now reaches:
+Accepted **prebuilt** MB4E curriculum construction now reaches:
 
-- Stage 1 / Fundamentals — historical Level 1 foundation and provenance-migrated curriculum;
+- Stage 1 / Fundamentals;
 - Stage 2 / Blockchain Mechanics — 1,206-question bank;
-- Stage 3 / Transactions — source-grounded bank for Chapters 6, 9, 13, and 14;
-- Stage 4 / Cryptography — 415-question bank for Chapters 3, 4, and 18;
-- Stage 5 / Smart Contracts — 493-question bank for Chapters 8, 11, and 12;
-- Stage 6 / Tokenomics — 493-question bank for Chapter 15.
+- Stage 3 / Transactions;
+- Stage 4 / Cryptography — 415-question bank;
+- Stage 5 / Smart Contracts — 493-question bank;
+- Stage 6 / Tokenomics — 493-question bank;
+- Stage 7 / Liquidity — merged in PR #225;
+- Stage 8 / Market Structure — merged in PR #227.
 
-Exercise-bank availability is not the same as mastery. Mastery state comes from the immutable source-plan-bound training ledger and required stage/capstone gates.
+Stages 9-14 are not yet separately accepted prebuilt repository banks. The accepted autonomous controller may generate missing banks from the exact selected source under its validation contract. Bank availability is not mastery; mastery state comes only from the immutable source-plan-bound training ledger and required stage/capstone gates.
 
 ### Remediation and learned-concept boundaries
 
-Accepted Pyramid hardening includes source-provenance migration, strict PDF-page provenance containment before retrieval, source-grounded targeted practice, cumulative freshness, supplemental practice when canonical practice is exhausted, critical-origin lineage, bounded adjudicator/answer recovery, closed-book critical retention, and curriculum-scoped learned concepts after the required verification gates.
+Accepted Pyramid hardening includes source-provenance migration, strict PDF-page provenance containment before retrieval, source-grounded targeted practice, cumulative freshness, supplemental practice when canonical practice is exhausted, critical-origin lineage, bounded adjudicator/answer recovery, closed-book critical retention, transfer verification, and curriculum-scoped learned concepts after the required gates.
 
 Pyramid learned concepts are **curriculum-scoped training knowledge**, not general HXMP memory, source truth, current live blockchain truth, governance authority, or execution authority.
 
@@ -80,7 +99,7 @@ Pyramid learned concepts are **curriculum-scoped training knowledge**, not gener
 
 See [`docs/learning_sources/README.md`](./docs/learning_sources/README.md).
 
-Accepted source onboarding includes:
+Accepted curated source onboarding includes:
 
 - X1 Blockchain Whitepaper v1.0;
 - XDEX documentation snapshot;
@@ -90,14 +109,20 @@ Accepted source onboarding includes:
 - *Mastering Blockchain, Fourth Edition* under an exact external transcript integrity contract;
 - Solana whitepaper v0.8.13.
 
-XenBlocks PoW documentation PR #141 remains unaccepted because its exact-byte Phase 1 provenance blocker is unresolved.
+The autonomous source registry also accepts an explicitly selected local PDF/Markdown/UTF-8 text source into an independent hash-bound `local_<digest>` binding for source mastery. That does not silently add it to the curated named catalog and does not create live-state authority.
+
+XenBlocks PoW documentation PR #141 remains unaccepted because its canonical ingestion still violates the exact-byte Phase 1 rule by ingesting the LF-normalized derivative rather than the exact uploaded CRLF bytes.
 
 Static sources never override fresh Scout -> CMIS -> Provider evidence for prices, liquidity, supply, wallet state, provider health, validator state, risk, fees, software versions, or other changing facts.
 
 ## Source-of-truth documents
 
 - [`docs/LANGGRAPH_ROADMAP.md`](./docs/LANGGRAPH_ROADMAP.md) — authoritative Roberta roadmap/status.
+- [`docs/PROJECT_STATUS_2026-08-26.md`](./docs/PROJECT_STATUS_2026-08-26.md) — current dated status snapshot.
 - [`docs/LEARNING_SYSTEM.md`](./docs/LEARNING_SYSTEM.md) — Learning System phase/authority map.
+- [`docs/LEARNING_SYSTEM_RETENTION.md`](./docs/LEARNING_SYSTEM_RETENTION.md) — accepted Phase 10 retention contract.
+- [`docs/LEARNING_PLANE_ARCHITECTURE.md`](./docs/LEARNING_PLANE_ARCHITECTURE.md) — Learning Plane architecture and promotion boundary.
+- [`docs/autonomous_training.md`](./docs/autonomous_training.md) — accepted autonomous source-mastery controller.
 - [`docs/PYRAMID_CURRICULUM.md`](./docs/PYRAMID_CURRICULUM.md) — Pyramid capability/stage/exam contract.
 - [`docs/ROBERTA_SOURCE_MASTERY_PLAN.md`](./docs/ROBERTA_SOURCE_MASTERY_PLAN.md) — source-specific mastery contract and MB4E mapping.
 - [`docs/PYRAMID_TARGETED_PRACTICE.md`](./docs/PYRAMID_TARGETED_PRACTICE.md) — remediation/practice/retention gates.
@@ -108,13 +133,14 @@ Static sources never override fresh Scout -> CMIS -> Provider evidence for price
 
 ## Authority rules
 
-1. Fresh accepted CMIS/provider evidence overrides books, RAG, checkpoints, Pyramid training, and remembered live values for freshness-sensitive state.
+1. Fresh accepted CMIS/provider evidence overrides books, RAG, checkpoints, Pyramid training, retained lessons, and remembered live values for freshness-sensitive state.
 2. Missing evidence remains unknown/unavailable; it is never converted into zero or a model guess.
 3. Proof Score remains separate from market risk.
-4. Source text, expected answers, grader notes, practice questions, and generated lessons are not self-authorizing truth.
+4. Source text, expected answers, grader notes, practice questions, generated lessons, and model repetition are not self-authorizing truth.
 5. Cross-chain evidence keeps chain-specific provenance.
 6. Human approval is exact and non-reusable.
 7. Training success does not imply wallet or execution permission.
+8. `verified_learned_knowledge` does not imply operational trust.
 
 ## Installation and tests
 
@@ -126,11 +152,12 @@ python -m pip install -e '.[dev,deepseek]'
 python -m pytest -v -m 'not live and not cmis_live'
 ```
 
-## Pyramid commands
+## Pyramid and Learning Plane commands
 
 Current accepted commands include:
 
 ```text
+roberta-train
 roberta-pyramid-run
 roberta-pyramid-dashboard
 roberta-pyramid-remediate
@@ -149,10 +176,12 @@ roberta-pyramid-build-mb4e-level3
 roberta-pyramid-build-mb4e-level4
 roberta-pyramid-build-mb4e-level5
 roberta-pyramid-build-mb4e-level6
+roberta-pyramid-build-mb4e-level7
+roberta-pyramid-build-mb4e-level8
 ```
 
 ## Controlled execution boundary
 
-No accepted Roberta or Pyramid capability authorizes transaction signing, broadcasting, custody, live trading/swaps, bridge value transfer, autonomous value movement, or broad delegated wallet authority.
+No accepted Roberta, Learning Plane, Pyramid, Scout, or CMIS capability authorizes transaction signing, broadcasting, custody, live trading/swaps, bridge value transfer, autonomous value movement, or broad delegated wallet authority.
 
 **Roberta coordinates and learns under evidence boundaries. CMIS verifies changing blockchain facts. Controlled Execution remains locked.**
