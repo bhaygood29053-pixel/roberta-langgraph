@@ -1,6 +1,8 @@
 # User-Supplied Blockchain Source Batch — 2026-08-21
 
-Status: implementation candidate for Issue #142. Static Learning System evidence only.
+Last reconciled: 2026-08-26 (America/New_York)
+
+Status: **accepted on `main` via merged PR #147 for Issue #142. Static Learning System evidence only.**
 
 ## Purpose
 
@@ -106,10 +108,8 @@ the exact post-integrity-check UTF-8 artifact retained by the existing Phase 1
 
 ## Acceptance
 
-This document and implementation remain candidates until the exact PR head has:
+Issue #142 was implemented and accepted by merged PR #147 on 2026-08-22 after its exact-head deterministic suite and independent acceptance review completed without an unresolved blocker.
 
-1. passed `python -m pytest -v -m 'not live and not cmis_live'`; and
-2. passed independent review on Spec Fidelity, Code / Architecture Quality,
-   and Authority / Safety Boundary.
+The six sources in this batch are therefore accepted for the narrow static Learning System scope defined above. That acceptance does not widen their source authority, create live-state authority, or bypass current Scout -> CMIS -> provider evidence requirements.
 
-Issue: #142.
+Future source revisions or replacement artifacts require new exact provenance/integrity review rather than silently changing these pinned source identities.
