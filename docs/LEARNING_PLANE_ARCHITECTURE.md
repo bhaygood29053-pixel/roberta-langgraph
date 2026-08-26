@@ -8,6 +8,12 @@ Roberta's Learning System is a separate automated background **Learning Plane**.
 
 The Learning Plane improves knowledge and reasoning. It does **not** acquire authority to modify Roberta's runtime architecture, prompts, tools, Scouts, CMIS contracts, wallet permissions, provider authority, or execution permissions.
 
+The following rule is non-negotiable and is enforced at the classification boundary:
+
+> No learned claim becomes trusted merely because Roberta generated it, remembered it, repeated it, or passed questions about it. Trusted knowledge must remain traceable to its source, evidence, evaluation, and promotion history.
+
+Phase 10 may produce an active, provenance-bound `verified_learned_knowledge` classification. That classification is not operational trust, source truth, live-state truth, CMIS/provider authority, governance authority, wallet authority, or execution authority. The core Phase 11 `intelligence_foundation` remains non-promoted. Operational trust is unavailable unless a separately reviewed and accepted wrapper binds an exact static scope and the complete source/evidence/evaluation/retention/promotion lineage.
+
 ## System boundary
 
 ```text
