@@ -1,6 +1,6 @@
 # Roberta Blockchain Reasoning Pyramid — Curriculum and Source-Mastery Contract
 
-Last reconciled: 2026-08-25 (America/New_York)
+Last reconciled: 2026-08-26 (America/New_York)
 
 Status: **accepted living contract**. The original 20-level Pyramid is the reusable global capability taxonomy; source-specific mastery plans define which capabilities an individual source must actually prove.
 
@@ -237,7 +237,7 @@ Excluded from this source: capabilities `12,15,16,18,19,20`.
 
 Final source capstone: **required**.
 
-Accepted bank construction is currently present through **Stage 6 / Tokenomics**. This is curriculum availability, not a claim that Roberta has mastered through Stage 6.
+Accepted bank construction is currently present through **Stage 8 / Market Structure**. Stages 9-14 and the final source capstone remain unaccepted build milestones. This is curriculum availability, not a claim that Roberta has mastered through Stage 8.
 
 ## Core rule
 
