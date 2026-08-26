@@ -3,10 +3,16 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import shutil
+from concurrent.futures import ThreadPoolExecutor
 
 import pytest
+from langchain_core.messages import HumanMessage
 
-from roberta.learning.autonomous_capstone import CAPSTONE_QUESTION_COUNT, build_source_capstone
+from roberta.learning.autonomous_capstone import (
+    CAPSTONE_QUESTION_COUNT,
+    SourceCapstoneLearnedConceptAnswerModel,
+    build_source_capstone,
+)
 from roberta.learning.autonomous_curriculum import (
     INTEGRITY_COUNT,
     MIN_TARGETS,
@@ -26,13 +32,18 @@ from roberta.learning.autonomous_source import (
     import_source,
     resolve_local_trusted_source,
     AutonomousSourceError,
+    SourcePage,
+    _chapter_map,
     load_chapter_map,
     load_source_pages,
 )
 from roberta.learning.autonomous_training import (
     AutonomousTrainingError,
     JobStore,
+    TrainingHardStop,
+    _job_id,
     find_matching_curriculum,
+    run_autonomous_training,
 )
 from roberta.learning.autonomous_remediation import run_autonomous_remediation
 from roberta.learning.curriculum_io import validate_package
@@ -42,7 +53,7 @@ from roberta.learning.dashboard_autonomous_training import (
 )
 from roberta.learning.pyramid import Exercise, get_level_spec, select_level_exercises
 from roberta.learning.pyramid_exam import GradedAnswer, summarize_exam
-from roberta.learning.pyramid_learned_concepts import load_learned_concepts
+from roberta.learning.pyramid_learned_concepts import LearnedConcept, load_learned_concepts
 from roberta.learning.source_mastery import SourceMasteryStage, make_source_mastery_plan
 
 
@@ -141,6 +152,31 @@ def test_autonomous_source_rejects_tampered_derived_evidence(source) -> None:
         get_autonomous_source(source.source_key)
     with pytest.raises(AutonomousSourceError, match="pages hash changed"):
         import_source(source.original_path, title=source.title, authority_class="primary")
+
+
+def test_chapter_map_assigns_front_matter_to_first_detected_chapter() -> None:
+    chapter_map = _chapter_map(
+        (
+            SourcePage(page=1, text="Preface with important scope and assumptions."),
+            SourcePage(page=2, text="Introduction with required definitions."),
+            SourcePage(page=3, text="Chapter 1 Foundations\nGrounded content."),
+            SourcePage(page=4, text="Chapter 2 Applications\nMore grounded content."),
+        )
+    )
+    chapters = chapter_map["chapters"]
+    assert chapters["1"]["start_page"] == 1
+    assert chapters["1"]["end_page"] == 3
+
+
+def test_concurrent_source_imports_merge_registry_entries(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("ROBERTA_AUTONOMOUS_SOURCE_ROOT", str(tmp_path / "source-registry"))
+    first = tmp_path / "first.md"
+    second = tmp_path / "second.md"
+    first.write_text("# First\n\nIndependent first source.", encoding="utf-8")
+    second.write_text("# Second\n\nIndependent second source.", encoding="utf-8")
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        imported = tuple(pool.map(import_source, (first, second)))
+    assert {get_autonomous_source(item.source_key).title for item in imported} == {"first", "second"}
 
 
 def test_planner_payloads_cover_every_page(tmp_path, monkeypatch) -> None:
@@ -377,6 +413,73 @@ def test_source_capstone_is_separate_cross_stage_exam(source, tmp_path) -> None:
     assert capstone[-1].boss_question
 
 
+def test_source_capstone_routes_verified_stage_memory(source, tmp_path) -> None:
+    targets = generate_stage_targets(
+        TargetModel(), source=source, package_source_key=source.source_key, stage=_stage()
+    )
+    root = tmp_path / "curriculum"
+    plan = _plan(source.source_key)
+    install_generated_stage(
+        root=root,
+        source=source,
+        plan=plan,
+        stage=_stage(),
+        targets=targets,
+        ledger_path=tmp_path / "ledger.sqlite3",
+    )
+    exercises = build_source_capstone(curriculum_dir=root, plan=plan)
+    target = targets[0]
+    memory = LearnedConcept(
+        curriculum_id=plan.curriculum_id,
+        level=_stage().capability_level,
+        concept=target.concept,
+        subconcept=target.subconcept,
+        principle=target.principle,
+        source_refs=(source.source_key, target.source_ref),
+        critical_exercise_ids=("critical-1",),
+        retention_report_sha256="a" * 64,
+        retention_manifest_sha256="b" * 64,
+        checkpoint_sha256=(("checkpoint.json", "c" * 64),),
+        concept_hash="d" * 64,
+    )
+
+    class CaptureModel:
+        def __init__(self) -> None:
+            self.payload = None
+
+        def invoke(self, messages, *_args, **_kwargs):
+            self.payload = json.loads(messages[-1].content)
+            return "{}"
+
+    routed_exercise = next(
+        item for item in exercises if target.source_ref in item.source_refs and not item.boss_question
+    )
+    capture = CaptureModel()
+    wrapper = SourceCapstoneLearnedConceptAnswerModel(
+        capture, plan=plan, exercises=exercises, concepts=(memory,)
+    )
+    wrapper.invoke(
+        [
+            HumanMessage(
+                content=json.dumps(
+                    {
+                        "instruction": "Answer independently.",
+                        "exercises": [
+                            {
+                                "exercise_id": routed_exercise.exercise_id,
+                                "question": routed_exercise.question,
+                                "concept": routed_exercise.concept,
+                                "subconcept": routed_exercise.subconcept,
+                            }
+                        ],
+                    }
+                )
+            )
+        ]
+    )
+    assert capture.payload["exercises"][0]["learned_concept_memories"][0]["principle"] == target.principle
+
+
 def test_stale_job_lock_recovers_without_operator_cleanup(tmp_path) -> None:
     job = JobStore(tmp_path, "at_stale")
     # PID values this large are outside the hosted test process range and should
@@ -407,6 +510,29 @@ def test_job_lock_rejects_concurrent_controller(tmp_path) -> None:
             contender.acquire()
     finally:
         owner.release()
+
+
+def test_controller_owns_job_before_plan_generation(source, tmp_path, monkeypatch) -> None:
+    import roberta.learning.autonomous_training as autonomous_training
+
+    job_root = tmp_path / "jobs"
+
+    def assert_locked(*, source, **_kwargs):
+        curriculum_id = f"autonomous_{source.original_sha256[:24]}"
+        contender = JobStore(job_root, _job_id(source, curriculum_id))
+        with pytest.raises(AutonomousTrainingError, match="already running"):
+            contender.acquire()
+        raise TrainingHardStop("plan lock ordering verified")
+
+    monkeypatch.setattr(autonomous_training, "_load_or_make_plan", assert_locked)
+    with pytest.raises(TrainingHardStop, match="plan lock ordering verified"):
+        run_autonomous_training(
+            source_path=source.original_path,
+            curriculum=tmp_path / "new-curriculum",
+            db=tmp_path / "ledger.sqlite3",
+            job_root=job_root,
+            model_factory=object,
+        )
 
 
 def test_page_chunks_do_not_truncate_late_stage_material() -> None:
