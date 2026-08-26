@@ -164,7 +164,7 @@ A final MB4E source capstone is required. Passing all currently built banks is n
 
 ### Accepted MB4E bank/build state
 
-Accepted on `main` through PR #223:
+Accepted on `main` through PR #227:
 
 - Stage 1 / Fundamentals — historical Level 1 curriculum; accepted provenance migration #179 preserves the 1,206-exercise historical package identity and historical checkpoints.
 - Stage 2 / Blockchain Mechanics — 1,206-question production-shaped bank (#212/#214).
@@ -172,10 +172,16 @@ Accepted on `main` through PR #223:
 - Stage 4 / Cryptography — 415-question bank for Chapters 3/4/18 (#221).
 - Stage 5 / Smart Contracts — 493-question bank for Chapters 8/11/12 (#222).
 - Stage 6 / Tokenomics — 493-question bank for Chapter 15, PDF pages 502-529 (#223).
+- Stage 7 / Liquidity — 415-question bank grounded in Chapter 21 liquidity material (#225).
+- Stage 8 / Market Structure — 428-question bank grounded in Chapter 21 market-structure material (#227).
 
-Stages 7-14 and the final source capstone are not yet represented here as completed curriculum-build milestones unless separately merged later.
+Stages 9-14 and the final source capstone are not yet accepted curriculum-build milestones on `main`.
 
 Bank existence is not mastery. Source mastery progress comes from the immutable source-plan-bound ledger.
+
+### Autonomous training proposal — pending
+
+PR #228 proposes an end-to-end `roberta-train --source <file>` controller that would preserve already-installed Levels 1-8 and generically generate missing source-stage banks under exact source/provenance gates, run canonical exams/remediation, and require a final source capstone. It remains **open/unaccepted** and does not alter accepted `main` behavior until its review, CI, and merge gates pass.
 
 ## Source/provenance status
 
@@ -202,10 +208,10 @@ Roberta consumes accepted CMIS capability contracts only through the relevant Ch
 
 ## Near-term allowed sequence
 
-1. Continue MB4E source-specific curriculum construction only under the frozen 14-stage plan and exact provenance contracts.
-2. Run source stages through the source-plan-bound 300-question canonical runner; preserve historical Level 1/2 audit state rather than rewriting it.
-3. Use source-grounded remediation, cumulative freshness, critical retention, and learned-concept gates when failures occur.
-4. Build the remaining MB4E required stages and final source capstone before declaring the source mastered.
+1. Continue MB4E source-specific curriculum construction under the frozen 14-stage plan and exact provenance contracts; accepted banks currently stop at Stage 8.
+2. Build/accept Stages 9-14 and the final source capstone before declaring the source mastered; PR #228 may automate that path only if separately accepted.
+3. Run source stages through the source-plan-bound 300-question canonical runner; preserve historical Level 1/2 audit state rather than rewriting it.
+4. Use source-grounded remediation, cumulative freshness, critical retention, and learned-concept gates when failures occur.
 5. Separately fix Phase 10 PR #136 before any general verified-lesson retention is accepted.
 6. Fix PR #141 exact-byte provenance before accepting XenBlocks PoW as a source.
 7. Keep X1Labs Intelligence Scout, Technology Radar runtime, HXMP lesson persistence, and Controlled Execution behind separate future gates.
