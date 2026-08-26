@@ -16,9 +16,11 @@ Current chain specialists include X1 Scout and Solana Scout. Roberta owns orches
 
 Roberta does not call market providers as a trust shortcut and does not reproduce CMIS calculations to manufacture a second market fact.
 
-## Current accepted status — reconciled 2026-08-25
+## Current accepted status — reconciled 2026-08-26
 
 Core Roberta platform work is accepted through Phase 10 plus the post-Phase-10 evidence-aware user experience. X1 decision-production readiness, Solana read-only readiness for the accepted Scout surface, and adoption of CMIS `concentration_change_intelligence/v1` through X1 Scout are accepted.
+
+The paired Roberta PR #226 / CMIS PR #269 architecture and source-of-truth reconciliation is merged on both projects. `ROBERTA_CMIS_SOURCE_SYNC_BASELINE.md` is the compact matched cross-project baseline.
 
 **Roberta Phase 11 Controlled Execution remains locked / not started.**
 
@@ -66,9 +68,11 @@ Accepted MB4E curriculum construction now reaches:
 - Stage 3 / Transactions — source-grounded bank for Chapters 6, 9, 13, and 14;
 - Stage 4 / Cryptography — 415-question bank for Chapters 3, 4, and 18;
 - Stage 5 / Smart Contracts — 493-question bank for Chapters 8, 11, and 12;
-- Stage 6 / Tokenomics — 493-question bank for Chapter 15.
+- Stage 6 / Tokenomics — 493-question bank for Chapter 15;
+- Stage 7 / Liquidity — 415-question bank for Chapter 21;
+- Stage 8 / Market Structure — 428-question bank for Chapter 21.
 
-Exercise-bank availability is not the same as mastery. Mastery state comes from the immutable source-plan-bound training ledger and required stage/capstone gates.
+Stages 9-14 plus the final source capstone remain unaccepted build milestones. Exercise-bank availability is not the same as mastery. Mastery state comes from the immutable source-plan-bound training ledger and required stage/capstone gates.
 
 ### Remediation and learned-concept boundaries
 
@@ -96,6 +100,7 @@ Static sources never override fresh Scout -> CMIS -> Provider evidence for price
 
 ## Source-of-truth documents
 
+- [`ROBERTA_CMIS_SOURCE_SYNC_BASELINE.md`](./ROBERTA_CMIS_SOURCE_SYNC_BASELINE.md) — compact matched Roberta ↔ CMIS authority/capability baseline.
 - [`docs/LANGGRAPH_ROADMAP.md`](./docs/LANGGRAPH_ROADMAP.md) — authoritative Roberta roadmap/status.
 - [`docs/LEARNING_SYSTEM.md`](./docs/LEARNING_SYSTEM.md) — Learning System phase/authority map.
 - [`docs/PYRAMID_CURRICULUM.md`](./docs/PYRAMID_CURRICULUM.md) — Pyramid capability/stage/exam contract.
@@ -149,6 +154,8 @@ roberta-pyramid-build-mb4e-level3
 roberta-pyramid-build-mb4e-level4
 roberta-pyramid-build-mb4e-level5
 roberta-pyramid-build-mb4e-level6
+roberta-pyramid-build-mb4e-level7
+roberta-pyramid-build-mb4e-level8
 ```
 
 ## Controlled execution boundary
