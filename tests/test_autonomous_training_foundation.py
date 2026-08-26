@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import shutil
 
 import pytest
 
@@ -12,9 +13,11 @@ from roberta.learning.autonomous_curriculum import (
     ORDINARY_VARIANTS_PER_TARGET,
     AutonomousCurriculumError,
     build_generated_stage_bank,
+    generate_source_mastery_plan,
     generate_stage_targets,
     install_generated_stage,
     _outline_payloads,
+    _page_chunks,
     _validate_candidate,
 )
 from roberta.learning.autonomous_resolver import install_autonomous_trusted_source_resolver
@@ -26,7 +29,11 @@ from roberta.learning.autonomous_source import (
     load_chapter_map,
     load_source_pages,
 )
-from roberta.learning.autonomous_training import JobStore
+from roberta.learning.autonomous_training import (
+    AutonomousTrainingError,
+    JobStore,
+    find_matching_curriculum,
+)
 from roberta.learning.autonomous_remediation import run_autonomous_remediation
 from roberta.learning.curriculum_io import validate_package
 from roberta.learning.dashboard_autonomous_training import (
@@ -382,7 +389,132 @@ def test_stale_job_lock_recovers_without_operator_cleanup(tmp_path) -> None:
         assert "stale_lock_recovered" in events
     finally:
         job.release()
-    assert not job.lock_path.exists()
+    assert job.lock_path.exists()
+
+    # The persistent inode can be safely reacquired; ownership is the advisory
+    # lock on the descriptor, not deletion/recreation of the pathname.
+    contender = JobStore(tmp_path, "at_stale")
+    contender.acquire()
+    contender.release()
+
+
+def test_job_lock_rejects_concurrent_controller(tmp_path) -> None:
+    owner = JobStore(tmp_path, "at_contended")
+    contender = JobStore(tmp_path, "at_contended")
+    owner.acquire()
+    try:
+        with pytest.raises(AutonomousTrainingError, match="already running"):
+            contender.acquire()
+    finally:
+        owner.release()
+
+
+def test_page_chunks_do_not_truncate_late_stage_material() -> None:
+    from roberta.learning.autonomous_source import SourcePage
+
+    pages = tuple(SourcePage(page=index, text=f"page-{index} " + ("x" * 17900)) for index in range(1, 13))
+    chunks = _page_chunks(pages)
+    assert len(chunks) == 12
+    assert "[[PAGE 12]]" in chunks[-1]
+
+
+def test_target_generation_reserves_coverage_for_every_source_chunk(source, monkeypatch) -> None:
+    import roberta.learning.autonomous_curriculum as autonomous_curriculum
+    from roberta.learning.autonomous_source import SourcePage
+
+    pages = tuple(
+        SourcePage(
+            page=index,
+                text=(
+                    f"Distinct source evidence for page {index} establishes a bounded learning target. "
+                    + ("supporting detail " * 550)
+                ),
+        )
+        for index in range(1, 13)
+    )
+    monkeypatch.setattr(autonomous_curriculum, "_chapter_pages", lambda *_args, **_kwargs: pages)
+    monkeypatch.setattr(
+        autonomous_curriculum,
+        "load_chapter_map",
+        lambda *_args, **_kwargs: {1: (1, 12, "Complete chapter")},
+    )
+
+    class AllChunksModel:
+        def invoke(self, messages):
+            system = messages[0].content
+            payload = json.loads(messages[1].content)
+            if "independent support verifier" in system:
+                return json.dumps({"accepted_ids": [item["target_id"] for item in payload["candidates"]]})
+            marker = payload["source_chunk"].split("[[PAGE ", 1)[1].split("]]", 1)[0]
+            page = int(marker)
+            evidence = f"Distinct source evidence for page {page} establishes a bounded learning target."
+            return json.dumps(
+                {
+                    "targets": [
+                        {
+                            "concept": f"page_{page}_concept_{variant}",
+                            "subconcept": f"page_{page}_mechanism_{variant}",
+                            "principle": f"Bounded principle {variant} for source page {page}.",
+                            "evidence_quote": evidence,
+                            "page": page,
+                            "chapter": 1,
+                            "section": f"Page {page}",
+                            "required_points": ["Stay within the cited source evidence."],
+                            "forbidden_inferences": [],
+                        }
+                        for variant in range(3)
+                    ]
+                }
+            )
+
+    targets = generate_stage_targets(
+        AllChunksModel(), source=source, package_source_key=source.source_key, stage=_stage()
+    )
+    assert len(targets) == 36
+    assert {target.page for target in targets} == set(range(1, 13))
+
+
+def test_source_plan_can_preserve_existing_package_source_key(source) -> None:
+    class PlanModel:
+        def invoke(self, _messages):
+            return json.dumps(
+                {
+                    "stages": [
+                        {
+                            "capability_level": 7,
+                            "source_chapters": [1],
+                            "rationale": "The source directly explains pooled liquidity.",
+                            "evidence_quote": EVIDENCE,
+                            "page": 1,
+                        }
+                    ]
+                }
+            )
+
+    plan = generate_source_mastery_plan(
+        PlanModel(), source=source, source_key="registered_existing_source_key"
+    )
+    assert plan.source_key == "registered_existing_source_key"
+
+
+def test_curriculum_discovery_ignores_autonomous_stage_backups(source, tmp_path) -> None:
+    targets = generate_stage_targets(
+        TargetModel(), source=source, package_source_key=source.source_key, stage=_stage()
+    )
+    root = tmp_path / "curricula" / "live-curriculum"
+    install_generated_stage(
+        root=root,
+        source=source,
+        plan=_plan(source.source_key),
+        stage=_stage(),
+        targets=targets,
+        ledger_path=tmp_path / "ledger.sqlite3",
+    )
+    backup = root.parent / f"{root.name}.backup-before-autonomous-stage1-test"
+    shutil.copytree(root, backup)
+    assert find_matching_curriculum(
+        source, ledger_path=tmp_path / "ledger.sqlite3", curriculum_root=root.parent
+    ) == root
 
 
 def test_dashboard_surfaces_latest_autonomous_job(tmp_path) -> None:
