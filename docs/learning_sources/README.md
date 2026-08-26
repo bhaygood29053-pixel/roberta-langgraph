@@ -1,6 +1,6 @@
 # Roberta Learning System — Static Source Registry
 
-Last reconciled: 2026-08-25 (America/New_York)
+Last reconciled: 2026-08-26 (America/New_York)
 
 This registry records human-readable source-onboarding status. Runtime truth still comes from exact source contracts/code on `main`; this document does not promote an unmerged source or create live-state authority.
 
@@ -85,9 +85,11 @@ Accepted curriculum-bank construction currently reaches:
 - Stage 3 Transactions;
 - Stage 4 Cryptography — 415 questions;
 - Stage 5 Smart Contracts — 493 questions;
-- Stage 6 Tokenomics — 493 questions.
+- Stage 6 Tokenomics — 493 questions;
+- Stage 7 Liquidity — 415 questions;
+- Stage 8 Market Structure — 428 questions.
 
-These banks are derived learning material. Their existence does not establish that Roberta has passed/mastered those stages.
+Stages 9-14 and the final source capstone remain unaccepted build milestones. These banks are derived learning material. Their existence does not establish that Roberta has passed/mastered those stages.
 
 ## PDF transcript rule
 
