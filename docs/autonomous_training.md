@@ -76,7 +76,7 @@ Default training jobs:
 .roberta/autonomous_training/<job_id>/
 ```
 
-Each job contains restart-safe `state.json`, append-only `events.jsonl`, checkpoint directories, remediation/retention/promotion evidence, and capstone results. A PID-bound lock prevents two controller processes from advancing the same job concurrently and is reclaimed only when the recorded process is provably absent.
+Each job contains restart-safe `state.json`, append-only `events.jsonl`, checkpoint directories, remediation/retention/promotion evidence, and capstone results. An operating-system advisory lock prevents two controller processes from advancing the same job concurrently. The kernel releases ownership automatically after crashes or termination; the persistent lock file records diagnostic PID metadata but is never unlinked for ownership changes.
 
 Check the latest state with:
 
