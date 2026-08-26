@@ -492,16 +492,26 @@ def run_autonomous_training(
             job.event("pyramid_run_resumed", run_id=run_id, run_seed=run_seed)
         binding = ledger.bind_source_mastery_plan(run_id, plan)
         completed = int(binding["completed_stage_count"])
-        state = job.load() or _state_base(
-            job_id=job_id,
-            source=source,
-            curriculum_root=curriculum_root,
-            plan=plan,
-            profile=profile,
-            run_id=run_id,
-        )
-        if state.get("source_artifact_sha256") != source.original_sha256 or state.get("source_plan_hash") != plan.plan_hash:
+        loaded_state = job.load()
+        if loaded_state is not None and loaded_state.get("source_artifact_sha256") != source.original_sha256:
             raise TrainingHardStop("durable autonomous job binding does not match selected source/plan")
+        if loaded_state is not None and loaded_state.get("source_plan_hash") not in {None, plan.plan_hash}:
+            raise TrainingHardStop("durable autonomous job binding does not match selected source/plan")
+        # A planning/model failure can leave useful hard-stop telemetry before a
+        # plan hash exists. Once planning succeeds, initialize the fully bound
+        # state instead of making that pre-plan diagnostic record unrecoverable.
+        state = (
+            _state_base(
+                job_id=job_id,
+                source=source,
+                curriculum_root=curriculum_root,
+                plan=plan,
+                profile=profile,
+                run_id=run_id,
+            )
+            if loaded_state is None or loaded_state.get("source_plan_hash") is None
+            else loaded_state
+        )
         state.update(
             {
                 "status": "running",
