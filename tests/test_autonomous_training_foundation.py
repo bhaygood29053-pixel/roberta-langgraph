@@ -534,6 +534,46 @@ def test_controller_owns_job_before_plan_generation(source, tmp_path, monkeypatc
             model_factory=object,
         )
 
+    curriculum_id = f"autonomous_{source.original_sha256[:24]}"
+    recovered_plan = make_source_mastery_plan(
+        curriculum_id=curriculum_id,
+        source_key=source.source_key,
+        source_title=source.title,
+        planner="test/v1",
+        planner_basis="recover a pre-plan diagnostic state",
+        stages=(_stage(),),
+        source_capstone_required=True,
+    )
+
+    class FakeLedger:
+        def __init__(self, _path) -> None:
+            pass
+
+        def run_history(self, _curriculum_id):
+            return []
+
+        def start_run(self, _curriculum_id, _run_seed):
+            return "run-recovered"
+
+        def bind_source_mastery_plan(self, _run_id, _plan):
+            return {"completed_stage_count": 0}
+
+    def stop_after_state_binding(*, job, **_kwargs):
+        assert job.load()["source_plan_hash"] == recovered_plan.plan_hash
+        raise TrainingHardStop("pre-plan state recovered")
+
+    monkeypatch.setattr(autonomous_training, "_load_or_make_plan", lambda **_kwargs: recovered_plan)
+    monkeypatch.setattr(autonomous_training, "PyramidTrainingLedger", FakeLedger)
+    monkeypatch.setattr(autonomous_training, "_ensure_stage_bank", stop_after_state_binding)
+    with pytest.raises(TrainingHardStop, match="pre-plan state recovered"):
+        run_autonomous_training(
+            source_path=source.original_path,
+            curriculum=tmp_path / "new-curriculum",
+            db=tmp_path / "ledger.sqlite3",
+            job_root=job_root,
+            model_factory=object,
+        )
+
 
 def test_page_chunks_do_not_truncate_late_stage_material() -> None:
     from roberta.learning.autonomous_source import SourcePage
