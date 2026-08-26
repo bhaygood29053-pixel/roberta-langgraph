@@ -1,6 +1,6 @@
 # Roberta Blockchain Reasoning Pyramid — Curriculum and Source-Mastery Contract
 
-Last reconciled: 2026-08-25 (America/New_York)
+Last reconciled: 2026-08-26 (America/New_York)
 
 Status: **accepted living contract**. The original 20-level Pyramid is the reusable global capability taxonomy; source-specific mastery plans define which capabilities an individual source must actually prove.
 
@@ -23,6 +23,8 @@ approved source material
   -> source-stage ledger
   -> final source capstone
 ```
+
+The accepted autonomous Learning Plane can now execute this source-mastery loop end to end after an explicit source selection. Automation does not change any Pyramid authority boundary.
 
 ## Authority boundary
 
@@ -55,6 +57,8 @@ The manifest/source contracts preserve source identity, edition/version, approve
 
 Generated exercise text is transformed curriculum material. It does not become source evidence merely because it was derived from the source.
 
+The autonomous controller validates complete existing banks, refuses unsafe partial-bank overwrite, and atomically publishes generated stages only after source/provenance/bank/canonical-selection checks pass.
+
 ## Exercise contract
 
 Exercises bind at minimum:
@@ -85,6 +89,8 @@ Required rules include:
 5. `requires_live_data=true` requires the normal Scout -> CMIS path rather than a stored source value;
 6. exercises cannot encode wallet/execution authority;
 7. expected answers/reasoning points are grader guidance, not source evidence.
+
+For autonomously generated targets, exact source evidence is additionally enforced before exercise construction: the evidence quote must occur on the cited page, the page must belong to the cited chapter, and every assigned generation chunk must retain an independently accepted target.
 
 ## Global 20-capability taxonomy
 
@@ -132,6 +138,8 @@ A valid plan requires:
 
 Required and excluded capabilities together account for all 20 capability levels.
 
+For newly created autonomous curricula, the frozen plan is persisted in durable job storage **before** authoritative ledger binding or first package publication. This prevents interruption from forcing a nondeterministic re-plan with a different hash.
+
 A source cannot be declared mastered merely because the currently built banks passed if the frozen full-source plan still has required stages or a required capstone outstanding.
 
 ## Canonical stage exam
@@ -153,6 +161,23 @@ A stage passes only when all accepted gates succeed:
 - zero validated critical failures.
 
 Critical failures include evidence fabrication, converting missing evidence into a fact, overriding fresh CMIS/provider evidence with memory/source text, Proof Score/risk confusion, unsupported ownership claims, or invented execution/authorization.
+
+## Autonomous remediation before retry
+
+In the accepted autonomous controller, a failed stage cannot simply be resampled until it passes.
+
+A failed attempt produces immutable weakness evidence. Before another canonical attempt, Roberta must run the accepted verified remediation sequence:
+
+```text
+source-bound weak concepts
+  -> source-grounded practice
+  -> unaugmented closed-book retention check
+  -> learned-concept transfer verification
+  -> curriculum-scoped promotion only if every gate passes
+  -> canonical retry
+```
+
+Only matching verified curriculum-scoped learned concepts may support a later answer model. They are not source evidence, general HXMP memory, live state, or answer keys.
 
 ## Legacy 1,000-question compatibility
 
@@ -204,13 +229,29 @@ The SQLite ledger records training/evaluation state, not trusted source/live tru
 
 Accepted source-aware ledger behavior preserves historical `pyramid_runs` / `level_results` and adds source-mastery run/stage state. Historical results are mapped into source stages rather than rewritten.
 
-The bound source-plan hash is immutable for a run.
+The bound source-plan hash is immutable for a run. Failed autonomous attempts do not erase the completed source-stage prefix and are not promoted into authoritative passing source-stage results.
+
+The final source-capstone pass is a separate ledger gate.
+
+## Final source capstone
+
+When every frozen required source stage has passed, a capstone-required source must pass a separate 60-question exam:
+
+```text
+49 cross-stage synthesis
+10 integrity
+1 final Boss
+```
+
+The capstone requires at least 90% overall accuracy or the higher applicable capability threshold, at least 90% integrity, Boss PASS, and zero critical failures.
+
+Verified curriculum-scoped learned concepts may be routed only to capstone exercises supported by matching source-stage references; the final Boss may use verified concepts across the frozen plan. Passing the capstone is still a training/mastery result, not live-state authority.
 
 ## Dashboard
 
-The Learning Command Center is read-only over the ledger/source plan/curriculum metadata. It may show source title, stage progress, mapped capability, contributing chapters/pages, what is being learned, scores/failures/history, and capstone state.
+The Learning Command Center is read-only over the ledger/source plan/curriculum metadata and autonomous-training job state. It may show source title, stage progress, mapped capability, contributing chapters/pages, what is being learned, scores/failures/history, autonomous job activity, and capstone state.
 
-It cannot modify the source plan, ledger, Learning System retention, CMIS/provider state, policy, or execution authority.
+It cannot modify the source plan, ledger, autonomous job, Learning System retention, CMIS/provider state, policy, or execution authority.
 
 ## Current Mastering Blockchain 4e source plan
 
@@ -237,8 +278,21 @@ Excluded from this source: capabilities `12,15,16,18,19,20`.
 
 Final source capstone: **required**.
 
-Accepted bank construction is currently present through **Stage 6 / Tokenomics**. This is curriculum availability, not a claim that Roberta has mastered through Stage 6.
+Accepted **prebuilt** bank construction is currently present through **Stage 8 / Market Structure**:
+
+- Stage 1 — Fundamentals;
+- Stage 2 — Blockchain Mechanics;
+- Stage 3 — Transactions;
+- Stage 4 — Cryptography;
+- Stage 5 — Smart Contracts;
+- Stage 6 — Tokenomics;
+- Stage 7 — Liquidity (PR #225);
+- Stage 8 — Market Structure (PR #227).
+
+Stages 9-14 are not yet separately accepted prebuilt repository banks. The accepted `roberta-train` controller can generate a missing later-stage bank from the exact selected source if its complete-source plan and source/provenance/evidence gates pass.
+
+This is curriculum availability, not a claim that Roberta has mastered through Stage 8.
 
 ## Core rule
 
-**The Pyramid measures source-grounded reasoning under strict provenance and authority boundaries. A source is mastered only by passing its frozen required stages and capstone; the system becomes more capable by proving learning, not by relabeling generated material as truth.**
+**The Pyramid measures source-grounded reasoning under strict provenance and authority boundaries. A source is mastered only by passing its frozen required stages and capstone; autonomous generation and training improve capability without relabeling generated material as truth.**
