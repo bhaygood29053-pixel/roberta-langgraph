@@ -1,6 +1,6 @@
 # CMIS Contract Boundary
 
-Last refreshed: 2026-08-20
+Last refreshed: 2026-08-25
 
 CMIS is Roberta's deterministic cross-chain market-intelligence service layer. Roberta does not own provider collection, fact verification, Evidence Receipt generation, Proof Score calculation, deterministic market risk, or bounded pre-trade calculations. Chain Scouts select and interpret allowed CMIS operations; CMIS and its providers remain authoritative for freshness-sensitive market facts.
 
@@ -29,13 +29,16 @@ Accepted milestones include:
 - CMIS Phase 10 — Solana read-only provider foundation: complete;
 - CMIS Evidence Receipts + Proof Score: complete;
 - CMIS deterministic pre-trade trade-size analysis: complete;
-- CMIS Phase 11 — read-only Verified Intelligence foundation: complete;
-- first CMIS Phase 11 public-service / Scout-reliance promotion: complete for one narrow X1 service;
-- Roberta adoption and readiness replay for that service: complete.
+- CMIS Phase 11 — read-only Verified Intelligence foundation: complete and non-promoted as a group;
+- CMIS Phase 12 — first narrow public-service / Scout-reliance promotion: complete for X1 `concentration_change_intelligence/v1`;
+- post-Phase-12 deterministic descriptive classification: complete, internal/read-only/non-promoted;
+- post-Phase-12 direct wallet-relationship evidence: complete, internal/read-only/non-promoted;
+- post-Phase-12 concentration-threshold alert evidence: complete, internal/read-only/non-promoted;
+- Roberta adoption and readiness replay for the promoted X1 service: complete.
 
 Roberta Phase 11 — Controlled Execution remains **locked / not started**.
 
-CMIS currently advertises capability contract **1.9.0**. Roberta keeps a global existing-service minimum of **1.8.0**, while the first promoted intelligence operation has a service-specific minimum of **1.9.0**.
+CMIS currently advertises capability contract **1.9.0**. Roberta keeps a global existing-service minimum of **1.8.0**, while the promoted concentration intelligence operation has a service-specific minimum of **1.9.0**.
 
 ## Shared public service surface
 
@@ -70,7 +73,7 @@ public_service_promoted = false
 scout_reliance_promoted = false
 ```
 
-The first promoted service is a separate wrapper and does not change that foundation-level state.
+The promoted service is a separate Phase 12 wrapper and does not change that foundation-level state.
 
 Roberta does not bypass the Scout boundary to perform provider calls directly.
 
@@ -134,7 +137,9 @@ Risk and proof quality are separate dimensions. Roberta may explain both but mus
 
 CMIS Phase 11 foundations include top-account concentration observations and compatible numeric changes, neutral wallet-activity facts, sanitized sparse intelligence history/comparison, and evidence-bound conclusions.
 
-The first promoted concentration-change wrapper does **not** establish or authorize:
+Accepted post-Phase-12 internal deterministic foundations also include descriptive concentration-direction classification, direct wallet-relationship evidence with explicit non-ownership semantics, and concentration-threshold alert evidence. These foundations remain internal/read-only/non-promoted and do not become Scout-callable services by implication.
+
+The promoted concentration-change wrapper does **not** establish or authorize:
 
 - total unique-holder coverage;
 - beneficial-owner identity;
@@ -229,9 +234,9 @@ No current CMIS result, Chain Scout report, Roberta policy decision, or human ap
 
 ## Development coordination
 
-The first promoted read-only intelligence service and Roberta adoption/readiness gate are complete.
+The Phase 12 promoted X1 concentration-change service and Roberta adoption/readiness gate are complete. Deterministic descriptive classification, direct wallet-relationship evidence, and concentration-threshold alert evidence are also complete as internal/read-only/non-promoted CMIS foundations.
 
-The next shared analytical boundary is deterministic inference/classification design before any behavioral or ownership labels. Wallet relationships and alerts require separate evidence contracts; X1 provider-gap verification and Solana coverage can deepen in parallel. Controlled Execution stays locked.
+There is currently **no accepted next public intelligence/alert service or Scout-reliance promotion**. X1 provider-gap verification and Solana coverage may deepen in parallel under read-only/fail-closed contracts. Any new public wrapper requires a separate CMIS promotion contract plus a separate Roberta/Scout adoption-readiness gate. Controlled Execution stays locked.
 
 ## Core rule
 
