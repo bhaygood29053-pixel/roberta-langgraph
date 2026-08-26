@@ -1,6 +1,6 @@
 # Roberta Source Mastery Plan
 
-Last reconciled: 2026-08-25 (America/New_York)
+Last reconciled: 2026-08-26 (America/New_York)
 
 ## Purpose
 
@@ -141,16 +141,18 @@ These exclusions do not say those capabilities are unimportant. They mean *Maste
 
 ## Current MB4E curriculum-build state
 
-Accepted source-grounded exercise-bank construction is present through **Stage 6 / Tokenomics**:
+Accepted source-grounded exercise-bank construction is present through **Stage 8 / Market Structure**:
 
 - Stage 1 — historical Fundamentals curriculum/provenance foundation;
 - Stage 2 — Blockchain Mechanics, 1,206-question bank;
 - Stage 3 — Transactions;
 - Stage 4 — Cryptography, 415-question bank;
 - Stage 5 — Smart Contracts, 493-question bank;
-- Stage 6 — Tokenomics, 493-question bank.
+- Stage 6 — Tokenomics, 493-question bank;
+- Stage 7 — Liquidity, 415-question bank;
+- Stage 8 — Market Structure, 428-question bank.
 
-Stages 7-14 and the final source capstone require separate accepted implementation/build milestones.
+Stages 9-14 and the final source capstone require separate accepted implementation/build milestones.
 
 **Bank availability is not mastery.** A source stage is mastered only through the source-plan-bound training ledger and its accepted stage pass rules. The source itself is mastered only after every required stage and the required final source capstone pass.
 
