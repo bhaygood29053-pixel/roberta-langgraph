@@ -1,282 +1,222 @@
-# Learning System Phase 10 — Verified Lesson Retention Foundation
+# Roberta Learning System — Phase 10 Verified Lesson Retention
 
-Status: **accepted roadmap / implementation contract for Issue #133 via PR #134**. This contract gate is accepted; runtime implementation PR #136 remains unaccepted and must not merge until its independent blockers are resolved and all required review axes pass.
+Last reconciled: 2026-08-26 (America/New_York)
+
+Status: **accepted contract and hardened implementation on `main`.** The historical draft PR #136 remains open but is no longer the implementation source of truth.
 
 ## Purpose
 
-Phase 10 starts the `RETAIN` step of the Roberta Learning System after Phase 9 verification.
+Phase 10 is the narrow boundary that permits an exact independently verified Learning System lesson to become a retained lesson without converting model output, repetition, source text, or training success into self-authorizing truth.
 
-A Phase 9 `CandidateVerificationResult(status="verified_for_learning")` is necessary evidence for retention, but it is **not itself durable-memory promotion authority**. Phase 10 defines the additional retention/curation boundary required before a generated candidate lesson may become a trusted reusable verified lesson.
-
-The Learning System v1.1 requires the durable-learning path to preserve:
-
-```text
-FAILURE -> DIAGNOSIS -> REFLECTION -> CANDIDATE LESSON
-  -> EVIDENCE CHECK -> CONTRADICTION CHECK -> DEDUPLICATION
-    -> CONFIDENCE ASSESSMENT -> APPROVAL -> VERIFIED LESSON
-```
-
-## Architecture boundary
-
-```text
-canonical Phase 8 LearningCandidateBundle
-  + canonical Phase 9 CandidateVerificationResult
-        ↓ exact Phase 9 reconstruction / validation
-verified_for_learning candidate
-        ↓ retention gates
-lesson type + scope eligibility
-complete canonical contradiction snapshot
-exact-duplicate handling
-confidence basis
-exact human retention approval
-        ↓
-RetentionDecision
-        ↓ only when every mandatory gate passes
-VerifiedLessonRecord
-        ↓
-provider-neutral Phase 10 retention store only
-```
-
-Phase 10 must not create a direct candidate/reflection-to-memory shortcut.
-
-## Accepted first contracts
-
-The accepted v1 public seam is narrow and typed:
-
-```text
-retention_contract = verified-lesson-retention/v1
-verified_lesson_contract = verified-lesson/v1
-retention_version = 1.0.0
-```
-
-A retention decision is distinct from the verified lesson itself so blocked, rejected, duplicate, or inconclusive outcomes remain auditable without creating trusted lesson state.
-
-## Canonical prerequisites
-
-Before any retention gate runs, Phase 10 must:
-
-1. require the exact Phase 8 bundle and Phase 9 verification inputs needed to reconstruct the supplied verification result;
-2. run the accepted Phase 9 validator rather than trusting a supplied `CandidateVerificationResult` by identity alone;
-3. require exact equality with the reconstructed Phase 9 result;
-4. require `status == "verified_for_learning"`;
-5. reject or block `rejected` / `inconclusive` verification results;
-6. preserve the exact candidate, candidate-state, reflection, verification-plan, original/retest evaluation, golden-case, packet/result/retrieval, per-check, and Phase 9 verification identities required for audit.
-
-## Lesson type and scope
-
-A retained lesson is trusted only within a recorded type and scope.
-
-V1 must define an explicit allowlist rather than treating arbitrary generated lesson text as semantic truth. Unsupported or ambiguous lesson types/scopes fail closed.
-
-The first implementation is restricted to a narrow **procedural-learning** boundary: reusable methods, workflows, or operating practices demonstrated by accepted evaluation/retest evidence. Factual source claims, current market/blockchain facts, protected policy, permissions, credentials, and execution instructions are not eligible lesson types in this slice.
-
-Every proposed procedural lesson must declare a canonical scope that includes the applicable domain/task boundary and exact approved source/corpus identities on which the lesson depends. Scope widening changes the retention proposal identity and requires a new contradiction snapshot and new human approval.
-
-Generated candidate/reflection text remains generated material. Retention may preserve it as the proposed lesson body, but does not retroactively convert it into source evidence.
-
-## Contradiction gate
-
-The Learning System specification requires candidate lessons to be checked against existing verified lessons and source evidence before durable retention.
-
-A caller-supplied list of convenient evidence is therefore **not** an accepted contradiction basis. Phase 10 v1 requires a provider-built, content-addressed `RetentionContradictionSnapshot` whose completeness is validated before contradiction scoring.
-
-### Mandatory contradiction scope
-
-For the proposed lesson's exact type/scope, the snapshot must contain both:
-
-1. **Verified-lesson scope** — every active `VerifiedLessonRecord` enumerated by the canonical Phase 10 retention store whose type/scope can apply to or overlap the proposed lesson. The store, not the caller, performs the enumeration. The snapshot records the complete active-record count, ordered lesson ids/content hashes, lifecycle-state ids, and a deterministic store-snapshot id.
-2. **Approved-source scope** — every canonical approved source/evidence unit in the exact declared source/corpus scope for the lesson, including the exact versions required by that scope and any accepted superseding source version that the source lifecycle says must replace an older active version. The trusted source/index boundary, not the caller, performs the enumeration. The snapshot records the complete source/evidence count, ordered source/chunk ids and content hashes, approval/lifecycle state, and a deterministic source-snapshot id.
-
-The contradiction-snapshot id binds the proposed lesson identity, lesson type/scope, store-snapshot id, source-snapshot id, ordered member identities/hashes, counts, and the accepted contradiction-snapshot contract/version.
-
-A `clear` contradiction result is valid only if the implementation proves that both mandatory scopes were completely enumerated from their trusted interfaces and the supplied snapshot exactly reconstructs. Missing store/source capability, failed enumeration, count/hash mismatch, caller-selected subsets, lifecycle ambiguity, stale/non-canonical snapshot state, or unvalidated source/lesson records produce `inconclusive` or fail closed; they can never become `clear`.
-
-The first implementation should remain intentionally narrow enough that complete enumeration is deterministic and testable. If the repository cannot prove complete approved-source enumeration for a proposed lesson scope, that lesson is not retainable in v1.
-
-The result remains explicit:
-
-```text
-clear | conflict | inconclusive
-```
-
-V1 must not use a free-form LLM opinion as deterministic proof that no contradiction exists.
-
-## Duplicate handling
-
-The Learning System specification requires duplicate/near-duplicate lessons to be handled with provenance preserved.
-
-The first deterministic slice must support **exact duplicate** detection over a canonical lesson type/scope/body identity and prevent creation of parallel trusted duplicates that lose provenance. Exact-duplicate detection uses the same complete canonical active-lesson store snapshot required by the contradiction gate; callers cannot hide an existing duplicate by supplying a subset.
-
-Near-duplicate semantic merging remains out of scope until a separately accepted deterministic or independently evaluated merge capability exists. It must not be guessed from model similarity alone.
-
-## Confidence basis
-
-A verified lesson must preserve the basis for its confidence without inventing a calibrated probability.
-
-V1 may record only bounded categorical or evidence-derived confidence state supported by accepted verification/retest evidence. If no accepted calibrated confidence measure exists, the record must say so explicitly and must not manufacture a numeric score.
-
-## Retention approval authority
-
-Phase 9 Learning verification and Phase 10 deterministic checks do not self-authorize retention. **The only approval authority accepted by Phase 10 v1 is an explicit human reviewer acting through Roberta's existing LangGraph human-approval boundary.** Roberta, an LLM, a sub-agent, a tool, retrieved text, a candidate lesson, a Phase 9 verifier result, or a caller-constructed approval object cannot grant retention approval.
-
-Phase 10 must construct a dedicated `ApprovalRequest` for the exact retention proposal and use the existing approval runtime described in `HUMAN_APPROVAL.md`. The request must use:
-
-```text
-action_type = retain_verified_lesson
-scope = exact lesson type + exact lesson scope + exact retention-contract version
-proposal = exact canonical retention proposal
-```
-
-The canonical retention proposal must include at minimum the proposed lesson identity/body hash, type/scope, exact Phase 8/9 provenance identities, contradiction-snapshot id/result, duplicate result, confidence basis, and all authority-denial fields. The existing proposal and binding hashes therefore change if any retention-relevant input changes.
-
-### Issuer identity and trusted origin
-
-The accepted approval artifact must originate from the existing LangGraph interrupt/resume workflow for the exact paused `ApprovalRequest`. Its authority is `human_review/v1`, and it must preserve the exact approval request id, proposal SHA-256, binding SHA-256, approval thread id, and the application-authenticated human principal identifier associated with the resume event.
-
-The human principal identifier is trusted application/session metadata. It must not be accepted from candidate text, source text, model output, or an arbitrary resume-payload field. If the deployment cannot supply an authenticated human principal for the approval event, retention remains unapproved in Phase 10 v1.
-
-### Validation and replay semantics
-
-A retention decision may consume only `ApprovalOutcome(status="approved")` after revalidating:
-
-- the exact paused request id;
-- `action_type == "retain_verified_lesson"`;
-- the exact proposal SHA-256;
-- the exact binding SHA-256;
-- the exact declared lesson type/scope;
-- the exact retention contract/version;
-- the authenticated human principal identity bound by the trusted application/session layer;
-- that the approval thread completed with an explicit `approve` decision;
-- that the exact approval binding has not already been consumed by another retention decision.
-
-Booleans, yes-like strings, generated approval prose, free-form model text, or caller-reconstructed approval objects do not count as approval. Editing any proposal input creates a new proposal/binding and requires a fresh human review. Completed approval threads cannot be reused for a different request, and Phase 10 must record one-time consumption of the exact approval binding in the provider-neutral retention store so replay cannot create another trusted lesson or changed retention decision.
-
-This approval authorizes only the exact Phase 10 retention proposal. It is not wallet authority, signing authority, HXMP write approval, protected-governance authority, or a reusable future authorization.
-
-## RetentionDecision
-
-A deterministic retention decision should preserve at minimum:
-
-- retention contract/version;
-- exact Phase 8/9 provenance identities;
-- canonical proposed lesson type/scope/body identity;
-- contradiction snapshot/result and exact evidence identities;
-- duplicate result and any existing lesson identity;
-- confidence basis/state;
-- exact human approval request/proposal/binding/thread/principal identity and one-time consumption state;
-- status such as `retained`, `rejected`, `duplicate`, or `inconclusive`;
-- producer identity/version;
-- explicit authority boundaries.
-
-The decision must be content-addressed and tamper-sensitive.
-
-## VerifiedLessonRecord
-
-A `VerifiedLessonRecord` may be created only when every mandatory gate passes.
-
-It must preserve at minimum:
-
-- deterministic lesson id/content hash;
-- lesson type and exact scope;
-- lesson body with generated/source distinction preserved;
-- exact Phase 8/9 provenance and evaluation/verification basis;
-- contradiction snapshot, dedup, confidence, and human-approval basis;
-- version/lifecycle state;
-- auditable creation metadata supplied by the accepted retention-store boundary;
-- supersession/revocation linkage;
-- authority flags that prevent live-state, source-truth, governance, CMIS/provider-trust, wallet, or execution escalation.
-
-A verified lesson is trusted only within its recorded scope and lifecycle state. It is not automatically source truth.
-
-## Lifecycle
-
-Phase 10 must make later invalidation representable from the start.
-
-At minimum, verified lessons need immutable state revisions supporting `active`, `superseded`, and `revoked`. A superseded/revoked state must bind its exact previous active state id and preserve the reason/evidence/decision identity that caused the lifecycle change. A later lesson must never silently overwrite or erase the evidence/history that justified the prior state.
-
-Lifecycle transitions are retention-store state changes only. They do not modify source truth, protected governance, CMIS/provider trust, or wallet/execution state.
-
-## Storage boundary
-
-Persistent memory/knowledge infrastructure remains an external system of record, but **Phase 10 v1 is restricted to a provider-neutral retention store and must not write HXMP**.
-
-The implementation must first prove the retention contract using an in-memory deterministic/test store behind a narrow typed `VerifiedLessonStore`-style interface. The interface may store Phase 10 retention decisions, verified lesson records, lifecycle revisions, canonical contradiction snapshots, and consumed approval bindings required for deterministic tests.
-
-### HXMP is explicitly deferred
-
-Roberta's accepted HXMP adapter contract defines HXMP writes as state-changing X1 transactions that spend XNT gas and require wallet-bound human approval, dry-run verification, signer/wallet binding, `write-soul`, and readback verification. Those operations conflict with this Phase 10 gate's no-wallet/no-transaction boundary.
-
-Therefore Issue #133 and Phase 10 v1 **must not add, call, prepare, simulate-as-execution, approve, sign, broadcast, or otherwise exercise any HXMP write path**. No `HXMPPreparedWrite`, `execute_prepared_write`, `write-soul`, keypair/wallet binding, XNT gas spend, or equivalent external durable-memory transaction belongs in this slice.
-
-Any future persistence of verified lessons into HXMP requires a **separate accepted roadmap/issue/spec gate** that explicitly reconciles the Learning System retention contract with the existing wallet-bound HXMP write and human-approval contract. Merging Phase 10 does not pre-authorize that future gate.
+The retention layer is intentionally smaller than a general memory system. It retains only the exact lesson material allowed by the accepted Phase 9 -> Phase 10 contract and preserves complete verification, source, contradiction, and human-approval lineage.
 
 ## Authority boundary
 
-Phase 10 does not change the authority hierarchy for freshness-sensitive facts:
+Phase 10 retention does **not** authorize:
 
 ```text
-User -> Roberta -> Chain Scout -> CMIS -> Chain Provider
+source truth
+current/live blockchain truth
+CMIS/provider trust
+operational trust
+prompt/tool/policy mutation
+governance mutation
+HXMP writes
+wallet authority
+transaction construction/signing/broadcasting
+trading/custody/bridge transfer
+Controlled Execution
 ```
 
-A retained lesson cannot become current authority for prices, liquidity, volume, holders, supply, tokenomics, wallet state, market risk, provider health, or other freshness-sensitive market/blockchain facts.
+Fresh accepted Scout -> CMIS -> Provider evidence remains authoritative for freshness-sensitive facts regardless of any retained lesson.
 
-Phase 10 must not authorize:
+## Eligible input
 
-- source approval or source-truth mutation;
-- protected policy/governance mutation;
-- CMIS/provider trust changes;
-- new tool permissions or credentials;
-- HXMP writes or other blockchain-backed durable-memory transactions;
-- wallet authority;
-- transaction approval for value/state movement;
-- transaction preparation/signing/broadcasting/custody/trading;
-- Controlled Execution.
+Retention starts from one exact accepted Phase 9 verification result. A retention attempt fails closed unless the verification result:
 
-Controlled Execution remains locked.
+- uses the accepted Phase 9 verification contract/version;
+- is structurally valid and fully bound to its candidate/evaluation/source lineage;
+- has status `verified_for_learning`;
+- identifies a procedural lesson that is eligible for narrow learning retention;
+- has not been altered, partially reconstructed, or detached from its original verification evidence.
 
-## Required first-slice tests
+Model repetition, confidence, exam success, grader notes, candidate lessons, or source inclusion do not substitute for Phase 9 eligibility.
 
-The implementation must prove at minimum:
+## Retention preparation
 
-1. tampered or non-canonical Phase 9 verification state fails before retention gates run;
-2. only `verified_for_learning` is retention-eligible;
-3. unsupported lesson type/scope fails closed;
-4. contradiction snapshots are built by trusted store/source interfaces, bind complete counts/member hashes/snapshot ids, and caller-selected subsets are rejected;
-5. missing/failed/incomplete contradiction enumeration cannot become `clear`;
-6. an explicit contradiction blocks retention;
-7. exact duplicate detection uses the complete active-lesson snapshot, preserves provenance, and avoids a second trusted lesson;
-8. missing confidence capability does not fabricate a numeric score;
-9. only a validated exact human `ApprovalOutcome(status="approved")` from the existing approval runtime can authorize retention;
-10. changed proposal/scope/contract/snapshot/provenance invalidates the approval binding and requires re-review;
-11. missing/untrusted human-principal identity leaves retention unapproved;
-12. replay of an already consumed approval binding cannot create another trusted lesson/decision;
-13. successful retention preserves exact Phase 8/9 evaluation/verification provenance and the exact contradiction/dedup/confidence/approval basis;
-14. retained lesson identity is deterministic/content-addressed and tamper-sensitive;
-15. supersession/revocation lineage is immutable and auditable;
-16. the Phase 10 store is provider-neutral/in-memory for v1 and no HXMP write path is imported, prepared, invoked, or authorized;
-17. no retained lesson gains source-truth, live-state, governance, CMIS/provider-trust, wallet, or execution authority;
-18. freshness-sensitive market facts remain subordinate to fresh accepted CMIS/provider evidence;
-19. the full deterministic Roberta suite remains green.
+Before human approval can be requested, Phase 10 creates a deterministic retention preparation bound to the exact verified lesson.
 
-## Explicit non-goals
+The preparation includes the exact lesson scope, provenance, verification identity, contradiction state, and any information required to prove that approval later applies to the same prepared retention object.
 
-Phase 10 does not add:
+A preparation does not itself retain anything.
 
-- automatic retention of every Phase 9 success;
-- direct reflection/candidate-to-HXMP writes;
-- **any HXMP write or blockchain-backed durable-memory transaction**;
-- semantic near-duplicate merge by model intuition;
-- broad semantic knowledge extraction from generated lessons;
-- source-store writes from generated lesson text;
-- source approval changes;
-- autonomous protected-policy/governance mutation;
-- CMIS/provider truth or trust changes;
-- adaptive curriculum/skill scheduling;
-- knowledge graph/concept expansion;
-- production reranking/fine-tuning;
-- transaction preparation/signing/broadcasting/custody/trading;
-- Controlled Execution.
+## Contradiction gates
 
-## Gate acceptance
+Phase 10 requires complete contradiction evaluation before retention.
 
-This roadmap/spec gate was accepted by PR #134 for Issue #133. Issue #133 is therefore the active Learning System Phase 10 implementation gate. Acceptance of this contract does **not** accept implementation PR #136: implementation must still resolve its current blockers, follow behavior-first tests, pass exact-head deterministic CI, and pass the independent **Spec Fidelity / Code-Architecture / Authority-Safety** review gate before merge.
+The accepted implementation checks both:
+
+1. the applicable approved/source evidence needed to establish whether the lesson conflicts with its source lineage; and
+2. the active retained-lesson set needed to detect conflicts or exact duplicates with already retained lessons.
+
+The contradiction snapshot is complete and deterministic for the retention decision. Missing or incomplete contradiction evidence blocks retention rather than being interpreted as no conflict.
+
+Unresolved contradiction blockers fail closed.
+
+## Duplicate rule
+
+An exact active duplicate is not silently retained again.
+
+Duplicate handling is deterministic and must preserve the identity of the already-active retained lesson. A repeated model output or repeated human approval cannot create a second independent authority record for the same lesson.
+
+## Human approval
+
+Retention requires explicit human approval of the exact prepared retention object.
+
+Approval is:
+
+- specific to one preparation/lesson;
+- non-reusable for altered material;
+- bound into the retained lesson lineage;
+- invalid if the approved material, source/verification identity, or applicable retention state changes before retention.
+
+Human approval authorizes only the narrow retention decision. It does not authorize operational trust, HXMP promotion, wallet activity, or execution.
+
+## Retained lesson record
+
+An accepted retained lesson preserves at least the exact identities needed to reconstruct its trust lineage, including:
+
+```text
+lesson_id
+lesson_hash
+lesson scope / procedural content
+source ids
+Phase 9 verification id
+retention preparation id
+contradiction snapshot id
+human approval id
+lifecycle state
+```
+
+The record is deterministic and immutable as a historical decision object.
+
+## Lifecycle state
+
+Retained lessons have explicit lifecycle state rather than being silently overwritten.
+
+Accepted states include:
+
+```text
+active
+superseded
+revoked
+```
+
+A lifecycle transition produces new state/audit material while preserving the historical lesson and prior state lineage.
+
+Only an exact active retained lesson is eligible for the separate `verified_learned_knowledge` classification boundary.
+
+## Storage contract
+
+The accepted core Phase 10 implementation is provider-neutral and uses an in-memory retained-lesson store.
+
+This is deliberate. Adding HXMP, database, vector-store, or other durable persistence is not a storage-only refactor if it changes authority, retrieval, conflict, or lifecycle semantics. Any durable/provider-backed general retained-lesson store requires a separate accepted persistence contract.
+
+Autonomous-training job files and Pyramid curriculum-scoped learned-concept stores are separate mechanisms and do not silently become the Phase 10 general retention store.
+
+## Relationship to Pyramid learned concepts
+
+Pyramid learned concepts and Phase 10 retained lessons are distinct:
+
+- Pyramid learned concepts are curriculum-scoped and require Pyramid-specific source-grounded practice, closed-book retention/transfer gates, and matching source references.
+- Phase 10 retained lessons are general Learning System procedural lessons admitted only through Phase 9 verification, contradiction checks, and exact human approval.
+
+Neither mechanism is general operational memory or live-state authority.
+
+## Relationship to knowledge classification
+
+The accepted Learning Plane classification boundary may classify one exact active retained lesson as:
+
+```text
+verified_learned_knowledge
+```
+
+The classification preserves the retained lesson hash, lifecycle state, retention decision/preparation, Phase 9 verification, source IDs, contradiction snapshot, and approval ID.
+
+Every accepted classification has:
+
+```text
+operational_trust_authorized = false
+source_truth_authorized = false
+live_state_authorized = false
+cmis_provider_trust_authorized = false
+governance_mutation_authorized = false
+wallet_authorized = false
+execution_authorized = false
+```
+
+The core Learning Plane exposes no operational-trust promotion wrapper. Attempts to authorize operational trust fail closed until a separately accepted wrapper exists.
+
+## Relationship to autonomous source mastery
+
+Merged PR #228 automates source intake, curriculum generation, canonical exams, remediation, curriculum-scoped retention/transfer, and the final source capstone.
+
+That controller does not bypass Phase 10. Its Pyramid learned-concept mechanism remains curriculum-scoped and independently gated. It cannot write arbitrary model conclusions into the Phase 10 retained-lesson store and cannot convert a training result into operational trust.
+
+The autonomous controller's durable `state.json`, events, checkpoints, remediation evidence, and capstone results are workflow/audit state, not retained operational truth.
+
+## Freshness and source conflict
+
+A retained lesson can be useful only inside its accepted procedural/static scope.
+
+If a user question depends on current chain or market state, Roberta must obtain fresh evidence through the accepted Scout -> CMIS -> Provider path. A retained lesson cannot override fresh provider evidence, resolve missing live evidence by guessing, or turn an old source statement into a current fact.
+
+If later accepted learning evidence contradicts an active retained lesson, the conflict must be represented through the retention/lifecycle process rather than silently modifying the old record.
+
+## Failure behavior
+
+Retention fails closed when, among other conditions:
+
+- the Phase 9 verification is invalid or not `verified_for_learning`;
+- the lesson scope is ineligible;
+- provenance or verification lineage is incomplete;
+- contradiction coverage is incomplete;
+- an unresolved contradiction exists;
+- exact duplicate handling cannot be determined safely;
+- approval is missing, malformed, stale, or bound to different material;
+- lifecycle state is inconsistent;
+- retained-lesson material cannot be canonicalized deterministically.
+
+Failure to retain does not erase the Phase 9 verification result; it simply means the candidate did not cross the retention boundary.
+
+## Current implementation status
+
+Accepted on `main`:
+
+- deterministic Phase 10 retention contracts and validation;
+- exact eligible Phase 9 input gate;
+- source and active-lesson contradiction snapshots;
+- duplicate handling;
+- exact human approval binding;
+- provider-neutral in-memory retained-lesson store;
+- active/superseded/revoked lifecycle state;
+- regression coverage for retention integrity and failure modes;
+- fail-closed `verified_learned_knowledge` classification in the separate promotion boundary.
+
+Historical note: PR #136 originally proposed Phase 10 and accumulated blocker feedback. The hardened implementation was subsequently integrated to `main` through a separate merge path. Therefore PR #136's open/draft state must not be cited as evidence that Phase 10 remains unimplemented.
+
+## Future work requiring separate acceptance
+
+Not authorized by Phase 10 completion:
+
+- HXMP-backed general lesson persistence;
+- arbitrary automatic retention without exact human approval;
+- operational-trust promotion;
+- current-state fact retention as authority;
+- prompt/tool/policy self-modification;
+- wallet or execution authority;
+- a generalized background retention scheduler that changes retention semantics.
+
+## Core rule
+
+**Retention is a narrow, provenance-bound, human-approved learning decision. A retained lesson may become verified learned knowledge, but it never becomes operational trust, current truth, or execution authority by implication.**
