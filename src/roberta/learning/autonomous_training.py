@@ -459,21 +459,27 @@ def run_autonomous_training(
             Path.home() / ".roberta" / "curricula" / f"autonomous_{source.original_sha256[:24]}"
         )
 
-    model = model_factory()
     curriculum_id: str | None = None
     if curriculum_root.exists():
         manifest, _ = validate_package(curriculum_root)
         curriculum_id = str(manifest["curriculum_id"])
-    plan = _load_or_make_plan(
-        model=model,
-        source=source,
-        curriculum_root=curriculum_root,
-        curriculum_id=curriculum_id,
-    )
-    job_id = _job_id(source, plan.curriculum_id)
+    intended_curriculum_id = curriculum_id or f"autonomous_{source.original_sha256[:24]}"
+    job_id = _job_id(source, intended_curriculum_id)
     job = JobStore(Path(job_root) if job_root is not None else default_job_root(), job_id)
     job.acquire()
+    plan: SourceMasteryPlan | None = None
     try:
+        model = model_factory()
+        plan = _load_or_make_plan(
+            model=model,
+            source=source,
+            curriculum_root=curriculum_root,
+            curriculum_id=curriculum_id,
+        )
+        if plan.curriculum_id != intended_curriculum_id:
+            raise TrainingHardStop(
+                f"generated source plan changed curriculum identity from {intended_curriculum_id} to {plan.curriculum_id}"
+            )
         ledger = PyramidTrainingLedger(ledger_path)
         active = _active_run(ledger, plan.curriculum_id)
         if active is None:
@@ -728,6 +734,11 @@ def run_autonomous_training(
         if str(progress["status"]) != "stages_complete":
             raise TrainingHardStop(f"all source stages passed but ledger status is {progress['status']!r}")
 
+        capstone_learned = tuple(
+            concept
+            for stage in plan.stages
+            for concept in _load_learned(plan.curriculum_id, stage.capability_level)
+        )
         capstone_passed = False
         for attempt in range(1, int(limits["capstone_attempts"]) + 1):
             state.update(
@@ -747,6 +758,7 @@ def run_autonomous_training(
                 answer_model=_answer_model(model, ()),
                 grader_model=model,
                 checkpoint_dir=job.root / "capstone" / f"attempt_{attempt:02d}",
+                learned_concepts=capstone_learned,
                 batch_size=batch_size,
                 progress=_progress_printer(
                     "CAPSTONE_PROGRESS",
@@ -789,9 +801,9 @@ def run_autonomous_training(
             "source_key": source.source_key,
             "source_title": source.title,
             "source_artifact_sha256": source.original_sha256,
-            "curriculum_id": plan.curriculum_id,
+            "curriculum_id": plan.curriculum_id if plan is not None else intended_curriculum_id,
             "curriculum_path": str(curriculum_root),
-            "source_plan_hash": plan.plan_hash,
+            "source_plan_hash": plan.plan_hash if plan is not None else None,
             "profile": profile,
         }
         known = isinstance(
