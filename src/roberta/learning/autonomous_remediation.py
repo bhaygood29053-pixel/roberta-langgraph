@@ -134,14 +134,13 @@ def _boss_synthesis_atoms(
                 "Boss synthesis expansion is incomplete: "
                 f"resolved {len(atoms)} atomic principles for {len(required_points)} required synthesis points"
             )
-        uncovered = [
-            point
-            for point in required_points
-            if not any(atom.expected_answer.strip() in point for atom in atoms)
-        ]
-        if uncovered:
+        expected_points = {
+            f"Correctly synthesize {atom.concept}/{atom.subconcept}: {atom.expected_answer.strip()}"
+            for atom in atoms
+        }
+        if set(required_points) != expected_points:
             raise AutonomousRemediationError(
-                "Boss synthesis expansion could not bind every required synthesis point to a stage atom"
+                "Boss synthesis expansion could not bind every required synthesis point exactly to a stage atom"
             )
     if not atoms:
         raise AutonomousRemediationError("Boss synthesis expansion resolved no stable stage-bound atoms")
@@ -262,7 +261,7 @@ class StageTransferLearnedConceptAnswerModel:
                     if (
                         memory is None
                         or memory.principle != atom.expected_answer.strip()
-                        or not (set(memory.source_refs) & set(atom.source_refs))
+                        or not set(atom.source_refs).issubset(set(memory.source_refs))
                     ):
                         missing.append(f"{atom.concept}/{atom.subconcept or '-'}")
                         continue
@@ -280,7 +279,7 @@ class StageTransferLearnedConceptAnswerModel:
             if (
                 memory is None
                 or memory.principle != exercise.expected_answer.strip()
-                or not (set(memory.source_refs) & set(exercise.source_refs))
+                or not set(exercise.source_refs).issubset(set(memory.source_refs))
             ):
                 raise AutonomousRemediationError(
                     f"atomic transfer exercise {exercise.exercise_id} lacks its verified stage-bound concept"
@@ -585,7 +584,7 @@ def run_autonomous_remediation(
         "curriculum_id": curriculum_id,
         "level": level,
         "checkpoint_namespace": REMEDIATION_LANE_NAMESPACE,
-        "lane_artifact_root": str(root),
+        "lane_artifact_root": f"lanes/{REMEDIATION_LANE_NAMESPACE}",
         "promoted_concepts": len(verified),
         "transfer_questions": len(transfer_bank),
         "atomic_transfer_questions": sum(1 for item in transfer_bank if not item.boss_question),
