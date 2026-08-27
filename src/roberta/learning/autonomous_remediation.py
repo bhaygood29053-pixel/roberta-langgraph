@@ -6,10 +6,16 @@ import json
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
+from langchain_core.messages import HumanMessage
+
 from .pyramid import Exercise
 from .pyramid_exam import ExamOutcome, run_exam
 from .pyramid_learned_concept_answer import PyramidLearnedConceptAnswerModel
-from .pyramid_learned_concepts import (\n    PYRAMID_LEARNED_CONCEPT_MEMORY_CONTRACT,\n    LearnedConcept,\n    write_learned_concepts,\n)
+from .pyramid_learned_concepts import (
+    PYRAMID_LEARNED_CONCEPT_MEMORY_CONTRACT,
+    LearnedConcept,
+    write_learned_concepts,
+)
 
 
 AUTONOMOUS_REMEDIATION_CONTRACT = "roberta-autonomous-remediation/v1"
