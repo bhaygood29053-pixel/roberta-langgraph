@@ -37,6 +37,11 @@ CMISStatus: TypeAlias = Literal[
     "error",
 ]
 TradeAction: TypeAlias = Literal["BUY", "SELL"]
+HistoricalMode: TypeAlias = Literal[
+    "window",
+    "all_available",
+    "all_available_pair",
+]
 RankMetric: TypeAlias = Literal[
     "volume",
     "liquidity",
