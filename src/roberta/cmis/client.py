@@ -17,6 +17,9 @@ class CMISClient(Protocol):
     def capabilities(self) -> CMISCapabilities:
         ...
 
+    def asset_lookup(self, *, chain: str, asset: str) -> CMISEnvelope:
+        ...
+
     def market_report(self, *, chain: str, asset: str) -> CMISEnvelope:
         ...
 
