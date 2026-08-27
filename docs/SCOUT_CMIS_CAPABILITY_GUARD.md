@@ -51,10 +51,8 @@ The global `>=1.8.0` minimum does not authorize newer semantics by implication. 
 
 - CMIS contract `>=1.10.0`;
 - X1 `historical_compare` callable;
-- explicit `all_available_mode_uses_cmis_stored_verified_observations_only`;
-- explicit `all_available_does_not_imply_complete_asset_lifetime`;
-- explicit `continuous_historical_coverage_not_implied`;
-- explicit `external_ohlcv_or_archive_history_not_promoted_by_this_mode`;
+- CMIS `1.10.x` / `1.11.x`: the legacy stored-observation/non-lifetime/non-continuity/non-external-history limitation set remains required;
+- CMIS `>=1.12.0`: the accepted verified-provider-price backfill limitation set is required, including price-only promotion, provider source independence unverified, provider archive completeness unverified, configured USD-stable historical peg unverified, non-lifetime completeness, and non-continuous coverage;
 - pair mode additionally requires `pair_mode_requires_compare_asset_and_overlapping_verified_history`.
 
 If any gate is missing, the client returns `unavailable` and sends no CMIS service POST.
