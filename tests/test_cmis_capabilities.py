@@ -8,6 +8,8 @@ from roberta.cmis.capabilities import (
     HISTORICAL_ALL_AVAILABLE_MIN_CMIS_CONTRACT_VERSION,
     HISTORICAL_ALL_AVAILABLE_REQUIRED_LIMITATIONS,
     HISTORICAL_PAIR_REQUIRED_LIMITATION,
+    HISTORICAL_PROVIDER_BACKFILL_MIN_CMIS_CONTRACT_VERSION,
+    HISTORICAL_PROVIDER_BACKFILL_REQUIRED_LIMITATIONS,
     INTELLIGENCE_FOUNDATION_CAPABILITIES,
     MIN_CMIS_CONTRACT_VERSION,
     X1_ASSET_IDENTITY_CONTRACT_VERSION,
@@ -294,6 +296,41 @@ def test_all_available_history_requires_cmis_1_10_and_exact_limitations() -> Non
         pair=True,
     )
     assert capability["callable"] is True
+
+
+def test_all_available_history_accepts_cmis_1_12_verified_provider_backfill_contract() -> None:
+    manifest = _manifest()
+    manifest["contract_version"] = HISTORICAL_PROVIDER_BACKFILL_MIN_CMIS_CONTRACT_VERSION
+    history = manifest["chains"]["x1"]["services"]["historical_compare"]
+    history["requirements"] = ["verified_current_market_snapshot"]
+    history["limitations"] = [
+        "window_mode_requires_supported_period",
+        *HISTORICAL_PROVIDER_BACKFILL_REQUIRED_LIMITATIONS,
+        HISTORICAL_PAIR_REQUIRED_LIMITATION,
+    ]
+
+    validated = validate_capability_manifest(manifest)
+    capability = require_historical_all_available_capability(
+        validated,
+        chain="x1",
+        pair=True,
+    )
+    assert capability["callable"] is True
+
+
+def test_all_available_history_cmis_1_12_fails_closed_if_backfill_boundary_weakens() -> None:
+    manifest = _manifest()
+    manifest["contract_version"] = HISTORICAL_PROVIDER_BACKFILL_MIN_CMIS_CONTRACT_VERSION
+    history = manifest["chains"]["x1"]["services"]["historical_compare"]
+    history["limitations"] = list(HISTORICAL_PROVIDER_BACKFILL_REQUIRED_LIMITATIONS)
+    history["limitations"].remove("provider_archive_completeness_not_verified")
+
+    validated = validate_capability_manifest(manifest)
+    with pytest.raises(CMISCapabilityContractError, match="missing accepted"):
+        require_historical_all_available_capability(
+            validated,
+            chain="x1",
+        )
 
 
 def test_all_available_history_fails_closed_on_old_or_weakened_contract() -> None:

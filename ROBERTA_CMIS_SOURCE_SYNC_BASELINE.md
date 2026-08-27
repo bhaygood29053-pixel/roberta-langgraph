@@ -44,7 +44,7 @@ Phase 10 verified retention is accepted on `main`. An exact active retained less
 ## Current CMIS/Roberta capability baseline
 
 ```text
-CMIS capability contract = 1.10.0
+CMIS capability contract = 1.12.0
 Phase 11 intelligence_foundation public_service_promoted = false
 Phase 11 intelligence_foundation scout_reliance_promoted = false
 ```
@@ -77,9 +77,9 @@ all_available_pair
 
 For a two-asset entire/full/lifetime-history request, Roberta copies the exact second user-supplied asset into X1 Scout's `compare_asset` field. X1 Scout then issues one CMIS `all_available_pair` request. Roberta does not independently fetch two histories and recompute a pair result.
 
-Scout reliance on `all_available` / `all_available_pair` is fail-closed. The live CMIS manifest must be contract `>=1.10.0`, X1 `historical_compare` must be callable, and the accepted limitations must explicitly preserve stored-verified-observation scope, non-lifetime completeness, non-continuous coverage, and non-promotion of external OHLCV/archive history. Pair mode additionally requires the exact overlapping-history limitation.
+Scout reliance on `all_available` / `all_available_pair` is fail-closed. The live CMIS manifest must be contract `>=1.10.0` and X1 `historical_compare` must be callable. For CMIS 1.10/1.11 the legacy stored-observation/non-external-history boundary remains required. For CMIS `>=1.12.0`, X1 Scout requires the accepted verified-provider-price backfill boundary: provider backfill may extend price history only; provider source independence, provider archive completeness, continuous coverage, historical USD-stable peg behavior, and complete asset lifetime remain unverified. Pair mode additionally requires the exact overlapping-history limitation.
 
-CMIS output fields such as `full_asset_lifetime_verified=false` and `continuous_coverage_verified=false` remain authoritative and must be preserved through X1 Scout and Roberta.
+CMIS output fields such as `full_asset_lifetime_verified=false` and `continuous_coverage_verified=false` remain authoritative and must be preserved through X1 Scout and Roberta. X1 Scout also projects coverage into presentation metadata; verified partial history must not be described as zero historical coverage.
 
 ## Internal non-promoted foundations
 

@@ -25,6 +25,9 @@ from roberta.pretrade_ux import build_pretrade_presentation
 from roberta.risk_help import build_risk_help
 from roberta.status_help import build_cmis_status_help
 from roberta.time_utils import format_observed_at_utc, normalize_observed_at
+from roberta.x1_scout.history_presentation import (
+    build_historical_coverage_presentation,
+)
 from roberta.x1_scout.planner import (
     compare_asset_from_objective,
     enforce_plan,
@@ -273,8 +276,9 @@ def _summarize_cmis_result(
     confidence = dict(result["confidence"])
     risk_help = build_risk_help(risk, confidence)
     proof = evidence_context(result)
+    historical_coverage_presentation = build_historical_coverage_presentation(result)
 
-    return {
+    investigation: X1ScoutInvestigation = {
         "operation": service,
         "cmis_status": cmis_status,
         "cmis_status_help": build_cmis_status_help(service, cmis_status, confidence),
@@ -291,6 +295,11 @@ def _summarize_cmis_result(
         "warnings": list(result["warnings"]),
         "errors": list(result["errors"]),
     }
+    if historical_coverage_presentation is not None:
+        investigation["historical_coverage_presentation"] = (
+            historical_coverage_presentation
+        )
+    return investigation
 
 
 def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
@@ -359,6 +368,13 @@ def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
         ],
         "errors": list(primary["errors"]),
     }
+    historical_coverage_presentation = primary.get(
+        "historical_coverage_presentation"
+    )
+    if historical_coverage_presentation is not None:
+        report["historical_coverage_presentation"] = dict(
+            historical_coverage_presentation
+        )
     if normalized_identity is not None:
         report["normalized_asset_identity"] = normalized_identity
         report["asset_identity_reconciliation"] = identity_reconciliation or {}
