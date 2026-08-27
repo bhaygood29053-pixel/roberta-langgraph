@@ -22,6 +22,7 @@ AUTONOMOUS_REMEDIATION_CONTRACT = "roberta-autonomous-remediation/v1"
 AUTONOMOUS_REMEDIATION_VERSION = "1.0.0"
 GROUNDED_QUESTIONS_PER_WEAKNESS = 5
 RETENTION_QUESTIONS_PER_WEAKNESS = 10
+REMEDIATION_LANE_NAMESPACE = "stage-bound-boss-synthesis-v2"
 
 
 class AutonomousRemediationError(RuntimeError):
@@ -471,7 +472,8 @@ def run_autonomous_remediation(
     provisional = _provisional_concepts(
         curriculum_id=curriculum_id, level=level, weak=remediation_targets
     )
-    root = Path(output_dir)
+    # A routing revision must never reuse pre-fix remediation checkpoints or overwrite their evidence.
+    root = Path(output_dir) / "lanes" / REMEDIATION_LANE_NAMESPACE
     grounded_bank = _practice_bank(
         provisional, count=GROUNDED_QUESTIONS_PER_WEAKNESS, lane="grounded"
     )
@@ -583,6 +585,7 @@ def run_autonomous_remediation(
             "version": AUTONOMOUS_REMEDIATION_VERSION,
             "curriculum_id": curriculum_id,
             "level": level,
+            "checkpoint_namespace": REMEDIATION_LANE_NAMESPACE,
             "promoted_concepts": len(verified),
             "transfer_questions": len(transfer_bank),
             "atomic_transfer_questions": sum(1 for item in transfer_bank if not item.boss_question),
