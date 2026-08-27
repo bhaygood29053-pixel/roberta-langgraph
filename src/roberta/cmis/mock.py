@@ -10,7 +10,13 @@ from roberta.cmis.capabilities import (
     INTELLIGENCE_PROMOTION_RULE,
     MIN_CMIS_CONTRACT_VERSION,
 )
-from roberta.cmis.contracts import CMISEnvelope, CMISOperation, RankMetric, TradeAction
+from roberta.cmis.contracts import (
+    CMISEnvelope,
+    CMISOperation,
+    HistoricalMode,
+    RankMetric,
+    TradeAction,
+)
 from roberta.cmis.verification import normalize_verification_evidence_selector
 
 MockScenario = Literal["test_only", "warning", "unavailable", "error"]
@@ -55,6 +61,18 @@ def _mock_capability_manifest() -> CMISCapabilities:
         "verification_evidence",
     ]
     x1 = {service: _capability("supported") for service in services}
+    x1["historical_compare"] = _capability(
+        "supported",
+        requirements=["verified_current_market_snapshot"],
+        limitations=[
+            "window_mode_requires_supported_period",
+            "all_available_mode_uses_cmis_stored_verified_observations_only",
+            "all_available_does_not_imply_complete_asset_lifetime",
+            "continuous_historical_coverage_not_implied",
+            "external_ohlcv_or_archive_history_not_promoted_by_this_mode",
+            "pair_mode_requires_compare_asset_and_overlapping_verified_history",
+        ],
+    )
     x1["pre_trade_check"] = _capability(
         "bounded",
         limitations=["analysis_only", "execution_authorized_false"],
@@ -78,7 +96,7 @@ def _mock_capability_manifest() -> CMISCapabilities:
         "service": "cmis_gateway",
         "version": 1,
         "schema_version": 1,
-        "contract_version": MIN_CMIS_CONTRACT_VERSION,
+        "contract_version": "1.10.0",
         "request_path": "/v1/cmis",
         "evidence_quality": {
             "evidence_receipt_schema_version": 1,
@@ -321,25 +339,53 @@ class MockCMISClient:
         *,
         chain: str,
         asset: str,
-        question: str,
+        question: str | None = None,
+        mode: HistoricalMode = "window",
+        compare_asset: str | None = None,
     ) -> CMISEnvelope:
         chain, asset = self._identity(chain, asset)
+        normalized_mode = str(mode or "").strip().lower()
+        if normalized_mode not in {"window", "all_available", "all_available_pair"}:
+            raise ValueError("unsupported historical mode")
         normalized_question = str(question or "").strip()
-        if not normalized_question:
-            raise ValueError("question must not be empty")
-        self.calls.append(
-            {
-                "operation": "historical_compare",
-                "chain": chain,
-                "asset": asset,
-                "question": normalized_question,
-            }
+        normalized_compare_asset = (
+            str(compare_asset or "").strip().upper()
+            if compare_asset is not None
+            else ""
         )
+        if normalized_mode == "window" and not normalized_question:
+            raise ValueError("question must not be empty for window history")
+        if normalized_mode == "all_available_pair" and not normalized_compare_asset:
+            raise ValueError("compare_asset is required for all_available_pair")
+        if normalized_mode != "all_available_pair" and normalized_compare_asset:
+            raise ValueError("compare_asset is only accepted for all_available_pair")
+
+        call: dict[str, object] = {
+            "operation": "historical_compare",
+            "chain": chain,
+            "asset": asset,
+            "question": normalized_question,
+        }
+        if normalized_mode != "window":
+            call["mode"] = normalized_mode
+        if normalized_compare_asset:
+            call["compare_asset"] = normalized_compare_asset
+        self.calls.append(call)
+
+        data: dict[str, object] = {
+            "question": normalized_question,
+            "mode": normalized_mode,
+            "comparison": None,
+            "full_asset_lifetime_verified": False,
+            "continuous_coverage_verified": False,
+        }
+        if normalized_compare_asset:
+            data["compare_asset_request"] = normalized_compare_asset
         return self._response(
             service="historical_compare",
             chain=chain,
             asset=asset,
-            data={"question": normalized_question, "comparison": None},
+            data=data,
         )
 
     def tokenomics(self, *, chain: str, asset: str) -> CMISEnvelope:
