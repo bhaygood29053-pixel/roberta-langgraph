@@ -1,0 +1,124 @@
+"""Tests for Roberta terminal service menu and automatic status key."""
+
+import json
+
+from roberta.chat_ui import (
+    SERVICE_MENU,
+    STATUS_KEY,
+    automatic_status_summary,
+    compare_request,
+    pretrade_request,
+)
+
+
+def test_service_menu_exposes_requested_user_flows() -> None:
+    assert "Asset Overview" in SERVICE_MENU
+    assert "Compare Two Assets" in SERVICE_MENU
+    assert "Risk Assessment" in SERVICE_MENU
+    assert "Tokenomics Analysis" in SERVICE_MENU
+    assert "Liquidity Analysis" in SERVICE_MENU
+    assert "Historical Analysis" in SERVICE_MENU
+    assert "Market Activity" in SERVICE_MENU
+    assert "Concentration Change" in SERVICE_MENU
+    assert "Rank X1 Assets" in SERVICE_MENU
+    assert "Pre-Trade Analysis" in SERVICE_MENU
+    assert "Evidence Quality Report" in SERVICE_MENU
+    assert "Full Assessment" in SERVICE_MENU
+    assert "Alert & Warning Key" in SERVICE_MENU
+
+
+def test_status_key_keeps_risk_service_and_proof_meanings_separate() -> None:
+    assert "[WARN]" in STATUS_KEY
+    assert "[PARTIAL]" in STATUS_KEY
+    assert "[INSUFFICIENT_EVIDENCE]" in STATUS_KEY
+    assert "[WEAK]" in STATUS_KEY
+    assert "Proof strength is NOT asset safety" in STATUS_KEY
+    assert "OK does not mean the asset is safe" in STATUS_KEY
+    assert "[NOT RUN]" in STATUS_KEY
+
+
+def test_compare_request_requires_fresh_symmetric_evidence() -> None:
+    request = compare_request("XNT", "ANL")
+
+    assert "XNT vs ANL" in request
+    assert "For EACH asset" in request
+    assert "market_report" in request
+    assert "risk_check" in request
+    assert "tokenomics" in request
+    assert "historical_compare" in request
+    assert "Do not reuse an earlier risk result" in request
+    assert "missing, unverified, or non-comparable evidence" in request
+
+
+def test_pretrade_request_preserves_analysis_only_boundary() -> None:
+    request = pretrade_request("AGI", "BUY", 2500)
+
+    assert "BUY $2500.00" in request
+    assert "pre_trade_check" in request
+    assert "analysis_only=true" in request
+    assert "execution_authorized=false" in request
+
+
+def test_automatic_status_summary_explains_warning_states() -> None:
+    report = {
+        "investigations": [
+            {
+                "operation": "risk_check",
+                "cmis_status": "partial",
+                "risk_help": {
+                    "recommendation": {
+                        "value": "WARN",
+                        "reasons": ["Verified historical price comparison was not supplied."],
+                        "flags": ["historical_price_unavailable"],
+                    }
+                },
+                "evidence_context": {
+                    "proof_strength": "WEAK",
+                    "verification_status": "INSUFFICIENT_EVIDENCE",
+                    "freshness_verified": None,
+                    "unknown_categories": ["historical_coverage"],
+                },
+                "warnings": ["historical_price_unavailable"],
+                "errors": [],
+            }
+        ]
+    }
+
+    summary = automatic_status_summary(json.dumps(report))
+
+    assert summary is not None
+    assert "CMIS: [PARTIAL]" in summary
+    assert "Risk: [WARN]" in summary
+    assert "Proof: [WEAK]" in summary
+    assert "Verification: [INSUFFICIENT_EVIDENCE]" in summary
+    assert "Freshness: [UNKNOWN]" in summary
+    assert "Verified historical price evidence is unavailable" in summary
+
+
+def test_automatic_status_summary_keeps_clean_states_compact() -> None:
+    report = {
+        "investigations": [
+            {
+                "operation": "market_report",
+                "cmis_status": "ok",
+                "risk_help": None,
+                "evidence_context": {
+                    "proof_strength": "STRONG",
+                    "verification_status": "AGREEMENT",
+                    "freshness_verified": True,
+                    "unknown_categories": [],
+                },
+                "warnings": [],
+                "errors": [],
+            }
+        ]
+    }
+
+    summary = automatic_status_summary(report)
+
+    assert summary is not None
+    assert "CMIS: [OK]" in summary
+    assert "Proof: [STRONG]" in summary
+    assert "Verification: [AGREEMENT]" in summary
+    assert "Freshness: [VERIFIED]" in summary
+    assert "Meaning:" not in summary
