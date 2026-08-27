@@ -16,6 +16,16 @@ from roberta.cmis.contracts import CMISOperation
 
 CAPABILITY_SCHEMA_VERSION = 1
 MIN_CMIS_CONTRACT_VERSION = "1.8.0"
+HISTORICAL_ALL_AVAILABLE_MIN_CMIS_CONTRACT_VERSION = "1.10.0"
+HISTORICAL_ALL_AVAILABLE_REQUIRED_LIMITATIONS = (
+    "all_available_mode_uses_cmis_stored_verified_observations_only",
+    "all_available_does_not_imply_complete_asset_lifetime",
+    "continuous_historical_coverage_not_implied",
+    "external_ohlcv_or_archive_history_not_promoted_by_this_mode",
+)
+HISTORICAL_PAIR_REQUIRED_LIMITATION = (
+    "pair_mode_requires_compare_asset_and_overlapping_verified_history"
+)
 INTELLIGENCE_FOUNDATION_SCHEMA_VERSION = 1
 INTELLIGENCE_EVIDENCE_SCHEMA_VERSION = 1
 INTELLIGENCE_FOUNDATION_PHASE = "phase_11_verified_intelligence_foundation"
@@ -458,6 +468,48 @@ def require_service_capability(
     return capability
 
 
+def require_historical_all_available_capability(
+    manifest: Mapping[str, Any],
+    *,
+    chain: str,
+    pair: bool = False,
+) -> CMISServiceCapability:
+    """Require CMIS 1.10.0 semantics before relying on all-available history."""
+
+    normalized_chain = str(chain or "").strip().lower()
+    if normalized_chain != "x1":
+        raise CMISCapabilityUnavailable(
+            chain=normalized_chain,
+            service="historical_compare",
+            state=None,
+            limitations=["all_available_history_not_accepted_for_chain"],
+        )
+
+    version = manifest.get("contract_version")
+    if _semver(version) < _semver(HISTORICAL_ALL_AVAILABLE_MIN_CMIS_CONTRACT_VERSION):
+        raise CMISCapabilityContractError(
+            "CMIS all-available history requires contract "
+            f">={HISTORICAL_ALL_AVAILABLE_MIN_CMIS_CONTRACT_VERSION}, got {version!r}."
+        )
+
+    capability = require_service_capability(
+        manifest,
+        chain=normalized_chain,
+        service="historical_compare",
+    )
+    limitations = set(capability["limitations"])
+    required = set(HISTORICAL_ALL_AVAILABLE_REQUIRED_LIMITATIONS)
+    if pair:
+        required.add(HISTORICAL_PAIR_REQUIRED_LIMITATION)
+    missing = sorted(required - limitations)
+    if missing:
+        raise CMISCapabilityContractError(
+            "CMIS historical_compare is missing accepted all-available limitations: "
+            f"{missing!r}."
+        )
+    return capability
+
+
 __all__ = [
     "CAPABILITY_SCHEMA_VERSION",
     "CMISCapabilities",
@@ -469,12 +521,16 @@ __all__ = [
     "CMISIntelligenceCapability",
     "CMISIntelligenceFoundation",
     "CMISServiceCapability",
+    "HISTORICAL_ALL_AVAILABLE_MIN_CMIS_CONTRACT_VERSION",
+    "HISTORICAL_ALL_AVAILABLE_REQUIRED_LIMITATIONS",
+    "HISTORICAL_PAIR_REQUIRED_LIMITATION",
     "INTELLIGENCE_EVIDENCE_SCHEMA_VERSION",
     "INTELLIGENCE_FOUNDATION_CAPABILITIES",
     "INTELLIGENCE_FOUNDATION_PHASE",
     "INTELLIGENCE_FOUNDATION_SCHEMA_VERSION",
     "INTELLIGENCE_PROMOTION_RULE",
     "MIN_CMIS_CONTRACT_VERSION",
+    "require_historical_all_available_capability",
     "require_service_capability",
     "service_capability",
     "validate_capability_manifest",
