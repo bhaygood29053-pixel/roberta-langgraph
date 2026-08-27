@@ -751,8 +751,9 @@ def evidence_request(asset: str) -> str:
 
 def full_request(asset: str) -> str:
     return (
-        f"On X1, produce the most complete current assessment possible for "
-        f"{asset}. Use multiple X1 Scout calls as needed. Gather fresh CMIS "
+        f"On X1, produce a full assessment of {asset}. Treat this explicitly as "
+        "a deterministic full assessment, not as a ranking-only or general "
+        "market request. Use multiple X1 Scout calls only if needed. Gather fresh CMIS "
         "market_report, risk_check, tokenomics, historical_compare, ranking "
         "context when useful, and evidence-quality metadata. For history, "
         "treat this as an all available history / entire history request rather "
