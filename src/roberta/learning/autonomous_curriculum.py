@@ -302,7 +302,14 @@ def generate_stage_targets(
         chunk_candidates: list[GeneratedTarget] = []
         payload = {
             "contract": TARGET_GENERATOR_CONTRACT,
-            "task": "Propose 4 to 7 distinct learning targets for this capability from only this source chunk.",
+            "task": (
+                "Propose 4 to 7 distinct learning targets for this capability from only this source chunk. "
+                "Do not reuse any concept/subconcept pair listed in reserved_stage_semantics."
+            ),
+            "reserved_stage_semantics": [
+                {"concept": concept, "subconcept": subconcept}
+                for concept, subconcept in sorted(seen_semantics)
+            ],
             "source_title": source.title,
             "stage": stage.stage,
             "capability_level": stage.capability_level,
