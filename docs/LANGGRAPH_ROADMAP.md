@@ -1,6 +1,6 @@
 # Roberta LangGraph Roadmap
 
-Last reconciled: 2026-08-26 (America/New_York)
+Last reconciled: 2026-08-27 (America/New_York)
 
 Status source: accepted code and contracts on `main`. Open PRs are not current truth unless explicitly identified as pending.
 
@@ -28,7 +28,7 @@ Accepted on `main`:
 - X1 Scout decision-production readiness under the accepted CMIS boundary;
 - Solana Scout read-only readiness for its accepted surface;
 - X1 Scout adoption of CMIS `concentration_change_intelligence/v1`;
-- X1 Scout adoption of CMIS `1.10.0` all-available historical modes, including single-request pair comparison with exact `compare_asset`;
+- X1 Scout adoption of the current CMIS `1.12.0` contract boundary, including CMIS `1.10.0` all-available history, CMIS `1.11.0` exact-mint X1 identity, and the bounded CMIS `1.12.0` verified-provider historical price-backfill semantics;
 - Learning System Phases 1-10;
 - fail-closed `verified_learned_knowledge` classification with no general operational-trust promotion wrapper;
 - source-specific Blockchain Reasoning Pyramid architecture and source-mastery ledger;
@@ -155,9 +155,9 @@ XenBlocks PoW documentation PR #141 remains open/unaccepted. Its current review 
 
 ## CMIS synchronization
 
-Current accepted CMIS capability contract is `1.10.0`.
+Current accepted CMIS capability contract is `1.12.0`.
 
-The existing X1 `historical_compare` service is accepted for `window`, `all_available`, and `all_available_pair` use through X1 Scout. All-available modes require the service-specific CMIS `>=1.10.0` guard and exact limitation semantics. Pair requests preserve the second user/trusted-context asset explicitly and issue one CMIS pair-history call; Roberta does not recompute two independent histories. Returned lifetime/continuous-coverage limits remain authoritative.
+The existing X1 `historical_compare` service is accepted for `window`, `all_available`, and `all_available_pair` use through X1 Scout. All-available modes require the service-specific CMIS `>=1.10.0` guard and exact limitation semantics. Pair requests preserve the second user/trusted-context asset explicitly and issue one CMIS pair-history call; Roberta does not recompute two independent histories. For CMIS `>=1.12.0`, Scout reliance additionally requires the accepted price-only provider-backfill limitations: provider source independence, archive completeness, continuous coverage, historical USD-stable peg behavior, and complete asset lifetime remain unverified. Returned lifetime/continuous-coverage limits remain authoritative.
 
 The core Phase 11 `intelligence_foundation` remains internal/non-promoted. The separately accepted X1 wrapper is exactly `concentration_change_intelligence/v1`, read-only, with `execution_authorized=false`.
 
@@ -175,9 +175,9 @@ Classification, direct wallet-relationship evidence, and concentration-threshold
 
 ### 2. Continue MB4E source mastery
 
-- build or autonomously generate Stage 9 / DeFi and verify the resulting bank before authoritative use;
-- continue Stages 10-14 under the frozen plan;
-- run canonical stage exams and verified remediation as required;
+- repository-accepted prebuilt MB4E banks remain through Stage 8 / Market Structure;
+- current operator-local autonomous validation has passed runtime-generated Stage 9 / DeFi and Stage 10 / Advanced DeFi and is hardening Stage 11 / On-chain Analysis remediation/transfer; this local run is operational evidence, not a new prebuilt-bank acceptance on `main`;
+- continue Stages 11-14 under the frozen plan using canonical exams and verified remediation as required;
 - complete the required final source capstone before declaring MB4E mastered.
 
 ### 3. Clean stale historical branches without treating them as current truth
