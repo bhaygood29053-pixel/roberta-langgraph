@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import textwrap
 from collections.abc import Mapping
 from typing import Any
@@ -271,21 +272,144 @@ EXECUTION
 """
 
 
-def format_terminal_text(text: object, *, width: int = ANSWER_WIDTH) -> str:
-    """Wrap prose and list items for comfortable terminal reading."""
+def _clean_markdown_inline(value: str) -> str:
+    """Remove lightweight Markdown that is noisy in a plain terminal."""
 
-    raw = str(text or "")
+    text = value.strip()
+    text = re.sub(r"\\*\\*(.+?)\\*\\*", r"\\1", text)
+    text = re.sub(r"__(.+?)__", r"\\1", text)
+    text = re.sub(r"`(.+?)`", r"\\1", text)
+    return text
+
+
+def _is_markdown_table_row(line: str) -> bool:
+    stripped = line.strip()
+    return stripped.startswith("|") and stripped.endswith("|") and stripped.count("|") >= 2
+
+
+def _parse_markdown_table_row(line: str) -> list[str]:
+    return [
+        _clean_markdown_inline(cell)
+        for cell in line.strip().strip("|").split("|")
+    ]
+
+
+def _is_markdown_table_separator(cells: list[str]) -> bool:
+    if not cells:
+        return False
+    return all(bool(re.fullmatch(r":?-{3,}:?", cell.replace(" ", ""))) for cell in cells)
+
+
+def _column_widths(column_count: int, width: int) -> list[int]:
+    """Return stable terminal widths optimized for Roberta comparison tables."""
+
+    if column_count == 2:
+        widths = [34, 32]
+    elif column_count == 3:
+        widths = [30, 17, 17]
+    elif column_count == 4:
+        widths = [25, 13, 13, 13]
+    else:
+        separators = max(column_count - 1, 0) * 2
+        available = max(width - separators, column_count * 8)
+        each = max(8, available // max(column_count, 1))
+        widths = [each] * column_count
+
+    total = sum(widths) + max(column_count - 1, 0) * 2
+    if total <= width:
+        return widths
+
+    overflow = total - width
+    adjusted = list(widths)
+    for index in range(len(adjusted) - 1, -1, -1):
+        reducible = max(adjusted[index] - 8, 0)
+        reduction = min(reducible, overflow)
+        adjusted[index] -= reduction
+        overflow -= reduction
+        if overflow <= 0:
+            break
+    return adjusted
+
+
+def _render_terminal_table(rows: list[list[str]], *, width: int) -> list[str]:
+    if not rows:
+        return []
+
+    column_count = max(len(row) for row in rows)
+    widths = _column_widths(column_count, width)
+    normalized = [
+        row + [""] * (column_count - len(row))
+        for row in rows
+    ]
     output: list[str] = []
 
-    for raw_line in raw.splitlines():
+    for row_index, row in enumerate(normalized):
+        wrapped_cells = [
+            textwrap.wrap(
+                cell,
+                width=column_width,
+                break_long_words=False,
+                break_on_hyphens=False,
+            )
+            or [""]
+            for cell, column_width in zip(row, widths)
+        ]
+        row_height = max(len(cell_lines) for cell_lines in wrapped_cells)
+        for line_index in range(row_height):
+            parts: list[str] = []
+            for cell_lines, column_width in zip(wrapped_cells, widths):
+                piece = cell_lines[line_index] if line_index < len(cell_lines) else ""
+                parts.append(piece.ljust(column_width))
+            output.append("  " + "  ".join(parts).rstrip())
+
+        if row_index == 0:
+            output.append("  " + "-" * (sum(widths) + (column_count - 1) * 2))
+
+    return output
+
+
+def format_terminal_text(text: object, *, width: int = ANSWER_WIDTH) -> str:
+    """Render Roberta prose, headings, bullets, and Markdown tables cleanly."""
+
+    raw = str(text or "")
+    raw_lines = raw.splitlines()
+    output: list[str] = []
+    index = 0
+
+    while index < len(raw_lines):
+        raw_line = raw_lines[index]
         stripped = raw_line.strip()
+
         if not stripped:
             output.append("")
+            index += 1
+            continue
+
+        if _is_markdown_table_row(stripped):
+            table_lines: list[str] = []
+            while index < len(raw_lines) and _is_markdown_table_row(raw_lines[index]):
+                table_lines.append(raw_lines[index])
+                index += 1
+
+            parsed = [_parse_markdown_table_row(line) for line in table_lines]
+            if len(parsed) >= 2 and _is_markdown_table_separator(parsed[1]):
+                parsed = [parsed[0], *parsed[2:]]
+            output.extend(_render_terminal_table(parsed, width=width))
+            continue
+
+        heading_match = re.fullmatch(r"\\*\\*(.+?)\\*\\*", stripped)
+        if heading_match:
+            heading = _clean_markdown_inline(heading_match.group(1)).upper()
+            if output and output[-1] != "":
+                output.append("")
+            output.append(heading)
+            output.append("-" * min(width, LINE_WIDTH))
+            index += 1
             continue
 
         if stripped.startswith(("- ", "* ", "• ")):
             wrapped = textwrap.fill(
-                stripped[2:].strip(),
+                _clean_markdown_inline(stripped[2:].strip()),
                 width=width,
                 initial_indent="  • ",
                 subsequent_indent="    ",
@@ -294,7 +418,7 @@ def format_terminal_text(text: object, *, width: int = ANSWER_WIDTH) -> str:
             )
         else:
             wrapped = textwrap.fill(
-                stripped,
+                _clean_markdown_inline(stripped),
                 width=width,
                 initial_indent="  ",
                 subsequent_indent="  ",
@@ -302,6 +426,7 @@ def format_terminal_text(text: object, *, width: int = ANSWER_WIDTH) -> str:
                 break_on_hyphens=False,
             )
         output.append(wrapped)
+        index += 1
 
     return "\n".join(output)
 
@@ -496,7 +621,16 @@ def compare_request(asset1: str, asset2: str) -> str:
         "Quantify relative differences only when supported by CMIS facts. "
         "Clearly identify missing, unverified, or non-comparable evidence, then "
         "explain which asset has the stronger current market structure and "
-        "whether verified evidence supports saying either appears safer."
+        "whether verified evidence supports saying either appears safer. "
+        "FORMAT FOR A PLAIN TERMINAL: keep lines short; use clean section headings "
+        "for MARKET STRUCTURE, RISK, TOKENOMICS & AUTHORITIES, IMPORTANT DIFFERENCES, "
+        "and STATUS SUMMARY. Use compact comparison tables only for short values. "
+        "Put long explanations below tables instead of inside cells. Use evidence "
+        "tags such as [VERIFIED], [UNVERIFIED], and [BOUNDED]. Use plain PASS, WARN, "
+        "BLOCK, PARTIAL, and OK labels instead of Markdown bold. Include useful "
+        "relative ratios such as liquidity/volume/activity multiples only when "
+        "they are supported by the returned CMIS values. Do not use Markdown "
+        "table syntax in the final response."
     )
 
 
