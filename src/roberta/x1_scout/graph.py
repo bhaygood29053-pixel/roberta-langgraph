@@ -22,6 +22,7 @@ from roberta.time_utils import format_observed_at_utc, normalize_observed_at
 from roberta.x1_scout.planner import (
     enforce_plan,
     propose_plan,
+    historical_mode_from_objective,
     rank_limit_from_objective,
     rank_metric_from_objective,
     select_cmis_operation,
@@ -84,7 +85,21 @@ def _dispatch_cmis_operation(
             limit=rank_limit_from_objective(objective),
         )
     if operation == "historical_compare":
-        return cmis_client.historical_compare(chain="x1", asset=asset, question=str(objective))
+        mode = historical_mode_from_objective(
+            objective,
+            compare_asset=request.get("compare_asset"),
+        )
+        return cmis_client.historical_compare(
+            chain="x1",
+            asset=asset,
+            question=str(objective),
+            mode=mode,
+            compare_asset=(
+                str(request["compare_asset"])
+                if mode == "all_available_pair"
+                else None
+            ),
+        )
     if operation == "tokenomics":
         return cmis_client.tokenomics(chain="x1", asset=asset)
     if operation == "risk_check":
@@ -218,6 +233,9 @@ def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
         "warnings": list(primary["warnings"]),
         "errors": list(primary["errors"]),
     }
+    compare_asset = request.get("compare_asset")
+    if compare_asset is not None:
+        report["requested_compare_asset"] = str(compare_asset)
     return {"report": report, "status": report_status}
 
 
