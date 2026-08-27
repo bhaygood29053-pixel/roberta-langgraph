@@ -10,8 +10,12 @@ from roberta.cmis.capabilities import (
     HISTORICAL_PAIR_REQUIRED_LIMITATION,
     INTELLIGENCE_FOUNDATION_CAPABILITIES,
     MIN_CMIS_CONTRACT_VERSION,
+    X1_ASSET_IDENTITY_CONTRACT_VERSION,
+    X1_ASSET_IDENTITY_MIN_CMIS_CONTRACT_VERSION,
+    X1_ASSET_IDENTITY_REQUIRED_LIMITATIONS,
     require_historical_all_available_capability,
     require_service_capability,
+    require_x1_normalized_asset_identity_capability,
     validate_capability_manifest,
 )
 
@@ -230,6 +234,46 @@ def test_require_service_capability_allows_partial_but_blocks_unavailable() -> N
             manifest,
             chain="solana",
             service="pre_trade_check",
+        )
+
+
+def _cmis_1_11_identity_manifest() -> dict[str, object]:
+    manifest = deepcopy(_manifest())
+    manifest["contract_version"] = X1_ASSET_IDENTITY_MIN_CMIS_CONTRACT_VERSION
+    lookup = manifest["chains"]["x1"]["services"]["asset_lookup"]
+    lookup["limitations"] = list(X1_ASSET_IDENTITY_REQUIRED_LIMITATIONS)
+    lookup["identity_contract_version"] = X1_ASSET_IDENTITY_CONTRACT_VERSION
+    lookup["exact_mint_normalization"] = True
+    lookup["normalized_identity_root"] = "mint"
+    lookup["metaplex_xdex_reconciliation"] = True
+    return manifest
+
+
+def test_normalized_x1_identity_requires_exact_cmis_1_11_contract() -> None:
+    validated = validate_capability_manifest(_cmis_1_11_identity_manifest())
+    lookup = require_x1_normalized_asset_identity_capability(validated)
+
+    assert lookup["identity_contract_version"] == "x1_asset_identity/v1"
+    assert lookup["exact_mint_normalization"] is True
+    assert lookup["normalized_identity_root"] == "mint"
+    assert lookup["metaplex_xdex_reconciliation"] is True
+
+
+def test_normalized_x1_identity_fails_closed_on_old_or_weakened_contract() -> None:
+    old = _cmis_1_11_identity_manifest()
+    old["contract_version"] = "1.10.0"
+    with pytest.raises(CMISCapabilityContractError, match="requires contract"):
+        require_x1_normalized_asset_identity_capability(
+            validate_capability_manifest(old)
+        )
+
+    weakened = _cmis_1_11_identity_manifest()
+    weakened["chains"]["x1"]["services"]["asset_lookup"]["limitations"].remove(
+        "xdex_unavailable_is_not_metaplex_only"
+    )
+    with pytest.raises(CMISCapabilityContractError, match="missing accepted"):
+        require_x1_normalized_asset_identity_capability(
+            validate_capability_manifest(weakened)
         )
 
 
