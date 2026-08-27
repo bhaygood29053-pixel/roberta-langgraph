@@ -9,7 +9,7 @@ internal deterministic primitives into public services or automatic reliance.
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any, Literal, TypeAlias, TypedDict, cast
+from typing import Any, Literal, NotRequired, TypeAlias, TypedDict, cast
 
 from roberta.cmis.contracts import CMISOperation
 
@@ -17,6 +17,13 @@ from roberta.cmis.contracts import CMISOperation
 CAPABILITY_SCHEMA_VERSION = 1
 MIN_CMIS_CONTRACT_VERSION = "1.8.0"
 HISTORICAL_ALL_AVAILABLE_MIN_CMIS_CONTRACT_VERSION = "1.10.0"
+X1_ASSET_IDENTITY_MIN_CMIS_CONTRACT_VERSION = "1.11.0"
+X1_ASSET_IDENTITY_CONTRACT_VERSION = "x1_asset_identity/v1"
+X1_ASSET_IDENTITY_REQUIRED_LIMITATIONS = (
+    "exact_mint_is_canonical_fungible_identity_root",
+    "same_mint_descriptor_conflicts_return_partial",
+    "symbol_or_name_never_reconciles_different_mints",
+)
 HISTORICAL_ALL_AVAILABLE_REQUIRED_LIMITATIONS = (
     "all_available_mode_uses_cmis_stored_verified_observations_only",
     "all_available_does_not_imply_complete_asset_lifetime",
@@ -51,6 +58,10 @@ class CMISServiceCapability(TypedDict):
     callable: bool
     requirements: list[str]
     limitations: list[str]
+    identity_contract_version: NotRequired[str]
+    exact_mint_normalization: NotRequired[bool]
+    normalized_identity_root: NotRequired[str]
+    metaplex_xdex_reconciliation: NotRequired[bool]
 
 
 class CMISChainCapabilities(TypedDict):
@@ -368,12 +379,39 @@ def validate_capability_manifest(value: Any) -> CMISCapabilities:
                 capability_raw.get("limitations"),
                 field=f"chains.{chain}.services.{service}.limitations",
             )
-            normalized_services[service] = {
+            normalized_capability: CMISServiceCapability = {
                 "state": cast(CMISCapabilityState, state),
                 "callable": callable_flag,
                 "requirements": requirements,
                 "limitations": limitations,
             }
+            if chain == "x1" and service == "asset_lookup":
+                identity_contract = capability_raw.get("identity_contract_version")
+                if identity_contract is not None:
+                    if not isinstance(identity_contract, str) or not identity_contract.strip():
+                        raise CMISCapabilityContractError(
+                            "CMIS x1/asset_lookup identity_contract_version must be text."
+                        )
+                    normalized_capability["identity_contract_version"] = identity_contract
+                for field in (
+                    "exact_mint_normalization",
+                    "metaplex_xdex_reconciliation",
+                ):
+                    raw_flag = capability_raw.get(field)
+                    if raw_flag is not None:
+                        if not isinstance(raw_flag, bool):
+                            raise CMISCapabilityContractError(
+                                f"CMIS x1/asset_lookup {field} must be boolean."
+                            )
+                        normalized_capability[field] = raw_flag
+                identity_root = capability_raw.get("normalized_identity_root")
+                if identity_root is not None:
+                    if not isinstance(identity_root, str) or not identity_root.strip():
+                        raise CMISCapabilityContractError(
+                            "CMIS x1/asset_lookup normalized_identity_root must be text."
+                        )
+                    normalized_capability["normalized_identity_root"] = identity_root
+            normalized_services[service] = normalized_capability
 
         extra_services = sorted(set(services_raw) - set(supported_services))
         if extra_services:
@@ -468,6 +506,52 @@ def require_service_capability(
     return capability
 
 
+def require_x1_normalized_asset_identity_capability(
+    manifest: Mapping[str, Any],
+) -> CMISServiceCapability:
+    """Require CMIS 1.11 exact-mint normalization before Scout reliance."""
+
+    version = manifest.get("contract_version")
+    if _semver(version) < _semver(X1_ASSET_IDENTITY_MIN_CMIS_CONTRACT_VERSION):
+        raise CMISCapabilityContractError(
+            "CMIS normalized X1 asset identity requires contract "
+            f">={X1_ASSET_IDENTITY_MIN_CMIS_CONTRACT_VERSION}, got {version!r}."
+        )
+
+    capability = require_service_capability(
+        manifest,
+        chain="x1",
+        service="asset_lookup",
+    )
+    if capability.get("identity_contract_version") != X1_ASSET_IDENTITY_CONTRACT_VERSION:
+        raise CMISCapabilityContractError(
+            "CMIS x1/asset_lookup identity contract mismatch."
+        )
+    if capability.get("exact_mint_normalization") is not True:
+        raise CMISCapabilityContractError(
+            "CMIS x1/asset_lookup exact mint normalization is not accepted."
+        )
+    if capability.get("normalized_identity_root") != "mint":
+        raise CMISCapabilityContractError(
+            "CMIS x1/asset_lookup normalized identity root must remain mint."
+        )
+    if capability.get("metaplex_xdex_reconciliation") is not True:
+        raise CMISCapabilityContractError(
+            "CMIS x1/asset_lookup Metaplex/XDEX reconciliation is not accepted."
+        )
+
+    missing = sorted(
+        set(X1_ASSET_IDENTITY_REQUIRED_LIMITATIONS)
+        - set(capability["limitations"])
+    )
+    if missing:
+        raise CMISCapabilityContractError(
+            "CMIS x1/asset_lookup is missing accepted identity limitations: "
+            f"{missing!r}."
+        )
+    return capability
+
+
 def require_historical_all_available_capability(
     manifest: Mapping[str, Any],
     *,
@@ -524,6 +608,9 @@ __all__ = [
     "HISTORICAL_ALL_AVAILABLE_MIN_CMIS_CONTRACT_VERSION",
     "HISTORICAL_ALL_AVAILABLE_REQUIRED_LIMITATIONS",
     "HISTORICAL_PAIR_REQUIRED_LIMITATION",
+    "X1_ASSET_IDENTITY_CONTRACT_VERSION",
+    "X1_ASSET_IDENTITY_MIN_CMIS_CONTRACT_VERSION",
+    "X1_ASSET_IDENTITY_REQUIRED_LIMITATIONS",
     "INTELLIGENCE_EVIDENCE_SCHEMA_VERSION",
     "INTELLIGENCE_FOUNDATION_CAPABILITIES",
     "INTELLIGENCE_FOUNDATION_PHASE",
@@ -532,6 +619,7 @@ __all__ = [
     "MIN_CMIS_CONTRACT_VERSION",
     "require_historical_all_available_capability",
     "require_service_capability",
+    "require_x1_normalized_asset_identity_capability",
     "service_capability",
     "validate_capability_manifest",
 ]
