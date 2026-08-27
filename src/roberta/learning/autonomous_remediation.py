@@ -473,7 +473,8 @@ def run_autonomous_remediation(
         curriculum_id=curriculum_id, level=level, weak=remediation_targets
     )
     # A routing revision must never reuse pre-fix remediation checkpoints or overwrite their evidence.
-    root = Path(output_dir) / "lanes" / REMEDIATION_LANE_NAMESPACE
+    base_root = Path(output_dir)
+    root = base_root / "lanes" / REMEDIATION_LANE_NAMESPACE
     grounded_bank = _practice_bank(
         provisional, count=GROUNDED_QUESTIONS_PER_WEAKNESS, lane="grounded"
     )
@@ -578,29 +579,30 @@ def run_autonomous_remediation(
     if not _all_passed(transfer, len(transfer_bank)):
         raise AutonomousRemediationError("verified concept transfer probe did not pass perfectly")
     write_learned_concepts(learned_concepts_path, verified)
-    _atomic_json(
-        root / "promotion.json",
-        {
-            "contract": AUTONOMOUS_REMEDIATION_CONTRACT,
-            "version": AUTONOMOUS_REMEDIATION_VERSION,
-            "curriculum_id": curriculum_id,
-            "level": level,
-            "checkpoint_namespace": REMEDIATION_LANE_NAMESPACE,
-            "promoted_concepts": len(verified),
-            "transfer_questions": len(transfer_bank),
-            "atomic_transfer_questions": sum(1 for item in transfer_bank if not item.boss_question),
-            "boss_transfer_questions": sum(1 for item in transfer_bank if item.boss_question),
-            "boss_synthesis_atoms": sum(
-                len(_boss_synthesis_atoms(bank, item))
-                for item in transfer_bank
-                if item.boss_question
-            ),
-            "transfer_passed": True,
-            "pyramid_learned_concept_authorized": True,
-            "general_durable_memory_promotion_authorized": False,
-            "source_truth_authorized": False,
-            "live_state_authorized": False,
-            "execution_authorized": False,
-        },
-    )
+    promotion_payload = {
+        "contract": AUTONOMOUS_REMEDIATION_CONTRACT,
+        "version": AUTONOMOUS_REMEDIATION_VERSION,
+        "curriculum_id": curriculum_id,
+        "level": level,
+        "checkpoint_namespace": REMEDIATION_LANE_NAMESPACE,
+        "lane_artifact_root": str(root),
+        "promoted_concepts": len(verified),
+        "transfer_questions": len(transfer_bank),
+        "atomic_transfer_questions": sum(1 for item in transfer_bank if not item.boss_question),
+        "boss_transfer_questions": sum(1 for item in transfer_bank if item.boss_question),
+        "boss_synthesis_atoms": sum(
+            len(_boss_synthesis_atoms(bank, item))
+            for item in transfer_bank
+            if item.boss_question
+        ),
+        "transfer_passed": True,
+        "pyramid_learned_concept_authorized": True,
+        "general_durable_memory_promotion_authorized": False,
+        "source_truth_authorized": False,
+        "live_state_authorized": False,
+        "execution_authorized": False,
+    }
+    _atomic_json(root / "promotion.json", promotion_payload)
+    # Preserve the established operator/status path while keeping all lane evidence isolated.
+    _atomic_json(base_root / "promotion.json", promotion_payload)
     return verified
