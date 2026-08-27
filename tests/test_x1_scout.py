@@ -185,6 +185,33 @@ def test_x1_scout_preserves_cmis_descriptor_conflict_without_recomputing_it() ->
     )
 
 
+def test_x1_scout_rejects_malformed_normalized_identity_state() -> None:
+    class MalformedIdentityCMIS(MockCMISClient):
+        def asset_lookup(self, *, chain: str, asset: str):
+            result = super().asset_lookup(chain=chain, asset=asset)
+            result["data"]["identity_reconciliation"]["state"] = "guessed"
+            return result
+
+    cmis = MalformedIdentityCMIS()
+    scout = build_x1_scout_graph(cmis)
+    result = scout.invoke(
+        {
+            "request": {
+                "asset": XENCAT_MINT,
+                "objective": "assess market risk",
+            },
+            "status": "running",
+        }
+    )
+
+    assert [call["operation"] for call in cmis.calls] == [
+        "asset_lookup",
+        "risk_check",
+    ]
+    assert "normalized_asset_identity" not in result["report"]
+    assert "asset_identity_reconciliation" not in result["report"]
+
+
 def test_x1_scout_preserves_raw_numeric_observed_at_and_adds_iso() -> None:
     cmis = MockCMISClient()
     cmis.observed_at = 1786835050.0581603
