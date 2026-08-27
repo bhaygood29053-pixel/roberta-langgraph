@@ -44,6 +44,9 @@ from roberta.x1_scout.state import (
 )
 
 
+INTERACTIVE_ALL_HISTORY_MAX_SIGNATURES = 1000
+
+
 def plan_cmis_operation(state: X1ScoutState) -> dict[str, Any]:
     """Backward-compatible deterministic single-operation planning helper."""
     request = dict(state["request"])
@@ -107,6 +110,12 @@ def _dispatch_cmis_operation(
             compare_asset=(
                 str(request["compare_asset"])
                 if mode == "all_available_pair"
+                else None
+            ),
+            provider_history_backfill=(False if mode != "window" else None),
+            onchain_max_signatures=(
+                INTERACTIVE_ALL_HISTORY_MAX_SIGNATURES
+                if mode != "window"
                 else None
             ),
         )
