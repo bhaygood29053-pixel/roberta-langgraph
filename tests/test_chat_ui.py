@@ -13,6 +13,8 @@ from roberta.chat_ui import (
     history_request,
     pretrade_request,
 )
+from roberta.recommendation_policy import recommendation_intent
+from roberta.x1_scout.planner import enforce_plan
 
 
 def test_service_menu_exposes_requested_user_flows() -> None:
@@ -115,6 +117,34 @@ def test_history_and_full_requests_route_to_all_available_history() -> None:
     assert "all available history" in full
     assert "entire history" in full
     assert "rather than requiring a fixed comparison period" in full
+
+
+def test_full_terminal_request_is_recognized_as_deterministic_full_assessment() -> None:
+    request = full_request("XNT")
+
+    assert "full assessment of XNT" in request
+    assert recommendation_intent(request) == "full_assessment"
+
+    plan = enforce_plan(
+        {"asset": "XNT", "objective": request},
+        {"operations": ["rank"]},
+    )
+    assert plan["operations"] == [
+        "market_report",
+        "rank",
+        "tokenomics",
+        "historical_compare",
+        "risk_check",
+    ]
+    assert not any(
+        warning.startswith("planner_operation_rejected_for_rank_objective")
+        for warning in plan["warnings"]
+    )
+
+
+def test_previous_terminal_full_wording_still_maps_to_full_assessment() -> None:
+    objective = "On X1, produce the most complete current assessment possible for XNT."
+    assert recommendation_intent(objective) == "full_assessment"
 
 
 def test_pretrade_request_preserves_analysis_only_boundary() -> None:
