@@ -630,7 +630,9 @@ def compare_request(asset1: str, asset2: str) -> str:
         "BLOCK, PARTIAL, and OK labels instead of Markdown bold. Include useful "
         "relative ratios such as liquidity/volume/activity multiples only when "
         "they are supported by the returned CMIS values. Do not use Markdown "
-        "table syntax in the final response."
+        "table syntax in the final response. Show relative ratios only when CMIS or "
+        "X1 Scout already returned an accepted comparative value; otherwise describe "
+        "the verified difference qualitatively and do not create a new market calculation."
     )
 
 
