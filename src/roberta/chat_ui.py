@@ -141,6 +141,24 @@ You can also type a normal question at any time.
 """
 
 
+SINGLE_ASSET_TERMINAL_STYLE = (
+    " FORMAT FOR A PLAIN TERMINAL: keep the answer compact and sectioned. "
+    "Use CURRENT MARKET for the live snapshot, RISK for deterministic risk "
+    "results when available, TOKENOMICS & AUTHORITIES for structural token "
+    "facts when available, HISTORY for historical evidence, EVIDENCE STATUS "
+    "for CMIS/proof/verification state, KEY LIMITATIONS for missing or "
+    "unverified evidence, and ASSESSMENT for the final interpretation when "
+    "appropriate. Do not lead with a long limitation paragraph. Put the live "
+    "market snapshot first unless the request is specifically historical. "
+    "For unavailable history, use a short status block such as "
+    "'Status: UNAVAILABLE' followed by 1-3 concise bullets explaining the "
+    "impact. Keep long explanations below facts rather than mixing them into "
+    "one paragraph. Use plain terminal labels and compact tags such as "
+    "[VERIFIED], [UNVERIFIED], [PARTIAL], [BOUNDED], [WARN], and [UNAVAILABLE]. "
+    "Do not use Markdown table syntax in the final response."
+)
+
+
 STATUS_KEY = """\
 ROBERTA — ALERT & STATUS KEY
 ------------------------------------------------------------------------
@@ -606,7 +624,7 @@ def overview_request(asset: str) -> str:
         "on stale values from earlier conversation turns. Separate verified "
         "facts from interpretation, explain evidence quality, and identify "
         "warnings, incomplete checks, and unavailable fields."
-    )
+    ) + SINGLE_ASSET_TERMINAL_STYLE
 
 
 def compare_request(asset1: str, asset2: str) -> str:
@@ -642,7 +660,7 @@ def risk_request(asset: str) -> str:
         "CMIS risk_check plus market_report and tokenomics. Explain each risk "
         "component, returned reasons and flags, evidence quality, and anything "
         "CMIS could not verify. Do not convert Proof Score into risk."
-    )
+    ) + SINGLE_ASSET_TERMINAL_STYLE
 
 
 def tokenomics_request(asset: str) -> str:
@@ -651,7 +669,7 @@ def tokenomics_request(asset: str) -> str:
         "market_report, and risk_check evidence. Cover verified supply, mint "
         "authority, freeze authority, token activity/burn evidence when "
         "available, risk implications, and all verification limitations."
-    )
+    ) + SINGLE_ASSET_TERMINAL_STYLE
 
 
 def liquidity_request(asset: str) -> str:
@@ -661,7 +679,7 @@ def liquidity_request(asset: str) -> str:
         "primary-pool context when available, 24-hour volume, transaction "
         "activity, volume-to-liquidity context, evidence scope, and liquidity "
         "risk. Do not invent route, slippage, fill, or price-impact evidence."
-    )
+    ) + SINGLE_ASSET_TERMINAL_STYLE
 
 
 def history_request(asset: str) -> str:
@@ -672,7 +690,7 @@ def history_request(asset: str) -> str:
         "price, liquidity, volume, activity, volatility or drawdown only when "
         "those facts are actually supported. State historical coverage and "
         "missing evidence explicitly."
-    )
+    ) + SINGLE_ASSET_TERMINAL_STYLE
 
 
 def activity_request(asset: str) -> str:
@@ -682,7 +700,7 @@ def activity_request(asset: str) -> str:
         "24-hour volume, transaction count, recent activity, available changes "
         "over time, and evidence quality. Do not infer complete wallet history, "
         "intent, manipulation, or ownership from bounded activity."
-    )
+    ) + SINGLE_ASSET_TERMINAL_STYLE
 
 
 def concentration_request(asset: str, evidence_id: str) -> str:
@@ -723,7 +741,7 @@ def evidence_request(asset: str) -> str:
         "freshness, evidence scope, unknown categories, unresolved fields, "
         "disagreements, source independence when proven, and limitations. "
         "Keep proof strength separate from market risk."
-    )
+    ) + SINGLE_ASSET_TERMINAL_STYLE
 
 
 def full_request(asset: str) -> str:
@@ -738,4 +756,4 @@ def full_request(asset: str) -> str:
         "structure, liquidity, activity, tokenomics, risk, history, evidence "
         "quality, strengths, weaknesses, key unknowns, and overall assessment. "
         "Identify every important unavailable or unverified dimension."
-    )
+    ) + SINGLE_ASSET_TERMINAL_STYLE
