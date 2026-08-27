@@ -44,7 +44,7 @@ Phase 10 verified retention is accepted on `main`. An exact active retained less
 ## Current CMIS/Roberta capability baseline
 
 ```text
-CMIS capability contract = 1.9.0
+CMIS capability contract = 1.10.0
 Phase 11 intelligence_foundation public_service_promoted = false
 Phase 11 intelligence_foundation scout_reliance_promoted = false
 ```
@@ -64,6 +64,22 @@ execution_authorized = false
 ```
 
 Solana remains unavailable/non-promoted for this service.
+
+## CMIS 1.10 all-available history adoption
+
+X1 Scout accepts the existing `historical_compare` service's new CMIS 1.10 modes without creating a new Roberta-to-CMIS authority path:
+
+```text
+window
+all_available
+all_available_pair
+```
+
+For a two-asset entire/full/lifetime-history request, Roberta copies the exact second user-supplied asset into X1 Scout's `compare_asset` field. X1 Scout then issues one CMIS `all_available_pair` request. Roberta does not independently fetch two histories and recompute a pair result.
+
+Scout reliance on `all_available` / `all_available_pair` is fail-closed. The live CMIS manifest must be contract `>=1.10.0`, X1 `historical_compare` must be callable, and the accepted limitations must explicitly preserve stored-verified-observation scope, non-lifetime completeness, non-continuous coverage, and non-promotion of external OHLCV/archive history. Pair mode additionally requires the exact overlapping-history limitation.
+
+CMIS output fields such as `full_asset_lifetime_verified=false` and `continuous_coverage_verified=false` remain authoritative and must be preserved through X1 Scout and Roberta.
 
 ## Internal non-promoted foundations
 

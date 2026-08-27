@@ -8,6 +8,8 @@ from urllib.error import URLError
 from unittest.mock import patch
 
 from roberta.cmis.capabilities import (
+    HISTORICAL_ALL_AVAILABLE_REQUIRED_LIMITATIONS,
+    HISTORICAL_PAIR_REQUIRED_LIMITATION,
     INTELLIGENCE_FOUNDATION_CAPABILITIES,
     INTELLIGENCE_FOUNDATION_PHASE,
     INTELLIGENCE_PROMOTION_RULE,
@@ -301,6 +303,95 @@ def test_http_client_blocks_unadvertised_solana_pretrade_before_post() -> None:
     assert result["status"] == "unavailable"
     assert result["warnings"][0]["code"] == "cmis_capability_unavailable"
     assert running.get_paths == ["/v1/cmis/capabilities"]
+    assert running.requests == []
+
+
+def _cmis_1_10_history_capabilities() -> dict[str, object]:
+    capabilities = deepcopy(_capabilities())
+    capabilities["contract_version"] = "1.10.0"
+    history = capabilities["chains"]["x1"]["services"]["historical_compare"]
+    history["requirements"] = ["verified_current_market_snapshot"]
+    history["limitations"] = [
+        *HISTORICAL_ALL_AVAILABLE_REQUIRED_LIMITATIONS,
+        HISTORICAL_PAIR_REQUIRED_LIMITATION,
+    ]
+    return capabilities
+
+
+def test_http_client_posts_one_all_available_pair_request_under_cmis_1_10() -> None:
+    expected = _envelope("historical_compare")
+    capabilities = _cmis_1_10_history_capabilities()
+    objective = "Compare XNT and ANL over their entire history"
+
+    with _Server(expected, capabilities=capabilities) as running:
+        result = CMISHTTPClient(
+            base_url=running.base_url,
+            timeout_seconds=2,
+        ).historical_compare(
+            chain="x1",
+            asset="XNT",
+            question=objective,
+            mode="all_available_pair",
+            compare_asset="ANL",
+        )
+
+    assert result == expected
+    assert running.get_paths == ["/v1/cmis/capabilities"]
+    assert running.requests == [
+        {
+            "service": "historical_compare",
+            "chain": "x1",
+            "asset": "XNT",
+            "params": {
+                "mode": "all_available_pair",
+                "compare_asset": "ANL",
+                "question": objective,
+            },
+        }
+    ]
+
+
+def test_http_client_blocks_all_available_pair_on_cmis_1_9_before_post() -> None:
+    capabilities = _cmis_1_10_history_capabilities()
+    capabilities["contract_version"] = "1.9.0"
+
+    with _Server(_envelope("historical_compare"), capabilities=capabilities) as running:
+        result = CMISHTTPClient(
+            base_url=running.base_url,
+            timeout_seconds=2,
+        ).historical_compare(
+            chain="x1",
+            asset="XNT",
+            question="Compare XNT and ANL over their full history",
+            mode="all_available_pair",
+            compare_asset="ANL",
+        )
+
+    assert result["status"] == "unavailable"
+    assert result["warnings"][0]["code"] == "cmis_historical_mode_contract_unavailable"
+    assert running.get_paths == ["/v1/cmis/capabilities"]
+    assert running.requests == []
+
+
+def test_http_client_blocks_pair_mode_when_pair_limitation_is_missing() -> None:
+    capabilities = _cmis_1_10_history_capabilities()
+    limitations = capabilities["chains"]["x1"]["services"]["historical_compare"]["limitations"]
+    limitations.remove(HISTORICAL_PAIR_REQUIRED_LIMITATION)
+
+    with _Server(_envelope("historical_compare"), capabilities=capabilities) as running:
+        result = CMISHTTPClient(
+            base_url=running.base_url,
+            timeout_seconds=2,
+        ).historical_compare(
+            chain="x1",
+            asset="XNT",
+            question="Compare XNT and ANL over their full history",
+            mode="all_available_pair",
+            compare_asset="ANL",
+        )
+
+    assert result["status"] == "unavailable"
+    assert result["warnings"][0]["code"] == "cmis_historical_mode_contract_unavailable"
     assert running.requests == []
 
 
