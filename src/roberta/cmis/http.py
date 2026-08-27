@@ -406,6 +406,8 @@ class CMISHTTPClient:
         question: str | None = None,
         mode: HistoricalMode = "window",
         compare_asset: str | None = None,
+        provider_history_backfill: bool | None = None,
+        onchain_max_signatures: int | None = None,
     ) -> CMISEnvelope:
         normalized_chain, normalized_asset = self._identity(chain, asset)
         normalized_mode = str(mode or "").strip().lower()
@@ -414,6 +416,18 @@ class CMISHTTPClient:
 
         normalized_question = str(question or "").strip()
         normalized_compare_asset = str(compare_asset or "").strip()
+        if provider_history_backfill is not None and not isinstance(
+            provider_history_backfill,
+            bool,
+        ):
+            raise ValueError("provider_history_backfill must be boolean")
+        if onchain_max_signatures is not None:
+            if (
+                isinstance(onchain_max_signatures, bool)
+                or not isinstance(onchain_max_signatures, int)
+                or not 1 <= onchain_max_signatures <= 100000
+            ):
+                raise ValueError("onchain_max_signatures must be an integer in 1..100000")
 
         if normalized_mode == "window":
             if not normalized_question:
@@ -436,6 +450,11 @@ class CMISHTTPClient:
             }
             if normalized_question:
                 params["question"] = normalized_question
+
+        if provider_history_backfill is not None:
+            params["provider_history_backfill"] = provider_history_backfill
+        if onchain_max_signatures is not None:
+            params["onchain_max_signatures"] = onchain_max_signatures
 
         if normalized_mode != "window":
             try:
