@@ -5,6 +5,7 @@ import json
 from roberta.cmis.mock import MockCMISClient
 from roberta.x1_scout.graph import build_x1_scout_graph
 from roberta.x1_scout.planner import (
+    compare_asset_from_objective,
     historical_mode_from_objective,
     is_all_available_history_objective,
 )
@@ -29,6 +30,41 @@ def test_full_history_language_selects_all_available_modes_deterministically() -
         )
         == "window"
     )
+
+
+def test_simple_pair_phrase_extracts_second_asset_from_user_objective() -> None:
+    objective = "Compare XNT and ANL over their entire history"
+    assert compare_asset_from_objective(objective, primary_asset="XNT") == "ANL"
+    assert compare_asset_from_objective(objective, primary_asset="ANL") == "XNT"
+    assert compare_asset_from_objective(objective, primary_asset="AGI") is None
+
+
+def test_x1_scout_infers_pair_asset_and_dispatches_one_cmis_request() -> None:
+    client = MockCMISClient()
+    graph = build_x1_scout_graph(client)
+    objective = "Compare XNT and ANL over their entire history"
+
+    result = graph.invoke(
+        {
+            "request": {
+                "asset": "XNT",
+                "objective": objective,
+            },
+            "status": "running",
+        }
+    )
+
+    assert client.calls == [
+        {
+            "operation": "historical_compare",
+            "chain": "x1",
+            "asset": "XNT",
+            "question": objective,
+            "mode": "all_available_pair",
+            "compare_asset": "ANL",
+        }
+    ]
+    assert result["report"]["requested_compare_asset"] == "ANL"
 
 
 def test_x1_scout_dispatches_single_asset_all_available_history_once() -> None:
