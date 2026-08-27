@@ -19,6 +19,7 @@ dev = ["pytest>=8"]
 
 [project.scripts]
 roberta-live = "roberta.live_demo:main"
+roberta-chat = "roberta.chat_cli:main"
 roberta-serve = "roberta.bridge_http:main"
 roberta-readiness = "roberta.readiness_cli:main"
 roberta-readiness-replay = "roberta.readiness_replay_cli:main"
