@@ -7,6 +7,7 @@ from roberta.cmis.capabilities import (
     CMISCapabilities,
     INTELLIGENCE_FOUNDATION_CAPABILITIES,
     INTELLIGENCE_FOUNDATION_PHASE,
+    HISTORICAL_PROVIDER_BACKFILL_REQUIRED_LIMITATIONS,
     INTELLIGENCE_PROMOTION_RULE,
     MIN_CMIS_CONTRACT_VERSION,
     X1_ASSET_IDENTITY_CONTRACT_VERSION,
@@ -78,10 +79,7 @@ def _mock_capability_manifest() -> CMISCapabilities:
         requirements=["verified_current_market_snapshot"],
         limitations=[
             "window_mode_requires_supported_period",
-            "all_available_mode_uses_cmis_stored_verified_observations_only",
-            "all_available_does_not_imply_complete_asset_lifetime",
-            "continuous_historical_coverage_not_implied",
-            "external_ohlcv_or_archive_history_not_promoted_by_this_mode",
+            *HISTORICAL_PROVIDER_BACKFILL_REQUIRED_LIMITATIONS,
             "pair_mode_requires_compare_asset_and_overlapping_verified_history",
         ],
     )
@@ -108,7 +106,7 @@ def _mock_capability_manifest() -> CMISCapabilities:
         "service": "cmis_gateway",
         "version": 1,
         "schema_version": 1,
-        "contract_version": "1.11.0",
+        "contract_version": "1.12.0",
         "request_path": "/v1/cmis",
         "evidence_quality": {
             "evidence_receipt_schema_version": 1,
@@ -424,6 +422,89 @@ class MockCMISClient:
             "full_asset_lifetime_verified": False,
             "continuous_coverage_verified": False,
         }
+        if normalized_mode == "all_available":
+            data.update(
+                {
+                    "status": "partial",
+                    "available_metric_count": 1,
+                    "multi_point_metric_count": 1,
+                    "first_verified_observed_at": 1_725_000_000,
+                    "last_verified_observed_at": 1_726_000_000,
+                    "coverage_seconds": 1_000_000,
+                    "provider_history_imported": True,
+                    "provider_price_history": {
+                        "available": True,
+                        "observation_count": 3,
+                        "usable_observation_count": 3,
+                        "conflicting_timestamp_count": 0,
+                        "first_observed_at": 1_725_000_000,
+                        "last_observed_at": 1_725_900_000,
+                        "sources": ["XDEX public API + X1.Ninja OHLCV"],
+                        "provider_pairs": [f"{asset}/USDC.X"],
+                        "quote_mints": ["USDC.X"],
+                    },
+                    "metrics": {
+                        "price": {
+                            "status": "partial",
+                            "observation_count": 4,
+                            "first_verified_observed_at": 1_725_000_000,
+                            "last_verified_observed_at": 1_726_000_000,
+                            "provider_history_imported": True,
+                            "provider_backfill_observation_count": 3,
+                        }
+                    },
+                    "coverage": {
+                        "market": {
+                            "status": "partial",
+                            "coverage_scope": "cmis_stored_verified_observations",
+                            "first_verified_observed_at": 1_725_000_000,
+                            "last_verified_observed_at": 1_726_000_000,
+                            "coverage_seconds": 1_000_000,
+                            "provider_history_imported": True,
+                        },
+                        "onchain": {
+                            "status": "partial",
+                            "coverage_scope": "x1_rpc_visible_mint_address_history",
+                            "signatures_scanned": 25,
+                            "oldest_verified_slot": 100,
+                            "newest_verified_slot": 200,
+                            "oldest_verified_time": 1_724_000_000,
+                            "newest_verified_time": 1_726_000_000,
+                            "rpc_visible_mint_history_complete": False,
+                            "asset_wide_activity_verified": False,
+                            "archival_completeness_verified": False,
+                            "full_asset_lifetime_verified": False,
+                        },
+                    },
+                }
+            )
+        elif normalized_mode == "all_available_pair":
+            data.update(
+                {
+                    "status": "partial",
+                    "comparable_metric_count": 1,
+                    "primary_profile": {
+                        "available_metric_count": 1,
+                        "first_verified_observed_at": 1_725_000_000,
+                        "last_verified_observed_at": 1_726_000_000,
+                        "metrics": {
+                            "price": {"observation_count": 4}
+                        },
+                        "full_asset_lifetime_verified": False,
+                        "continuous_coverage_verified": False,
+                    },
+                    "secondary_profile": {
+                        "available_metric_count": 1,
+                        "first_verified_observed_at": 1_725_100_000,
+                        "last_verified_observed_at": 1_726_000_000,
+                        "metrics": {
+                            "price": {"observation_count": 3}
+                        },
+                        "full_asset_lifetime_verified": False,
+                        "continuous_coverage_verified": False,
+                    },
+                }
+            )
         if normalized_compare_asset:
             data["compare_asset_request"] = normalized_compare_asset
         return self._response(

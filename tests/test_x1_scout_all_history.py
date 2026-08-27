@@ -97,6 +97,20 @@ def test_x1_scout_dispatches_single_asset_all_available_history_once() -> None:
     assert report["findings"]["data"]["full_asset_lifetime_verified"] is False
     assert report["findings"]["data"]["continuous_coverage_verified"] is False
 
+    presentation = report["historical_coverage_presentation"]
+    assert presentation["mode"] == "all_available"
+    assert presentation["interpretation"] == "verified_partial_history"
+    assert presentation["verified_history_available"] is True
+    assert presentation["must_not_describe_missing_history_as_zero"] is True
+    assert presentation["full_asset_lifetime_verified"] is False
+    assert presentation["continuous_coverage_verified"] is False
+    assert presentation["market"]["history_available"] is True
+    assert presentation["market"]["provider_history_imported"] is True
+    assert presentation["market"]["price_observation_count"] == 4
+    assert presentation["market"]["first_verified_observed_at"] == 1_725_000_000
+    assert presentation["onchain"]["history_available"] is True
+    assert presentation["onchain"]["coverage_scope"] == "x1_rpc_visible_mint_address_history"
+
 
 def test_x1_scout_dispatches_pair_history_as_one_cmis_request() -> None:
     client = MockCMISClient()
@@ -130,6 +144,14 @@ def test_x1_scout_dispatches_pair_history_as_one_cmis_request() -> None:
     assert report["findings"]["data"]["mode"] == "all_available_pair"
     assert report["findings"]["data"]["compare_asset_request"] == "ANL"
     assert report["findings"]["data"]["full_asset_lifetime_verified"] is False
+    presentation = report["historical_coverage_presentation"]
+    assert presentation["mode"] == "all_available_pair"
+    assert presentation["interpretation"] == "verified_pair_history_available"
+    assert presentation["verified_history_available"] is True
+    assert presentation["must_not_describe_missing_history_as_zero"] is True
+    assert presentation["primary_market_history_available"] is True
+    assert presentation["secondary_market_history_available"] is True
+    assert presentation["common_verified_history_comparable"] is True
 
 
 def test_roberta_facing_x1_tool_exposes_compare_asset_and_preserves_pair_request() -> None:
