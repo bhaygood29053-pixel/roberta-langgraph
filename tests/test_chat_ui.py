@@ -101,6 +101,7 @@ def test_single_asset_requests_require_compact_terminal_sections() -> None:
     assert "Status: UNAVAILABLE" in history
     assert "1-3 concise bullets" in history
     assert "Do not use Markdown table syntax" in history
+    assert "Never describe missing, unavailable, or unverified evidence as zero" in history
 
 
 def test_pretrade_request_preserves_analysis_only_boundary() -> None:
