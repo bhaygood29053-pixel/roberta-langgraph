@@ -20,6 +20,7 @@ class X1ScoutRequest(TypedDict):
     fact_type: NotRequired[str]
     subject_id: NotRequired[str]
     intelligence_evidence_id: NotRequired[str]
+    compare_asset: NotRequired[str]
 
 
 class X1ScoutPlanProposal(TypedDict):
@@ -56,6 +57,7 @@ class X1ScoutReport(TypedDict):
     specialist: Literal["x1_scout"]
     chain: Literal["x1"]
     requested_asset: str
+    requested_compare_asset: NotRequired[str]
     asset: dict[str, object]
     objective: str
     status: Literal["complete", "error"]
