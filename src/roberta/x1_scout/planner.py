@@ -21,6 +21,7 @@ from roberta.cmis.contracts import CMISOperation, HistoricalMode, RankMetric
 from roberta.cmis.verification import normalize_verification_evidence_selector
 from roberta.recommendation_policy import (
     autonomous_x1_operations_for_recommendation,
+    recommendation_intent,
 )
 from roberta.x1_scout.state import X1ScoutPlan, X1ScoutPlanProposal, X1ScoutRequest
 
@@ -32,6 +33,7 @@ AUTONOMOUS_OPERATIONS: tuple[CMISOperation, ...] = (
     "risk_check",
 )
 MAX_PLAN_OPERATIONS = 3
+FULL_ASSESSMENT_MAX_PLAN_OPERATIONS = 5
 MAX_RANK_LIMIT = 50
 
 _RISK_TERMS = (
@@ -100,6 +102,9 @@ the user's X1 objective. Return JSON only, with exactly this shape:
 Rules:
 - You may use only: market_report, rank, historical_compare, tokenomics, risk_check.
 - Use the smallest useful plan, with no duplicates and at most three operations.
+- For a full/complete/comprehensive assessment or due-diligence objective, propose
+  up to five operations because deterministic policy requires market_report,
+  rank, tokenomics, historical_compare, and risk_check.
 - Never propose pre_trade_check, verification_evidence, transaction preparation,
   signing, broadcasting, wallet permissions, or any value-moving action.
 - Do not invent market facts. You are selecting investigations, not answering
@@ -180,7 +185,8 @@ def historical_mode_from_objective(
     *,
     compare_asset: object = None,
 ) -> HistoricalMode:
-    if not is_all_available_history_objective(objective):
+    full_assessment = recommendation_intent(objective) == "full_assessment"
+    if not is_all_available_history_objective(objective) and not full_assessment:
         return "window"
     if str(compare_asset or "").strip():
         return "all_available_pair"
@@ -217,6 +223,16 @@ def rank_limit_from_objective(objective: object, *, default: int = 10) -> int:
     return max(1, min(value, MAX_RANK_LIMIT))
 
 
+def max_plan_operations_for_objective(objective: object) -> int:
+    """Return the deterministic plan ceiling for the requested evidence scope."""
+
+    return (
+        FULL_ASSESSMENT_MAX_PLAN_OPERATIONS
+        if recommendation_intent(objective) == "full_assessment"
+        else MAX_PLAN_OPERATIONS
+    )
+
+
 def required_operations(objective: object) -> list[CMISOperation]:
     """Return objective-required operations in deterministic priority order.
 
@@ -226,7 +242,8 @@ def required_operations(objective: object) -> list[CMISOperation]:
     """
 
     normalized = _normalize_objective(objective)
-    if is_rank_objective(normalized):
+    intent = recommendation_intent(normalized)
+    if is_rank_objective(normalized) and intent != "full_assessment":
         return ["rank"]
 
     required: list[CMISOperation] = []
@@ -239,7 +256,7 @@ def required_operations(objective: object) -> list[CMISOperation]:
         required.append("risk_check")
     if is_historical_objective(normalized) and "historical_compare" not in required:
         required.append("historical_compare")
-    return required[-MAX_PLAN_OPERATIONS:]
+    return required[-max_plan_operations_for_objective(normalized):]
 
 
 def select_cmis_operation(objective: object) -> CMISOperation:
@@ -346,7 +363,11 @@ def enforce_plan(
         return _validate_explicit_request(request)
 
     objective = request["objective"]
-    rank_objective = is_rank_objective(objective)
+    rank_only_objective = (
+        is_rank_objective(objective)
+        and recommendation_intent(objective) != "full_assessment"
+    )
+    max_plan_operations = max_plan_operations_for_objective(objective)
     warnings: list[str] = []
     if planner_error:
         warnings.append(f"planner_fallback: {planner_error}")
@@ -359,7 +380,7 @@ def enforce_plan(
             if operation:
                 warnings.append(f"planner_operation_rejected: {operation}")
             continue
-        if rank_objective and operation != "rank":
+        if rank_only_objective and operation != "rank":
             warnings.append(
                 f"planner_operation_rejected_for_rank_objective: {operation}"
             )
@@ -368,7 +389,7 @@ def enforce_plan(
         if typed_operation in accepted:
             continue
         accepted.append(typed_operation)
-        if len(accepted) >= MAX_PLAN_OPERATIONS:
+        if len(accepted) >= max_plan_operations:
             break
 
     source: str = "model" if proposal is not None else "deterministic"
@@ -385,7 +406,7 @@ def enforce_plan(
             accepted.remove(required)
         accepted.append(required)
 
-    accepted = accepted[-MAX_PLAN_OPERATIONS:]
+    accepted = accepted[-max_plan_operations:]
 
     return {
         "operations": accepted,
