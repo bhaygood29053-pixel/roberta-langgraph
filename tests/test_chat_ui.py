@@ -104,6 +104,18 @@ def test_single_asset_requests_require_compact_terminal_sections() -> None:
     assert "Never describe missing, unavailable, or unverified evidence as zero" in history
 
 
+def test_history_and_full_requests_route_to_all_available_history() -> None:
+    history = history_request("AGI")
+    full = full_request("AGI")
+
+    assert "all available history" in history
+    assert "entire history" in history
+    assert "not a fixed-window request" in history
+    assert "all available history" in full
+    assert "entire history" in full
+    assert "rather than requiring a fixed comparison period" in full
+
+
 def test_pretrade_request_preserves_analysis_only_boundary() -> None:
     request = pretrade_request("AGI", "BUY", 2500)
 
