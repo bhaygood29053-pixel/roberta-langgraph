@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 import json
 from pathlib import Path
 import shutil
@@ -331,6 +332,33 @@ def test_generated_targets_require_exact_source_evidence(source) -> None:
             source=source,
             package_source_key=source.source_key,
             stage=_stage(),
+        )
+
+
+def test_generated_stage_rejects_cross_target_semantic_collisions(source) -> None:
+    targets = list(
+        generate_stage_targets(
+            TargetModel(),
+            source=source,
+            package_source_key=source.source_key,
+            stage=_stage(),
+        )
+    )
+    targets[1] = replace(
+        targets[1],
+        concept=targets[0].concept,
+        subconcept=targets[0].subconcept,
+    )
+
+    with pytest.raises(
+        AutonomousCurriculumError,
+        match="globally unique by concept/subconcept",
+    ):
+        build_generated_stage_bank(
+            curriculum_id="autonomous_liquidity_test",
+            package_source_key=source.source_key,
+            stage=_stage(),
+            targets=targets,
         )
 
 
