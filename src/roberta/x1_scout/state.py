@@ -37,6 +37,7 @@ class X1ScoutInvestigation(TypedDict):
     """One CMIS result preserved inside a multi-step Scout report."""
 
     operation: str
+    asset: dict[str, object]
     cmis_status: CMISStatus
     cmis_status_help: dict[str, object] | None
     observed_at: object | None
