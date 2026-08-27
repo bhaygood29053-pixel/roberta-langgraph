@@ -20,6 +20,7 @@ CMISService: TypeAlias = Literal[
     "concentration_change_intelligence",
 ]
 CMISOperation: TypeAlias = Literal[
+    "asset_lookup",
     "market_report",
     "rank",
     "historical_compare",
