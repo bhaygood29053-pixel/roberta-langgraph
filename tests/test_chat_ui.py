@@ -8,6 +8,7 @@ from roberta.chat_ui import (
     automatic_status_summary,
     compare_request,
     format_terminal_text,
+    full_request,
     overview_request,
     history_request,
     pretrade_request,
@@ -102,6 +103,18 @@ def test_single_asset_requests_require_compact_terminal_sections() -> None:
     assert "1-3 concise bullets" in history
     assert "Do not use Markdown table syntax" in history
     assert "Never describe missing, unavailable, or unverified evidence as zero" in history
+
+
+def test_history_and_full_requests_route_to_all_available_history() -> None:
+    history = history_request("AGI")
+    full = full_request("AGI")
+
+    assert "all available history" in history
+    assert "entire history" in history
+    assert "not a fixed-window request" in history
+    assert "all available history" in full
+    assert "entire history" in full
+    assert "rather than requiring a fixed comparison period" in full
 
 
 def test_pretrade_request_preserves_analysis_only_boundary() -> None:

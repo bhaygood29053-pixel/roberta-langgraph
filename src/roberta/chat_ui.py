@@ -686,11 +686,14 @@ def liquidity_request(asset: str) -> str:
 
 def history_request(asset: str) -> str:
     return (
-        f"On X1, analyze the verified market history of {asset}. Run CMIS "
-        "historical_compare plus a fresh market_report. Compare the current "
-        "state with every verified historical window CMIS can support. Cover "
+        f"On X1, analyze the verified market history of {asset}. Treat this as "
+        "an all available history / entire history request, not a fixed-window "
+        "request. Run CMIS historical_compare in the supported all-available "
+        "history mode plus a fresh market_report. Compare the current state "
+        "with every verified historical observation CMIS can support. Cover "
         "price, liquidity, volume, activity, volatility or drawdown only when "
-        "those facts are actually supported. State historical coverage and "
+        "those facts are actually supported. State the earliest and latest "
+        "verified coverage, whether history is partial or complete, and all "
         "missing evidence explicitly."
     ) + SINGLE_ASSET_TERMINAL_STYLE
 
@@ -751,11 +754,15 @@ def full_request(asset: str) -> str:
         f"On X1, produce the most complete current assessment possible for "
         f"{asset}. Use multiple X1 Scout calls as needed. Gather fresh CMIS "
         "market_report, risk_check, tokenomics, historical_compare, ranking "
-        "context when useful, and evidence-quality metadata. Include "
-        "concentration intelligence only if an exact eligible CMIS-owned "
-        "evidence id is already available; never invent one. Separate verified "
-        "facts, X1 Scout interpretation, and Roberta reasoning. Cover market "
-        "structure, liquidity, activity, tokenomics, risk, history, evidence "
-        "quality, strengths, weaknesses, key unknowns, and overall assessment. "
-        "Identify every important unavailable or unverified dimension."
+        "context when useful, and evidence-quality metadata. For history, "
+        "treat this as an all available history / entire history request rather "
+        "than requiring a fixed comparison period; use the supported CMIS "
+        "all-available history mode and preserve verified partial-coverage "
+        "semantics. Include concentration intelligence only if an exact eligible "
+        "CMIS-owned evidence id is already available; never invent one. Separate "
+        "verified facts, X1 Scout interpretation, and Roberta reasoning. Cover "
+        "market structure, liquidity, activity, tokenomics, risk, history, "
+        "evidence quality, strengths, weaknesses, key unknowns, and overall "
+        "assessment. Identify every important unavailable or unverified "
+        "dimension."
     ) + SINGLE_ASSET_TERMINAL_STYLE
