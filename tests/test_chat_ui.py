@@ -8,6 +8,8 @@ from roberta.chat_ui import (
     automatic_status_summary,
     compare_request,
     format_terminal_text,
+    overview_request,
+    history_request,
     pretrade_request,
 )
 
@@ -82,6 +84,23 @@ def test_compare_request_requires_terminal_friendly_structure() -> None:
     assert "[VERIFIED]" in request
     assert "Show relative ratios only when CMIS or X1 Scout" in request
     assert "Do not use Markdown table syntax" in request
+
+
+
+def test_single_asset_requests_require_compact_terminal_sections() -> None:
+    overview = overview_request("AGI")
+    history = history_request("AGI")
+
+    assert "CURRENT MARKET" in overview
+    assert "HISTORY" in overview
+    assert "EVIDENCE STATUS" in overview
+    assert "KEY LIMITATIONS" in overview
+    assert "Do not lead with a long limitation paragraph" in overview
+    assert "live market snapshot first" in overview
+
+    assert "Status: UNAVAILABLE" in history
+    assert "1-3 concise bullets" in history
+    assert "Do not use Markdown table syntax" in history
 
 
 def test_pretrade_request_preserves_analysis_only_boundary() -> None:
