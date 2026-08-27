@@ -17,6 +17,7 @@ from roberta.cmis.contracts import CMISOperation
 CAPABILITY_SCHEMA_VERSION = 1
 MIN_CMIS_CONTRACT_VERSION = "1.8.0"
 HISTORICAL_ALL_AVAILABLE_MIN_CMIS_CONTRACT_VERSION = "1.10.0"
+HISTORICAL_PROVIDER_BACKFILL_MIN_CMIS_CONTRACT_VERSION = "1.12.0"
 X1_ASSET_IDENTITY_MIN_CMIS_CONTRACT_VERSION = "1.11.0"
 X1_ASSET_IDENTITY_CONTRACT_VERSION = "x1_asset_identity/v1"
 X1_ASSET_IDENTITY_REQUIRED_LIMITATIONS = (
@@ -30,6 +31,16 @@ HISTORICAL_ALL_AVAILABLE_REQUIRED_LIMITATIONS = (
     "all_available_does_not_imply_complete_asset_lifetime",
     "continuous_historical_coverage_not_implied",
     "external_ohlcv_or_archive_history_not_promoted_by_this_mode",
+)
+HISTORICAL_PROVIDER_BACKFILL_REQUIRED_LIMITATIONS = (
+    "all_available_mode_uses_cmis_stored_verified_observations",
+    "verified_provider_price_backfill_may_extend_price_history",
+    "verified_provider_backfill_is_price_only",
+    "provider_source_independence_not_verified",
+    "provider_archive_completeness_not_verified",
+    "configured_usd_stable_quote_does_not_prove_historical_one_dollar_peg",
+    "all_available_does_not_imply_complete_asset_lifetime",
+    "continuous_historical_coverage_not_implied",
 )
 HISTORICAL_PAIR_REQUIRED_LIMITATION = (
     "pair_mode_requires_compare_asset_and_overlapping_verified_history"
@@ -559,7 +570,7 @@ def require_historical_all_available_capability(
     chain: str,
     pair: bool = False,
 ) -> CMISServiceCapability:
-    """Require CMIS 1.10.0 semantics before relying on all-available history."""
+    """Require the accepted versioned CMIS all-available history contract."""
 
     normalized_chain = str(chain or "").strip().lower()
     if normalized_chain != "x1":
@@ -583,7 +594,13 @@ def require_historical_all_available_capability(
         service="historical_compare",
     )
     limitations = set(capability["limitations"])
-    required = set(HISTORICAL_ALL_AVAILABLE_REQUIRED_LIMITATIONS)
+    if _semver(version) >= _semver(
+        HISTORICAL_PROVIDER_BACKFILL_MIN_CMIS_CONTRACT_VERSION
+    ):
+        required = set(HISTORICAL_PROVIDER_BACKFILL_REQUIRED_LIMITATIONS)
+    else:
+        required = set(HISTORICAL_ALL_AVAILABLE_REQUIRED_LIMITATIONS)
+
     if pair:
         required.add(HISTORICAL_PAIR_REQUIRED_LIMITATION)
     missing = sorted(required - limitations)
@@ -608,6 +625,8 @@ __all__ = [
     "CMISServiceCapability",
     "HISTORICAL_ALL_AVAILABLE_MIN_CMIS_CONTRACT_VERSION",
     "HISTORICAL_ALL_AVAILABLE_REQUIRED_LIMITATIONS",
+    "HISTORICAL_PROVIDER_BACKFILL_MIN_CMIS_CONTRACT_VERSION",
+    "HISTORICAL_PROVIDER_BACKFILL_REQUIRED_LIMITATIONS",
     "HISTORICAL_PAIR_REQUIRED_LIMITATION",
     "X1_ASSET_IDENTITY_CONTRACT_VERSION",
     "X1_ASSET_IDENTITY_MIN_CMIS_CONTRACT_VERSION",
