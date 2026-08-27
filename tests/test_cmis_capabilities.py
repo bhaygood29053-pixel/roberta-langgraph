@@ -5,8 +5,12 @@ import pytest
 from roberta.cmis.capabilities import (
     CMISCapabilityContractError,
     CMISCapabilityUnavailable,
+    HISTORICAL_ALL_AVAILABLE_MIN_CMIS_CONTRACT_VERSION,
+    HISTORICAL_ALL_AVAILABLE_REQUIRED_LIMITATIONS,
+    HISTORICAL_PAIR_REQUIRED_LIMITATION,
     INTELLIGENCE_FOUNDATION_CAPABILITIES,
     MIN_CMIS_CONTRACT_VERSION,
+    require_historical_all_available_capability,
     require_service_capability,
     validate_capability_manifest,
 )
@@ -226,6 +230,48 @@ def test_require_service_capability_allows_partial_but_blocks_unavailable() -> N
             manifest,
             chain="solana",
             service="pre_trade_check",
+        )
+
+
+def test_all_available_history_requires_cmis_1_10_and_exact_limitations() -> None:
+    manifest = _manifest()
+    manifest["contract_version"] = HISTORICAL_ALL_AVAILABLE_MIN_CMIS_CONTRACT_VERSION
+    history = manifest["chains"]["x1"]["services"]["historical_compare"]
+    history["requirements"] = ["verified_current_market_snapshot"]
+    history["limitations"] = [
+        *HISTORICAL_ALL_AVAILABLE_REQUIRED_LIMITATIONS,
+        HISTORICAL_PAIR_REQUIRED_LIMITATION,
+    ]
+
+    validated = validate_capability_manifest(manifest)
+    capability = require_historical_all_available_capability(
+        validated,
+        chain="x1",
+        pair=True,
+    )
+    assert capability["callable"] is True
+
+
+def test_all_available_history_fails_closed_on_old_or_weakened_contract() -> None:
+    old = _manifest()
+    old["contract_version"] = "1.9.0"
+    validated_old = validate_capability_manifest(old)
+    with pytest.raises(CMISCapabilityContractError, match="requires contract"):
+        require_historical_all_available_capability(
+            validated_old,
+            chain="x1",
+        )
+
+    weakened = _manifest()
+    weakened["contract_version"] = HISTORICAL_ALL_AVAILABLE_MIN_CMIS_CONTRACT_VERSION
+    history = weakened["chains"]["x1"]["services"]["historical_compare"]
+    history["limitations"] = list(HISTORICAL_ALL_AVAILABLE_REQUIRED_LIMITATIONS)
+    validated_weakened = validate_capability_manifest(weakened)
+    with pytest.raises(CMISCapabilityContractError, match="missing accepted"):
+        require_historical_all_available_capability(
+            validated_weakened,
+            chain="x1",
+            pair=True,
         )
 
 
