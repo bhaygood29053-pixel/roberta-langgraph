@@ -155,7 +155,9 @@ SINGLE_ASSET_TERMINAL_STYLE = (
     "impact. Keep long explanations below facts rather than mixing them into "
     "one paragraph. Use plain terminal labels and compact tags such as "
     "[VERIFIED], [UNVERIFIED], [PARTIAL], [BOUNDED], [WARN], and [UNAVAILABLE]. "
-    "Do not use Markdown table syntax in the final response."
+    "Do not use Markdown table syntax in the final response. Never describe "
+    "missing, unavailable, or unverified evidence as zero, none, false, or 0%; "
+    "use UNKNOWN, UNAVAILABLE, NOT VERIFIED, or the exact CMIS status instead."
 )
 
 
