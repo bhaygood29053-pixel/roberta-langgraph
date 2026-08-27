@@ -280,6 +280,7 @@ def _summarize_cmis_result(
 
     investigation: X1ScoutInvestigation = {
         "operation": service,
+        "asset": dict(result["asset"]),
         "cmis_status": cmis_status,
         "cmis_status_help": build_cmis_status_help(service, cmis_status, confidence),
         "observed_at": observed_at,
@@ -300,6 +301,53 @@ def _summarize_cmis_result(
             historical_coverage_presentation
         )
     return investigation
+
+
+def _xnt_symbol_scope_warning(
+    requested_asset: object,
+    results: list[CMISEnvelope],
+) -> dict[str, object] | None:
+    """Flag symbol-only XNT when CMIS resolves a wrapped representation.
+
+    The Scout does not decide native/wrapped equivalence. It only preserves the
+    CMIS descriptor and prevents a symbol-only request from silently collapsing
+    distinct representations into one analytical subject.
+    """
+
+    if str(requested_asset or "").strip().upper() != "XNT":
+        return None
+
+    variants: list[dict[str, object]] = []
+    wrapped_descriptor_seen = False
+    for result in results:
+        asset = result.get("asset")
+        if not isinstance(asset, Mapping):
+            continue
+        descriptor = {
+            key: asset.get(key)
+            for key in ("symbol", "name", "mint")
+            if asset.get(key) is not None
+        }
+        if descriptor and descriptor not in variants:
+            variants.append(descriptor)
+        name = str(asset.get("name") or "").strip().lower()
+        if "wrapped" in name:
+            wrapped_descriptor_seen = True
+
+    if not wrapped_descriptor_seen:
+        return None
+
+    return {
+        "code": "x1_xnt_native_wrapped_scope_unresolved",
+        "message": (
+            "The request used the symbol XNT, while at least one CMIS investigation "
+            "resolved an asset descriptor containing 'Wrapped'. Native XNT and a "
+            "wrapped/token representation must not be treated as identical without "
+            "stronger identity evidence."
+        ),
+        "requested_asset": "XNT",
+        "resolved_asset_variants": variants,
+    }
 
 
 def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
@@ -325,6 +373,11 @@ def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
             for investigation in investigations
         )
         else "complete"
+    )
+
+    xnt_scope_warning = _xnt_symbol_scope_warning(
+        request["asset"],
+        list(results),
     )
 
     report: X1ScoutReport = {
@@ -364,6 +417,7 @@ def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
                 if isinstance(identity_result, Mapping)
                 else []
             ),
+            *([xnt_scope_warning] if xnt_scope_warning is not None else []),
             *list(primary["warnings"]),
         ],
         "errors": list(primary["errors"]),
