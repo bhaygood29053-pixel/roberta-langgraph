@@ -59,6 +59,9 @@ class X1ScoutReport(TypedDict):
     requested_asset: str
     requested_compare_asset: NotRequired[str]
     asset: dict[str, object]
+    normalized_asset_identity: NotRequired[dict[str, object]]
+    asset_identity_reconciliation: NotRequired[dict[str, object]]
+    asset_identity_status: NotRequired[CMISStatus]
     objective: str
     status: Literal["complete", "error"]
     plan: X1ScoutPlan
@@ -88,4 +91,5 @@ class X1ScoutState(TypedDict):
     plan: NotRequired[X1ScoutPlan]
     cmis_results: NotRequired[list[CMISEnvelope]]
     cmis_result: NotRequired[CMISEnvelope]
+    cmis_identity_result: NotRequired[CMISEnvelope | None]
     report: NotRequired[X1ScoutReport]
