@@ -365,6 +365,9 @@ class CMISHTTPClient:
             payload=payload,
         )
 
+    def asset_lookup(self, *, chain: str, asset: str) -> CMISEnvelope:
+        return self._request(service="asset_lookup", chain=chain, asset=asset)
+
     def market_report(self, *, chain: str, asset: str) -> CMISEnvelope:
         return self._request(service="market_report", chain=chain, asset=asset)
 
