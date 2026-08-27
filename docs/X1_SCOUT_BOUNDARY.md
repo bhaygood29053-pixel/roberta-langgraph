@@ -25,6 +25,23 @@ X1 Provider / verified source
 
 X1 Scout preserves CMIS status, facts, risk, confidence, provenance, warnings/errors, Evidence Receipt, Proof Score, and uncertainty. It does not manufacture missing market facts or strengthen coverage claims.
 
+## Exact-mint normalized identity boundary
+
+For an address-shaped X1 asset request, X1 Scout first checks whether the live CMIS capability manifest accepts `x1_asset_identity/v1` under CMIS 1.11 or newer. Only then may it call CMIS `asset_lookup` as an identity preflight.
+
+```text
+exact requested mint
+  -> X1 Scout capability gate
+    -> CMIS asset_lookup
+      -> CMIS Token Metadata + exact-mint XDEX reconciliation
+        -> normalized mint-rooted identity
+          -> X1 Scout preserves result
+```
+
+X1 Scout does not decode Metaplex accounts, compare Metaplex/XDEX labels, select a different mint, verify URI contents, or infer safety/legitimacy from descriptor agreement. It preserves CMIS states including `descriptor_conflict`, `xdex_unavailable`, and `metadata_unavailable`.
+
+Symbol-based requests do not trigger this exact-mint preflight and retain existing CMIS behavior.
+
 ## Historical comparison boundary
 
 CMIS 1.10 extends the existing `historical_compare` service with `window`, `all_available`, and `all_available_pair` modes.
