@@ -20,6 +20,7 @@ from roberta.risk_help import build_risk_help
 from roberta.status_help import build_cmis_status_help
 from roberta.time_utils import format_observed_at_utc, normalize_observed_at
 from roberta.x1_scout.planner import (
+    compare_asset_from_objective,
     enforce_plan,
     propose_plan,
     historical_mode_from_objective,
@@ -139,6 +140,14 @@ def _dispatch_cmis_operation(
 def make_cmis_calls_node(cmis_client: CMISClient) -> Callable[[X1ScoutState], dict[str, Any]]:
     def cmis_calls_node(state: X1ScoutState) -> dict[str, Any]:
         request = dict(state["request"])
+        if "compare_asset" not in request:
+            inferred_compare = compare_asset_from_objective(
+                request.get("objective"),
+                primary_asset=request.get("asset"),
+            )
+            if inferred_compare is not None:
+                request["compare_asset"] = inferred_compare
+
         operations = state["plan"]["operations"]
         results = [
             _dispatch_cmis_operation(cmis_client, request, operation)
@@ -146,7 +155,12 @@ def make_cmis_calls_node(cmis_client: CMISClient) -> Callable[[X1ScoutState], di
         ]
         if not results:  # pragma: no cover
             raise RuntimeError("X1 Scout plan completed without a CMIS operation.")
-        return {"cmis_results": results, "cmis_result": results[-1], "status": "running"}
+        return {
+            "request": request,
+            "cmis_results": results,
+            "cmis_result": results[-1],
+            "status": "running",
+        }
 
     return cmis_calls_node
 
