@@ -180,6 +180,27 @@ def _remediation_targets(
     )
 
 
+def _remediation_lineage(
+    bank: Sequence[Exercise], weak: Sequence[Exercise]
+) -> dict[tuple[str, str | None], tuple[str, ...]]:
+    """Bind every remediated semantic target to the failed exercise(s) that triggered it."""
+
+    lineage: dict[tuple[str, str | None], set[str]] = {}
+    for item in weak:
+        if item.boss_question:
+            continue
+        lineage.setdefault((item.concept, item.subconcept), set()).add(item.exercise_id)
+
+    for boss in (item for item in weak if item.boss_question):
+        for atom in _boss_synthesis_atoms(bank, boss):
+            lineage.setdefault((atom.concept, atom.subconcept), set()).add(boss.exercise_id)
+
+    return {
+        key: tuple(sorted(ids))
+        for key, ids in lineage.items()
+    }
+
+
 def _transfer_exercises(
     bank: Sequence[Exercise], weak: Sequence[Exercise]
 ) -> tuple[Exercise, ...]:
@@ -362,7 +383,11 @@ class StageTransferLearnedConceptAnswerModel:
 
 
 def _provisional_concepts(
-    *, curriculum_id: str, level: int, weak: Sequence[Exercise]
+    *,
+    curriculum_id: str,
+    level: int,
+    weak: Sequence[Exercise],
+    critical_ids_by_key: Mapping[tuple[str, str | None], Sequence[str]] | None = None,
 ) -> tuple[LearnedConcept, ...]:
     grouped: dict[tuple[str, str | None], list[Exercise]] = {}
     for item in weak:
@@ -397,7 +422,13 @@ def _provisional_concepts(
                 subconcept=subconcept,
                 principle=principle,
                 source_refs=source_refs,
-                critical_exercise_ids=tuple(sorted(item.exercise_id for item in items)),
+                critical_exercise_ids=tuple(
+                    sorted(
+                        critical_ids_by_key.get((concept, subconcept), ())
+                        if critical_ids_by_key is not None
+                        else (item.exercise_id for item in items)
+                    )
+                ),
                 retention_report_sha256="0" * 64,
                 retention_manifest_sha256="0" * 64,
                 checkpoint_sha256=(("pending", "0" * 64),),
@@ -468,8 +499,12 @@ def run_autonomous_remediation(
     remediation_targets = _remediation_targets(bank, weak)
     if not remediation_targets:
         raise AutonomousRemediationError("failed attempt exposes no stable atomic remediation targets")
+    remediation_lineage = _remediation_lineage(bank, weak)
     provisional = _provisional_concepts(
-        curriculum_id=curriculum_id, level=level, weak=remediation_targets
+        curriculum_id=curriculum_id,
+        level=level,
+        weak=remediation_targets,
+        critical_ids_by_key=remediation_lineage,
     )
     # A routing revision must never reuse pre-fix remediation checkpoints or overwrite their evidence.
     base_root = Path(output_dir)
