@@ -38,7 +38,7 @@ Accepted milestones include:
 
 Roberta Phase 11 — Controlled Execution remains **locked / not started**.
 
-CMIS currently advertises capability contract **1.10.0**. Roberta keeps a global existing-service minimum of **1.8.0**; the promoted concentration intelligence operation keeps its service-specific minimum of **1.9.0**, while X1 all-available historical modes require **1.10.0** plus their accepted limitation contract.
+CMIS currently advertises capability contract **1.11.0**. Roberta keeps a global existing-service minimum of **1.8.0**; the promoted concentration intelligence operation keeps its service-specific minimum of **1.9.0**, X1 all-available historical modes require **1.10.0**, and normalized exact-mint X1 identity requires **1.11.0** plus `x1_asset_identity/v1` and its accepted limitation contract.
 
 ## Shared public service surface
 
@@ -76,6 +76,26 @@ scout_reliance_promoted = false
 The promoted service is a separate Phase 12 wrapper and does not change that foundation-level state.
 
 Roberta does not bypass the Scout boundary to perform provider calls directly.
+
+## X1 normalized exact-mint identity — CMIS 1.11
+
+For address-shaped X1 asset requests, X1 Scout may perform a CMIS `asset_lookup` identity preflight only after the live capability contract proves:
+
+```text
+CMIS >= 1.11.0
+identity_contract_version = x1_asset_identity/v1
+exact_mint_normalization = true
+normalized_identity_root = mint
+metaplex_xdex_reconciliation = true
+```
+
+CMIS remains the only authority that decodes Token Metadata or reconciles Metaplex and XDEX descriptors. X1 Scout validates the returned contract and exact requested mint, then preserves CMIS's normalized identity and reconciliation state without recalculating them.
+
+The accepted reconciliation states are `agreement`, `metaplex_only`, `descriptor_conflict`, `xdex_unavailable`, and `metadata_unavailable`. Same-mint descriptor conflict does not change the mint. XDEX provider unavailability is not treated as proven mint absence. Symbol or name equality never establishes identity across different mints.
+
+Roberta keeps the original requested asset separately from the normalized CMIS identity. On-chain metadata agreement does not become safety, legitimacy, ownership, or project-truth evidence, and URI contents are not treated as verified merely because the URI string is stored on-chain.
+
+If the live CMIS contract is older or weakened, X1 Scout skips normalized-identity reliance rather than substituting its own resolver.
 
 ## X1 all-available historical comparison — CMIS 1.10
 
