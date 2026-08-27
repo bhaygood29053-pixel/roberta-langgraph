@@ -9,6 +9,7 @@ from roberta.cmis.client import CMISClient
 from roberta.cmis.concentration_intelligence import normalize_intelligence_evidence_id
 from roberta.cmis.contracts import TradeAction
 from roberta.x1_scout.graph import build_x1_scout_graph
+from roberta.x1_scout.planner import is_all_available_history_objective
 
 
 def build_x1_scout_tool(
@@ -28,12 +29,15 @@ def build_x1_scout_tool(
         action: TradeAction | None = None,
         amount_usd: float | None = None,
         intelligence_evidence_id: str | None = None,
+        compare_asset: str | None = None,
     ) -> str:
         """Delegate an X1-specific investigation to X1 Scout.
 
         Ordinary read-only objectives may cover current market data, tokenomics,
         risk, XDEX rankings, and historical comparisons. For a global XDEX
         ranking with no single asset, use ``asset='XDEX'`` as the scope label.
+        For a two-asset entire/full/lifetime-history comparison, copy the exact
+        second user-supplied asset into ``compare_asset``.
 
         Pre-trade analysis and promoted concentration-change intelligence are
         explicit-request-only. Roberta must copy the exact user/trusted-context
@@ -49,7 +53,20 @@ def build_x1_scout_tool(
                 raise ValueError(
                     "action/amount_usd/intelligence_evidence_id require an explicit operation"
                 )
+            if compare_asset is not None:
+                normalized_compare = str(compare_asset or "").strip()
+                if not normalized_compare:
+                    raise ValueError("compare_asset must not be empty")
+                if normalized_compare.lower() == str(asset or "").strip().lower():
+                    raise ValueError("compare_asset must differ from asset")
+                if not is_all_available_history_objective(objective):
+                    raise ValueError(
+                        "compare_asset is accepted only for entire/full/lifetime-history comparisons"
+                    )
+                request["compare_asset"] = normalized_compare
         elif operation == "pre_trade_check":
+            if compare_asset is not None:
+                raise ValueError("compare_asset is not accepted for pre_trade_check")
             if intelligence_evidence_id is not None:
                 raise ValueError(
                     "intelligence_evidence_id is not accepted for pre_trade_check"
@@ -68,6 +85,10 @@ def build_x1_scout_tool(
                 }
             )
         elif operation == "concentration_change_intelligence":
+            if compare_asset is not None:
+                raise ValueError(
+                    "compare_asset is not accepted for concentration intelligence"
+                )
             if action is not None or amount_usd is not None:
                 raise ValueError(
                     "trade action/amount are not accepted for concentration intelligence"
@@ -99,7 +120,10 @@ def build_x1_scout_tool(
         description=(
             "Delegate an X1-chain investigation to X1 Scout. Ordinary objectives cover "
             "current market data, tokenomics, deterministic risk, XDEX rankings, and "
-            "historical comparisons. For an explicit user pre-trade question, use "
+            "historical comparisons. For a two-asset entire/full/lifetime-history "
+            "comparison, copy the exact second asset into compare_asset so X1 Scout "
+            "can issue one CMIS all_available_pair request. For an explicit user "
+            "pre-trade question, use "
             "operation='pre_trade_check' and copy the exact BUY/SELL action and USD "
             "amount. For the promoted CMIS concentration-change intelligence service, "
             "use operation='concentration_change_intelligence' only when an exact "
