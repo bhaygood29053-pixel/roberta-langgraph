@@ -178,9 +178,37 @@ def _accepted_normalized_identity(
     if normalized.get("identity_root") != "mint":
         return None, None
 
+    status = result.get("status")
+    if status not in {"ok", "partial", "unavailable"}:
+        return None, None
+
     requested = str(requested_asset or "").strip()
     if str(normalized.get("mint") or "").strip() != requested:
         return None, None
+
+    verified = normalized.get("normalized_onchain_identity_verified")
+    if not isinstance(verified, bool):
+        return None, None
+
+    reconciliation_state = reconciliation.get("state")
+    accepted_states = {
+        "agreement",
+        "metaplex_only",
+        "descriptor_conflict",
+        "xdex_unavailable",
+        "metadata_unavailable",
+    }
+    if reconciliation_state not in accepted_states:
+        return None, None
+
+    if reconciliation_state == "metadata_unavailable":
+        if verified is not False:
+            return None, None
+    else:
+        if verified is not True:
+            return None, None
+        if normalized.get("descriptor_source") != "metaplex_token_metadata":
+            return None, None
 
     return dict(normalized), dict(reconciliation)
 
