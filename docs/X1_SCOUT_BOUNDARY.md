@@ -74,6 +74,24 @@ the Scout emits an explicit native-versus-wrapped scope warning and requires
 stronger identity evidence before Roberta may treat those representations as
 the same analytical subject.
 
+## Interactive all-history latency boundary
+
+Roberta's interactive X1 Scout path must not perform provider-history ingestion
+as part of a user-facing history read. For `all_available` and
+`all_available_pair`, the Scout requests CMIS with
+`provider_history_backfill=false`. CMIS therefore returns the verified history
+already present in its accepted store and reports coverage gaps/limitations
+rather than blocking chat on ingestion work.
+
+For single-asset X1 all-available history, the interactive Scout request also
+bounds RPC-visible mint-history coverage to at most 1,000 signatures. This is a
+latency bound, not a completeness claim: CMIS must keep full-lifetime,
+continuous-coverage, and archival-completeness flags false unless independently
+verified.
+
+Backfill remains a separate CMIS ingestion/maintenance responsibility and does
+not move into Roberta or X1 Scout.
+
 ## Historical comparison boundary
 
 CMIS 1.10 extends the existing `historical_compare` service with `window`, `all_available`, and `all_available_pair` modes.

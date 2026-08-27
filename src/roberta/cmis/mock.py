@@ -385,6 +385,8 @@ class MockCMISClient:
         question: str | None = None,
         mode: HistoricalMode = "window",
         compare_asset: str | None = None,
+        provider_history_backfill: bool | None = None,
+        onchain_max_signatures: int | None = None,
     ) -> CMISEnvelope:
         chain, asset = self._identity(chain, asset)
         normalized_mode = str(mode or "").strip().lower()
@@ -413,6 +415,10 @@ class MockCMISClient:
             call["mode"] = normalized_mode
         if normalized_compare_asset:
             call["compare_asset"] = normalized_compare_asset
+        if provider_history_backfill is not None:
+            call["provider_history_backfill"] = provider_history_backfill
+        if onchain_max_signatures is not None:
+            call["onchain_max_signatures"] = onchain_max_signatures
         self.calls.append(call)
 
         data: dict[str, object] = {

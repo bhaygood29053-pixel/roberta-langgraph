@@ -40,6 +40,8 @@ class CMISClient(Protocol):
         question: str | None = None,
         mode: HistoricalMode = "window",
         compare_asset: str | None = None,
+        provider_history_backfill: bool | None = None,
+        onchain_max_signatures: int | None = None,
     ) -> CMISEnvelope:
         ...
 

@@ -62,6 +62,8 @@ def test_x1_scout_infers_pair_asset_and_dispatches_one_cmis_request() -> None:
             "question": objective,
             "mode": "all_available_pair",
             "compare_asset": "ANL",
+            "provider_history_backfill": False,
+            "onchain_max_signatures": 1000,
         }
     ]
     assert result["report"]["requested_compare_asset"] == "ANL"
@@ -89,6 +91,8 @@ def test_x1_scout_dispatches_single_asset_all_available_history_once() -> None:
             "asset": "AGI",
             "question": objective,
             "mode": "all_available",
+            "provider_history_backfill": False,
+            "onchain_max_signatures": 1000,
         }
     ]
     report = result["report"]
@@ -136,6 +140,8 @@ def test_x1_scout_dispatches_pair_history_as_one_cmis_request() -> None:
             "question": objective,
             "mode": "all_available_pair",
             "compare_asset": "ANL",
+            "provider_history_backfill": False,
+            "onchain_max_signatures": 1000,
         }
     ]
     report = result["report"]
@@ -177,6 +183,8 @@ def test_roberta_facing_x1_tool_exposes_compare_asset_and_preserves_pair_request
             "question": "Compare XNT and ANL over their lifetime history",
             "mode": "all_available_pair",
             "compare_asset": "ANL",
+            "provider_history_backfill": False,
+            "onchain_max_signatures": 1000,
         }
     ]
     assert report["requested_compare_asset"] == "ANL"
