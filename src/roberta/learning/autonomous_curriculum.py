@@ -293,12 +293,23 @@ def generate_stage_targets(
             f"stage material spans {len(chunks)} generation chunks, exceeding the {MAX_TARGETS}-target coverage budget; split the stage"
         )
     candidates_by_chunk: list[list[GeneratedTarget]] = []
+    # LearnedConcept v1 is keyed by (concept, subconcept), so generated stage
+    # targets must be semantically unique across the entire stage, not merely
+    # within one source chunk. This preserves each selected target's identity
+    # without creating an unrepresentable learned-memory collision later.
+    seen_semantics: set[tuple[str, str]] = set()
     for chunk_number, chunk in enumerate(chunks, start=1):
         chunk_candidates: list[GeneratedTarget] = []
-        seen_semantics: set[tuple[str, str]] = set()
         payload = {
             "contract": TARGET_GENERATOR_CONTRACT,
-            "task": "Propose 4 to 7 distinct learning targets for this capability from only this source chunk.",
+            "task": (
+                "Propose 4 to 7 distinct learning targets for this capability from only this source chunk. "
+                "Do not reuse any concept/subconcept pair listed in reserved_stage_semantics."
+            ),
+            "reserved_stage_semantics": [
+                {"concept": concept, "subconcept": subconcept}
+                for concept, subconcept in sorted(seen_semantics)
+            ],
             "source_title": source.title,
             "stage": stage.stage,
             "capability_level": stage.capability_level,
@@ -430,6 +441,11 @@ def build_generated_stage_bank(
 ) -> tuple[Exercise, ...]:
     if not MIN_TARGETS <= len(targets) <= MAX_TARGETS:
         raise AutonomousCurriculumError(f"generated stage requires {MIN_TARGETS}..{MAX_TARGETS} verified targets")
+    semantic_keys = [(item.concept, item.subconcept) for item in targets]
+    if len(semantic_keys) != len(set(semantic_keys)):
+        raise AutonomousCurriculumError(
+            "generated stage targets must be globally unique by concept/subconcept"
+        )
     prefix = hashlib.sha256(f"{curriculum_id}|{stage.stage}|{stage.capability_level}".encode()).hexdigest()[:8].upper()
     rubric = f"AUTO-S{stage.stage:02d}-L{stage.capability_level:02d}-RUBRIC-V1"
     exercises: list[Exercise] = []

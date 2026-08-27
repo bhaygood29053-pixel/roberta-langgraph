@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 import json
 from pathlib import Path
 import shutil
@@ -331,6 +332,52 @@ def test_generated_targets_require_exact_source_evidence(source) -> None:
             source=source,
             package_source_key=source.source_key,
             stage=_stage(),
+        )
+
+
+def test_target_generation_rejects_cross_chunk_semantic_reuse(source, monkeypatch) -> None:
+    repeated_chunk = f"[[PAGE 1]]\n{EVIDENCE}\n"
+    monkeypatch.setattr(
+        "roberta.learning.autonomous_curriculum._page_chunks",
+        lambda _pages: (repeated_chunk, repeated_chunk),
+    )
+
+    with pytest.raises(
+        AutonomousCurriculumError,
+        match="requires at least one exact-evidence target for source chunk 2",
+    ):
+        generate_stage_targets(
+            TargetModel(),
+            source=source,
+            package_source_key=source.source_key,
+            stage=_stage(),
+        )
+
+
+def test_generated_stage_rejects_cross_target_semantic_collisions(source) -> None:
+    targets = list(
+        generate_stage_targets(
+            TargetModel(),
+            source=source,
+            package_source_key=source.source_key,
+            stage=_stage(),
+        )
+    )
+    targets[1] = replace(
+        targets[1],
+        concept=targets[0].concept,
+        subconcept=targets[0].subconcept,
+    )
+
+    with pytest.raises(
+        AutonomousCurriculumError,
+        match="globally unique by concept/subconcept",
+    ):
+        build_generated_stage_bank(
+            curriculum_id="autonomous_liquidity_test",
+            package_source_key=source.source_key,
+            stage=_stage(),
+            targets=targets,
         )
 
 
