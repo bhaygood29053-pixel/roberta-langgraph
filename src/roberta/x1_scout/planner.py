@@ -137,6 +137,44 @@ def is_all_available_history_objective(objective: object) -> bool:
     )
 
 
+def compare_asset_from_objective(
+    objective: object,
+    *,
+    primary_asset: object,
+) -> str | None:
+    """Extract a simple second asset symbol from the exact user objective.
+
+    This is request parsing only. It does not resolve symbols to chain identity
+    or create a market fact; CMIS remains authoritative for asset resolution.
+    """
+
+    text = " ".join(str(objective or "").strip().split())
+    primary = str(primary_asset or "").strip()
+    if not text or not primary:
+        return None
+
+    match = re.search(
+        r"\bcompare\s+([A-Za-z0-9._:-]+)\s+(?:and|versus|vs\.?)\s+([A-Za-z0-9._:-]+)\b",
+        text,
+        flags=re.IGNORECASE,
+    )
+    if match is None:
+        match = re.search(
+            r"\b([A-Za-z0-9._:-]+)\s+(?:versus|vs\.?)\s+([A-Za-z0-9._:-]+)\b",
+            text,
+            flags=re.IGNORECASE,
+        )
+    if match is None:
+        return None
+
+    left, right = match.group(1), match.group(2)
+    if left.lower() == primary.lower() and right.lower() != primary.lower():
+        return right
+    if right.lower() == primary.lower() and left.lower() != primary.lower():
+        return left
+    return None
+
+
 def historical_mode_from_objective(
     objective: object,
     *,
