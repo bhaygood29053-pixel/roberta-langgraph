@@ -15,6 +15,7 @@ Controlled Execution remains locked/not started.
 - Core LangGraph platform work through Roberta Phase 10 and post-Phase-10 evidence-aware UX is complete.
 - X1 Scout and Solana Scout operate under the accepted `Chain Scout -> CMIS -> Provider` authority boundary.
 - X1 Scout adoption/readiness for CMIS `concentration_change_intelligence/v1` is complete.
+- X1 Scout adopts CMIS `1.10.0` all-available historical modes with explicit second-asset preservation and a single CMIS pair-history request.
 - CMIS remains the trust root for deterministic freshness-sensitive facts/evidence/risk/capability state within its accepted scope.
 - Fresh accepted CMIS/provider facts override static learning material, retained lessons, Pyramid state, checkpoints, and remembered live values.
 - Controlled Execution remains locked/not started.
@@ -91,7 +92,9 @@ XenBlocks PoW source PR #141 remains open/unaccepted because its reviewed head s
 
 ## Current CMIS dependency
 
-Accepted CMIS capability contract remains `1.9.0`.
+Accepted CMIS capability contract is `1.10.0`.
+
+X1 `historical_compare` now supports accepted Scout use of `window`, `all_available`, and `all_available_pair`. The two all-available modes require CMIS `>=1.10.0` plus exact capability limitations preserving stored-verified-observation scope, non-lifetime completeness, non-continuous coverage, and non-promotion of external OHLCV/archive history. Pair mode additionally requires explicit overlapping-history semantics. A failed service-specific guard returns unavailable before any service POST.
 
 The core Phase 11 `intelligence_foundation` remains non-promoted.
 
