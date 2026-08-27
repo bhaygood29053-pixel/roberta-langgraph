@@ -80,7 +80,7 @@ def test_compare_request_requires_terminal_friendly_structure() -> None:
     assert "IMPORTANT DIFFERENCES" in request
     assert "STATUS SUMMARY" in request
     assert "[VERIFIED]" in request
-    assert "relative ratios" in request
+    assert "Show relative ratios only when CMIS or X1 Scout" in request
     assert "Do not use Markdown table syntax" in request
 
 
