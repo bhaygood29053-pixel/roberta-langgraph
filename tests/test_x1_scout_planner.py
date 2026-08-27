@@ -39,7 +39,7 @@ def test_model_can_propose_multistep_read_only_investigation() -> None:
     cmis = MockCMISClient()
     scout = build_x1_scout_graph(cmis, planner_model=planner)
 
-    result = _invoke(scout, "perform full due diligence including tokenomics and risk")
+    result = _invoke(scout, "perform broad due diligence including tokenomics and risk")
 
     assert planner.invoke_count == 1
     assert [call["operation"] for call in cmis.calls] == [
@@ -60,6 +60,67 @@ def test_model_can_propose_multistep_read_only_investigation() -> None:
     ]
     assert report["source"]["operation"] == "risk_check"
     assert report["findings"]["risk"]["outcome"] == "TEST_ONLY"
+
+
+def test_full_assessment_forces_all_five_services_and_all_available_history() -> None:
+    planner = ScriptedPlannerModel(["rank"])
+    cmis = MockCMISClient()
+    scout = build_x1_scout_graph(cmis, planner_model=planner)
+
+    result = _invoke(scout, "Full assessment of XNT", asset="XNT")
+
+    assert [call["operation"] for call in cmis.calls] == [
+        "market_report",
+        "rank",
+        "tokenomics",
+        "historical_compare",
+        "risk_check",
+    ]
+    historical_call = next(
+        call for call in cmis.calls if call["operation"] == "historical_compare"
+    )
+    assert historical_call["mode"] == "all_available"
+
+    report = result["report"]
+    assert report["plan"]["operations"] == [
+        "market_report",
+        "rank",
+        "tokenomics",
+        "historical_compare",
+        "risk_check",
+    ]
+    assert report["source"]["operation"] == "risk_check"
+    assert [item["operation"] for item in report["investigations"]] == [
+        "market_report",
+        "rank",
+        "tokenomics",
+        "historical_compare",
+        "risk_check",
+    ]
+
+
+def test_full_assessment_preserves_per_investigation_asset_and_flags_wrapped_xnt() -> None:
+    class WrappedXNTCMIS(MockCMISClient):
+        def market_report(self, *, chain: str, asset: str):
+            result = super().market_report(chain=chain, asset=asset)
+            result["asset"] = {"symbol": "XNT", "name": "Wrapped XNT"}
+            return result
+
+    cmis = WrappedXNTCMIS()
+    scout = build_x1_scout_graph(cmis)
+
+    result = _invoke(scout, "Full assessment of XNT", asset="XNT")
+    report = result["report"]
+
+    assert report["investigations"][0]["asset"] == {
+        "symbol": "XNT",
+        "name": "Wrapped XNT",
+    }
+    assert any(
+        warning.get("code") == "x1_xnt_native_wrapped_scope_unresolved"
+        for warning in report["warnings"]
+        if isinstance(warning, dict)
+    )
 
 
 def test_risk_requirement_is_forced_even_when_planner_omits_it() -> None:
