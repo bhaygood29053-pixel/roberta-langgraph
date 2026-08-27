@@ -276,9 +276,9 @@ def _clean_markdown_inline(value: str) -> str:
     """Remove lightweight Markdown that is noisy in a plain terminal."""
 
     text = value.strip()
-    text = re.sub(r"\\*\\*(.+?)\\*\\*", r"\\1", text)
-    text = re.sub(r"__(.+?)__", r"\\1", text)
-    text = re.sub(r"`(.+?)`", r"\\1", text)
+    text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)
+    text = re.sub(r"__(.+?)__", r"\1", text)
+    text = re.sub(r"`(.+?)`", r"\1", text)
     return text
 
 
@@ -397,7 +397,7 @@ def format_terminal_text(text: object, *, width: int = ANSWER_WIDTH) -> str:
             output.extend(_render_terminal_table(parsed, width=width))
             continue
 
-        heading_match = re.fullmatch(r"\\*\\*(.+?)\\*\\*", stripped)
+        heading_match = re.fullmatch(r"\*\*(.+?)\*\*", stripped)
         if heading_match:
             heading = _clean_markdown_inline(heading_match.group(1)).upper()
             if output and output[-1] != "":
