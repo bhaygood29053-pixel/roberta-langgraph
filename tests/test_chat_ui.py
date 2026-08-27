@@ -7,6 +7,7 @@ from roberta.chat_ui import (
     STATUS_KEY,
     automatic_status_summary,
     compare_request,
+    format_terminal_text,
     pretrade_request,
 )
 
@@ -48,6 +49,39 @@ def test_compare_request_requires_fresh_symmetric_evidence() -> None:
     assert "historical_compare" in request
     assert "Do not reuse an earlier risk result" in request
     assert "missing, unverified, or non-comparable evidence" in request
+
+
+
+
+def test_terminal_renderer_converts_markdown_comparison_table() -> None:
+    rendered = format_terminal_text(
+        """**Market structure**
+
+| Metric | XNT | ANL |
+|---|---|---|
+| Liquidity (verified) | ~$102.7k | ~$15.7k |
+| Market report status | partial (4/5) | ok (5/5) |
+"""
+    )
+
+    assert "MARKET STRUCTURE" in rendered
+    assert "Metric" in rendered
+    assert "XNT" in rendered
+    assert "ANL" in rendered
+    assert "Liquidity (verified)" in rendered
+    assert "|" not in rendered
+    assert "**" not in rendered
+
+
+def test_compare_request_requires_terminal_friendly_structure() -> None:
+    request = compare_request("XNT", "ANL")
+
+    assert "MARKET STRUCTURE" in request
+    assert "IMPORTANT DIFFERENCES" in request
+    assert "STATUS SUMMARY" in request
+    assert "[VERIFIED]" in request
+    assert "relative ratios" in request
+    assert "Do not use Markdown table syntax" in request
 
 
 def test_pretrade_request_preserves_analysis_only_boundary() -> None:
