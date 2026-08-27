@@ -405,6 +405,17 @@ def _provisional_concepts(
         source_refs = tuple(sorted({ref for item in items for ref in item.source_refs}))
         if not principle or not source_refs:
             raise AutonomousRemediationError("autonomous remediation requires source-bound principles")
+        critical_ids = tuple(
+            sorted(
+                critical_ids_by_key.get((concept, subconcept), ())
+                if critical_ids_by_key is not None
+                else (item.exercise_id for item in items)
+            )
+        )
+        if not critical_ids:
+            raise AutonomousRemediationError(
+                f"remediation weakness {concept}/{subconcept or '-'} has no triggering failure lineage"
+            )
         material = {
             "contract": "roberta-pyramid-learned-concept-memory/v1",
             "curriculum_id": curriculum_id,
@@ -422,13 +433,7 @@ def _provisional_concepts(
                 subconcept=subconcept,
                 principle=principle,
                 source_refs=source_refs,
-                critical_exercise_ids=tuple(
-                    sorted(
-                        critical_ids_by_key.get((concept, subconcept), ())
-                        if critical_ids_by_key is not None
-                        else (item.exercise_id for item in items)
-                    )
-                ),
+                critical_exercise_ids=critical_ids,
                 retention_report_sha256="0" * 64,
                 retention_manifest_sha256="0" * 64,
                 checkpoint_sha256=(("pending", "0" * 64),),
