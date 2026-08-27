@@ -8,6 +8,7 @@ from roberta.chat_ui import (
     automatic_status_summary,
     compare_request,
     format_terminal_text,
+    full_request,
     overview_request,
     history_request,
     pretrade_request,
