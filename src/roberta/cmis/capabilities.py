@@ -22,6 +22,7 @@ X1_ASSET_IDENTITY_CONTRACT_VERSION = "x1_asset_identity/v1"
 X1_ASSET_IDENTITY_REQUIRED_LIMITATIONS = (
     "exact_mint_is_canonical_fungible_identity_root",
     "same_mint_descriptor_conflicts_return_partial",
+    "xdex_unavailable_is_not_metaplex_only",
     "symbol_or_name_never_reconciles_different_mints",
 )
 HISTORICAL_ALL_AVAILABLE_REQUIRED_LIMITATIONS = (
