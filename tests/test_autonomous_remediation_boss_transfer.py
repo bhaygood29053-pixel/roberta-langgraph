@@ -179,6 +179,27 @@ def test_boss_transfer_fails_closed_on_incomplete_verified_subset() -> None:
         )
 
 
+
+def test_boss_transfer_requires_target_specific_source_binding_not_common_root_only() -> None:
+    bank = _stage_bank()
+    boss = bank[-1]
+    verified = _verified_concepts(bank)
+    root_only = (
+        replace(verified[0], source_refs=(SOURCE_KEY,)),
+        *verified[1:],
+    )
+
+    with pytest.raises(
+        AutonomousRemediationError,
+        match="complete stage-bound verified synthesis set",
+    ):
+        StageTransferLearnedConceptAnswerModel(
+            CaptureModel(),
+            stage_bank=bank,
+            exercises=(boss,),
+            concepts=root_only,
+        )
+
 def test_transfer_rejects_concepts_without_retention_and_checkpoint_provenance() -> None:
     bank = _stage_bank()
     boss = bank[-1]
