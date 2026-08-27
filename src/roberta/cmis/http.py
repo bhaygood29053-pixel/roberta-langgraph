@@ -12,6 +12,7 @@ from roberta.cmis.capabilities import (
     CMISCapabilities,
     CMISCapabilityContractError,
     CMISCapabilityUnavailable,
+    require_historical_all_available_capability,
     require_service_capability,
     validate_capability_manifest,
 )
@@ -24,6 +25,7 @@ from roberta.cmis.contracts import (
     CMISEnvelope,
     CMISOperation,
     CMISStatus,
+    HistoricalMode,
     RankMetric,
     TradeAction,
 )
@@ -398,16 +400,73 @@ class CMISHTTPClient:
         *,
         chain: str,
         asset: str,
-        question: str,
+        question: str | None = None,
+        mode: HistoricalMode = "window",
+        compare_asset: str | None = None,
     ) -> CMISEnvelope:
+        normalized_chain, normalized_asset = self._identity(chain, asset)
+        normalized_mode = str(mode or "").strip().lower()
+        if normalized_mode not in {"window", "all_available", "all_available_pair"}:
+            raise ValueError("unsupported historical mode")
+
         normalized_question = str(question or "").strip()
-        if not normalized_question:
-            raise ValueError("question must not be empty")
+        normalized_compare_asset = str(compare_asset or "").strip()
+
+        if normalized_mode == "window":
+            if not normalized_question:
+                raise ValueError("question must not be empty for window history")
+            if normalized_compare_asset:
+                raise ValueError("compare_asset is only accepted for all_available_pair")
+            params: dict[str, object] = {"question": normalized_question}
+        elif normalized_mode == "all_available":
+            if normalized_compare_asset:
+                raise ValueError("compare_asset is only accepted for all_available_pair")
+            params = {"mode": "all_available"}
+            if normalized_question:
+                params["question"] = normalized_question
+        else:
+            if not normalized_compare_asset:
+                raise ValueError("compare_asset is required for all_available_pair")
+            params = {
+                "mode": "all_available_pair",
+                "compare_asset": normalized_compare_asset,
+            }
+            if normalized_question:
+                params["question"] = normalized_question
+
+        if normalized_mode != "window":
+            try:
+                require_historical_all_available_capability(
+                    self.capabilities(),
+                    chain=normalized_chain,
+                    pair=normalized_mode == "all_available_pair",
+                )
+            except CMISCapabilityUnavailable as exc:
+                return self._error_envelope(
+                    service="historical_compare",
+                    chain=normalized_chain,
+                    asset=normalized_asset,
+                    status="unavailable",
+                    code="cmis_historical_mode_unavailable",
+                    message=str(exc),
+                    warning=True,
+                )
+            except CMISCapabilityContractError as exc:
+                return self._error_envelope(
+                    service="historical_compare",
+                    chain=normalized_chain,
+                    asset=normalized_asset,
+                    status="unavailable",
+                    code="cmis_historical_mode_contract_unavailable",
+                    message=f"CMIS historical mode contract unavailable: {exc}",
+                    warning=True,
+                )
+
         return self._request(
             service="historical_compare",
-            chain=chain,
-            asset=asset,
-            params={"question": normalized_question},
+            chain=normalized_chain,
+            asset=normalized_asset,
+            params=params,
         )
 
     def tokenomics(self, *, chain: str, asset: str) -> CMISEnvelope:
