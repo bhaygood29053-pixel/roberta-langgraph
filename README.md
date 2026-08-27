@@ -16,7 +16,7 @@ Current chain specialists include X1 Scout and Solana Scout. Roberta owns orches
 
 Roberta does not call market providers as a trust shortcut and does not reproduce CMIS calculations to manufacture a second market fact.
 
-## Current accepted status — reconciled 2026-08-26
+## Current accepted status — reconciled 2026-08-27
 
 Core Roberta platform work is accepted through Phase 10 plus the post-Phase-10 evidence-aware user experience. X1 decision-production readiness, Solana read-only readiness for the accepted Scout surface, and adoption of CMIS `concentration_change_intelligence/v1` through X1 Scout are accepted.
 
@@ -55,11 +55,13 @@ This is autonomous continual source learning, not unrestricted self-modification
 
 See [`docs/LEARNING_PLANE_ARCHITECTURE.md`](./docs/LEARNING_PLANE_ARCHITECTURE.md) and [`docs/autonomous_training.md`](./docs/autonomous_training.md).
 
-### X1 all-available history
+### X1 identity and all-available history
 
-Roberta/X1 Scout adopts CMIS `1.10.0` all-available historical comparison. Natural full-history requests remain on the canonical path `Roberta -> X1 Scout -> CMIS`.
+Roberta/X1 Scout accepts the current CMIS `1.12.0` contract boundary. CMIS `1.11.0+` exact-mint normalization under `x1_asset_identity/v1` keeps the exact mint as the fungible identity root while preserving Metaplex and XDEX descriptors as separately sourced observations.
 
-A two-asset request such as “Compare XNT and ANL over their entire history” is delegated with the exact second asset as `compare_asset`; X1 Scout issues one CMIS `all_available_pair` request. The Scout-side client requires the live CMIS 1.10 historical limitation contract and fails closed before POST if it is missing or weakened. Roberta preserves CMIS coverage bounds and does not relabel all-available verified observations as proven complete asset lifetime.
+Roberta/X1 Scout also adopts the CMIS `1.10.0` `all_available` / `all_available_pair` historical modes. Natural full-history requests remain on the canonical path `Roberta -> X1 Scout -> CMIS`.
+
+A two-asset request such as “Compare XNT and ANL over their entire history” is delegated with the exact second asset as `compare_asset`; X1 Scout issues one CMIS `all_available_pair` request. The Scout-side client requires the accepted live historical limitation contract and fails closed before POST if it is missing or weakened. Under CMIS `>=1.12.0`, provider backfill may extend **price only**; source independence, archive completeness, continuous coverage, historical USD-stable peg behavior, and complete asset lifetime remain unverified. Roberta preserves those bounds rather than relabeling partial verified history as complete lifetime history.
 
 ### Blockchain Reasoning Pyramid
 
@@ -124,7 +126,7 @@ Static sources never override fresh Scout -> CMIS -> Provider evidence for price
 ## Source-of-truth documents
 
 - [`docs/LANGGRAPH_ROADMAP.md`](./docs/LANGGRAPH_ROADMAP.md) — authoritative Roberta roadmap/status.
-- [`docs/PROJECT_STATUS_2026-08-26.md`](./docs/PROJECT_STATUS_2026-08-26.md) — current dated status snapshot.
+- [`docs/PROJECT_STATUS_2026-08-27.md`](./docs/PROJECT_STATUS_2026-08-27.md) — current dated status snapshot.
 - [`docs/LEARNING_SYSTEM.md`](./docs/LEARNING_SYSTEM.md) — Learning System phase/authority map.
 - [`docs/LEARNING_SYSTEM_RETENTION.md`](./docs/LEARNING_SYSTEM_RETENTION.md) — accepted Phase 10 retention contract.
 - [`docs/LEARNING_PLANE_ARCHITECTURE.md`](./docs/LEARNING_PLANE_ARCHITECTURE.md) — Learning Plane architecture and promotion boundary.
