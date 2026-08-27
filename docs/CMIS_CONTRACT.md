@@ -38,7 +38,7 @@ Accepted milestones include:
 
 Roberta Phase 11 — Controlled Execution remains **locked / not started**.
 
-CMIS currently advertises capability contract **1.11.0**. Roberta keeps a global existing-service minimum of **1.8.0**; the promoted concentration intelligence operation keeps its service-specific minimum of **1.9.0**, X1 all-available historical modes require **1.10.0**, and normalized exact-mint X1 identity requires **1.11.0** plus `x1_asset_identity/v1` and its accepted limitation contract.
+CMIS currently advertises capability contract **1.12.0**. Roberta keeps a global existing-service minimum of **1.8.0**; the promoted concentration intelligence operation keeps its service-specific minimum of **1.9.0**, legacy X1 all-available historical modes remain compatible from **1.10.0**, normalized exact-mint X1 identity requires **1.11.0**, and verified provider-price backfill semantics require the **1.12.0** historical limitation contract.
 
 ## Shared public service surface
 
@@ -111,7 +111,7 @@ Roberta delegates these requests through X1 Scout. For pair history, the second 
 
 Before using either all-available mode, the Scout-side client requires CMIS contract `>=1.10.0` plus the exact accepted X1 historical limitations. It fails closed without a POST if the version or limitations are missing/weakened.
 
-“All available” must never be restated as proven complete token lifetime unless CMIS explicitly proves that stronger claim. `full_asset_lifetime_verified=false` and `continuous_coverage_verified=false` remain authoritative when returned. External OHLCV/archive data is not silently promoted by Roberta or X1 Scout.
+“All available” must never be restated as proven complete token lifetime unless CMIS explicitly proves that stronger claim. `full_asset_lifetime_verified=false` and `continuous_coverage_verified=false` remain authoritative when returned. For CMIS `>=1.12.0`, X1 Scout accepts the narrower verified provider-price backfill contract only when the manifest preserves price-only promotion, non-independence, non-archive-completeness, non-continuity, and historical stable-quote uncertainty. The Scout projects CMIS coverage into deterministic presentation metadata; if verified history exists, Roberta must not describe overall history as zero. Missing history is unknown/unproven, never zero.
 
 ## First promoted read-only intelligence service
 
