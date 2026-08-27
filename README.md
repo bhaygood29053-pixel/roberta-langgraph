@@ -55,6 +55,12 @@ This is autonomous continual source learning, not unrestricted self-modification
 
 See [`docs/LEARNING_PLANE_ARCHITECTURE.md`](./docs/LEARNING_PLANE_ARCHITECTURE.md) and [`docs/autonomous_training.md`](./docs/autonomous_training.md).
 
+### X1 all-available history
+
+Roberta/X1 Scout adopts CMIS `1.10.0` all-available historical comparison. Natural full-history requests remain on the canonical path `Roberta -> X1 Scout -> CMIS`.
+
+A two-asset request such as “Compare XNT and ANL over their entire history” is delegated with the exact second asset as `compare_asset`; X1 Scout issues one CMIS `all_available_pair` request. The Scout-side client requires the live CMIS 1.10 historical limitation contract and fails closed before POST if it is missing or weakened. Roberta preserves CMIS coverage bounds and does not relabel all-available verified observations as proven complete asset lifetime.
+
 ### Blockchain Reasoning Pyramid
 
 The Pyramid is a source-specific mastery system rather than a requirement that every source traverse all 20 global capability levels.

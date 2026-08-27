@@ -27,7 +27,7 @@ GET /v1/cmis/capabilities
 The response must satisfy:
 
 - capability schema `1`;
-- CMIS contract version `>= 1.6.0`;
+- global CMIS existing-service contract version `>= 1.8.0`;
 - request path `/v1/cmis`;
 - explicit classification of every advertised service for every known chain;
 - consistent `state` / `callable` values;
@@ -44,6 +44,20 @@ If the capability contract is unavailable, malformed, stale, or incompatible, th
 If CMIS explicitly classifies a chain/service as non-callable, the attempted service returns `unavailable` with `cmis_capability_unavailable`, and no service POST is sent.
 
 `partial` and `bounded` capabilities are callable. Their limitations are still preserved by the normal CMIS response contract and must not be upgraded by a Scout or by Roberta.
+
+## Service-specific all-history guard
+
+The global `>=1.8.0` minimum does not authorize newer semantics by implication. X1 `historical_compare` modes `all_available` and `all_available_pair` require a second service-specific gate:
+
+- CMIS contract `>=1.10.0`;
+- X1 `historical_compare` callable;
+- explicit `all_available_mode_uses_cmis_stored_verified_observations_only`;
+- explicit `all_available_does_not_imply_complete_asset_lifetime`;
+- explicit `continuous_historical_coverage_not_implied`;
+- explicit `external_ohlcv_or_archive_history_not_promoted_by_this_mode`;
+- pair mode additionally requires `pair_mode_requires_compare_asset_and_overlapping_verified_history`.
+
+If any gate is missing, the client returns `unavailable` and sends no CMIS service POST.
 
 ## Architectural effect
 

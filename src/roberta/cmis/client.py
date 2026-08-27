@@ -3,7 +3,7 @@
 from typing import Protocol
 
 from roberta.cmis.capabilities import CMISCapabilities
-from roberta.cmis.contracts import CMISEnvelope, RankMetric, TradeAction
+from roberta.cmis.contracts import CMISEnvelope, HistoricalMode, RankMetric, TradeAction
 
 
 class CMISClient(Protocol):
@@ -34,7 +34,9 @@ class CMISClient(Protocol):
         *,
         chain: str,
         asset: str,
-        question: str,
+        question: str | None = None,
+        mode: HistoricalMode = "window",
+        compare_asset: str | None = None,
     ) -> CMISEnvelope:
         ...
 

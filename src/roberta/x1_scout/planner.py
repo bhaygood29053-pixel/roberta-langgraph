@@ -17,7 +17,7 @@ from typing import Any
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from roberta.cmis.contracts import CMISOperation, RankMetric
+from roberta.cmis.contracts import CMISOperation, HistoricalMode, RankMetric
 from roberta.cmis.verification import normalize_verification_evidence_selector
 from roberta.recommendation_policy import (
     autonomous_x1_operations_for_recommendation,
@@ -60,6 +60,17 @@ _RANK_TERMS = (
     "most active",
     "safest tokens",
 )
+_ALL_AVAILABLE_HISTORY_TERMS = (
+    "entire history",
+    "full history",
+    "all history",
+    "all available history",
+    "since inception",
+    "since launch",
+    "lifetime history",
+    "whole history",
+)
+
 _HISTORICAL_TERMS = (
     "historical",
     "history",
@@ -116,6 +127,64 @@ def is_rank_objective(objective: object) -> bool:
 def is_historical_objective(objective: object) -> bool:
     normalized = _normalize_objective(objective)
     return bool(normalized) and any(term in normalized for term in _HISTORICAL_TERMS)
+
+
+
+def is_all_available_history_objective(objective: object) -> bool:
+    normalized = _normalize_objective(objective)
+    return bool(normalized) and any(
+        term in normalized for term in _ALL_AVAILABLE_HISTORY_TERMS
+    )
+
+
+def compare_asset_from_objective(
+    objective: object,
+    *,
+    primary_asset: object,
+) -> str | None:
+    """Extract a simple second asset symbol from the exact user objective.
+
+    This is request parsing only. It does not resolve symbols to chain identity
+    or create a market fact; CMIS remains authoritative for asset resolution.
+    """
+
+    text = " ".join(str(objective or "").strip().split())
+    primary = str(primary_asset or "").strip()
+    if not text or not primary:
+        return None
+
+    match = re.search(
+        r"\bcompare\s+([A-Za-z0-9._:-]+)\s+(?:and|versus|vs\.?)\s+([A-Za-z0-9._:-]+)\b",
+        text,
+        flags=re.IGNORECASE,
+    )
+    if match is None:
+        match = re.search(
+            r"\b([A-Za-z0-9._:-]+)\s+(?:versus|vs\.?)\s+([A-Za-z0-9._:-]+)\b",
+            text,
+            flags=re.IGNORECASE,
+        )
+    if match is None:
+        return None
+
+    left, right = match.group(1), match.group(2)
+    if left.lower() == primary.lower() and right.lower() != primary.lower():
+        return right
+    if right.lower() == primary.lower() and left.lower() != primary.lower():
+        return left
+    return None
+
+
+def historical_mode_from_objective(
+    objective: object,
+    *,
+    compare_asset: object = None,
+) -> HistoricalMode:
+    if not is_all_available_history_objective(objective):
+        return "window"
+    if str(compare_asset or "").strip():
+        return "all_available_pair"
+    return "all_available"
 
 
 def rank_metric_from_objective(objective: object) -> RankMetric:

@@ -1,6 +1,6 @@
 # CMIS Contract Boundary
 
-Last refreshed: 2026-08-25
+Last refreshed: 2026-08-26
 
 CMIS is Roberta's deterministic cross-chain market-intelligence service layer. Roberta does not own provider collection, fact verification, Evidence Receipt generation, Proof Score calculation, deterministic market risk, or bounded pre-trade calculations. Chain Scouts select and interpret allowed CMIS operations; CMIS and its providers remain authoritative for freshness-sensitive market facts.
 
@@ -38,7 +38,7 @@ Accepted milestones include:
 
 Roberta Phase 11 — Controlled Execution remains **locked / not started**.
 
-CMIS currently advertises capability contract **1.9.0**. Roberta keeps a global existing-service minimum of **1.8.0**, while the promoted concentration intelligence operation has a service-specific minimum of **1.9.0**.
+CMIS currently advertises capability contract **1.10.0**. Roberta keeps a global existing-service minimum of **1.8.0**; the promoted concentration intelligence operation keeps its service-specific minimum of **1.9.0**, while X1 all-available historical modes require **1.10.0** plus their accepted limitation contract.
 
 ## Shared public service surface
 
@@ -76,6 +76,22 @@ scout_reliance_promoted = false
 The promoted service is a separate Phase 12 wrapper and does not change that foundation-level state.
 
 Roberta does not bypass the Scout boundary to perform provider calls directly.
+
+## X1 all-available historical comparison — CMIS 1.10
+
+The public service remains `historical_compare`; no new service or authority layer is introduced.
+
+Accepted X1 modes are:
+
+- `window` — existing explicit period comparison and backward-compatible payload behavior;
+- `all_available` — one asset across every verified observation currently available to CMIS;
+- `all_available_pair` — two assets compared by CMIS only over their overlapping verified observation window.
+
+Roberta delegates these requests through X1 Scout. For pair history, the second asset is an explicit `compare_asset` copied from the user request/trusted current context. X1 Scout sends a single CMIS pair request and preserves the returned data, warnings, coverage boundaries, Evidence Receipt, Proof Score, and uncertainty state.
+
+Before using either all-available mode, the Scout-side client requires CMIS contract `>=1.10.0` plus the exact accepted X1 historical limitations. It fails closed without a POST if the version or limitations are missing/weakened.
+
+“All available” must never be restated as proven complete token lifetime unless CMIS explicitly proves that stronger claim. `full_asset_lifetime_verified=false` and `continuous_coverage_verified=false` remain authoritative when returned. External OHLCV/archive data is not silently promoted by Roberta or X1 Scout.
 
 ## First promoted read-only intelligence service
 
