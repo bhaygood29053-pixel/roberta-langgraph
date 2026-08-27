@@ -11,6 +11,8 @@ from roberta.learning.autonomous_remediation import (
     AutonomousRemediationError,
     StageTransferLearnedConceptAnswerModel,
     _boss_synthesis_atoms,
+    _provisional_concepts,
+    _remediation_lineage,
     _remediation_targets,
     _transfer_exercises,
 )
@@ -138,6 +140,22 @@ def test_failed_boss_expands_to_all_twelve_stage_bound_synthesis_atoms() -> None
     assert len(transfer) == 13
     assert transfer[-1].exercise_id == boss.exercise_id
     assert transfer[-1].boss_question is True
+
+
+def test_boss_expansion_preserves_failed_boss_id_as_learning_lineage() -> None:
+    bank = _stage_bank()
+    boss = bank[-1]
+    targets = _remediation_targets(bank, (boss,))
+    lineage = _remediation_lineage(bank, (boss,))
+    provisional = _provisional_concepts(
+        curriculum_id=CURRICULUM_ID,
+        level=LEVEL,
+        weak=targets,
+        critical_ids_by_key=lineage,
+    )
+
+    assert len(provisional) == 12
+    assert all(item.critical_exercise_ids == (boss.exercise_id,) for item in provisional)
 
 
 def test_boss_transfer_receives_complete_verified_stage_synthesis_set() -> None:
