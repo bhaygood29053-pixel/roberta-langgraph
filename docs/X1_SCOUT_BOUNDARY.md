@@ -42,6 +42,38 @@ X1 Scout does not decode Metaplex accounts, compare Metaplex/XDEX labels, select
 
 Symbol-based requests do not trigger this exact-mint preflight and retain existing CMIS behavior.
 
+
+## Full asset assessment boundary
+
+A full/complete/comprehensive X1 asset assessment or due-diligence request is a
+deterministic multi-service objective rather than a model-selected ranking query.
+
+The accepted read-only plan is:
+
+```text
+market_report
+rank
+tokenomics
+historical_compare(mode="all_available")
+risk_check
+```
+
+All five CMIS results are preserved as separate Scout investigations. The
+`risk_check` result remains the primary/top-level result so ranking or market
+status cannot be mistaken for deterministic risk. The historical request uses
+all verified observations currently available to CMIS and preserves the same
+non-lifetime/non-continuity limitations described below.
+
+A ranking phrase inside a full assessment does not convert the objective into a
+rank-only plan. Conversely, a genuinely ranking-only request remains rank-only.
+
+For symbol-only `XNT` requests, X1 Scout does not infer that native XNT and a
+wrapped/token representation are identical. Per-investigation CMIS asset
+descriptors are preserved. If a CMIS result identifies a wrapped descriptor,
+the Scout emits an explicit native-versus-wrapped scope warning and requires
+stronger identity evidence before Roberta may treat those representations as
+the same analytical subject.
+
 ## Historical comparison boundary
 
 CMIS 1.10 extends the existing `historical_compare` service with `window`, `all_available`, and `all_available_pair` modes.

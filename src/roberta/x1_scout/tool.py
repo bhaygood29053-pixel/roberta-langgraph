@@ -34,7 +34,9 @@ def build_x1_scout_tool(
         """Delegate an X1-specific investigation to X1 Scout.
 
         Ordinary read-only objectives may cover current market data, tokenomics,
-        risk, XDEX rankings, and historical comparisons. For a global XDEX
+        risk, XDEX rankings, and historical comparisons. A full/complete/
+        comprehensive assessment deterministically requires all five dimensions
+        and uses all available verified history. For a global XDEX
         ranking with no single asset, use ``asset='XDEX'`` as the scope label.
         For a two-asset entire/full/lifetime-history comparison, copy the exact
         second user-supplied asset into ``compare_asset``.
@@ -120,7 +122,10 @@ def build_x1_scout_tool(
         description=(
             "Delegate an X1-chain investigation to X1 Scout. Ordinary objectives cover "
             "current market data, tokenomics, deterministic risk, XDEX rankings, and "
-            "historical comparisons. All-available history reports include a deterministic "
+            "historical comparisons. Full/complete/comprehensive assessment or due-diligence "
+            "objectives deterministically gather market_report, rank, tokenomics, "
+            "historical_compare using all available verified history, and risk_check. "
+            "All-available history reports include a deterministic "
             "historical_coverage_presentation: when verified_history_available is true, "
             "do not describe overall historical coverage as zero; full lifetime or continuous "
             "coverage may be claimed only when the corresponding CMIS flags are true. "

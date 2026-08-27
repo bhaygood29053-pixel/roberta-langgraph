@@ -69,6 +69,16 @@ def build_decision_synthesis_system_message(objective: object) -> str | None:
         str(item) for item in plan["required_evidence_categories"]
     ) or "none"
     technical_requested = technical_decision_detail_requested(objective)
+    full_assessment = intent == "full_assessment"
+    answer_shape = (
+        "Present a structured full assessment covering asset identity/scope, current market, "
+        "ecosystem position/rank, tokenomics, all-available verified history, Risk, Evidence "
+        "quality, and material limitations. Do not compress the assessment into only 2-4 reasons."
+        if full_assessment
+        else (
+            "Then give only 2-4 material evidence-backed reasons that directly answer the user."
+        )
+    )
     detail_mode = (
         "The user explicitly requested technical/evidence detail, so fuller provenance, "
         "timestamps, source/conflict detail, and diagnostic fields may be shown when useful."
@@ -86,7 +96,7 @@ def build_decision_synthesis_system_message(objective: object) -> str | None:
         f"- required_evidence_categories: {evidence_categories}\n"
         "- Lead with the recommendation, conclusion, or blocker immediately; do not lead with "
         "CMIS/Scout diagnostics or orchestration narration.\n"
-        "- Then give only 2-4 material evidence-backed reasons that directly answer the user.\n"
+        f"- {answer_shape}\n"
         "- State Risk and Evidence quality as separate dimensions. Do not infer a risk level "
         "from PASS/WARN/BLOCK, proof strength, liquidity, volume, or missing fields.\n"
         "- Surface important unknown, stale, conflicting, ambiguous, unavailable, or insufficient "

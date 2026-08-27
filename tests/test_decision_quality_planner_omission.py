@@ -7,6 +7,17 @@ from roberta.x1_scout.planner import enforce_plan
     ("objective", "proposal", "expected"),
     [
         (
+            "Full assessment of XNT",
+            {"operations": ["rank"]},
+            [
+                "market_report",
+                "rank",
+                "tokenomics",
+                "historical_compare",
+                "risk_check",
+            ],
+        ),
+        (
             "Should I buy AGI?",
             {"operations": ["market_report"]},
             ["market_report", "historical_compare", "risk_check"],
@@ -89,3 +100,25 @@ def test_planner_error_does_not_remove_required_recommendation_evidence():
 
     assert plan["operations"] == ["risk_check", "market_report", "tokenomics"]
     assert "planner_fallback: model unavailable" in plan["warnings"]
+
+
+def test_full_assessment_with_rank_language_does_not_collapse_to_rank_only():
+    plan = enforce_plan(
+        {
+            "asset": "XNT",
+            "objective": "Full assessment of XNT including rank against X1 peers",
+        },
+        {"operations": ["rank", "market_report", "risk_check"]},
+    )
+
+    assert plan["operations"] == [
+        "market_report",
+        "rank",
+        "tokenomics",
+        "historical_compare",
+        "risk_check",
+    ]
+    assert not any(
+        warning.startswith("planner_operation_rejected_for_rank_objective")
+        for warning in plan["warnings"]
+    )

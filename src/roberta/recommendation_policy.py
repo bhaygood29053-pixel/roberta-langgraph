@@ -14,6 +14,7 @@ from roberta.cmis.contracts import CMISOperation
 
 
 RecommendationIntent: TypeAlias = Literal[
+    "full_assessment",
     "trade_decision",
     "trade_size",
     "safer_asset",
@@ -54,6 +55,22 @@ def recommendation_intent(objective: object) -> RecommendationIntent:
     text = _normalize(objective)
     if not text:
         return "general"
+
+    if _has_any(
+        text,
+        (
+            "full assessment",
+            "complete assessment",
+            "comprehensive assessment",
+            "full asset assessment",
+            "complete asset assessment",
+            "comprehensive asset assessment",
+            "full due diligence",
+            "complete due diligence",
+            "comprehensive due diligence",
+        ),
+    ):
+        return "full_assessment"
 
     # Concrete amount/position questions are primarily sizing questions. Merely
     # recognizing the wording does not authorize pre_trade_check; the Scout's
@@ -242,6 +259,13 @@ def recommendation_evidence_plan(objective: object) -> dict[str, object]:
 
     intent = recommendation_intent(objective)
     service_map: dict[RecommendationIntent, tuple[CMISOperation, ...]] = {
+        "full_assessment": (
+            "market_report",
+            "rank",
+            "tokenomics",
+            "historical_compare",
+            "risk_check",
+        ),
         "trade_decision": (
             "pre_trade_check",
             "historical_compare",
@@ -261,6 +285,14 @@ def recommendation_evidence_plan(objective: object) -> dict[str, object]:
         "general": (),
     }
     category_map: dict[RecommendationIntent, tuple[str, ...]] = {
+        "full_assessment": (
+            "current_market",
+            "ecosystem_position",
+            "tokenomics",
+            "historical_context",
+            "risk",
+            "evidence_quality",
+        ),
         "trade_decision": (
             "current_market",
             "trade_size_liquidity",
@@ -332,6 +364,7 @@ def autonomous_x1_operations_for_recommendation(objective: object) -> list[CMISO
     """
 
     plan = recommendation_evidence_plan(objective)
+    intent = plan["intent"]
     raw_services = list(plan["required_services"])
     allowed = {
         "market_report",
@@ -346,7 +379,8 @@ def autonomous_x1_operations_for_recommendation(objective: object) -> list[CMISO
     for operation in raw_services:
         if operation in allowed and operation not in result:
             result.append(operation)  # type: ignore[arg-type]
-    return result[:3]
+    limit = 5 if intent == "full_assessment" else 3
+    return result[:limit]
 
 
 __all__ = [

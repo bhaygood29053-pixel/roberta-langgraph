@@ -6,6 +6,7 @@ from roberta.decision_synthesis import build_decision_synthesis_system_message
 @pytest.mark.parametrize(
     ("objective", "intent"),
     [
+        ("Full assessment of XNT", "full_assessment"),
         ("Should I buy AGI?", "trade_decision"),
         ("Can I buy $500 of AGI?", "trade_size"),
         ("Is AGI risky?", "risk_assessment"),
@@ -51,3 +52,16 @@ def test_price_move_brief_requires_historical_context_but_cannot_invent_causalit
     assert "historical_context" in message
     assert "recent_verified_activity_when_available" in message
     assert "never recalculate, reconcile, strengthen, weaken, or replace" in message
+
+
+def test_full_assessment_brief_requires_complete_structured_coverage():
+    message = build_decision_synthesis_system_message("Full assessment of XNT")
+
+    assert message is not None
+    assert (
+        "required_evidence_services: market_report, rank, tokenomics, "
+        "historical_compare, risk_check"
+    ) in message
+    assert "structured full assessment" in message
+    assert "all-available verified history" in message
+    assert "Do not compress the assessment into only 2-4 reasons" in message
