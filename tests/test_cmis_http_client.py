@@ -400,6 +400,39 @@ def test_http_client_posts_one_all_available_pair_request_under_cmis_1_10() -> N
     ]
 
 
+def test_http_client_sends_bounded_interactive_all_history_controls() -> None:
+    expected = _envelope("historical_compare")
+    capabilities = _cmis_1_10_history_capabilities()
+
+    with _Server(expected, capabilities=capabilities) as running:
+        result = CMISHTTPClient(
+            base_url=running.base_url,
+            timeout_seconds=2,
+        ).historical_compare(
+            chain="x1",
+            asset="XNT",
+            question="Full assessment of XNT",
+            mode="all_available",
+            provider_history_backfill=False,
+            onchain_max_signatures=1000,
+        )
+
+    assert result == expected
+    assert running.requests == [
+        {
+            "service": "historical_compare",
+            "chain": "x1",
+            "asset": "XNT",
+            "params": {
+                "mode": "all_available",
+                "question": "Full assessment of XNT",
+                "provider_history_backfill": False,
+                "onchain_max_signatures": 1000,
+            },
+        }
+    ]
+
+
 def test_http_client_blocks_all_available_pair_on_cmis_1_9_before_post() -> None:
     capabilities = _cmis_1_10_history_capabilities()
     capabilities["contract_version"] = "1.9.0"
