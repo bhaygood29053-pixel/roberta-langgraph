@@ -14,6 +14,9 @@ from roberta.cmis.capabilities import (
     INTELLIGENCE_FOUNDATION_PHASE,
     INTELLIGENCE_PROMOTION_RULE,
     MIN_CMIS_CONTRACT_VERSION,
+    X1_ASSET_IDENTITY_CONTRACT_VERSION,
+    X1_ASSET_IDENTITY_MIN_CMIS_CONTRACT_VERSION,
+    X1_ASSET_IDENTITY_REQUIRED_LIMITATIONS,
 )
 from roberta.cmis.http import CMISHTTPClient
 
@@ -135,6 +138,18 @@ def _capabilities() -> dict[str, object]:
     }
 
 
+def _cmis_1_11_identity_capabilities() -> dict[str, object]:
+    capabilities = deepcopy(_capabilities())
+    capabilities["contract_version"] = X1_ASSET_IDENTITY_MIN_CMIS_CONTRACT_VERSION
+    lookup = capabilities["chains"]["x1"]["services"]["asset_lookup"]
+    lookup["limitations"] = list(X1_ASSET_IDENTITY_REQUIRED_LIMITATIONS)
+    lookup["identity_contract_version"] = X1_ASSET_IDENTITY_CONTRACT_VERSION
+    lookup["exact_mint_normalization"] = True
+    lookup["normalized_identity_root"] = "mint"
+    lookup["metaplex_xdex_reconciliation"] = True
+    return capabilities
+
+
 class _Server:
     def __init__(
         self,
@@ -214,6 +229,40 @@ class _Server:
         self.server.shutdown()
         self.server.server_close()
         self.thread.join(timeout=2)
+
+
+def test_http_client_posts_asset_lookup_under_cmis_1_11_identity_contract() -> None:
+    mint = "DQ6sApYPMJ8LwpvyUjthL7amykNBJ3fx5jZi2koN7vHb"
+    expected = _envelope("asset_lookup")
+    expected["asset"] = {"symbol": "XENCAT", "name": "XENCAT", "mint": mint}
+    expected["data"] = {
+        "identity_contract": X1_ASSET_IDENTITY_CONTRACT_VERSION,
+        "normalized_identity": {
+            "mint": mint,
+            "symbol": "XENCAT",
+            "name": "XENCAT",
+            "identity_root": "mint",
+            "descriptor_source": "metaplex_token_metadata",
+            "normalized_onchain_identity_verified": True,
+        },
+        "identity_reconciliation": {
+            "state": "agreement",
+            "comparable_fields": ["symbol", "name"],
+            "conflicting_fields": [],
+        },
+    }
+    with _Server(
+        expected,
+        capabilities=_cmis_1_11_identity_capabilities(),
+    ) as running:
+        client = CMISHTTPClient(base_url=running.base_url, timeout_seconds=2)
+        result = client.asset_lookup(chain="x1", asset=mint)
+
+    assert result == expected
+    assert running.get_paths == ["/v1/cmis/capabilities"]
+    assert running.requests == [
+        {"service": "asset_lookup", "chain": "x1", "asset": mint, "params": {}}
+    ]
 
 
 def test_http_client_handshakes_then_posts_market_report_and_preserves_envelope() -> None:
