@@ -6,11 +6,17 @@ Provider beneath them. Evidence receipt/proof metadata is projected separately
 from market findings so Roberta can explain proof without rewriting facts.
 """
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from typing import Any, Literal
 
 from langgraph.graph import END, START, StateGraph
 
+from roberta.cmis.capabilities import (
+    CMISCapabilityContractError,
+    CMISCapabilityUnavailable,
+    X1_ASSET_IDENTITY_CONTRACT_VERSION,
+    require_x1_normalized_asset_identity_capability,
+)
 from roberta.cmis.client import CMISClient
 from roberta.cmis.contracts import CMISEnvelope, CMISOperation
 from roberta.evidence_aware import evidence_context
@@ -137,6 +143,76 @@ def _dispatch_cmis_operation(
     raise ValueError(f"Unsupported CMIS operation: {operation!r}")  # pragma: no cover
 
 
+_BASE58_CHARS = frozenset(
+    "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+)
+
+
+def _looks_like_exact_x1_mint(value: object) -> bool:
+    """Select identity preflight candidates without deciding chain identity."""
+    text = str(value or "").strip()
+    return bool(
+        32 <= len(text) <= 44
+        and all(char in _BASE58_CHARS for char in text)
+    )
+
+
+def _accepted_normalized_identity(
+    result: object,
+    *,
+    requested_asset: object,
+) -> tuple[dict[str, object] | None, dict[str, object] | None]:
+    """Validate CMIS identity output without recomputing reconciliation."""
+    if not isinstance(result, Mapping):
+        return None, None
+    data = result.get("data")
+    if not isinstance(data, Mapping):
+        return None, None
+    if data.get("identity_contract") != X1_ASSET_IDENTITY_CONTRACT_VERSION:
+        return None, None
+
+    normalized = data.get("normalized_identity")
+    reconciliation = data.get("identity_reconciliation")
+    if not isinstance(normalized, Mapping) or not isinstance(reconciliation, Mapping):
+        return None, None
+    if normalized.get("identity_root") != "mint":
+        return None, None
+
+    status = result.get("status")
+    if status not in {"ok", "partial", "unavailable"}:
+        return None, None
+
+    requested = str(requested_asset or "").strip()
+    if str(normalized.get("mint") or "").strip() != requested:
+        return None, None
+
+    verified = normalized.get("normalized_onchain_identity_verified")
+    if not isinstance(verified, bool):
+        return None, None
+
+    reconciliation_state = reconciliation.get("state")
+    accepted_states = {
+        "agreement",
+        "metaplex_only",
+        "descriptor_conflict",
+        "xdex_unavailable",
+        "metadata_unavailable",
+    }
+    if reconciliation_state not in accepted_states:
+        return None, None
+
+    if reconciliation_state == "metadata_unavailable":
+        if verified is not False:
+            return None, None
+    else:
+        if verified is not True:
+            return None, None
+        if normalized.get("descriptor_source") != "metaplex_token_metadata":
+            return None, None
+
+    return dict(normalized), dict(reconciliation)
+
+
 def make_cmis_calls_node(cmis_client: CMISClient) -> Callable[[X1ScoutState], dict[str, Any]]:
     def cmis_calls_node(state: X1ScoutState) -> dict[str, Any]:
         request = dict(state["request"])
@@ -147,6 +223,20 @@ def make_cmis_calls_node(cmis_client: CMISClient) -> Callable[[X1ScoutState], di
             )
             if inferred_compare is not None:
                 request["compare_asset"] = inferred_compare
+
+        identity_result = None
+        if _looks_like_exact_x1_mint(request.get("asset")):
+            try:
+                require_x1_normalized_asset_identity_capability(
+                    cmis_client.capabilities()
+                )
+            except (CMISCapabilityContractError, CMISCapabilityUnavailable):
+                identity_result = None
+            else:
+                identity_result = cmis_client.asset_lookup(
+                    chain="x1",
+                    asset=str(request["asset"]),
+                )
 
         operations = state["plan"]["operations"]
         results = [
@@ -159,6 +249,7 @@ def make_cmis_calls_node(cmis_client: CMISClient) -> Callable[[X1ScoutState], di
             "request": request,
             "cmis_results": results,
             "cmis_result": results[-1],
+            "cmis_identity_result": identity_result,
             "status": "running",
         }
 
@@ -212,6 +303,11 @@ def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
     ]
     primary_result = results[-1]
     primary = investigations[-1]
+    identity_result = state.get("cmis_identity_result")
+    normalized_identity, identity_reconciliation = _accepted_normalized_identity(
+        identity_result,
+        requested_asset=request["asset"],
+    )
 
     report_status: Literal["complete", "error"] = (
         "error"
@@ -226,7 +322,16 @@ def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
         "specialist": "x1_scout",
         "chain": "x1",
         "requested_asset": request["asset"],
-        "asset": dict(primary_result["asset"]),
+        "asset": (
+            {
+                key: normalized_identity.get(key)
+                for key in ("symbol", "name", "mint")
+                if normalized_identity.get(key) is not None
+            }
+            if normalized_identity is not None
+            and normalized_identity.get("normalized_onchain_identity_verified") is True
+            else dict(primary_result["asset"])
+        ),
         "objective": request["objective"],
         "status": report_status,
         "plan": dict(state["plan"]),
@@ -244,9 +349,30 @@ def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
         "pretrade_presentation": primary["pretrade_presentation"],
         "source": {"service": "cmis", "operation": primary["operation"]},
         "sources": list(primary["sources"]),
-        "warnings": list(primary["warnings"]),
+        "warnings": [
+            *(
+                list(identity_result.get("warnings") or [])
+                if isinstance(identity_result, Mapping)
+                else []
+            ),
+            *list(primary["warnings"]),
+        ],
         "errors": list(primary["errors"]),
     }
+    if normalized_identity is not None:
+        report["normalized_asset_identity"] = normalized_identity
+        report["asset_identity_reconciliation"] = identity_reconciliation or {}
+        if isinstance(identity_result, Mapping):
+            identity_status = identity_result.get("status")
+            if identity_status in {
+                "ok",
+                "partial",
+                "unavailable",
+                "ambiguous",
+                "error",
+            }:
+                report["asset_identity_status"] = identity_status
+
     compare_asset = request.get("compare_asset")
     if compare_asset is not None:
         report["requested_compare_asset"] = str(compare_asset)

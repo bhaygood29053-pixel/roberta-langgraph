@@ -9,6 +9,8 @@ from roberta.cmis.capabilities import (
     INTELLIGENCE_FOUNDATION_PHASE,
     INTELLIGENCE_PROMOTION_RULE,
     MIN_CMIS_CONTRACT_VERSION,
+    X1_ASSET_IDENTITY_CONTRACT_VERSION,
+    X1_ASSET_IDENTITY_REQUIRED_LIMITATIONS,
 )
 from roberta.cmis.contracts import (
     CMISEnvelope,
@@ -61,6 +63,16 @@ def _mock_capability_manifest() -> CMISCapabilities:
         "verification_evidence",
     ]
     x1 = {service: _capability("supported") for service in services}
+    x1["asset_lookup"] = {
+        **_capability(
+            "supported",
+            limitations=list(X1_ASSET_IDENTITY_REQUIRED_LIMITATIONS),
+        ),
+        "identity_contract_version": X1_ASSET_IDENTITY_CONTRACT_VERSION,
+        "exact_mint_normalization": True,
+        "normalized_identity_root": "mint",
+        "metaplex_xdex_reconciliation": True,
+    }
     x1["historical_compare"] = _capability(
         "supported",
         requirements=["verified_current_market_snapshot"],
@@ -96,7 +108,7 @@ def _mock_capability_manifest() -> CMISCapabilities:
         "service": "cmis_gateway",
         "version": 1,
         "schema_version": 1,
-        "contract_version": "1.10.0",
+        "contract_version": "1.11.0",
         "request_path": "/v1/cmis",
         "evidence_quality": {
             "evidence_receipt_schema_version": 1,
@@ -241,10 +253,15 @@ class MockCMISClient:
     @classmethod
     def _identity(cls, chain: str, asset: str) -> tuple[str, str]:
         chain = cls._chain(chain)
-        asset = str(asset or "").strip().upper()
-        if not asset:
+        raw_asset = str(asset or "").strip()
+        if not raw_asset:
             raise ValueError("asset must not be empty")
-        return chain, asset
+        base58 = set("123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz")
+        address_shaped = (
+            32 <= len(raw_asset) <= 44
+            and all(char in base58 for char in raw_asset)
+        )
+        return chain, raw_asset if address_shaped else raw_asset.upper()
 
     def _status(self) -> str:
         if self.scenario == "error":
@@ -302,6 +319,34 @@ class MockCMISClient:
                 observed_at=self.observed_at,
             ),
         }  # type: ignore[return-value]
+
+    def asset_lookup(self, *, chain: str, asset: str) -> CMISEnvelope:
+        chain, asset = self._identity(chain, asset)
+        self.calls.append({"operation": "asset_lookup", "chain": chain, "asset": asset})
+        return self._response(
+            service="asset_lookup",
+            chain=chain,
+            asset=asset,
+            data={
+                "query": asset,
+                "identity_contract": X1_ASSET_IDENTITY_CONTRACT_VERSION,
+                "normalized_identity": {
+                    "mint": asset,
+                    "symbol": "TEST",
+                    "name": "Test Asset",
+                    "identity_root": "mint",
+                    "descriptor_source": "metaplex_token_metadata",
+                    "normalized_onchain_identity_verified": True,
+                },
+                "identity_reconciliation": {
+                    "state": "agreement",
+                    "comparable_fields": ["symbol", "name"],
+                    "conflicting_fields": [],
+                    "metaplex": {"mint": asset},
+                    "xdex": {"present": True, "variants": []},
+                },
+            },
+        )
 
     def market_report(self, *, chain: str, asset: str) -> CMISEnvelope:
         chain, asset = self._identity(chain, asset)
