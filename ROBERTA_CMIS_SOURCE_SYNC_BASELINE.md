@@ -1,6 +1,6 @@
 # Roberta ↔ CMIS Source Sync Baseline
 
-Last reconciled: 2026-08-27 (America/New_York)
+Last reconciled: 2026-08-28 (America/New_York)
 
 This file is the compact cross-project synchronization baseline. It is intentionally mirrored in both repositories. Repository-local architecture, capability, roadmap, and status documents remain authoritative for implementation details.
 
