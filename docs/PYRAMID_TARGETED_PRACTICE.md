@@ -44,15 +44,15 @@ failed canonical stage
   -> source-grounded practice
   -> closed-source bounded candidate-memory retention
   -> bind failed-checkpoint + retention provenance
-  -> convert candidates to verified curriculum-scoped LearnedConcept records
+  -> convert candidates to provenance-bound curriculum-scoped LearnedConcept records (transfer-only)
   -> atomic + Boss transfer verification
-  -> promotion only after perfect transfer
+  -> persist/promote only after perfect transfer
   -> canonical retry
 ```
 
 The candidate object is intentionally **not** a durable `LearnedConcept`: it has no durable-memory authorization fields and no durable serialization contract. During retention, the answer path receives only the candidate principle as unpromoted candidate memory. Raw source excerpts, expected answers, reference reasoning points, forbidden-inference grading material, and verified learned-concept memory are excluded.
 
-Retention is closed-source, not source-free. The answer is bounded to the candidate principle so pretrained model knowledge cannot silently add, replace, correct, or contradict factual content beyond the lesson under test. Candidate memory remains unverified until perfect retention and provenance binding succeed. Perfect retention and perfect transfer remain fail-closed requirements.
+Retention is closed-source, not source-free. The answer is bounded to the candidate principle so pretrained model knowledge cannot silently add, replace, correct, or contradict factual content beyond the lesson under test. Candidate memory remains unverified until perfect retention and provenance binding succeed. At that point it may be converted into a provenance-bound `LearnedConcept` record for transfer evaluation only; persistence/promotion still waits for perfect transfer. Perfect retention and perfect transfer remain fail-closed requirements.
 
 This autonomous lane does not weaken or replace `closed_book_critical_retention` for the manual critical-origin workflow; the two mechanisms have different contracts and must not be conflated.
 
