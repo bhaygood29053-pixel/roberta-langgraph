@@ -43,7 +43,7 @@ from .source_mastery import (
 
 
 AUTONOMOUS_CURRICULUM_CONTRACT = "roberta-autonomous-curriculum/v1"
-AUTONOMOUS_CURRICULUM_VERSION = "1.1.0"
+AUTONOMOUS_CURRICULUM_VERSION = "1.2.0"
 TARGET_GENERATOR_CONTRACT = "roberta-autonomous-target-generator/v1"
 PLAN_GENERATOR_CONTRACT = "roberta-autonomous-source-planner/v1"
 ORDINARY_VARIANTS_PER_TARGET = 13
@@ -258,8 +258,17 @@ def _validate_candidate(
     if not isinstance(required_raw, list) or not required_raw or not all(isinstance(item, str) and item.strip() for item in required_raw):
         raise AutonomousCurriculumError(f"target {index} requires non-empty required_points")
     forbidden_raw = raw.get("forbidden_inferences", [])
-    if not isinstance(forbidden_raw, list) or not all(isinstance(item, str) and item.strip() for item in forbidden_raw):
-        raise AutonomousCurriculumError(f"target {index} forbidden_inferences must be strings")
+    # forbidden_inferences is optional defensive metadata. It must never be a
+    # reason to trust or repair an otherwise invalid target, but malformed
+    # optional metadata also must not erase an independently valid
+    # exact-evidence target. Preserve only the contract-safe representation:
+    # a JSON array of non-empty strings. Anything else is discarded.
+    if isinstance(forbidden_raw, list) and all(
+        isinstance(item, str) and item.strip() for item in forbidden_raw
+    ):
+        forbidden_items = tuple(str(item).strip() for item in forbidden_raw)
+    else:
+        forbidden_items = ()
     material = f"{package_source_key}|{stage.stage}|{stage.capability_level}|{page}|{concept}|{subconcept}|{principle}|{normalized_evidence}"
     digest = hashlib.sha256(material.encode("utf-8")).hexdigest()
     return GeneratedTarget(
@@ -274,7 +283,7 @@ def _validate_candidate(
         section=section,
         source_ref=f"AUTO-S{stage.stage:02d}-{digest[:16]}",
         required_points=tuple(str(item).strip() for item in required_raw),
-        forbidden_inferences=tuple(str(item).strip() for item in forbidden_raw),
+        forbidden_inferences=forbidden_items,
     )
 
 
@@ -325,6 +334,7 @@ def generate_stage_targets(
                     "page and chapter must identify the page that contains evidence_quote and remain inside allowed_chapters",
                     "principle and required_points must be directly supported by evidence_quote without outside knowledge",
                     "concept/subconcept must be distinct from reserved_stage_semantics and from other targets in this response",
+                    "forbidden_inferences is optional defensive metadata and MUST be [] or a JSON array containing only plain non-empty strings",
                 ],
                 "source_title": source.title,
                 "stage": stage.stage,
@@ -343,7 +353,9 @@ def generate_stage_targets(
                             "chapter": stage.source_chapters[0],
                             "section": "source section heading or concise local description",
                             "required_points": ["one or more source-supported grading points"],
-                            "forbidden_inferences": ["optional serious overclaim to reject"],
+                            "forbidden_inferences": [
+                                "optional serious overclaim to reject; MUST be a JSON array of plain strings, or []"
+                            ],
                         }
                     ]
                 },
