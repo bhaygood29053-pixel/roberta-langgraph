@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import replace
+from dataclasses import dataclass
 import hashlib
 import json
 from pathlib import Path
@@ -26,6 +26,25 @@ REMEDIATION_LANE_NAMESPACE = "stage-bound-boss-synthesis-v3"
 
 class AutonomousRemediationError(RuntimeError):
     pass
+
+
+@dataclass(frozen=True, slots=True)
+class CandidateRemediationConcept:
+    """Unpromoted remediation lesson.
+
+    This type intentionally has no durable-memory authorization fields and no
+    serialization method. It can become a LearnedConcept only after perfect
+    retention and provenance binding.
+    """
+
+    curriculum_id: str
+    level: int
+    concept: str
+    subconcept: str | None
+    principle: str
+    source_refs: tuple[str, ...]
+    critical_exercise_ids: tuple[str, ...]
+    concept_hash: str
 
 
 def _sha256(path: Path) -> str:
@@ -255,7 +274,9 @@ class CandidateRemediationAnswerModel:
     authority. The grader receives the ordinary unmodified grading request.
     """
 
-    def __init__(self, model: Any, concepts: Sequence[LearnedConcept]) -> None:
+    def __init__(
+        self, model: Any, concepts: Sequence[CandidateRemediationConcept]
+    ) -> None:
         if not concepts:
             raise AutonomousRemediationError("candidate remediation requires at least one concept")
         scopes = {(item.curriculum_id, item.level) for item in concepts}
@@ -486,11 +507,11 @@ def _provisional_concepts(
     level: int,
     weak: Sequence[Exercise],
     critical_ids_by_key: Mapping[tuple[str, str | None], Sequence[str]] | None = None,
-) -> tuple[LearnedConcept, ...]:
+) -> tuple[CandidateRemediationConcept, ...]:
     grouped: dict[tuple[str, str | None], list[Exercise]] = {}
     for item in weak:
         grouped.setdefault((item.concept, item.subconcept), []).append(item)
-    concepts: list[LearnedConcept] = []
+    concepts: list[CandidateRemediationConcept] = []
     for (concept, subconcept), items in sorted(
         grouped.items(), key=lambda value: (value[0][0], value[0][1] or "")
     ):
@@ -524,7 +545,7 @@ def _provisional_concepts(
             "source_refs": list(source_refs),
         }
         concepts.append(
-            LearnedConcept(
+            CandidateRemediationConcept(
                 curriculum_id=curriculum_id,
                 level=level,
                 concept=concept,
@@ -532,9 +553,6 @@ def _provisional_concepts(
                 principle=principle,
                 source_refs=source_refs,
                 critical_exercise_ids=critical_ids,
-                retention_report_sha256="0" * 64,
-                retention_manifest_sha256="0" * 64,
-                checkpoint_sha256=(("pending", "0" * 64),),
                 concept_hash=_canonical_hash(material),
             )
         )
@@ -542,7 +560,7 @@ def _provisional_concepts(
 
 
 def _practice_bank(
-    concepts: Sequence[LearnedConcept], *, count: int, lane: str
+    concepts: Sequence[CandidateRemediationConcept], *, count: int, lane: str
 ) -> tuple[Exercise, ...]:
     exercises: list[Exercise] = []
     for concept in concepts:
@@ -701,12 +719,21 @@ def run_autonomous_remediation(
     if not checkpoint_paths:
         raise AutonomousRemediationError("failed attempt checkpoints are missing")
     checkpoint_hashes = tuple((str(path), _sha256(path)) for path in checkpoint_paths)
+    report_sha256 = _sha256(report_path)
+    manifest_sha256 = _sha256(manifest_path)
     verified = tuple(
-        replace(
-            item,
-            retention_report_sha256=_sha256(report_path),
-            retention_manifest_sha256=_sha256(manifest_path),
+        LearnedConcept(
+            curriculum_id=item.curriculum_id,
+            level=item.level,
+            concept=item.concept,
+            subconcept=item.subconcept,
+            principle=item.principle,
+            source_refs=item.source_refs,
+            critical_exercise_ids=item.critical_exercise_ids,
+            retention_report_sha256=report_sha256,
+            retention_manifest_sha256=manifest_sha256,
             checkpoint_sha256=checkpoint_hashes,
+            concept_hash=item.concept_hash,
         )
         for item in provisional
     )
