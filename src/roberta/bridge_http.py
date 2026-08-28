@@ -17,7 +17,7 @@ from typing import Any, Optional
 
 from langchain_core.messages import AIMessage
 
-from roberta.graph import build_graph
+from roberta.private_core import build_graph
 from roberta.models import create_runtime_model
 from roberta.tools import get_roberta_tools
 
