@@ -18,10 +18,10 @@ from .pyramid_learned_concepts import (
 
 
 AUTONOMOUS_REMEDIATION_CONTRACT = "roberta-autonomous-remediation/v1"
-AUTONOMOUS_REMEDIATION_VERSION = "1.2.0"
+AUTONOMOUS_REMEDIATION_VERSION = "1.3.0"
 GROUNDED_QUESTIONS_PER_WEAKNESS = 5
 RETENTION_QUESTIONS_PER_WEAKNESS = 10
-REMEDIATION_LANE_NAMESPACE = "stage-bound-boss-synthesis-v3"
+REMEDIATION_LANE_NAMESPACE = "stage-bound-boss-synthesis-v4"
 
 
 class AutonomousRemediationError(RuntimeError):
@@ -275,7 +275,11 @@ class CandidateRemediationAnswerModel:
     """
 
     def __init__(
-        self, model: Any, concepts: Sequence[CandidateRemediationConcept]
+        self,
+        model: Any,
+        concepts: Sequence[CandidateRemediationConcept],
+        *,
+        bounded_to_candidate: bool = False,
     ) -> None:
         if not concepts:
             raise AutonomousRemediationError("candidate remediation requires at least one concept")
@@ -285,6 +289,7 @@ class CandidateRemediationAnswerModel:
                 "candidate remediation concepts must share one curriculum/level scope"
             )
         self._model = model
+        self._bounded_to_candidate = bounded_to_candidate
         self._concepts = {(item.concept, item.subconcept): item for item in concepts}
         if len(self._concepts) != len(concepts):
             raise AutonomousRemediationError(
@@ -349,13 +354,23 @@ class CandidateRemediationAnswerModel:
             return self._model.invoke(messages, *args, **kwargs)
 
         rewritten = dict(request)
-        rewritten["instruction"] = (
+        instruction = (
             str(request.get("instruction", ""))
             + " You may use remediation_candidate_memory when present. It is an unpromoted "
             "candidate lesson under retention evaluation, not source evidence, an answer key, "
             "verified durable memory, live state, or execution authority. Answer the actual "
             "question independently and do not mention the candidate-memory object."
-        ).strip()
+        )
+        if self._bounded_to_candidate:
+            instruction += (
+                " For this retention probe, remediation_candidate_memory is the complete allowed "
+                "lesson content for its exercise. Use that candidate principle without adding, "
+                "correcting, replacing, or contradicting factual claims from prior knowledge. "
+                "You may paraphrase the principle, but do not introduce factual assertions that "
+                "are not entailed by it. This response constraint does not authorize the candidate "
+                "as source truth, verified durable memory, live state, an answer key, or execution authority."
+            )
+        rewritten["instruction"] = instruction.strip()
         rewritten["exercises"] = augmented
 
         updated = list(messages)
@@ -651,7 +666,11 @@ def run_autonomous_remediation(
     )
     retention = run_exam(
         exercises=retention_bank,
-        answer_model=CandidateRemediationAnswerModel(model, provisional),
+        answer_model=CandidateRemediationAnswerModel(
+            model,
+            provisional,
+            bounded_to_candidate=True,
+        ),
         grader_model=model,
         batch_size=batch_size,
         checkpoint_dir=root / "retention_checkpoints",
@@ -659,7 +678,7 @@ def run_autonomous_remediation(
     )
     if not _all_passed(retention, len(retention_bank)):
         raise AutonomousRemediationError(
-            "closed-source candidate-memory remediation retention did not pass perfectly"
+            "closed-source bounded candidate-memory remediation retention did not pass perfectly"
         )
 
     report_path = root / "retention_report.json"
@@ -678,7 +697,7 @@ def run_autonomous_remediation(
             "fail_count": 0,
             "critical_failures": 0,
             "closed_book": True,
-            "retention_mode": "closed-source-candidate-memory-v1",
+            "retention_mode": "closed-source-bounded-candidate-memory-v2",
             "candidate_memory_injected": True,
             "source_context_injected": False,
             "raw_source_context_injected": False,
@@ -701,7 +720,7 @@ def run_autonomous_remediation(
             "retention_question_count": len(retention_bank),
             "grounded_passed": True,
             "closed_book_retention_passed": True,
-            "retention_mode": "closed-source-candidate-memory-v1",
+            "retention_mode": "closed-source-bounded-candidate-memory-v2",
             "candidate_memory_injected_into_retention": True,
             "source_context_injected_into_retention": False,
             "raw_source_context_injected_into_retention": False,
@@ -771,7 +790,7 @@ def run_autonomous_remediation(
             for item in transfer_bank
             if item.boss_question
         ),
-        "retention_mode": "closed-source-candidate-memory-v1",
+        "retention_mode": "closed-source-bounded-candidate-memory-v2",
         "candidate_memory_retention_passed": True,
         "transfer_passed": True,
         "pyramid_learned_concept_authorized": True,
