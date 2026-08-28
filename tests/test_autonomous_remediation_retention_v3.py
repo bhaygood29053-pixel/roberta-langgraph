@@ -13,7 +13,9 @@ from roberta.learning.autonomous_remediation import (
     REMEDIATION_LANE_NAMESPACE,
     AutonomousRemediationError,
     CandidateRemediationAnswerModel,
+    CandidateRemediationConcept,
     StageTransferLearnedConceptAnswerModel,
+    _provisional_concepts,
     run_autonomous_remediation,
 )
 from roberta.learning.pyramid import Exercise
@@ -88,20 +90,14 @@ def _failing_outcome(exercises):
     return summarize_exam(exercises, tuple(grades), canonical_exam=False)
 
 
-def _provisional(exercise: Exercise) -> LearnedConcept:
-    return LearnedConcept(
+def _provisional(exercise: Exercise) -> CandidateRemediationConcept:
+    candidates = _provisional_concepts(
         curriculum_id=CURRICULUM_ID,
         level=LEVEL,
-        concept=exercise.concept,
-        subconcept=exercise.subconcept,
-        principle=exercise.expected_answer,
-        source_refs=exercise.source_refs,
-        critical_exercise_ids=(exercise.exercise_id,),
-        retention_report_sha256="0" * 64,
-        retention_manifest_sha256="0" * 64,
-        checkpoint_sha256=(("pending", "0" * 64),),
-        concept_hash="a" * 64,
+        weak=(exercise,),
     )
+    assert len(candidates) == 1
+    return candidates[0]
 
 
 class CaptureModel:
@@ -116,7 +112,11 @@ class CaptureModel:
 def test_candidate_retention_memory_is_unverified_and_contains_no_source_or_grading_material() -> None:
     exercise = _exercise()
     capture = CaptureModel()
-    wrapper = CandidateRemediationAnswerModel(capture, (_provisional(exercise),))
+    candidate = _provisional(exercise)
+    assert isinstance(candidate, CandidateRemediationConcept)
+    assert not isinstance(candidate, LearnedConcept)
+    assert not hasattr(candidate, "to_mapping")
+    wrapper = CandidateRemediationAnswerModel(capture, (candidate,))
 
     wrapper.invoke(
         [
