@@ -8,7 +8,7 @@ from pathlib import Path
 
 from roberta.cmis.http import CMISHTTPClient
 from roberta.config import RobertaChainSettings, RobertaModelSettings
-from roberta.graph import build_graph
+from roberta.private_core import build_graph
 from roberta.models import create_runtime_model
 from roberta.readiness import (
     CMISTrace,
