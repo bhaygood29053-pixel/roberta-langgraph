@@ -43,13 +43,14 @@ from .source_mastery import (
 
 
 AUTONOMOUS_CURRICULUM_CONTRACT = "roberta-autonomous-curriculum/v1"
-AUTONOMOUS_CURRICULUM_VERSION = "1.0.0"
+AUTONOMOUS_CURRICULUM_VERSION = "1.1.0"
 TARGET_GENERATOR_CONTRACT = "roberta-autonomous-target-generator/v1"
 PLAN_GENERATOR_CONTRACT = "roberta-autonomous-source-planner/v1"
 ORDINARY_VARIANTS_PER_TARGET = 13
 INTEGRITY_COUNT = 50
 MIN_TARGETS = 20
 MAX_TARGETS = 36
+TARGET_GENERATION_ATTEMPTS = 3
 _CHUNK_CHARS = 18000
 
 
@@ -300,68 +301,108 @@ def generate_stage_targets(
     seen_semantics: set[tuple[str, str]] = set()
     for chunk_number, chunk in enumerate(chunks, start=1):
         chunk_candidates: list[GeneratedTarget] = []
-        payload = {
-            "contract": TARGET_GENERATOR_CONTRACT,
-            "task": (
-                "Propose 4 to 7 distinct learning targets for this capability from only this source chunk. "
-                "Do not reuse any concept/subconcept pair listed in reserved_stage_semantics."
-            ),
-            "reserved_stage_semantics": [
-                {"concept": concept, "subconcept": subconcept}
-                for concept, subconcept in sorted(seen_semantics)
-            ],
-            "source_title": source.title,
-            "stage": stage.stage,
-            "capability_level": stage.capability_level,
-            "capability_name": stage.capability_name,
-            "capability_domain": stage.domain,
-            "allowed_chapters": list(stage.source_chapters),
-            "schema": {
-                "targets": [
-                    {
-                        "concept": "short_snake_case",
-                        "subconcept": "short_snake_case",
-                        "principle": "source-grounded paraphrase",
-                        "evidence_quote": "short verbatim quote from one marked page",
-                        "page": 1,
-                        "chapter": stage.source_chapters[0],
-                        "section": "source section heading or concise local description",
-                        "required_points": ["one or more source-supported grading points"],
-                        "forbidden_inferences": ["optional serious overclaim to reject"],
-                    }
-                ]
-            },
-            "source_chunk": chunk,
-        }
-        raw = _invoke_json(model, _TARGET_SYSTEM, payload, label=f"target generator chunk {chunk_number}")
-        proposed = raw.get("targets")
-        if not isinstance(proposed, list):
-            raise AutonomousCurriculumError("target generator response requires targets array")
-        for item in proposed:
-            if not isinstance(item, Mapping):
-                continue
-            try:
-                candidate = _validate_candidate(
-                    item,
-                    index=sum(len(items) for items in candidates_by_chunk) + len(chunk_candidates) + 1,
-                    stage=stage,
-                    pages=by_page,
-                    chapter_map=chapter_map,
-                    package_source_key=package_source_key,
+        # A model may return syntactically valid JSON whose proposed targets all
+        # fail deterministic exact-evidence validation. Retry the proposal, not
+        # the rejected candidates: every attempt starts from the immutable source
+        # chunk and the same stage-global reserved semantics. Invalid candidates
+        # are never repaired, promoted, or added to seen_semantics.
+        for generation_attempt in range(1, TARGET_GENERATION_ATTEMPTS + 1):
+            payload = {
+                "contract": TARGET_GENERATOR_CONTRACT,
+                "task": (
+                    "Propose 4 to 7 distinct learning targets for this capability from only this source chunk. "
+                    "Do not reuse any concept/subconcept pair listed in reserved_stage_semantics."
+                ),
+                "source_chunk_number": chunk_number,
+                "source_chunk_count": len(chunks),
+                "generation_attempt": generation_attempt,
+                "reserved_stage_semantics": [
+                    {"concept": concept, "subconcept": subconcept}
+                    for concept, subconcept in sorted(seen_semantics)
+                ],
+                "validation_requirements": [
+                    "evidence_quote must be a short verbatim substring from exactly one marked page in source_chunk",
+                    "page and chapter must identify the page that contains evidence_quote and remain inside allowed_chapters",
+                    "principle and required_points must be directly supported by evidence_quote without outside knowledge",
+                    "concept/subconcept must be distinct from reserved_stage_semantics and from other targets in this response",
+                ],
+                "source_title": source.title,
+                "stage": stage.stage,
+                "capability_level": stage.capability_level,
+                "capability_name": stage.capability_name,
+                "capability_domain": stage.domain,
+                "allowed_chapters": list(stage.source_chapters),
+                "schema": {
+                    "targets": [
+                        {
+                            "concept": "short_snake_case",
+                            "subconcept": "short_snake_case",
+                            "principle": "source-grounded paraphrase",
+                            "evidence_quote": "short verbatim quote from one marked page",
+                            "page": 1,
+                            "chapter": stage.source_chapters[0],
+                            "section": "source section heading or concise local description",
+                            "required_points": ["one or more source-supported grading points"],
+                            "forbidden_inferences": ["optional serious overclaim to reject"],
+                        }
+                    ]
+                },
+                "source_chunk": chunk,
+            }
+            if generation_attempt > 1:
+                payload["retry_context"] = (
+                    "The previous proposal produced zero deterministically valid exact-evidence targets. "
+                    "Generate a fresh proposal from the source chunk. Do not repair or reuse rejected candidates."
                 )
-            except AutonomousCurriculumError:
-                # Candidate-level invalidity is rejection, not a reason to trust a repair.
+
+            raw = _invoke_json(
+                model,
+                _TARGET_SYSTEM,
+                payload,
+                label=f"target generator chunk {chunk_number} attempt {generation_attempt}",
+            )
+            proposed = raw.get("targets")
+            if not isinstance(proposed, list):
                 continue
-            if _norm(candidate.evidence_quote) not in _norm(chunk):
-                continue
-            semantic_key = (candidate.concept, candidate.subconcept)
-            if semantic_key in seen_semantics:
-                continue
-            seen_semantics.add(semantic_key)
-            chunk_candidates.append(candidate)
+
+            attempt_candidates: list[GeneratedTarget] = []
+            attempt_semantics: set[tuple[str, str]] = set()
+            for item in proposed:
+                if not isinstance(item, Mapping):
+                    continue
+                try:
+                    candidate = _validate_candidate(
+                        item,
+                        index=sum(len(items) for items in candidates_by_chunk)
+                        + len(attempt_candidates)
+                        + 1,
+                        stage=stage,
+                        pages=by_page,
+                        chapter_map=chapter_map,
+                        package_source_key=package_source_key,
+                    )
+                except AutonomousCurriculumError:
+                    # Candidate-level invalidity is rejection. A later generation
+                    # attempt is a fresh proposal from source, never a trusted repair.
+                    continue
+                if _norm(candidate.evidence_quote) not in _norm(chunk):
+                    continue
+                semantic_key = (candidate.concept, candidate.subconcept)
+                if semantic_key in seen_semantics or semantic_key in attempt_semantics:
+                    continue
+                attempt_semantics.add(semantic_key)
+                attempt_candidates.append(candidate)
+
+            if attempt_candidates:
+                chunk_candidates = attempt_candidates
+                seen_semantics.update(attempt_semantics)
+                break
+
         if not chunk_candidates:
             raise AutonomousCurriculumError(
-                f"source-grounded target generation requires at least one exact-evidence target for source chunk {chunk_number} of {len(chunks)}"
+                "source-grounded target generation requires at least one exact-evidence "
+                f"target for source chunk {chunk_number} of {len(chunks)} after "
+                f"{TARGET_GENERATION_ATTEMPTS} bounded attempts"
             )
         candidates_by_chunk.append(chunk_candidates)
 
