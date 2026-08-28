@@ -1,4 +1,4 @@
-# Roberta Roadmap
+# ROBERTA — Verified On-Chain Intelligence Roadmap
 
 Last reconciled: 2026-08-28 (America/New_York)
 
@@ -6,7 +6,7 @@ Status source: accepted code and contracts on `main`. Open PRs are not current t
 
 ## Product identity
 
-The canonical public-facing product name is **Roberta**. The former working name **X1 Intelligence Service** is retired. X1 Scout, Solana Scout, and CMIS remain architectural component names; the repository/package name `roberta-langgraph` remains a technical identifier. See [`PRODUCT_IDENTITY.md`](./PRODUCT_IDENTITY.md).
+The canonical public-facing product name is **ROBERTA — Verified On-Chain Intelligence**. The former working name **X1 Intelligence Service** is retired. X1 Scout, Solana Scout, and CMIS remain architectural component names; the repository/package name `roberta-langgraph` remains a technical identifier. See [`PRODUCT_IDENTITY.md`](./PRODUCT_IDENTITY.md).
 
 ## Canonical authority model
 
