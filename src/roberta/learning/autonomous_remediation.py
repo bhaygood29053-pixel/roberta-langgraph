@@ -19,10 +19,10 @@ from .pyramid_learned_concepts import (
 
 
 AUTONOMOUS_REMEDIATION_CONTRACT = "roberta-autonomous-remediation/v1"
-AUTONOMOUS_REMEDIATION_VERSION = "1.1.0"
+AUTONOMOUS_REMEDIATION_VERSION = "1.2.0"
 GROUNDED_QUESTIONS_PER_WEAKNESS = 5
 RETENTION_QUESTIONS_PER_WEAKNESS = 10
-REMEDIATION_LANE_NAMESPACE = "stage-bound-boss-synthesis-v2"
+REMEDIATION_LANE_NAMESPACE = "stage-bound-boss-synthesis-v3"
 
 
 class AutonomousRemediationError(RuntimeError):
@@ -242,6 +242,105 @@ def _require_verified_transfer_provenance(concepts: Sequence[LearnedConcept]) ->
                 raise AutonomousRemediationError(
                     f"transfer concept {item.concept}/{item.subconcept or '-'} has incomplete checkpoint provenance"
                 )
+
+
+CANDIDATE_REMEDIATION_MEMORY_CONTRACT = "roberta-autonomous-remediation-candidate-memory/v1"
+
+
+class CandidateRemediationAnswerModel:
+    """Route unpromoted candidate lesson memory into remediation answer requests only.
+
+    Candidate memory is deliberately distinct from verified learned-concept memory.
+    It may help the answer model rehearse and retain the source-derived principle, but
+    it is not source evidence, an answer key, durable memory, live state, or execution
+    authority. The grader receives the ordinary unmodified grading request.
+    """
+
+    def __init__(self, model: Any, concepts: Sequence[LearnedConcept]) -> None:
+        if not concepts:
+            raise AutonomousRemediationError("candidate remediation requires at least one concept")
+        scopes = {(item.curriculum_id, item.level) for item in concepts}
+        if len(scopes) != 1:
+            raise AutonomousRemediationError(
+                "candidate remediation concepts must share one curriculum/level scope"
+            )
+        self._model = model
+        self._concepts = {(item.concept, item.subconcept): item for item in concepts}
+        if len(self._concepts) != len(concepts):
+            raise AutonomousRemediationError(
+                "candidate remediation concept keys must be unique"
+            )
+
+    def invoke(self, messages: Sequence[object], *args: object, **kwargs: object) -> object:
+        if not messages:
+            return self._model.invoke(messages, *args, **kwargs)
+        content = getattr(messages[-1], "content", None)
+        if not isinstance(content, str):
+            return self._model.invoke(messages, *args, **kwargs)
+        try:
+            request = json.loads(content)
+        except json.JSONDecodeError:
+            return self._model.invoke(messages, *args, **kwargs)
+        if not isinstance(request, Mapping) or not isinstance(request.get("exercises"), list):
+            return self._model.invoke(messages, *args, **kwargs)
+
+        augmented: list[dict[str, object]] = []
+        injected = 0
+        for raw in request["exercises"]:
+            if not isinstance(raw, Mapping):
+                raise AutonomousRemediationError("candidate remediation exercise must be an object")
+            if any(
+                field in raw
+                for field in (
+                    "expected_answer",
+                    "reference_reasoning_points",
+                    "forbidden_inferences",
+                    "remediation_context",
+                    "source_evidence",
+                    "source_refs",
+                    "learned_concept_memory",
+                    "learned_concept_memories",
+                    "remediation_candidate_memory",
+                )
+            ):
+                raise AutonomousRemediationError(
+                    "candidate remediation answer request contains prohibited grading/source/memory material"
+                )
+
+            item = dict(raw)
+            concept = item.get("concept")
+            subconcept_raw = item.get("subconcept")
+            subconcept = subconcept_raw if isinstance(subconcept_raw, str) else None
+            memory = (
+                self._concepts.get((concept, subconcept))
+                if isinstance(concept, str)
+                else None
+            )
+            if memory is not None:
+                item["remediation_candidate_memory"] = {
+                    "contract": CANDIDATE_REMEDIATION_MEMORY_CONTRACT,
+                    "principle": memory.principle,
+                    "promotion_status": "candidate_unverified",
+                }
+                injected += 1
+            augmented.append(item)
+
+        if injected == 0:
+            return self._model.invoke(messages, *args, **kwargs)
+
+        rewritten = dict(request)
+        rewritten["instruction"] = (
+            str(request.get("instruction", ""))
+            + " You may use remediation_candidate_memory when present. It is an unpromoted "
+            "candidate lesson under retention evaluation, not source evidence, an answer key, "
+            "verified durable memory, live state, or execution authority. Answer the actual "
+            "question independently and do not mention the candidate-memory object."
+        ).strip()
+        rewritten["exercises"] = augmented
+
+        updated = list(messages)
+        updated[-1] = HumanMessage(content=json.dumps(rewritten, ensure_ascii=False))
+        return self._model.invoke(updated, *args, **kwargs)
 
 
 class StageTransferLearnedConceptAnswerModel:
@@ -491,11 +590,13 @@ def run_autonomous_remediation(
     learned_concepts_path: str | Path,
     batch_size: int,
 ) -> tuple[LearnedConcept, ...]:
-    """Teach failed concepts, verify closed-book retention, then promote them.
+    """Teach failed concepts, verify closed-source candidate-memory retention, then promote them.
 
-    Source-grounded memory is used only in the grounded practice and transfer
-    lanes. The intervening retention lane receives the unaugmented model. Nothing
-    is written to the learned-concepts store unless all three lanes pass perfectly.
+    Grounded practice and retention may use unpromoted candidate lesson memory,
+    but the answer path receives no raw source text, expected answers, grading
+    material, live state, or execution authority. Transfer receives only concepts
+    that have passed perfect retention and have bound provenance. Nothing is
+    written to the learned-concepts store unless all three lanes pass perfectly.
     """
 
     weak = _weak_exercises(bank, failed_outcome)
@@ -519,7 +620,7 @@ def run_autonomous_remediation(
     )
     grounded = run_exam(
         exercises=grounded_bank,
-        answer_model=PyramidLearnedConceptAnswerModel(model, provisional),
+        answer_model=CandidateRemediationAnswerModel(model, provisional),
         grader_model=model,
         batch_size=batch_size,
         checkpoint_dir=root / "grounded_checkpoints",
@@ -533,14 +634,16 @@ def run_autonomous_remediation(
     )
     retention = run_exam(
         exercises=retention_bank,
-        answer_model=model,
+        answer_model=CandidateRemediationAnswerModel(model, provisional),
         grader_model=model,
         batch_size=batch_size,
         checkpoint_dir=root / "retention_checkpoints",
         canonical_exam=False,
     )
     if not _all_passed(retention, len(retention_bank)):
-        raise AutonomousRemediationError("closed-book remediation retention did not pass perfectly")
+        raise AutonomousRemediationError(
+            "closed-source candidate-memory remediation retention did not pass perfectly"
+        )
 
     report_path = root / "retention_report.json"
     manifest_path = root / "retention_manifest.json"
@@ -558,7 +661,11 @@ def run_autonomous_remediation(
             "fail_count": 0,
             "critical_failures": 0,
             "closed_book": True,
+            "retention_mode": "closed-source-candidate-memory-v1",
+            "candidate_memory_injected": True,
             "source_context_injected": False,
+            "raw_source_context_injected": False,
+            "answer_grading_material_injected": False,
             "canonical_exam": False,
             "ledger_mutation_authorized": False,
             "source_truth_authorized": False,
@@ -577,7 +684,11 @@ def run_autonomous_remediation(
             "retention_question_count": len(retention_bank),
             "grounded_passed": True,
             "closed_book_retention_passed": True,
+            "retention_mode": "closed-source-candidate-memory-v1",
+            "candidate_memory_injected_into_retention": True,
             "source_context_injected_into_retention": False,
+            "raw_source_context_injected_into_retention": False,
+            "answer_grading_material_injected_into_retention": False,
             "canonical_exam": False,
             "ledger_mutation_authorized": False,
             "general_durable_memory_promotion_authorized": False,
@@ -634,6 +745,8 @@ def run_autonomous_remediation(
             for item in transfer_bank
             if item.boss_question
         ),
+        "retention_mode": "closed-source-candidate-memory-v1",
+        "candidate_memory_retention_passed": True,
         "transfer_passed": True,
         "pyramid_learned_concept_authorized": True,
         "general_durable_memory_promotion_authorized": False,
