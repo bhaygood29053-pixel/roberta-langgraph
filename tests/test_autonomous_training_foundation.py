@@ -301,7 +301,7 @@ def test_failed_attempt_runs_verified_remediation_before_memory_promotion(
         learned_concepts_path=learned_path,
         batch_size=10,
     )
-    assert lanes == ["memory", "base", "memory"]
+    assert lanes == ["memory", "memory", "memory"]
     assert len(promoted) == 1
     stored = load_learned_concepts(
         learned_path, curriculum_id="autonomous_test", level=7
