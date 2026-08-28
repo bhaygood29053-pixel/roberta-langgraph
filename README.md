@@ -16,7 +16,7 @@ Current chain specialists include X1 Scout and Solana Scout. Roberta owns orches
 
 Roberta does not call market providers as a trust shortcut and does not reproduce CMIS calculations to manufacture a second market fact.
 
-## Current accepted status — reconciled 2026-08-27
+## Current accepted status — reconciled 2026-08-28
 
 Core Roberta platform work is accepted through Phase 10 plus the post-Phase-10 evidence-aware user experience. X1 decision-production readiness, Solana read-only readiness for the accepted Scout surface, and adoption of CMIS `concentration_change_intelligence/v1` through X1 Scout are accepted.
 
@@ -49,7 +49,7 @@ PR #228 merged on 2026-08-26. Roberta now has an accepted autonomous source-grou
 roberta-train --source "/path/to/source.pdf" --profile expert
 ```
 
-After a source is explicitly selected, Roberta can hash-bind and durably register it, inspect the full source, freeze a source-specific mastery plan, generate missing validated stage banks, run canonical exams, perform verified remediation/closed-book retention/transfer checks, reuse verified curriculum-scoped learned concepts, resume interrupted jobs, and run the final source capstone.
+After a source is explicitly selected, Roberta can hash-bind and durably register it, inspect the full source, freeze a source-specific mastery plan, generate missing validated stage banks, run canonical exams, perform verified remediation with source-grounded practice, closed-source bounded candidate-memory retention, and transfer checks, reuse verified curriculum-scoped learned concepts, resume interrupted jobs, and run the final source capstone.
 
 This is autonomous continual source learning, not unrestricted self-modification. Static source material cannot modify Roberta prompts/tools/policies, Scouts, CMIS contracts, provider authority, wallet permissions, human-approval semantics, or execution authority.
 
@@ -97,6 +97,8 @@ Accepted **prebuilt** MB4E curriculum construction now reaches:
 
 Stages 9-14 are not yet separately accepted prebuilt repository banks. The accepted autonomous controller may generate missing banks from the exact selected source under its validation contract. Bank availability is not mastery; mastery state comes only from the immutable source-plan-bound training ledger and required stage/capstone gates.
 
+Current operator-local MB4E validation has now passed runtime-generated Stages 9, 10, and 11. Stage 11 / On-chain Analysis passed canonical Attempt 3 at 99.33% accuracy, 100% integrity, Boss PASS, and zero critical failures after the remediation hardening merged in PRs #241-#243. Stage 12 / Risk Reasoning is the next active stage. PRs #244-#245 harden missing-bank generation with bounded source-chunk retries and fail-closed normalization of malformed optional `forbidden_inferences` metadata while preserving exact-evidence, page/chapter, chunk-coverage, semantic-uniqueness, and independent-support gates. This operator-local progress is runtime mastery evidence, not a claim that Stages 9-12 are prebuilt repository banks.
+
 ### Remediation and learned-concept boundaries
 
 Accepted Pyramid hardening includes source-provenance migration, strict PDF-page provenance containment before retrieval, source-grounded targeted practice, cumulative freshness, supplemental practice when canonical practice is exhausted, critical-origin lineage, bounded adjudicator/answer recovery, closed-book critical retention, transfer verification, and curriculum-scoped learned concepts after the required gates.
@@ -126,7 +128,7 @@ Static sources never override fresh Scout -> CMIS -> Provider evidence for price
 ## Source-of-truth documents
 
 - [`docs/LANGGRAPH_ROADMAP.md`](./docs/LANGGRAPH_ROADMAP.md) — authoritative Roberta roadmap/status.
-- [`docs/PROJECT_STATUS_2026-08-27.md`](./docs/PROJECT_STATUS_2026-08-27.md) — current dated status snapshot.
+- [`docs/PROJECT_STATUS_2026-08-28.md`](./docs/PROJECT_STATUS_2026-08-28.md) — current dated status snapshot.
 - [`docs/LEARNING_SYSTEM.md`](./docs/LEARNING_SYSTEM.md) — Learning System phase/authority map.
 - [`docs/LEARNING_SYSTEM_RETENTION.md`](./docs/LEARNING_SYSTEM_RETENTION.md) — accepted Phase 10 retention contract.
 - [`docs/LEARNING_PLANE_ARCHITECTURE.md`](./docs/LEARNING_PLANE_ARCHITECTURE.md) — Learning Plane architecture and promotion boundary.
