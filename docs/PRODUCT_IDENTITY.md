@@ -1,4 +1,4 @@
-# Roberta Product Identity
+# ROBERTA — Verified On-Chain Intelligence Product Identity
 
 Status: **repository-authoritative product naming decision**
 
@@ -8,13 +8,13 @@ Effective: **2026-08-28**
 
 The canonical public-facing product name is:
 
-# Roberta
+# ROBERTA — Verified On-Chain Intelligence
 
-`Roberta` is the name used for the product, user-facing experience, public documentation, ecosystem listings, demos, and external communications.
+**ROBERTA — Verified On-Chain Intelligence** is the canonical public-facing product name used for the product, user-facing experience, public documentation, ecosystem listings, demos, and external communications.
 
 The former working name **X1 Intelligence Service** is retired and must not be used as the current product name. This naming decision reduces confusion with similarly named X1 ecosystem products and gives Roberta an independent identity that can extend beyond one chain.
 
-A descriptive tagline may be used when context requires one, for example **Verified On-Chain Intelligence**, but the product name remains **Roberta**.
+The phrase **Verified On-Chain Intelligence** is part of the canonical public-facing name, not an optional tagline.
 
 ## Architecture names that do not change
 
@@ -39,7 +39,7 @@ Repository names, package namespaces, service units, endpoints, and compatibilit
 
 ## Naming rules
 
-1. Use **Roberta** as the current public/product name.
+1. Use **ROBERTA — Verified On-Chain Intelligence** as the current public/product name.
 2. Do not use **X1 Intelligence Service** as a current brand, product, umbrella, or front-facing service name.
 3. Do not shorten the retired name to **X1 Intelligence** as a substitute product name.
 4. Refer to X1 Scout, Solana Scout, and CMIS as components/specialists beneath Roberta unless a separate accepted architecture decision changes that boundary.
@@ -57,4 +57,4 @@ This naming decision does **not**:
 - grant wallet, transaction, trading, custody, bridge, or execution authority;
 - start Controlled Execution.
 
-**Roberta is the product name. X1 and other chain names describe specialist coverage, not ownership of the Roberta brand.**
+**ROBERTA — Verified On-Chain Intelligence is the public product name. X1 and other chain names describe specialist coverage, not ownership of the ROBERTA brand.**
