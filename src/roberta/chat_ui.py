@@ -642,7 +642,9 @@ def scan_request(asset: str) -> str:
         "services market_report, tokenomics, and risk_check. Do not autonomously add "
         "rank, historical_compare, concentration intelligence, pre_trade_check, or any "
         "execution action. Separate verified facts from Roberta interpretation, preserve "
-        "CMIS verification/proof/freshness state, and disclose unavailable fields."
+        "CMIS verification/proof/freshness state, and disclose unavailable fields. "
+        f"In DRILL-DOWN, include the exact commands /evidence {asset} for evidence detail "
+        f"and /full {asset} for the heavier full assessment."
     ) + INSTANT_SCAN_TERMINAL_STYLE
 
 
