@@ -262,6 +262,8 @@ def required_operations(objective: object) -> list[CMISOperation]:
 def select_cmis_operation(objective: object) -> CMISOperation:
     """Return the deterministic single-operation fallback for an objective."""
 
+    if recommendation_intent(objective) == "instant_scan":
+        return "market_report"
     if is_rank_objective(objective):
         return "rank"
     if is_historical_objective(objective):
