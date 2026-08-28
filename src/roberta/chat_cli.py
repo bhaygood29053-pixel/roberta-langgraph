@@ -24,6 +24,7 @@ from roberta.chat_ui import (
     pretrade_request,
     rank_request,
     risk_request,
+    scan_request,
     tokenomics_request,
 )
 from roberta.config import RobertaChainSettings
@@ -116,6 +117,8 @@ def _shortcut_request(user_text: str) -> str | None:
     command = parts[0].lower()
     args = parts[1:]
 
+    if command == "/scan":
+        return scan_request(args[0] if args else _prompt_asset())
     if command == "/overview":
         return overview_request(args[0] if args else _prompt_asset())
     if command == "/compare":
