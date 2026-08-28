@@ -51,9 +51,9 @@ canonical failure
   -> source-grounded practice
   -> closed-source bounded candidate-memory retention
   -> failed-checkpoint + retention provenance binding
-  -> verified curriculum-scoped LearnedConcept conversion
+  -> provenance-bound curriculum-scoped LearnedConcept conversion (not yet persisted/promoted)
   -> atomic + Boss transfer verification
-  -> promotion only after perfect gates
+  -> persistence/promotion only after perfect transfer
   -> canonical retry
 ```
 
