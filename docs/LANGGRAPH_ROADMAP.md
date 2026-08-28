@@ -87,7 +87,7 @@ The controller can:
 - publish validated curriculum changes atomically while guarding against unexpected ledger mutation;
 - run 300-question canonical stage exams automatically;
 - derive source-bound weaknesses after failure;
-- require source-grounded practice, closed-source bounded candidate-memory retention, and transfer verification before learned-concept promotion and retry;
+- require source-grounded practice, closed-source bounded candidate-memory retention, provenance-bound `LearnedConcept` conversion, and transfer verification before learned-concept persistence/promotion and retry;
 - preserve failed attempts as immutable evidence without erasing the completed source-stage prefix;
 - run a separate 60-question final source capstone;
 - resume from durable state after interruption with advisory locking and source-registry transaction safety;
