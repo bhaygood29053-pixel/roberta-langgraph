@@ -15,8 +15,10 @@ from roberta.learning.autonomous_capstone import (
     build_source_capstone,
 )
 from roberta.learning.autonomous_curriculum import (
+    AUTONOMOUS_CURRICULUM_VERSION,
     INTEGRITY_COUNT,
     MIN_TARGETS,
+    TARGET_GENERATION_ATTEMPTS,
     ORDINARY_VARIANTS_PER_TARGET,
     AutonomousCurriculumError,
     build_generated_stage_bank,
@@ -313,6 +315,117 @@ def test_failed_attempt_runs_verified_remediation_before_memory_promotion(
     assert promotion["transfer_passed"] is True
     assert promotion["general_durable_memory_promotion_authorized"] is False
     assert promotion["execution_authorized"] is False
+
+
+def test_target_generation_retries_zero_valid_chunk_from_immutable_source(source) -> None:
+    class SemanticRetryModel:
+        def __init__(self) -> None:
+            self.generator_calls = 0
+            self.payloads: list[dict[str, object]] = []
+
+        def invoke(self, messages):
+            system = messages[0].content
+            payload = json.loads(messages[1].content)
+            if "independent support verifier" in system:
+                return json.dumps(
+                    {"accepted_ids": [item["target_id"] for item in payload["candidates"]]}
+                )
+            if "curriculum analyst" not in system:
+                raise AssertionError(f"unexpected model call: {system[:80]}")
+
+            self.generator_calls += 1
+            self.payloads.append(payload)
+            quote = (
+                "This first proposal is not exact source evidence."
+                if self.generator_calls == 1
+                else EVIDENCE
+            )
+            return json.dumps(
+                {
+                    "targets": [
+                        {
+                            "concept": f"retry_concept_{index}",
+                            "subconcept": f"retry_mechanism_{index}",
+                            "principle": f"Bounded retry principle {index} for pooled reserves.",
+                            "evidence_quote": quote,
+                            "page": 1,
+                            "chapter": 1,
+                            "section": "Liquidity Pools",
+                            "required_points": ["Explain the pooled-reserve relationship."],
+                            "forbidden_inferences": [],
+                        }
+                        for index in range(1, MIN_TARGETS + 1)
+                    ]
+                }
+            )
+
+    model = SemanticRetryModel()
+    targets = generate_stage_targets(
+        model,
+        source=source,
+        package_source_key=source.source_key,
+        stage=_stage(),
+    )
+
+    assert AUTONOMOUS_CURRICULUM_VERSION == "1.1.0"
+    assert TARGET_GENERATION_ATTEMPTS == 3
+    assert model.generator_calls == 2
+    assert len(targets) == MIN_TARGETS
+    assert all(item.evidence_quote == EVIDENCE for item in targets)
+    assert model.payloads[0]["generation_attempt"] == 1
+    assert model.payloads[1]["generation_attempt"] == 2
+    assert "retry_context" not in model.payloads[0]
+    assert "zero deterministically valid exact-evidence targets" in str(
+        model.payloads[1]["retry_context"]
+    )
+    # Rejected attempt semantics never contaminate the stage-global reservation set.
+    assert model.payloads[1]["reserved_stage_semantics"] == []
+
+
+def test_target_generation_exhausts_bounded_semantic_retries_fail_closed(source) -> None:
+    class AlwaysInvalidModel:
+        def __init__(self) -> None:
+            self.generator_calls = 0
+
+        def invoke(self, messages):
+            system = messages[0].content
+            payload = json.loads(messages[1].content)
+            if "independent support verifier" in system:
+                raise AssertionError("support verifier must not run without a valid target")
+            if "curriculum analyst" not in system:
+                raise AssertionError(f"unexpected model call: {system[:80]}")
+            self.generator_calls += 1
+            return json.dumps(
+                {
+                    "targets": [
+                        {
+                            "concept": f"invalid_concept_{self.generator_calls}",
+                            "subconcept": "invalid_evidence",
+                            "principle": "This proposal must never be trusted.",
+                            "evidence_quote": "Not present in the immutable source chunk.",
+                            "page": 1,
+                            "chapter": 1,
+                            "section": "Invalid",
+                            "required_points": ["Do not promote invalid evidence."],
+                            "forbidden_inferences": [],
+                        }
+                    ]
+                }
+            )
+
+    model = AlwaysInvalidModel()
+    with pytest.raises(
+        AutonomousCurriculumError,
+        match=rf"after {TARGET_GENERATION_ATTEMPTS} bounded attempts",
+    ):
+        generate_stage_targets(
+            model,
+            source=source,
+            package_source_key=source.source_key,
+            stage=_stage(),
+        )
+
+    assert model.generator_calls == TARGET_GENERATION_ATTEMPTS
 
 
 def test_generated_targets_require_exact_source_evidence(source) -> None:
