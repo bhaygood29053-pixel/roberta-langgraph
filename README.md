@@ -1,10 +1,10 @@
-# Roberta
+# ROBERTA — Verified On-Chain Intelligence
 
 Roberta is the top-level Oracle, policy-aware coordinator, learning-workflow coordinator, and normal user-facing voice for the multi-agent system.
 
 ## Product identity
 
-**Roberta** is the canonical public-facing product name. The former working name **X1 Intelligence Service** is retired and must not be used as the current product name. X1 Scout, Solana Scout, and CMIS remain component names beneath Roberta; this naming decision does not change authority, verification, or execution boundaries.
+**ROBERTA — Verified On-Chain Intelligence** is the canonical public-facing product name. The former working name **X1 Intelligence Service** is retired and must not be used as the current product name. X1 Scout, Solana Scout, and CMIS remain component names beneath Roberta; this naming decision does not change authority, verification, or execution boundaries.
 
 See [`docs/PRODUCT_IDENTITY.md`](./docs/PRODUCT_IDENTITY.md) for the repository-authoritative naming rules.
 
