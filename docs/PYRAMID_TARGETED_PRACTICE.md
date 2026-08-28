@@ -1,6 +1,6 @@
 # Pyramid remediation, targeted practice, and critical retention gates
 
-Last reconciled: 2026-08-25 (America/New_York)
+Last reconciled: 2026-08-28 (America/New_York)
 
 ## Purpose
 
@@ -31,6 +31,30 @@ The practice question itself is always resolved back to the validated curriculum
 The grounded adapter must not expose the fresh question's expected answer, reference reasoning points, grader notes, or forbidden-inference checklist as hidden answer hints.
 
 Canonical Pyramid answering remains closed-book; this source-evidence injection exists only in the explicitly grounded remediation path.
+
+## Autonomous candidate-memory retention
+
+The autonomous `roberta-train` remediation controller has a distinct retention lane from the legacy/manual critical-retention command.
+
+Its accepted sequence is:
+
+```text
+failed canonical stage
+  -> source-bound remediation targets
+  -> source-grounded practice
+  -> closed-source bounded candidate-memory retention
+  -> bind failed-checkpoint + retention provenance
+  -> convert candidates to verified curriculum-scoped LearnedConcept records
+  -> atomic + Boss transfer verification
+  -> promotion only after perfect transfer
+  -> canonical retry
+```
+
+The candidate object is intentionally **not** a durable `LearnedConcept`: it has no durable-memory authorization fields and no durable serialization contract. During retention, the answer path receives only the candidate principle as unpromoted candidate memory. Raw source excerpts, expected answers, reference reasoning points, forbidden-inference grading material, and verified learned-concept memory are excluded.
+
+Retention is closed-source, not source-free. The answer is bounded to the candidate principle so pretrained model knowledge cannot silently add, replace, correct, or contradict factual content beyond the lesson under test. Candidate memory remains unverified until perfect retention and provenance binding succeed. Perfect retention and perfect transfer remain fail-closed requirements.
+
+This autonomous lane does not weaken or replace `closed_book_critical_retention` for the manual critical-origin workflow; the two mechanisms have different contracts and must not be conflated.
 
 ## Provenance before retrieval
 
