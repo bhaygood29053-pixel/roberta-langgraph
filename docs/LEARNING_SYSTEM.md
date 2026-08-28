@@ -1,6 +1,6 @@
 # Roberta Learning System
 
-Last reconciled: 2026-08-26 (America/New_York)
+Last reconciled: 2026-08-28 (America/New_York)
 
 Status: **Learning System Phases 1-10 accepted on `main`; autonomous source-grounded Learning Plane controller accepted.**
 
@@ -128,13 +128,17 @@ Accepted behavior includes:
 8. expand verified targets into validated canonical exercise banks and publish them atomically;
 9. run the closed-book 300-question canonical source-stage exam;
 10. on failure, derive source-bound weakness material and require source-grounded practice;
-11. require a separate unaugmented closed-book retention lane and learned-concept transfer verification before promotion/retry;
-12. preserve failed attempts and completed source-stage history immutably;
-13. route only verified curriculum-scoped learned concepts into later matching attempts;
-14. run a separate 60-question final source capstone before source mastery;
-15. persist restart-safe job state, checkpoints, events, locks, and status telemetry.
+11. require a separate closed-source bounded candidate-memory retention lane;
+12. after perfect retention, bind retention + failed-checkpoint provenance and convert candidates into provenance-bound curriculum-scoped `LearnedConcept` records for transfer only;
+13. require atomic/Boss learned-concept transfer verification before persistence/promotion and canonical retry;
+14. preserve failed attempts and completed source-stage history immutably;
+15. route only promoted curriculum-scoped learned concepts into later matching attempts;
+16. run a separate 60-question final source capstone before source mastery;
+17. persist restart-safe job state, checkpoints, events, locks, and status telemetry.
 
 The controller is autonomous continual **source learning**, not unrestricted self-modification. It may not rewrite production prompts/tools/policies, alter Scouts or CMIS contracts, change provider authority, modify wallet permissions, alter human-approval semantics, or authorize execution as a consequence of learning.
+
+The autonomous candidate-memory lane is a narrow training mechanism, not a source-truth shortcut. Candidate concepts are represented separately from `LearnedConcept` records, are explicitly unpromoted, and receive no durable-memory authorization fields. After perfect closed-source retention and failed-checkpoint provenance binding, candidates are converted into provenance-bound curriculum-scoped `LearnedConcept` records only for transfer evaluation. Those records are not persisted/promoted until perfect transfer passes. Retention answers are bounded to the candidate principle so pretrained model knowledge cannot silently override the lesson being tested.
 
 See `docs/LEARNING_PLANE_ARCHITECTURE.md` and `docs/autonomous_training.md`.
 
@@ -225,12 +229,14 @@ Accepted on `main`:
 - autonomous `roberta-train` source-mastery controller;
 - read-only Learning Command Center autonomous-job telemetry.
 
+Current operator-local MB4E source-mastery evidence has passed runtime-generated Stages 9, 10, and 11. Stage 11 / On-chain Analysis passed canonical Attempt 3 at 99.33% accuracy with 100% integrity, Boss PASS, and zero critical failures. Stage 12 / Risk Reasoning is next; repository prebuilt-bank acceptance still remains through Stage 8, so this runtime progress must not be relabeled as prebuilt curriculum acceptance.
+
 Still separate/future:
 
 - general operational-trust promotion wrapper;
 - durable/provider-backed general Phase 10 retention store;
 - generalized background scheduler/load-throttling and recurring retention scheduler;
-- MB4E Stage 9-14 completion and final capstone/mastery;
+- MB4E Stage 12-14 completion and final capstone/mastery;
 - XenBlocks source acceptance after exact-byte correction;
 - any Controlled Execution work.
 

@@ -1,8 +1,8 @@
 # Roberta Autonomous Source Mastery
 
-Last reconciled: 2026-08-26 (America/New_York)
+Last reconciled: 2026-08-28 (America/New_York)
 
-Status: **accepted on `main` via merged PR #228**.
+Status: **accepted on `main`; runtime hardening through merged PR #245**.
 
 Roberta can run a source-mastery job from one selected local source without normal stage-by-stage operator intervention.
 
@@ -50,11 +50,15 @@ For every next source stage Roberta:
 10. creates 50 integrity exercises and one Boss exercise;
 11. validates the generated package and canonical 300-question selection before atomic publication;
 12. runs the closed-book canonical exam;
-13. on failure, derives only source-bound weak concepts, runs source-grounded practice, then a separate unaugmented closed-book retention lane, then a learned-concept transfer probe;
-14. promotes matching curriculum-scoped learned concepts only if all remediation gates pass perfectly;
-15. retries the canonical exam with the verified learned-concept store, or records a passing source stage in the authoritative Pyramid ledger.
+13. on failure, derives only source-bound weak concepts, runs source-grounded practice, then a separate closed-source bounded candidate-memory retention lane;
+14. after perfect retention, binds retention and failed-checkpoint provenance and converts candidates into provenance-bound curriculum-scoped `LearnedConcept` records for the transfer probe; these records are not yet persisted/promoted;
+15. runs atomic and Boss transfer verification using those provenance-bound `LearnedConcept` records;
+16. persists/promotes matching curriculum-scoped learned concepts only if transfer also passes perfectly;
+17. retries the canonical exam with the promoted learned-concept store, or records a passing source stage in the authoritative Pyramid ledger.
 
 A failed autonomous attempt does **not** erase the completed source-stage prefix and is not promoted into the authoritative source-stage result table. A weakness report alone cannot trigger another identical retry: verified remediation must complete first. Only a passing canonical attempt advances source mastery.
+
+The autonomous retention lane is intentionally **closed-source**, not source-free. Raw source excerpts, expected answers, grader material, and verified durable memory are excluded from the answer path. An unpromoted candidate lesson may be injected only as candidate memory; retention answers are bounded to that candidate principle so pretrained model knowledge cannot silently replace or contradict the lesson being tested. Candidate memory remains unverified and cannot become source truth, live truth, general durable memory, or execution authority. Perfect retention is required before provenance binding and conversion into transfer-only `LearnedConcept` records; those records remain unpersisted/unpromoted until the subsequent transfer probe passes perfectly.
 
 ## Frozen-plan restart safety
 
@@ -110,6 +114,20 @@ roberta-train --status
 
 The dashboard does not advance or repair the job.
 
+## Current MB4E runtime validation
+
+Operator-local validation of the frozen *Mastering Blockchain, Fourth Edition* plan has passed Stages 9, 10, and 11. Stage 11 / On-chain Analysis passed canonical Attempt 3 with 99.33% accuracy, 100% integrity, Boss PASS, and zero critical failures. Stage 12 / Risk Reasoning is the next active stage.
+
+Recent accepted runtime hardening includes:
+
+- PR #241 — complete stage-bound Boss synthesis routing and lineage;
+- PR #242 — candidate-only retention memory type and promotion boundary;
+- PR #243 — bounded retention answers so pretrained knowledge cannot override the candidate principle;
+- PR #244 — bounded regeneration when a source chunk produces zero deterministically valid targets;
+- PR #245 — malformed optional `forbidden_inferences` metadata is discarded rather than allowed to erase an otherwise valid exact-evidence target.
+
+These changes do not lower any canonical, retention, transfer, provenance, support-verification, or authority gate.
+
 ## Hard-stop rules
 
 Autonomous training stops rather than fabricates or silently broadens authority when, for example:
@@ -119,6 +137,7 @@ Autonomous training stops rather than fabricates or silently broadens authority 
 - a PDF has no extractable text;
 - required source chapters cannot be resolved;
 - too few exact-evidence learning targets survive verification;
+- a source chunk still yields zero valid exact-evidence targets after the bounded generation-attempt limit;
 - any assigned generation chunk retains no independently accepted target;
 - a package or provenance validation fails;
 - an existing partial stage bank would need to be overwritten;
