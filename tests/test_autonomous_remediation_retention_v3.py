@@ -23,13 +23,13 @@ from roberta.learning.pyramid_exam import GradedAnswer, summarize_exam
 from roberta.learning.pyramid_learned_concepts import LearnedConcept
 
 
-CURRICULUM_ID = "retention-v3-fixture"
+CURRICULUM_ID = "retention-v4-fixture"
 LEVEL = 11
 
 
 def _exercise() -> Exercise:
     return Exercise(
-        exercise_id="RETENTION-V3-WEAK",
+        exercise_id="RETENTION-V4-WEAK",
         curriculum_id=CURRICULUM_ID,
         level=LEVEL,
         concept="on_chain_analysis",
@@ -41,7 +41,7 @@ def _exercise() -> Exercise:
             "Interpret the observation within cited evidence without inventing live state.",
         ),
         forbidden_inferences=("Do not invent current balances or execution authority.",),
-        grading_rubric_id="RETENTION-V3-TEST",
+        grading_rubric_id="RETENTION-V4-TEST",
     )
 
 
@@ -187,7 +187,58 @@ def test_candidate_retention_memory_is_unverified_and_contains_no_source_or_grad
         )
 
 
-def test_remediation_v3_uses_fresh_namespace_and_candidate_memory_for_retention(
+def test_bounded_retention_prompt_prevents_pretrained_fact_override() -> None:
+    exercise = Exercise(
+        exercise_id="RETENTION-V4-REGTEST",
+        curriculum_id=CURRICULUM_ID,
+        level=LEVEL,
+        concept="bitcoin_node_modes",
+        subconcept="regtest",
+        question="Explain the validated regtest principle.",
+        expected_answer=(
+            "Regtest mode creates a local private blockchain where the user controls block "
+            "generation for testing, and blocks require 100 confirmations before the reward can be used."
+        ),
+        source_refs=("mastering_blockchain_4e_2023", "AUTO-S11-93a84713e72fa5c6"),
+    )
+    capture = CaptureModel()
+    wrapper = CandidateRemediationAnswerModel(
+        capture,
+        (_provisional(exercise),),
+        bounded_to_candidate=True,
+    )
+
+    wrapper.invoke(
+        [
+            HumanMessage(
+                content=json.dumps(
+                    {
+                        "instruction": "Answer independently.",
+                        "exercises": [
+                            {
+                                "exercise_id": exercise.exercise_id,
+                                "question": exercise.question,
+                                "concept": exercise.concept,
+                                "subconcept": exercise.subconcept,
+                            }
+                        ],
+                    }
+                )
+            )
+        ]
+    )
+
+    instruction = capture.payload["instruction"]
+    assert "complete allowed lesson content" in instruction
+    assert "without adding, correcting, replacing, or contradicting factual claims from prior knowledge" in instruction
+    assert "do not introduce factual assertions that are not entailed by it" in instruction
+    assert "does not authorize the candidate as source truth" in instruction
+    routed = capture.payload["exercises"][0]
+    assert routed["remediation_candidate_memory"]["principle"] == exercise.expected_answer
+    assert routed["remediation_candidate_memory"]["promotion_status"] == "candidate_unverified"
+
+
+def test_remediation_v4_uses_fresh_namespace_and_bounded_candidate_memory_for_retention(
     tmp_path, monkeypatch
 ) -> None:
     exercise = _exercise()
@@ -202,6 +253,15 @@ def test_remediation_v3_uses_fresh_namespace_and_candidate_memory_for_retention(
     )
     old_v2.parent.mkdir(parents=True)
     old_v2.write_text("immutable-v2-failure-evidence", encoding="utf-8")
+    old_v3 = (
+        output_dir
+        / "lanes"
+        / "stage-bound-boss-synthesis-v3"
+        / "retention_checkpoints"
+        / "level_11_batch_0001.json"
+    )
+    old_v3.parent.mkdir(parents=True)
+    old_v3.write_text("immutable-v3-failure-evidence", encoding="utf-8")
 
     failed_checkpoints = tmp_path / "failed"
     failed_checkpoints.mkdir()
@@ -232,8 +292,8 @@ def test_remediation_v3_uses_fresh_namespace_and_candidate_memory_for_retention(
         batch_size=10,
     )
 
-    assert AUTONOMOUS_REMEDIATION_VERSION == "1.2.0"
-    assert REMEDIATION_LANE_NAMESPACE == "stage-bound-boss-synthesis-v3"
+    assert AUTONOMOUS_REMEDIATION_VERSION == "1.3.0"
+    assert REMEDIATION_LANE_NAMESPACE == "stage-bound-boss-synthesis-v4"
     assert [name for name, _, _ in calls] == [
         "grounded_checkpoints",
         "retention_checkpoints",
@@ -242,19 +302,24 @@ def test_remediation_v3_uses_fresh_namespace_and_candidate_memory_for_retention(
     assert isinstance(calls[0][1], CandidateRemediationAnswerModel)
     assert isinstance(calls[1][1], CandidateRemediationAnswerModel)
     assert isinstance(calls[2][1], StageTransferLearnedConceptAnswerModel)
-    assert all("stage-bound-boss-synthesis-v3" in str(path) for _, _, path in calls)
+    assert calls[0][1]._bounded_to_candidate is False
+    assert calls[1][1]._bounded_to_candidate is True
+    assert all("stage-bound-boss-synthesis-v4" in str(path) for _, _, path in calls)
+    assert all("stage-bound-boss-synthesis-v3" not in str(path) for _, _, path in calls)
     assert all("stage-bound-boss-synthesis-v2" not in str(path) for _, _, path in calls)
     assert old_v2.read_text(encoding="utf-8") == "immutable-v2-failure-evidence"
+    assert old_v3.read_text(encoding="utf-8") == "immutable-v3-failure-evidence"
 
     lane_root = output_dir / "lanes" / REMEDIATION_LANE_NAMESPACE
     report = json.loads((lane_root / "retention_report.json").read_text(encoding="utf-8"))
     manifest = json.loads((lane_root / "retention_manifest.json").read_text(encoding="utf-8"))
     promotion = json.loads((lane_root / "promotion.json").read_text(encoding="utf-8"))
 
-    assert report["retention_mode"] == "closed-source-candidate-memory-v1"
+    assert report["retention_mode"] == "closed-source-bounded-candidate-memory-v2"
     assert report["candidate_memory_injected"] is True
     assert report["raw_source_context_injected"] is False
     assert report["answer_grading_material_injected"] is False
+    assert manifest["retention_mode"] == "closed-source-bounded-candidate-memory-v2"
     assert manifest["candidate_memory_injected_into_retention"] is True
     assert manifest["raw_source_context_injected_into_retention"] is False
     assert manifest["answer_grading_material_injected_into_retention"] is False
@@ -292,7 +357,7 @@ def test_failed_candidate_memory_retention_blocks_transfer_and_promotion(
 
     with pytest.raises(
         AutonomousRemediationError,
-        match="closed-source candidate-memory remediation retention did not pass perfectly",
+        match="closed-source bounded candidate-memory remediation retention did not pass perfectly",
     ):
         run_autonomous_remediation(
             curriculum_id=CURRICULUM_ID,
@@ -311,6 +376,7 @@ def test_failed_candidate_memory_retention_blocks_transfer_and_promotion(
         "retention_checkpoints",
     ]
     assert isinstance(calls[1][1], CandidateRemediationAnswerModel)
+    assert calls[1][1]._bounded_to_candidate is True
     assert not learned_path.exists()
     assert not (output_dir / "promotion.json").exists()
     assert not (
