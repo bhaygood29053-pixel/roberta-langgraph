@@ -8,6 +8,13 @@ Current accepted CMIS dependency is **1.12.0**. Roberta/X1 Scout preserves CMIS 
 
 Controlled Execution remains locked/not started.
 
+
+## Strategic roadmap update — 2026-08-28
+
+Roberta is reprioritized around becoming the user-facing X1 intelligence analyst. The flagship product sequence is Instant X1 Scan -> Autonomous Investigation -> CMIS-backed holder/wallet intelligence adoption -> Discovery Ledger -> Early Warning -> Compare -> X1 Daily Intelligence Brief -> polished chat/web UX -> developer intelligence API. X1 is the flagship chain; Solana Scout remains maintained as a read-only portability/proving surface and broad Solana expansion is deprioritized.
+
+This is a **priority/product-direction update only**. It does not change accepted capability, promotion, evidence, risk, authority, or execution state on its own. Roadmap ownership: issue #246.
+
 ## Accepted on Roberta `main`
 
 ### Core runtime / CMIS boundary
