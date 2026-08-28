@@ -428,6 +428,141 @@ def test_target_generation_exhausts_bounded_semantic_retries_fail_closed(source)
     assert model.generator_calls == TARGET_GENERATION_ATTEMPTS
 
 
+def test_optional_forbidden_inferences_malformed_shape_is_discarded(source) -> None:
+    pages = {item.page: item.text for item in load_source_pages(source)}
+    raw = {
+        "concept": "liquidity_metadata",
+        "subconcept": "optional_forbidden_shape",
+        "principle": "Liquidity pools allow traders to exchange against pooled reserves.",
+        "evidence_quote": EVIDENCE,
+        "page": 1,
+        "chapter": 1,
+        "section": "Liquidity Pools",
+        "required_points": ["Explain the pooled-reserve relationship."],
+        # This mirrors the Stage 12 runtime failure class: optional defensive
+        # metadata is structurally malformed even though the target itself is
+        # exactly source-grounded.
+        "forbidden_inferences": [{"claim": "Do not invent live balances."}],
+    }
+
+    target = _validate_candidate(
+        raw,
+        index=1,
+        stage=_stage(),
+        pages=pages,
+        chapter_map=load_chapter_map(source),
+        package_source_key=source.source_key,
+    )
+
+    assert AUTONOMOUS_CURRICULUM_VERSION == "1.2.0"
+    assert target.forbidden_inferences == ()
+    assert target.evidence_quote == EVIDENCE
+
+
+def test_optional_forbidden_inferences_valid_strings_are_preserved(source) -> None:
+    pages = {item.page: item.text for item in load_source_pages(source)}
+    raw = {
+        "concept": "liquidity_metadata",
+        "subconcept": "valid_forbidden_shape",
+        "principle": "Liquidity pools allow traders to exchange against pooled reserves.",
+        "evidence_quote": EVIDENCE,
+        "page": 1,
+        "chapter": 1,
+        "section": "Liquidity Pools",
+        "required_points": ["Explain the pooled-reserve relationship."],
+        "forbidden_inferences": [
+            "Do not invent current balances.",
+            "Do not infer provider ownership.",
+        ],
+    }
+
+    target = _validate_candidate(
+        raw,
+        index=1,
+        stage=_stage(),
+        pages=pages,
+        chapter_map=load_chapter_map(source),
+        package_source_key=source.source_key,
+    )
+
+    assert target.forbidden_inferences == (
+        "Do not invent current balances.",
+        "Do not infer provider ownership.",
+    )
+
+
+def test_malformed_optional_forbidden_metadata_does_not_bypass_exact_evidence(source) -> None:
+    pages = {item.page: item.text for item in load_source_pages(source)}
+    raw = {
+        "concept": "liquidity_metadata",
+        "subconcept": "invalid_evidence_still_rejected",
+        "principle": "This target is not grounded.",
+        "evidence_quote": "This sentence is not in the immutable source material.",
+        "page": 1,
+        "chapter": 1,
+        "section": "Liquidity Pools",
+        "required_points": ["Reject unsupported target content."],
+        "forbidden_inferences": {"malformed": True},
+    }
+
+    with pytest.raises(
+        AutonomousCurriculumError,
+        match="evidence_quote is not an exact normalized substring",
+    ):
+        _validate_candidate(
+            raw,
+            index=1,
+            stage=_stage(),
+            pages=pages,
+            chapter_map=load_chapter_map(source),
+            package_source_key=source.source_key,
+        )
+
+
+def test_target_generation_accepts_exact_target_with_malformed_optional_forbidden_metadata(
+    source,
+) -> None:
+    class MalformedOptionalMetadataModel:
+        def invoke(self, messages):
+            system = messages[0].content
+            payload = json.loads(messages[1].content)
+            if "independent support verifier" in system:
+                return json.dumps(
+                    {"accepted_ids": [item["target_id"] for item in payload["candidates"]]}
+                )
+            if "curriculum analyst" not in system:
+                raise AssertionError(f"unexpected model call: {system[:80]}")
+            return json.dumps(
+                {
+                    "targets": [
+                        {
+                            "concept": f"metadata_concept_{index}",
+                            "subconcept": f"metadata_mechanism_{index}",
+                            "principle": f"Source-grounded liquidity principle {index} tied to pooled reserves.",
+                            "evidence_quote": EVIDENCE,
+                            "page": 1,
+                            "chapter": 1,
+                            "section": "Liquidity Pools",
+                            "required_points": ["Explain the pooled-reserve relationship."],
+                            "forbidden_inferences": {"claim": "Do not invent live balances."},
+                        }
+                        for index in range(1, MIN_TARGETS + 1)
+                    ]
+                }
+            )
+
+    targets = generate_stage_targets(
+        MalformedOptionalMetadataModel(),
+        source=source,
+        package_source_key=source.source_key,
+        stage=_stage(),
+    )
+
+    assert len(targets) == MIN_TARGETS
+    assert all(target.forbidden_inferences == () for target in targets)
+    assert all(target.evidence_quote == EVIDENCE for target in targets)
+
+
 def test_generated_targets_require_exact_source_evidence(source) -> None:
     targets = generate_stage_targets(
         TargetModel(),
