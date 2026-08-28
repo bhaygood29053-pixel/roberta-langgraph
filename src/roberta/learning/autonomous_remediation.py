@@ -10,7 +10,6 @@ from langchain_core.messages import HumanMessage
 
 from .pyramid import Exercise
 from .pyramid_exam import ExamOutcome, run_exam
-from .pyramid_learned_concept_answer import PyramidLearnedConceptAnswerModel
 from .pyramid_learned_concepts import (
     PYRAMID_LEARNED_CONCEPT_MEMORY_CONTRACT,
     LearnedConcept,
