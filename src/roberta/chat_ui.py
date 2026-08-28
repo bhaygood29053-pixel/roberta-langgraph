@@ -118,6 +118,8 @@ WARNING_CODE_MEANINGS = {
 SERVICE_MENU = """\
 ROBERTA SERVICE MENU
 ------------------------------------------------------------------------
+FLAGSHIP: Instant X1 Scan       /scan <asset>
+
   1. Asset Overview              /overview <asset>
   2. Compare Two Assets          /compare <asset1> <asset2>
   3. Risk Assessment             /risk <asset>
@@ -139,6 +141,20 @@ Other commands:
 
 You can also type a normal question at any time.
 """
+
+
+INSTANT_SCAN_TERMINAL_STYLE = (
+    " FORMAT FOR A PLAIN TERMINAL: return a compact X1 intelligence card. "
+    "Use the exact headings IDENTITY, CURRENT MARKET, RISK, TOKENOMICS & AUTHORITIES, "
+    "EVIDENCE STATE, KEY LIMITATIONS, and DRILL-DOWN. Keep each section concise. "
+    "Use only facts returned by X1 Scout/CMIS for current market, tokenomics, risk, "
+    "identity, verification, proof, and freshness. Do not add history, ranking, "
+    "concentration, wallet inference, or trade advice unless the user separately asks. "
+    "Use UNKNOWN, UNAVAILABLE, NOT VERIFIED, or the exact CMIS status for missing facts; "
+    "never convert missing evidence into zero/none/false. In DRILL-DOWN, tell the user "
+    "that /evidence <asset> opens the evidence-quality view and /full <asset> runs the "
+    "heavier full assessment. Do not use Markdown table syntax."
+)
 
 
 SINGLE_ASSET_TERMINAL_STYLE = (
@@ -616,6 +632,18 @@ def automatic_status_summary(content: object) -> str | None:
     if not lines:
         return None
     return "\n".join(lines)
+
+
+def scan_request(asset: str) -> str:
+    return (
+        f"On X1, perform an Instant X1 Scan of {asset}. Treat this as the dedicated "
+        "instant scan product flow, not a full assessment. Use X1 Scout and fresh CMIS "
+        "evidence. Deterministically gather exactly the bounded current-intelligence "
+        "services market_report, tokenomics, and risk_check. Do not autonomously add "
+        "rank, historical_compare, concentration intelligence, pre_trade_check, or any "
+        "execution action. Separate verified facts from Roberta interpretation, preserve "
+        "CMIS verification/proof/freshness state, and disclose unavailable fields."
+    ) + INSTANT_SCAN_TERMINAL_STYLE
 
 
 def overview_request(asset: str) -> str:
