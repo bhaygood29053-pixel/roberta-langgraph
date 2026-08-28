@@ -1,6 +1,12 @@
-# Roberta LangGraph
+# ROBERTA — Verified On-Chain Intelligence
 
 Roberta is the top-level Oracle, policy-aware coordinator, learning-workflow coordinator, and normal user-facing voice for the multi-agent system.
+
+## Product identity
+
+**ROBERTA — Verified On-Chain Intelligence** is the canonical public-facing product name. The former working name **X1 Intelligence Service** is retired and must not be used as the current product name. X1 Scout, Solana Scout, and CMIS remain component names beneath Roberta; this naming decision does not change authority, verification, or execution boundaries.
+
+See [`docs/PRODUCT_IDENTITY.md`](./docs/PRODUCT_IDENTITY.md) for the repository-authoritative naming rules.
 
 ## Canonical architecture
 
@@ -127,6 +133,7 @@ Static sources never override fresh Scout -> CMIS -> Provider evidence for price
 
 ## Source-of-truth documents
 
+- [`docs/PRODUCT_IDENTITY.md`](./docs/PRODUCT_IDENTITY.md) — repository-authoritative product naming and branding boundary.
 - [`docs/LANGGRAPH_ROADMAP.md`](./docs/LANGGRAPH_ROADMAP.md) — authoritative Roberta roadmap/status.
 - [`docs/PROJECT_STATUS_2026-08-28.md`](./docs/PROJECT_STATUS_2026-08-28.md) — current dated status snapshot.
 - [`docs/LEARNING_SYSTEM.md`](./docs/LEARNING_SYSTEM.md) — Learning System phase/authority map.

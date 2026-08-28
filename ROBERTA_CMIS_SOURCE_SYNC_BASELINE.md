@@ -1,8 +1,15 @@
 # Roberta ↔ CMIS Source Sync Baseline
 
-Last reconciled: 2026-08-27 (America/New_York)
+Last reconciled: 2026-08-28 (America/New_York)
 
 This file is the compact cross-project synchronization baseline. It is intentionally mirrored in both repositories. Repository-local architecture, capability, roadmap, and status documents remain authoritative for implementation details.
+
+## Product identity invariant
+
+- **ROBERTA — Verified On-Chain Intelligence** is the canonical public-facing product name.
+- The former working name **X1 Intelligence Service** is retired and must not be used as the current product name.
+- X1 Scout, Solana Scout, and CMIS remain component names beneath Roberta.
+- This is a naming change only; the authority, evidence, risk, capability, and execution boundaries below are unchanged.
 
 ## Canonical authority path
 
@@ -67,13 +74,16 @@ Accepted/read-only evidence on CMIS `main` now establishes:
 - the declared X1 program/state contract shape is live and structurally verified;
 - exact program/state ownership, PDA/layout, six-asset × five-relay shape, decimals, and stored Oracle key were verified through X1 RPC;
 - timestamp-unit semantics are promoted only under the accepted evidence-bound policy: raw batch timestamps may be interpreted as Unix milliseconds;
-- current slot ages can be calculated deterministically from the verified timestamp unit.
+- current slot ages can be calculated deterministically from the verified timestamp unit;
+- the explicit freshness policy is selected/applied with `max_age_ms=60000`, `max_future_skew_ms=5000`, and `minimum_eligible_slots=3`;
+- the latest live run classified all 30 observed relay slots stale, so no current-price median was eligible.
 
-Still false/unaccepted:
+Current freshness-governance state:
 
 ```text
-freshness_policy_complete = false
-freshness_verified = false
+freshness_policy_complete = true
+freshness_policy_applied = true
+freshness_verified = true
 current_price_use_authorized = false
 source_independence_verified = false
 price_correctness_verified = false
@@ -83,7 +93,7 @@ scout_reliance_promoted = false
 execution_authorized = false
 ```
 
-A separate explicit freshness-policy decision is required before any current Oracle V2 slot can become price-eligible. Five relay slots remain same-system redundancy, not five independent market sources.
+No current slot is price-eligible in the latest live evidence because all observed relay slots were stale. Five relay slots remain same-system redundancy, not five independent market sources. The next Oracle gate resumes only when new policy-eligible live slots appear.
 
 ## Roberta Learning Plane baseline
 
@@ -118,7 +128,7 @@ No broader public intelligence/alert promotion is accepted by implication.
 
 ## Provider-gap state
 
-The X1 provider-gap track remains read-only/fail-closed. Open research/draft work includes Warp Bridge provenance binding, X1Scroll bounded authenticated RPC access classification, and FortiBlox provider-contract research. Open/green/mergeable state does not equal accepted provider capability.
+The X1 provider-gap track remains read-only/fail-closed. Warp Bridge and FortiBlox research branches are closed as not currently verifiable/candidate research. X1Scroll PR #229 is closed and X1Scroll is removed from CMIS integration scope because no repository API key was available for the required credential-backed probe; no provider request was made and no X1Scroll capability is accepted on `main`. A future secondary provider requires a new explicit verification gate.
 
 ## Execution boundary
 
