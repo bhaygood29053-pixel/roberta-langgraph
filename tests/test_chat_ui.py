@@ -12,12 +12,16 @@ from roberta.chat_ui import (
     overview_request,
     history_request,
     pretrade_request,
+    scan_request,
 )
+from roberta.chat_cli import _shortcut_request
 from roberta.recommendation_policy import recommendation_intent
 from roberta.x1_scout.planner import enforce_plan
 
 
 def test_service_menu_exposes_requested_user_flows() -> None:
+    assert "Instant X1 Scan" in SERVICE_MENU
+    assert "/scan <asset>" in SERVICE_MENU
     assert "Asset Overview" in SERVICE_MENU
     assert "Compare Two Assets" in SERVICE_MENU
     assert "Risk Assessment" in SERVICE_MENU
@@ -31,6 +35,39 @@ def test_service_menu_exposes_requested_user_flows() -> None:
     assert "Evidence Quality Report" in SERVICE_MENU
     assert "Full Assessment" in SERVICE_MENU
     assert "Alert & Warning Key" in SERVICE_MENU
+
+
+def test_instant_x1_scan_is_deterministic_bounded_three_service_flow() -> None:
+    request = scan_request("XNT")
+
+    assert "Instant X1 Scan of XNT" in request
+    assert recommendation_intent(request) == "instant_scan"
+    assert "market_report" in request
+    assert "tokenomics" in request
+    assert "risk_check" in request
+    assert "not a full assessment" in request
+    assert "Do not autonomously add rank" in request
+    assert "historical_compare" in request
+    assert "pre_trade_check" in request
+    assert "/evidence XNT" in request
+    assert "/full XNT" in request
+    assert "IDENTITY" in request
+    assert "EVIDENCE STATE" in request
+    assert "DRILL-DOWN" in request
+
+    plan = enforce_plan(
+        {"asset": "XNT", "objective": request},
+        {"operations": ["rank", "historical_compare"]},
+    )
+    assert plan["operations"] == [
+        "market_report",
+        "tokenomics",
+        "risk_check",
+    ]
+
+
+def test_scan_shortcut_expands_without_changing_asset_text() -> None:
+    assert _shortcut_request("/scan XNT") == scan_request("XNT")
 
 
 def test_status_key_keeps_risk_service_and_proof_meanings_separate() -> None:
