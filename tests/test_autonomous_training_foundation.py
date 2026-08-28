@@ -367,7 +367,7 @@ def test_target_generation_retries_zero_valid_chunk_from_immutable_source(source
         stage=_stage(),
     )
 
-    assert AUTONOMOUS_CURRICULUM_VERSION == "1.1.0"
+    assert AUTONOMOUS_CURRICULUM_VERSION == "1.2.0"
     assert TARGET_GENERATION_ATTEMPTS == 3
     assert model.generator_calls == 2
     assert len(targets) == MIN_TARGETS
