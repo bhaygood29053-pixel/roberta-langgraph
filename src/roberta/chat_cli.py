@@ -27,7 +27,7 @@ from roberta.chat_ui import (
     tokenomics_request,
 )
 from roberta.config import RobertaChainSettings
-from roberta.graph import build_graph
+from roberta.private_core import build_graph
 from roberta.models import create_runtime_model
 from roberta.tools import get_roberta_tools
 
