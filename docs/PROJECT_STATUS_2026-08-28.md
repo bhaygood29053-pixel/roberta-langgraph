@@ -2,7 +2,7 @@
 
 ## Executive status
 
-**Product identity:** the canonical public-facing product name is now **Roberta**. The former working name **X1 Intelligence Service** is retired. X1 Scout, Solana Scout, and CMIS retain their current component names; no authority or execution boundary changes with this naming decision.
+**Product identity:** the canonical public-facing product name is now **ROBERTA — Verified On-Chain Intelligence**. The former working name **X1 Intelligence Service** is retired. X1 Scout, Solana Scout, and CMIS retain their current component names; no authority or execution boundary changes with this naming decision.
 
 Roberta's core LangGraph runtime, Scout/CMIS authority boundary, Learning System Phases 1-10, autonomous source-grounded Learning Plane controller, and the latest autonomous-training hardening through PR #245 are accepted on `main`.
 
