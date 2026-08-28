@@ -1,6 +1,6 @@
 # Roberta LangGraph Roadmap
 
-Last reconciled: 2026-08-27 (America/New_York)
+Last reconciled: 2026-08-28 (America/New_York)
 
 Status source: accepted code and contracts on `main`. Open PRs are not current truth unless explicitly identified as pending.
 
@@ -36,6 +36,8 @@ Accepted on `main`:
 - accepted prebuilt MB4E banks through Stage 8 / Market Structure;
 - autonomous source-grounded Learning Plane controller from PR #228;
 - read-only Learning Command Center telemetry for source mastery and autonomous-training jobs.
+- autonomous remediation hardening through PRs #241-#243: complete Boss synthesis routing, candidate-only retention memory, and bounded candidate-memory retention;
+- autonomous target-generation hardening through PRs #244-#245: bounded zero-valid-target retries and fail-closed normalization of malformed optional defensive metadata.
 
 `main` includes the hardened Phase 10 verified-retention implementation and the separate knowledge-classification boundary. The old draft PR #136 remains open historical work and is no longer the implementation source of truth.
 
@@ -85,7 +87,7 @@ The controller can:
 - publish validated curriculum changes atomically while guarding against unexpected ledger mutation;
 - run 300-question canonical stage exams automatically;
 - derive source-bound weaknesses after failure;
-- require source-grounded practice, unaugmented closed-book retention, and transfer verification before learned-concept promotion and retry;
+- require source-grounded practice, closed-source bounded candidate-memory retention, and transfer verification before learned-concept promotion and retry;
 - preserve failed attempts as immutable evidence without erasing the completed source-stage prefix;
 - run a separate 60-question final source capstone;
 - resume from durable state after interruption with advisory locking and source-registry transaction safety;
@@ -176,8 +178,9 @@ Classification, direct wallet-relationship evidence, and concentration-threshold
 ### 2. Continue MB4E source mastery
 
 - repository-accepted prebuilt MB4E banks remain through Stage 8 / Market Structure;
-- current operator-local autonomous validation has passed runtime-generated Stage 9 / DeFi and Stage 10 / Advanced DeFi and is hardening Stage 11 / On-chain Analysis remediation/transfer; this local run is operational evidence, not a new prebuilt-bank acceptance on `main`;
-- continue Stages 11-14 under the frozen plan using canonical exams and verified remediation as required;
+- operator-local autonomous validation has now passed runtime-generated Stage 9 / DeFi, Stage 10 / Advanced DeFi, and Stage 11 / On-chain Analysis; Stage 11 canonical Attempt 3 reached 99.33% accuracy, 100% integrity, Boss PASS, and zero critical failures;
+- Stage 12 / Risk Reasoning is the next active stage; PRs #244-#245 harden missing-bank generation with bounded source-chunk retries and fail-closed handling of malformed optional `forbidden_inferences` metadata without weakening exact-evidence or independent-support gates;
+- continue Stages 12-14 under the frozen plan using canonical exams and verified remediation as required;
 - complete the required final source capstone before declaring MB4E mastered.
 
 ### 3. Clean stale historical branches without treating them as current truth
