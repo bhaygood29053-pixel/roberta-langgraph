@@ -4,7 +4,11 @@ from langchain_core.messages import AIMessage
 
 from roberta.cmis.mock import MockCMISClient
 from roberta.x1_scout.graph import build_x1_scout_graph
-from roberta.x1_scout.planner import enforce_plan, parse_plan_proposal
+from roberta.x1_scout.planner import (
+    enforce_plan,
+    parse_plan_proposal,
+    select_cmis_operation,
+)
 
 
 class ScriptedPlannerModel:
@@ -60,6 +64,34 @@ def test_model_can_propose_multistep_read_only_investigation() -> None:
     ]
     assert report["source"]["operation"] == "risk_check"
     assert report["findings"]["risk"]["outcome"] == "TEST_ONLY"
+
+
+def test_instant_scan_forces_current_three_service_plan_despite_negative_exclusions() -> None:
+    planner = ScriptedPlannerModel(["rank", "historical_compare"])
+    cmis = MockCMISClient()
+    scout = build_x1_scout_graph(cmis, planner_model=planner)
+
+    objective = (
+        "Instant X1 Scan of XNT. Gather market_report, tokenomics, and risk_check. "
+        "Do not autonomously add rank or historical_compare."
+    )
+    result = _invoke(scout, objective, asset="XNT")
+
+    assert select_cmis_operation(objective) == "market_report"
+    assert [call["operation"] for call in cmis.calls] == [
+        "market_report",
+        "tokenomics",
+        "risk_check",
+    ]
+    assert result["report"]["plan"]["operations"] == [
+        "market_report",
+        "tokenomics",
+        "risk_check",
+    ]
+    assert not any(
+        warning.startswith("planner_operation_rejected_for_rank_objective")
+        for warning in result["report"]["plan"]["warnings"]
+    )
 
 
 def test_full_assessment_forces_all_five_services_and_all_available_history() -> None:
