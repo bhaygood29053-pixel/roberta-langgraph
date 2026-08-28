@@ -128,15 +128,17 @@ Accepted behavior includes:
 8. expand verified targets into validated canonical exercise banks and publish them atomically;
 9. run the closed-book 300-question canonical source-stage exam;
 10. on failure, derive source-bound weakness material and require source-grounded practice;
-11. require a separate closed-source bounded candidate-memory retention lane and learned-concept transfer verification before promotion/retry;
-12. preserve failed attempts and completed source-stage history immutably;
-13. route only verified curriculum-scoped learned concepts into later matching attempts;
-14. run a separate 60-question final source capstone before source mastery;
-15. persist restart-safe job state, checkpoints, events, locks, and status telemetry.
+11. require a separate closed-source bounded candidate-memory retention lane;
+12. after perfect retention, bind retention + failed-checkpoint provenance and convert candidates into provenance-bound curriculum-scoped `LearnedConcept` records for transfer only;
+13. require atomic/Boss learned-concept transfer verification before persistence/promotion and canonical retry;
+14. preserve failed attempts and completed source-stage history immutably;
+15. route only promoted curriculum-scoped learned concepts into later matching attempts;
+16. run a separate 60-question final source capstone before source mastery;
+17. persist restart-safe job state, checkpoints, events, locks, and status telemetry.
 
 The controller is autonomous continual **source learning**, not unrestricted self-modification. It may not rewrite production prompts/tools/policies, alter Scouts or CMIS contracts, change provider authority, modify wallet permissions, alter human-approval semantics, or authorize execution as a consequence of learning.
 
-The autonomous candidate-memory lane is a narrow training mechanism, not a source-truth shortcut. Candidate concepts are represented separately from durable `LearnedConcept` records, are explicitly unpromoted, receive no durable-memory authorization fields, and become verified curriculum-scoped learned concepts only after perfect closed-source retention, failed-checkpoint provenance binding, and perfect transfer. Retention answers are bounded to the candidate principle so pretrained model knowledge cannot silently override the lesson being tested.
+The autonomous candidate-memory lane is a narrow training mechanism, not a source-truth shortcut. Candidate concepts are represented separately from `LearnedConcept` records, are explicitly unpromoted, and receive no durable-memory authorization fields. After perfect closed-source retention and failed-checkpoint provenance binding, candidates are converted into provenance-bound curriculum-scoped `LearnedConcept` records only for transfer evaluation. Those records are not persisted/promoted until perfect transfer passes. Retention answers are bounded to the candidate principle so pretrained model knowledge cannot silently override the lesson being tested.
 
 See `docs/LEARNING_PLANE_ARCHITECTURE.md` and `docs/autonomous_training.md`.
 
