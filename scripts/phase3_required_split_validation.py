@@ -158,7 +158,7 @@ def main() -> int:
         assert model.invoke_count == 2
         assert model.report is not None
         assert provider.refresh_calls >= 1
-        assert client.capabilities().contract_version == "1.13.0"
+        assert client.capabilities()["contract_version"] == "1.13.0"
 
         print("PHASE3_SPLIT_VALIDATION=PASS")
         print("ROBERTA_PRIVATE_CORE_REQUIRED=PASS")
