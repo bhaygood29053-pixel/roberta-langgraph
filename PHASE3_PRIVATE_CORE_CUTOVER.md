@@ -1,37 +1,51 @@
 # Phase 3 — ROBERTA Private-Core Cutover
 
-Status: **IN PROGRESS**
+Status: **COMPLETE**
 
-Public runtime entrypoints now depend on `roberta.private_core`, which targets the private facade contract `roberta-private-core/v1`.
+Public runtime entrypoints depend on `roberta.private_core`, which targets the
+required private facade contract `roberta-private-core/v1`.
 
-The following user-facing paths have been redirected away from direct protected `roberta.graph` imports:
-
+The following public paths route through the private-core adapter:
 - HTTP bridge;
 - chat CLI;
 - live demo;
 - readiness CLI;
 - package-level `build_graph` export.
 
-## Migration-only fallback
+There is **no public graph fallback**. If `roberta-private-core` is missing or
+contract-incompatible, graph construction fails closed.
 
-Until split validation is complete, `roberta.private_core` may call the current public graph implementation so the source repository remains testable.
+## Phase 3 validation evidence
 
-That fallback is temporary.
+Required-private-core split validation passed in workflow run `33227923034`
+with:
+- `ROBERTA_PRIVATE_CORE_REQUIRED=1`;
+- `CMIS_PRIVATE_CORE_REQUIRED=1`;
+- protected ROBERTA and CMIS implementation removed from the assembled public
+  shells before private-wheel installation;
+- `roberta-private-core==0.2.0` and `cmis-private-core==0.2.0` installed;
+- deterministic User -> ROBERTA -> X1 Scout -> CMIS HTTP -> private CMIS runtime
+  completed;
+- `ROBERTA_TO_X1_SCOUT=PASS`;
+- `X1_SCOUT_TO_CMIS_HTTP=PASS`;
+- `PUBLIC_FALLBACK_USED=FALSE`.
 
-Production cutover requires:
+The fallback-free ROBERTA deterministic suite passed in run `33227923032`.
 
-`ROBERTA_PRIVATE_CORE_REQUIRED=1`
+## Safety state
 
-With that flag enabled, an absent or incompatible private core fails closed.
+The authority hierarchy remains:
+**User -> ROBERTA -> Chain Scout -> CMIS -> Chain Provider**
 
-## Removal gate
+ROBERTA remains orchestration/final-synthesis authority. Chain Scouts remain
+interpretive. CMIS remains authoritative for deterministic verified
+facts/evidence/risk. No execution, signing, broadcasting, custody, autonomous
+value movement, new fact authority, or new service promotion is authorized.
 
-Do not delete protected orchestration, learning, memory, policy, prompt, specialist, or reasoning implementation from public HEAD until:
+Protected implementation remains in public Git HEAD until the dedicated source
+removal phase. Historical Git cleanup is separate.
 
-1. the private distribution builds and passes its doctor;
-2. bridge/chat/live/readiness tests pass through `roberta-private-core/v1`;
-3. ROBERTA -> Chain Scout -> CMIS end-to-end tests pass across the split;
-4. required-private-core mode runs without the public fallback;
-5. public package/test surfaces no longer depend on protected implementation being present locally.
+## Next phase
 
-Historical Git cleanup is separate and happens only after functional cutover.
+Phase 4 broadens split-runtime integration/CI coverage and operationalizes
+private-package validation before protected public source is removed.
