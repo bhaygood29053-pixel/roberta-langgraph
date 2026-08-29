@@ -351,6 +351,11 @@ def main() -> int:
     gates["cmis_private_core_required"] = True
 
     provider = FakeX1MarketProvider()
+    verification_db = Path("phase4-verification-evidence.db")
+    intelligence_db = Path("phase4-intelligence-evidence.db")
+    for db_path in (verification_db, intelligence_db):
+        db_path.unlink(missing_ok=True)
+
     gateway = cmis_contract["gateway_class"](
         x1_market_provider=provider,
         x1_supply_provider=FakeX1SupplyProvider(),
@@ -361,8 +366,8 @@ def main() -> int:
             "semantics": {},
             "contract": {"provider_total_raw": 0},
         },
-        verification_evidence_db_path=":memory:",
-        intelligence_evidence_db_path=":memory:",
+        verification_evidence_db_path=str(verification_db),
+        intelligence_evidence_db_path=str(intelligence_db),
         auto_record_history=False,
     )
 
@@ -478,6 +483,8 @@ def main() -> int:
         server.shutdown()
         server.server_close()
         thread.join(timeout=2)
+        for db_path in (verification_db, intelligence_db):
+            db_path.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":
