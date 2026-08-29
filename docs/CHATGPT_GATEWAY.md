@@ -73,7 +73,7 @@ export ROBERTA_API_KEY="$(openssl rand -hex 32)"
 
 Store the value in a local secret file or secret manager. Do not commit it.
 
-When the bridge binds to any non-loopback interface, `ROBERTA_API_KEY` is mandatory and startup fails closed if it is missing.
+When the bridge binds to any non-loopback interface, `ROBERTA_API_KEY` is mandatory and startup fails closed if it is missing. The dedicated `/v1/gateway/*` endpoints also fail closed with `gateway_auth_not_configured` when no API key is configured, even on loopback. The legacy local `/v1/roberta` endpoint keeps its existing loopback behavior.
 
 For the recommended deployment, keep the Python bridge on loopback:
 
