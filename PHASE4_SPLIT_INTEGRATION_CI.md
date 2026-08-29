@@ -25,11 +25,30 @@ Required checks:
 9. Execution authorization remains false.
 10. A machine-readable evidence artifact is emitted by CI.
 
+## Checkpoint 1
+
+Initial Phase 4 split integration passed in Actions run `33228563613`.
+
+Verified:
+- source-stripped public-shell assembly;
+- private package ownership and facade contracts;
+- public/private CMIS service + chain parity;
+- authenticated CMIS capability handshake;
+- unauthenticated CMIS access fails closed;
+- ROBERTA -> X1 Scout -> private CMIS HTTP path;
+- ROBERTA -> Solana Scout provider-gate path;
+- Solana did not fall through to X1;
+- `PUBLIC_FALLBACK_USED=FALSE`;
+- `EXECUTION_AUTHORIZED=FALSE`;
+- machine-readable evidence artifact uploaded.
+
+Artifact: `phase4-split-integration-evidence`.
+
 ## Source-removal gate
 
 Protected ROBERTA implementation must remain in public Git HEAD until Phase 4 is
 complete. Public source removal is a later phase and may begin only after the
-split integration gate is green and stable.
+split integration gate is green and stable on the merged `main` workflow.
 
 The authority chain remains:
 
