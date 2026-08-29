@@ -14,15 +14,11 @@ from typing import Any
 
 from langchain_core.messages import AIMessage, HumanMessage
 
-from roberta.config import RobertaChainSettings
-from roberta.models import create_runtime_model
-from roberta.private_core import build_graph
 from roberta.telegram_identity import (
     is_authorized_user,
     owner_id_from_env,
     telegram_thread_id,
 )
-from roberta.tools import get_roberta_tools
 
 TOKEN_ENV = "ROBERTA_TELEGRAM_TOKEN"
 MAX_TELEGRAM_CHARS = 4000
@@ -75,12 +71,23 @@ def split_telegram_reply(text: str, *, limit: int = MAX_TELEGRAM_CHARS) -> list[
 
 
 def build_runtime_graph():
-    """Build the private-core ROBERTA graph with process-lifetime thread state."""
+    """Build the required private-core ROBERTA graph for Telegram.
+
+    Runtime-only imports stay inside this function so the public Telegram
+    transport remains importable and testable when the protected implementation
+    package is intentionally absent. This mirrors the existing HTTP bridge
+    boundary: Telegram can only enter ROBERTA through the private-core facade.
+    """
 
     try:
         from langgraph.checkpoint.memory import MemorySaver
-    except ImportError as exc:  # defensive across LangGraph package changes
+    except ImportError as exc:
         raise RuntimeError("LangGraph MemorySaver is required for Telegram threads.") from exc
+
+    from roberta.config import RobertaChainSettings
+    from roberta.models import create_runtime_model
+    from roberta.private_core import build_graph
+    from roberta.tools import get_roberta_tools
 
     settings = RobertaChainSettings.from_env()
     oracle_model = create_runtime_model()
