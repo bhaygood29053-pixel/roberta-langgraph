@@ -1,0 +1,190 @@
+name: Phase 3 Required Private Core Validation
+
+on:
+  push:
+    branches:
+      - phase3/required-private-core-validation
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  required-private-core-split:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out ROBERTA public shell
+        uses: actions/checkout@v4
+
+      - name: Check out CMIS public shell
+        uses: actions/checkout@v4
+        with:
+          repository: bhaygood29053-pixel/cmis
+          ref: ff8b3d47b2ac559833379027181864eb3c1753ef
+          path: cmis-public
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install build and runtime dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build requests python-dotenv websocket-client langgraph langchain-core "pypdf>=5"
+
+      - name: Reconstruct Phase 3 private wheels from protected baselines
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf phase3-build phase3-dist
+          mkdir -p phase3-build/cmis/liquidity_scout/cmis phase3-build/cmis/cmis_core
+          mkdir -p phase3-build/roberta/src/roberta phase3-build/roberta/src/roberta_core
+          mkdir -p phase3-dist/cmis phase3-dist/roberta
+
+          cp cmis-public/liquidity_scout/cmis/*.py phase3-build/cmis/liquidity_scout/cmis/
+          rm -f             phase3-build/cmis/liquidity_scout/cmis/__init__.py             phase3-build/cmis/liquidity_scout/cmis/capabilities.py             phase3-build/cmis/liquidity_scout/cmis/http.py
+
+          cat > phase3-build/cmis/pyproject.toml <<'EOF'
+          [build-system]
+          requires = ["setuptools>=68", "wheel"]
+          build-backend = "setuptools.build_meta"
+
+          [project]
+          name = "cmis-private-core"
+          version = "0.2.0"
+          requires-python = ">=3.11"
+          dependencies = []
+
+          [tool.setuptools.packages.find]
+          where = ["."]
+          include = ["cmis_core*", "liquidity_scout.cmis*"]
+          namespaces = true
+          EOF
+
+          cat > phase3-build/cmis/cmis_core/__init__.py <<'EOF'
+          __version__ = "0.2.0"
+          PHASE = 3
+          PUBLIC_SHELL_REPOSITORY = "bhaygood29053-pixel/cmis"
+          PUBLIC_SHELL_BASELINE = "bd9aaa786a9188d3edbfa35692b6754fd9b8b769"
+          EOF
+
+          cat > phase3-build/cmis/cmis_core/api.py <<'EOF'
+          from __future__ import annotations
+
+          CUTOVER_CONTRACT = "cmis-private-core/v1"
+
+          def runtime_gateway_class():
+              from liquidity_scout.cmis.runtime_gateway import RuntimeCMISGateway
+              return RuntimeCMISGateway
+
+          def runtime_contract():
+              from liquidity_scout.cmis.gateway import KNOWN_CHAINS, SUPPORTED_CHAINS
+              from liquidity_scout.cmis.runtime_gateway import SUPPORTED_SERVICES, RuntimeCMISGateway
+              return {
+                  "contract": CUTOVER_CONTRACT,
+                  "gateway_class": RuntimeCMISGateway,
+                  "supported_services": tuple(SUPPORTED_SERVICES),
+                  "supported_chains": tuple(SUPPORTED_CHAINS),
+                  "known_chains": tuple(KNOWN_CHAINS),
+              }
+          EOF
+
+          for dir in learning memory policy prompts specialists; do
+            cp -a "src/roberta/$dir" "phase3-build/roberta/src/roberta/$dir"
+          done
+          for file in             graph.py             decision_synthesis.py             evidence_aware.py             readiness_intelligence.py             recommendation_policy.py             pretrade_ux.py; do
+            cp "src/roberta/$file" "phase3-build/roberta/src/roberta/$file"
+          done
+
+          cat > phase3-build/roberta/pyproject.toml <<'EOF'
+          [build-system]
+          requires = ["setuptools>=68", "wheel"]
+          build-backend = "setuptools.build_meta"
+
+          [project]
+          name = "roberta-private-core"
+          version = "0.2.0"
+          requires-python = ">=3.11"
+          dependencies = ["langgraph", "langchain-core", "pypdf>=5"]
+
+          [tool.setuptools.packages.find]
+          where = ["src"]
+          include = ["roberta*", "roberta_core*"]
+          namespaces = true
+          EOF
+
+          cat > phase3-build/roberta/src/roberta_core/__init__.py <<'EOF'
+          __version__ = "0.2.0"
+          PHASE = 3
+          PUBLIC_SHELL_REPOSITORY = "bhaygood29053-pixel/roberta-langgraph"
+          PUBLIC_SHELL_BASELINE = "a684352c741c520037759d2e6436187861eda66e"
+          EOF
+
+          cat > phase3-build/roberta/src/roberta_core/api.py <<'EOF'
+          from __future__ import annotations
+
+          CUTOVER_CONTRACT = "roberta-private-core/v1"
+
+          def build_graph(*args, **kwargs):
+              from roberta.graph import build_graph as _build_graph
+              return _build_graph(*args, **kwargs)
+
+          def graph_builder():
+              from roberta.graph import build_graph as _build_graph
+              return _build_graph
+          EOF
+
+          python -m build --wheel --outdir phase3-dist/cmis phase3-build/cmis
+          python -m build --wheel --outdir phase3-dist/roberta phase3-build/roberta
+
+      - name: Assemble public shells with protected implementation removed
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf phase3-runtime
+          mkdir -p phase3-runtime/public-shell/roberta
+          mkdir -p phase3-runtime/public-shell/liquidity_scout
+          mkdir -p phase3-runtime/site
+
+          cp -a src/roberta/. phase3-runtime/public-shell/roberta/
+          rm -rf             phase3-runtime/public-shell/roberta/learning             phase3-runtime/public-shell/roberta/memory             phase3-runtime/public-shell/roberta/policy             phase3-runtime/public-shell/roberta/prompts             phase3-runtime/public-shell/roberta/specialists
+          rm -f             phase3-runtime/public-shell/roberta/graph.py             phase3-runtime/public-shell/roberta/decision_synthesis.py             phase3-runtime/public-shell/roberta/evidence_aware.py             phase3-runtime/public-shell/roberta/readiness_intelligence.py             phase3-runtime/public-shell/roberta/recommendation_policy.py             phase3-runtime/public-shell/roberta/pretrade_ux.py
+
+          cp -a cmis-public/liquidity_scout/. phase3-runtime/public-shell/liquidity_scout/
+          find phase3-runtime/public-shell/liquidity_scout/cmis -maxdepth 1 -type f -name '*.py'             ! -name '__init__.py'             ! -name 'capabilities.py'             ! -name 'http.py'             -delete
+          find cmis-public -maxdepth 1 -type f -name '*.py' -exec cp {} phase3-runtime/public-shell/ \;
+
+          test ! -e phase3-runtime/public-shell/roberta/graph.py
+          test ! -e phase3-runtime/public-shell/roberta/evidence_aware.py
+          test ! -e phase3-runtime/public-shell/liquidity_scout/cmis/runtime_gateway.py
+          test ! -e phase3-runtime/public-shell/liquidity_scout/cmis/gateway.py
+
+      - name: Install private cores and overlay public shell
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --no-deps --target phase3-runtime/site phase3-dist/cmis/*.whl
+          python -m pip install --no-deps --target phase3-runtime/site phase3-dist/roberta/*.whl
+
+          rsync -a --ignore-existing             phase3-runtime/public-shell/roberta/             phase3-runtime/site/roberta/
+          rsync -a --ignore-existing             phase3-runtime/public-shell/liquidity_scout/             phase3-runtime/site/liquidity_scout/
+          find phase3-runtime/public-shell -maxdepth 1 -type f -name '*.py' -exec cp {} phase3-runtime/site/ \;
+
+          test -e phase3-runtime/site/roberta/graph.py
+          test -e phase3-runtime/site/roberta/private_core.py
+          test -e phase3-runtime/site/liquidity_scout/cmis/runtime_gateway.py
+          test -e phase3-runtime/site/liquidity_scout/cmis/http.py
+          test -e phase3-runtime/site/liquidity_scout/cmis_private_core.py
+
+      - name: Run required-private-core end-to-end validation
+        env:
+          PYTHONPATH: phase3-runtime/site
+          ROBERTA_PRIVATE_CORE_REQUIRED: "1"
+          CMIS_PRIVATE_CORE_REQUIRED: "1"
+        run: |
+          python scripts/phase3_required_split_validation.py
