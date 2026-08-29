@@ -84,6 +84,36 @@ jobs:
               f"{forbidden_secret_files}"
           )
 
+          import ast
+
+          mcp_edge = Path("src/roberta/mcp_gateway.py")
+          if mcp_edge.exists():
+              forbidden_roots = {
+                  "roberta_core",
+                  "roberta.x1_scout",
+                  "roberta.solana_scout",
+                  "roberta.cmis",
+                  "liquidity_scout",
+              }
+              imported = []
+              tree = ast.parse(mcp_edge.read_text(encoding="utf-8"))
+              for node in ast.walk(tree):
+                  if isinstance(node, ast.Import):
+                      imported.extend(alias.name for alias in node.names)
+                  elif isinstance(node, ast.ImportFrom) and node.module:
+                      imported.append(node.module)
+              bypasses = sorted(
+                  name for name in imported
+                  if any(
+                      name == root or name.startswith(root + ".")
+                      for root in forbidden_roots
+                  )
+              )
+              assert not bypasses, (
+                  "MCP edge must remain transport-only and may not import private "
+                  f"or authority-bypassing modules: {bypasses}"
+              )
+
           from roberta.private_core import (
               PrivateCoreUnavailable,
               build_graph,
