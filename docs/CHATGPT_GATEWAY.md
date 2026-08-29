@@ -122,6 +122,21 @@ Before importing that contract into an external connector/action:
 4. test one request against `POST /v1/gateway/ask`;
 5. confirm the response is from the live Roberta service rather than a local mock.
 
+## MCP transport
+
+Gateway v1 is the authenticated Roberta HTTP seam. Gateway Phase 2 adds a
+separate loopback-only MCP transport process that forwards exactly one
+read-only `ask_roberta(message)` tool to this seam.
+
+See:
+
+```text
+docs/CHATGPT_MCP_GATEWAY.md
+```
+
+The MCP edge does not create a second Roberta runtime and does not bypass this
+Gateway v1 contract.
+
 ## Public/private boundary
 
 This feature belongs in the public shell because it defines transport, authentication, schemas, and deployment contracts.

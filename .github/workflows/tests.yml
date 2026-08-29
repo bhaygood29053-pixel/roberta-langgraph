@@ -26,7 +26,7 @@ jobs:
       - name: Install public dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e '.[dev]'
+          python -m pip install -e '.[dev,mcp]'
 
       - name: Validate Phase 6 public boundary
         shell: bash
@@ -84,6 +84,36 @@ jobs:
               f"{forbidden_secret_files}"
           )
 
+          import ast
+
+          mcp_edge = Path("src/roberta/mcp_gateway.py")
+          if mcp_edge.exists():
+              forbidden_roots = {
+                  "roberta_core",
+                  "roberta.x1_scout",
+                  "roberta.solana_scout",
+                  "roberta.cmis",
+                  "liquidity_scout",
+              }
+              imported = []
+              tree = ast.parse(mcp_edge.read_text(encoding="utf-8"))
+              for node in ast.walk(tree):
+                  if isinstance(node, ast.Import):
+                      imported.extend(alias.name for alias in node.names)
+                  elif isinstance(node, ast.ImportFrom) and node.module:
+                      imported.append(node.module)
+              bypasses = sorted(
+                  name for name in imported
+                  if any(
+                      name == root or name.startswith(root + ".")
+                      for root in forbidden_roots
+                  )
+              )
+              assert not bypasses, (
+                  "MCP edge must remain transport-only and may not import private "
+                  f"or authority-bypassing modules: {bypasses}"
+              )
+
           from roberta.private_core import (
               PrivateCoreUnavailable,
               build_graph,
@@ -112,3 +142,6 @@ jobs:
 
       - name: Run public bridge contract tests
         run: python -m pytest -q tests/test_bridge_http.py
+
+      - name: Run MCP gateway contract tests
+        run: python -m pytest -q tests/test_mcp_gateway.py
