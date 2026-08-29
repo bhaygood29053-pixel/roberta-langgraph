@@ -24,6 +24,11 @@ from roberta.tools import get_roberta_tools
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8766
 MAX_REQUEST_BYTES = 65_536
+GATEWAY_CONTRACT = "roberta-chat-gateway/v1"
+GATEWAY_ASK_PATH = "/v1/gateway/ask"
+GATEWAY_CAPABILITIES_PATH = "/v1/gateway/capabilities"
+_LEGACY_ASK_PATH = "/v1/roberta"
+_GATEWAY_ALLOWED_FIELDS = frozenset({"message"})
 _LOOPBACK_HOSTS = {"127.0.0.1", "localhost", "::1"}
 
 
@@ -149,6 +154,24 @@ def make_handler(bridge: RobertaBridge, *, api_key: str = ""):
                     {"service": "roberta_bridge", "status": "ok", "version": 1},
                 )
                 return
+            if self.path == GATEWAY_CAPABILITIES_PATH:
+                if not self._require_authorized():
+                    return
+                self._send_json(
+                    200,
+                    {
+                        "service": "roberta_bridge",
+                        "status": "ok",
+                        "gateway_contract": GATEWAY_CONTRACT,
+                        "mode": "read_only",
+                        "ask_path": GATEWAY_ASK_PATH,
+                        "tool_selection_allowed": False,
+                        "direct_cmis_access": False,
+                        "execution_authorized": False,
+                        "private_core_required": True,
+                    },
+                )
+                return
             self._send_json(
                 404,
                 {
@@ -159,7 +182,7 @@ def make_handler(bridge: RobertaBridge, *, api_key: str = ""):
             )
 
         def do_POST(self):  # noqa: N802 - BaseHTTPRequestHandler API
-            if self.path != "/v1/roberta":
+            if self.path not in {_LEGACY_ASK_PATH, GATEWAY_ASK_PATH}:
                 self._send_json(
                     404,
                     {
@@ -233,6 +256,26 @@ def make_handler(bridge: RobertaBridge, *, api_key: str = ""):
                 )
                 return
 
+            if self.path == GATEWAY_ASK_PATH:
+                unsupported = sorted(set(request) - _GATEWAY_ALLOWED_FIELDS)
+                if unsupported:
+                    self._send_json(
+                        400,
+                        {
+                            "service": "roberta_bridge",
+                            "status": "error",
+                            "error": {
+                                "code": "unsupported_fields",
+                                "message": (
+                                    "Gateway requests accept only the message field; "
+                                    "tool/routing controls are not caller-authorized."
+                                ),
+                                "fields": unsupported,
+                            },
+                        },
+                    )
+                    return
+
             message = request.get("message")
             if not isinstance(message, str) or not message.strip():
                 self._send_json(
@@ -260,6 +303,20 @@ def make_handler(bridge: RobertaBridge, *, api_key: str = ""):
                             "code": "roberta_unavailable",
                             "message": f"Roberta could not complete the request ({type(exc).__name__}).",
                         },
+                    },
+                )
+                return
+
+            if self.path == GATEWAY_ASK_PATH:
+                self._send_json(
+                    200,
+                    {
+                        "service": "roberta_bridge",
+                        "status": "ok",
+                        "gateway_contract": GATEWAY_CONTRACT,
+                        "mode": "read_only",
+                        "reply": reply,
+                        "execution_authorized": False,
                     },
                 )
                 return
@@ -336,6 +393,9 @@ __all__ = [
     "DEFAULT_HOST",
     "DEFAULT_PORT",
     "MAX_REQUEST_BYTES",
+    "GATEWAY_CONTRACT",
+    "GATEWAY_ASK_PATH",
+    "GATEWAY_CAPABILITIES_PATH",
     "RobertaBridge",
     "build_runtime_graph",
     "create_server",
