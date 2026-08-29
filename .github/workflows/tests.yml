@@ -109,5 +109,4 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cd phase5-runtime
-          PYTHONPATH="$GITHUB_WORKSPACE/phase5-runtime/site"             python -m pytest "$GITHUB_WORKSPACE/tests" -v -m 'not live and not cmis_live' -o pythonpath="$GITHUB_WORKSPACE/phase5-runtime/site"
+          PYTHONPATH="$GITHUB_WORKSPACE/phase5-runtime/site" python -m pytest tests -v -m 'not live and not cmis_live' -o pythonpath="$GITHUB_WORKSPACE/phase5-runtime/site"
