@@ -5,23 +5,108 @@ on:
   push:
     branches:
       - main
+      - phase5/public-source-removal
 
 jobs:
   deterministic-tests:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository
+      - name: Check out public shell
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - name: Check out protected ROBERTA baseline
+        uses: actions/checkout@v4
+        with:
+          repository: bhaygood29053-pixel/roberta-langgraph
+          ref: add5a9c6dfefb0304c21efcf198aa8704d37d376
+          path: roberta-protected-baseline
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
-      - name: Install project
+
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e '.[dev]'
-      - name: Run deterministic tests
-        run: python -m pytest -v -m 'not live and not cmis_live'
+          python -m pip install build pytest langgraph langchain-core "pypdf>=5"
+
+      - name: Build private ROBERTA runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf phase5-build phase5-dist phase5-runtime
+          mkdir -p phase5-build/src/roberta phase5-build/src/roberta_core phase5-dist phase5-runtime/site
+
+          for dir in learning memory policy prompts specialists; do
+            cp -a "roberta-protected-baseline/src/roberta/$dir" "phase5-build/src/roberta/$dir"
+          done
+          for file in             graph.py             decision_synthesis.py             evidence_aware.py             readiness_intelligence.py             recommendation_policy.py             pretrade_ux.py; do
+            cp "roberta-protected-baseline/src/roberta/$file" "phase5-build/src/roberta/$file"
+          done
+
+          cat > phase5-build/pyproject.toml <<'EOF'
+          [build-system]
+          requires = ["setuptools>=68", "wheel"]
+          build-backend = "setuptools.build_meta"
+
+          [project]
+          name = "roberta-private-core"
+          version = "0.2.0"
+          requires-python = ">=3.11"
+          dependencies = ["langgraph", "langchain-core", "pypdf>=5"]
+
+          [tool.setuptools.packages.find]
+          where = ["src"]
+          include = ["roberta*", "roberta_core*"]
+          namespaces = true
+
+          [tool.setuptools.package-data]
+          "roberta.learning" = [
+            "sources/*.md",
+            "sources/*.gz.b64",
+            "source_alignments/*.json",
+            "assets/*.svg",
+          ]
+          EOF
+
+          cat > phase5-build/src/roberta_core/__init__.py <<'EOF'
+          __version__ = "0.2.0"
+          PHASE = 3
+          PUBLIC_SHELL_REPOSITORY = "bhaygood29053-pixel/roberta-langgraph"
+          PUBLIC_SHELL_BASELINE = "a684352c741c520037759d2e6436187861eda66e"
+          EOF
+
+          cat > phase5-build/src/roberta_core/api.py <<'EOF'
+          from __future__ import annotations
+
+          CUTOVER_CONTRACT = "roberta-private-core/v1"
+
+          def build_graph(*args, **kwargs):
+              from roberta.graph import build_graph as _build_graph
+              return _build_graph(*args, **kwargs)
+
+          def graph_builder():
+              from roberta.graph import build_graph as _build_graph
+              return _build_graph
+          EOF
+
+          python -m build --wheel --outdir phase5-dist phase5-build
+          python -m pip install --no-deps --target phase5-runtime/site phase5-dist/*.whl
+
+          rsync -a --ignore-existing src/roberta/ phase5-runtime/site/roberta/
+          python -m compileall -q phase5-runtime/site
+
+          test -e phase5-runtime/site/roberta/graph.py
+          test -e phase5-runtime/site/roberta/private_core.py
+          test -e phase5-runtime/site/roberta/learning/source_ingestion.py
+          test -e phase5-runtime/site/roberta/learning/sources/x1_blockchain_whitepaper_v1_0.part0.md
+
+      - name: Run deterministic tests against split runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE/phase5-runtime/site" python -m pytest tests -v -m 'not live and not cmis_live' -o pythonpath="$GITHUB_WORKSPACE/phase5-runtime/site"
