@@ -24,7 +24,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: bhaygood29053-pixel/cmis
-          ref: 5b562314db293286afb0d5944c7d079e24606754
+          ref: 93df6e1254062c497cb69ef5c2f30694cf25e7d8
           path: cmis-public
 
       - name: Set up Python
