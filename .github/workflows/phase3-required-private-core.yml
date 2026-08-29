@@ -157,7 +157,7 @@ jobs:
 
           cp -a cmis-public/liquidity_scout/. phase3-runtime/public-shell/liquidity_scout/
           find phase3-runtime/public-shell/liquidity_scout/cmis -maxdepth 1 -type f -name '*.py'             ! -name '__init__.py'             ! -name 'capabilities.py'             ! -name 'http.py'             -delete
-          cp cmis-public/historical_metrics.py phase3-runtime/public-shell/historical_metrics.py
+          find cmis-public -maxdepth 1 -type f -name '*.py' -exec cp {} phase3-runtime/public-shell/ \;
 
           test ! -e phase3-runtime/public-shell/roberta/graph.py
           test ! -e phase3-runtime/public-shell/roberta/evidence_aware.py
@@ -173,7 +173,7 @@ jobs:
 
           rsync -a --ignore-existing             phase3-runtime/public-shell/roberta/             phase3-runtime/site/roberta/
           rsync -a --ignore-existing             phase3-runtime/public-shell/liquidity_scout/             phase3-runtime/site/liquidity_scout/
-          cp phase3-runtime/public-shell/historical_metrics.py phase3-runtime/site/historical_metrics.py
+          find phase3-runtime/public-shell -maxdepth 1 -type f -name '*.py' -exec cp {} phase3-runtime/site/ \;
 
           test -e phase3-runtime/site/roberta/graph.py
           test -e phase3-runtime/site/roberta/private_core.py
