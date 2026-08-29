@@ -1,0 +1,25 @@
+[Unit]
+Description=Roberta Read-Only MCP Gateway
+After=network-online.target roberta-bridge.service
+Wants=network-online.target roberta-bridge.service
+
+[Service]
+Type=simple
+User=YOUR_USER
+WorkingDirectory=/path/to/roberta-langgraph
+Environment=PYTHONPATH=/path/to/roberta-langgraph/src
+EnvironmentFile=/home/YOUR_USER/.config/roberta/roberta.env
+Environment=ROBERTA_MCP_HOST=127.0.0.1
+Environment=ROBERTA_MCP_PORT=8767
+Environment=ROBERTA_MCP_UPSTREAM_URL=http://127.0.0.1:8766/v1/gateway/ask
+ExecStart=/path/to/roberta-langgraph/.venv/bin/python -m roberta.mcp_gateway
+Restart=always
+RestartSec=3
+TimeoutStopSec=10
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+
+[Install]
+WantedBy=multi-user.target
