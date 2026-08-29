@@ -2,303 +2,54 @@ name: read-only readiness
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - ".github/workflows/readiness.yml"
-      - "evals/read_only_decision_v1.json"
-      - "evals/solana_readiness_v1.json"
-      - "src/roberta/readiness*.py"
-      - "src/roberta/decision_synthesis.py"
-      - "src/roberta/graph.py"
-      - "src/roberta/cmis/**"
-      - "src/roberta/memory/**"
-      - "src/roberta/x1_scout/**"
-      - "src/roberta/solana_scout/**"
-      - "src/roberta/tools/**"
 
 permissions:
   contents: read
 
 jobs:
-  controlled-replay:
-    name: controlled degraded-evidence + freshness replay
+  public-deployment-preflight:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    env:
-      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
     steps:
-      - name: Check out repository
+      - name: Check out public shell
         uses: actions/checkout@v4
-      - name: Check out protected ROBERTA baseline
-        uses: actions/checkout@v4
-        with:
-          repository: bhaygood29053-pixel/roberta-langgraph
-          ref: add5a9c6dfefb0304c21efcf198aa8704d37d376
-          path: roberta-protected-baseline
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
-      - name: Install public shell with private ROBERTA runtime
+
+      - name: Install public shell
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+
+      - name: Verify private-runtime deployment boundary
         shell: bash
         run: |
           set -euo pipefail
-          python -m pip install --upgrade pip
-          python -m pip install build
-          python -m pip install -e '.[deepseek]'
+          python - <<'PY'
+          from roberta.private_core import PrivateCoreUnavailable, build_graph, private_core_status
 
-          rm -rf phase5-readiness-build phase5-readiness-dist phase5-readiness
-          mkdir -p phase5-readiness-build/src/roberta phase5-readiness-build/src/roberta_core
-          mkdir -p phase5-readiness-dist phase5-readiness/site
+          status = private_core_status()
+          assert status["required"] is True
+          if status["available"]:
+              print("ROBERTA_PRIVATE_CORE_AVAILABLE=TRUE")
+          else:
+              try:
+                  build_graph()
+              except PrivateCoreUnavailable:
+                  pass
+              else:
+                  raise AssertionError("ROBERTA did not fail closed without its private core")
+              print("ROBERTA_PRIVATE_CORE_AVAILABLE=FALSE")
+              print("READINESS_DEPLOYMENT_CONFIGURATION_REQUIRED=TRUE")
 
-          for dir in learning memory policy prompts specialists; do
-            cp -a "roberta-protected-baseline/src/roberta/$dir" "phase5-readiness-build/src/roberta/$dir"
-          done
-          for file in graph.py decision_synthesis.py evidence_aware.py readiness_intelligence.py recommendation_policy.py pretrade_ux.py; do
-            cp "roberta-protected-baseline/src/roberta/$file" "phase5-readiness-build/src/roberta/$file"
-          done
+          print("PUBLIC_FALLBACK_USED=FALSE")
+          print("EXECUTION_AUTHORIZED=FALSE")
+          PY
 
-          cat > phase5-readiness-build/pyproject.toml <<'EOF'
-          [build-system]
-          requires = ["setuptools>=68", "wheel"]
-          build-backend = "setuptools.build_meta"
-
-          [project]
-          name = "roberta-private-core"
-          version = "0.2.0"
-          requires-python = ">=3.11"
-          dependencies = ["langgraph", "langchain-core", "pypdf>=5"]
-
-          [tool.setuptools.packages.find]
-          where = ["src"]
-          include = ["roberta*", "roberta_core*"]
-          namespaces = true
-
-          [tool.setuptools.package-data]
-          "roberta.learning" = [
-            "sources/*.md",
-            "sources/*.gz.b64",
-            "source_alignments/*.json",
-            "assets/*.svg",
-          ]
-          EOF
-
-          cat > phase5-readiness-build/src/roberta_core/__init__.py <<'EOF'
-          __version__ = "0.2.0"
-          PHASE = 3
-          PUBLIC_SHELL_REPOSITORY = "bhaygood29053-pixel/roberta-langgraph"
-          PUBLIC_SHELL_BASELINE = "a684352c741c520037759d2e6436187861eda66e"
-          EOF
-
-          cat > phase5-readiness-build/src/roberta_core/api.py <<'EOF'
-          from __future__ import annotations
-          CUTOVER_CONTRACT = "roberta-private-core/v1"
-
-          def build_graph(*args, **kwargs):
-              from roberta.graph import build_graph as _build_graph
-              return _build_graph(*args, **kwargs)
-
-          def graph_builder():
-              from roberta.graph import build_graph as _build_graph
-              return _build_graph
-          EOF
-
-          python -m build --wheel --outdir phase5-readiness-dist phase5-readiness-build
-          python -m pip install --no-deps --target phase5-readiness/site phase5-readiness-dist/*.whl
-          rsync -a --ignore-existing src/roberta/ phase5-readiness/site/roberta/
-          python -m compileall -q phase5-readiness/site
-          echo "PYTHONPATH=$GITHUB_WORKSPACE/phase5-readiness/site" >> "$GITHUB_ENV"
-      - name: Check replay configuration
-        id: replay_preflight
-        continue-on-error: true
-        shell: bash
+      - name: Explain deployment readiness boundary
         run: |
-          mkdir -p artifacts/readiness
-          if [[ -z "${DEEPSEEK_API_KEY:-}" ]]; then
-            python -c 'import json; from pathlib import Path; report={"schema_version":1,"authority":"historical_evaluation_snapshot","live_market_authority":False,"summary":{"deployment_blockers":["DEEPSEEK_API_KEY is not available to this GitHub Actions readiness runner."]}}; Path("artifacts/readiness/replay-config-blocker.json").write_text(json.dumps(report, indent=2, sort_keys=True), encoding="utf-8")'
-            exit 1
-          fi
-      - name: Run controlled replay
-        id: replay
-        if: steps.replay_preflight.outcome == 'success'
-        continue-on-error: true
-        run: |
-          roberta-readiness-replay \
-            --output artifacts/readiness/replay-${GITHUB_SHA}.json
-      - name: Run controlled Solana replay
-        id: solana_replay
-        if: steps.replay_preflight.outcome == 'success'
-        continue-on-error: true
-        run: |
-          roberta-solana-readiness-replay \
-            --output artifacts/readiness/solana-replay-${GITHUB_SHA}.json
-      - name: Upload replay report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: roberta-readiness-replay-${{ github.run_id }}
-          path: artifacts/readiness/*.json
-          if-no-files-found: error
-          retention-days: 30
-      - name: Enforce replay gate
-        if: always()
-        shell: bash
-        run: |
-          test "${{ steps.replay_preflight.outcome }}" = "success"
-          test "${{ steps.replay.outcome }}" = "success"
-          test "${{ steps.solana_replay.outcome }}" = "success"
-
-  configured-live-path:
-    name: configured Scout -> CMIS live readiness
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    env:
-      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-      CMIS_BASE_URL: ${{ vars.CMIS_BASE_URL || secrets.CMIS_BASE_URL }}
-      CMIS_API_KEY: ${{ secrets.CMIS_API_KEY }}
-      ROBERTA_SOLANA_PROVIDER_ENABLED: ${{ vars.ROBERTA_SOLANA_PROVIDER_ENABLED }}
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-      - name: Check out protected ROBERTA baseline
-        uses: actions/checkout@v4
-        with:
-          repository: bhaygood29053-pixel/roberta-langgraph
-          ref: add5a9c6dfefb0304c21efcf198aa8704d37d376
-          path: roberta-protected-baseline
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-      - name: Install public shell with private ROBERTA runtime
-        shell: bash
-        run: |
-          set -euo pipefail
-          python -m pip install --upgrade pip
-          python -m pip install build
-          python -m pip install -e '.[deepseek]'
-
-          rm -rf phase5-readiness-build phase5-readiness-dist phase5-readiness
-          mkdir -p phase5-readiness-build/src/roberta phase5-readiness-build/src/roberta_core
-          mkdir -p phase5-readiness-dist phase5-readiness/site
-
-          for dir in learning memory policy prompts specialists; do
-            cp -a "roberta-protected-baseline/src/roberta/$dir" "phase5-readiness-build/src/roberta/$dir"
-          done
-          for file in graph.py decision_synthesis.py evidence_aware.py readiness_intelligence.py recommendation_policy.py pretrade_ux.py; do
-            cp "roberta-protected-baseline/src/roberta/$file" "phase5-readiness-build/src/roberta/$file"
-          done
-
-          cat > phase5-readiness-build/pyproject.toml <<'EOF'
-          [build-system]
-          requires = ["setuptools>=68", "wheel"]
-          build-backend = "setuptools.build_meta"
-
-          [project]
-          name = "roberta-private-core"
-          version = "0.2.0"
-          requires-python = ">=3.11"
-          dependencies = ["langgraph", "langchain-core", "pypdf>=5"]
-
-          [tool.setuptools.packages.find]
-          where = ["src"]
-          include = ["roberta*", "roberta_core*"]
-          namespaces = true
-
-          [tool.setuptools.package-data]
-          "roberta.learning" = [
-            "sources/*.md",
-            "sources/*.gz.b64",
-            "source_alignments/*.json",
-            "assets/*.svg",
-          ]
-          EOF
-
-          cat > phase5-readiness-build/src/roberta_core/__init__.py <<'EOF'
-          __version__ = "0.2.0"
-          PHASE = 3
-          PUBLIC_SHELL_REPOSITORY = "bhaygood29053-pixel/roberta-langgraph"
-          PUBLIC_SHELL_BASELINE = "a684352c741c520037759d2e6436187861eda66e"
-          EOF
-
-          cat > phase5-readiness-build/src/roberta_core/api.py <<'EOF'
-          from __future__ import annotations
-          CUTOVER_CONTRACT = "roberta-private-core/v1"
-
-          def build_graph(*args, **kwargs):
-              from roberta.graph import build_graph as _build_graph
-              return _build_graph(*args, **kwargs)
-
-          def graph_builder():
-              from roberta.graph import build_graph as _build_graph
-              return _build_graph
-          EOF
-
-          python -m build --wheel --outdir phase5-readiness-dist phase5-readiness-build
-          python -m pip install --no-deps --target phase5-readiness/site phase5-readiness-dist/*.whl
-          rsync -a --ignore-existing src/roberta/ phase5-readiness/site/roberta/
-          python -m compileall -q phase5-readiness/site
-          echo "PYTHONPATH=$GITHUB_WORKSPACE/phase5-readiness/site" >> "$GITHUB_ENV"
-      - name: Check live-path configuration
-        id: live_preflight
-        continue-on-error: true
-        shell: bash
-        run: |
-          mkdir -p artifacts/readiness
-          unavailable=()
-          [[ -n "${DEEPSEEK_API_KEY:-}" ]] || unavailable+=("DEEPSEEK_API_KEY")
-          [[ -n "${CMIS_BASE_URL:-}" ]] || unavailable+=("CMIS_BASE_URL repository variable/secret")
-          if (( ${#unavailable[@]} )); then
-            UNAVAILABLE="$(IFS=', '; echo "${unavailable[*]}")"
-            export UNAVAILABLE
-            python -c 'import json, os; from pathlib import Path; report={"schema_version":1,"authority":"historical_evaluation_snapshot","live_market_authority":False,"summary":{"deployment_blockers":["Readiness live-path values unavailable to this GitHub Actions runner: " + os.environ["UNAVAILABLE"]]}}; Path("artifacts/readiness/live-config-blocker.json").write_text(json.dumps(report, indent=2, sort_keys=True), encoding="utf-8")'
-            exit 1
-          fi
-      - name: Run configured live readiness corpus
-        id: live_readiness
-        if: steps.live_preflight.outcome == 'success'
-        continue-on-error: true
-        run: |
-          roberta-readiness \
-            --output artifacts/readiness/live-${GITHUB_SHA}.json
-      - name: Run configured Solana readiness corpus
-        id: solana_readiness
-        if: steps.live_preflight.outcome == 'success'
-        continue-on-error: true
-        shell: bash
-        run: |
-          normalized="$(printf '%s' "${ROBERTA_SOLANA_PROVIDER_ENABLED:-}" | tr '[:upper:]' '[:lower:]')"
-          case "$normalized" in
-            1|true|yes|on)
-              echo "enabled=true" >> "$GITHUB_OUTPUT"
-              roberta-readiness \
-                --corpus evals/solana_readiness_v1.json \
-                --require-no-skips \
-                --output artifacts/readiness/solana-live-${GITHUB_SHA}.json
-              ;;
-            *)
-              echo "enabled=false" >> "$GITHUB_OUTPUT"
-              echo "Solana readiness corpus not executed because ROBERTA_SOLANA_PROVIDER_ENABLED is not true."
-              ;;
-          esac
-      - name: Upload live readiness report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: roberta-readiness-live-${{ github.run_id }}
-          path: artifacts/readiness/*.json
-          if-no-files-found: error
-          retention-days: 30
-      - name: Enforce live readiness gate
-        if: always()
-        shell: bash
-        run: |
-          test "${{ steps.live_preflight.outcome }}" = "success"
-          test "${{ steps.live_readiness.outcome }}" = "success"
-          if [[ "${{ steps.solana_readiness.outputs.enabled }}" == "true" ]]; then
-            test "${{ steps.solana_readiness.outcome }}" = "success"
-          fi
+          echo "Full readiness replay runs in an environment where the private ROBERTA runtime, CMIS endpoint, and required model credentials are securely configured."
+          echo "The public repository no longer reconstructs private implementation from historical public commits."
