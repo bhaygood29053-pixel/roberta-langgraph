@@ -147,6 +147,7 @@ Static sources never override fresh Scout -> CMIS -> Provider evidence for price
 - [`docs/PYRAMID_DASHBOARD.md`](./docs/PYRAMID_DASHBOARD.md) — Learning Command Center read-only telemetry.
 - [`docs/learning_sources/README.md`](./docs/learning_sources/README.md) — static source registry.
 - [`docs/ENGINEERING_WORKFLOW.md`](./docs/ENGINEERING_WORKFLOW.md) — repository-authoritative engineering workflow.
+- [`docs/CHATGPT_GATEWAY.md`](./docs/CHATGPT_GATEWAY.md) — authenticated read-only ChatGPT/external conversational gateway contract and deployment boundary.
 
 ## Authority rules
 
