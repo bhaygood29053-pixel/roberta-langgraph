@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import os
-
 import pytest
 
 from roberta import bridge_http
@@ -12,9 +10,12 @@ def test_bridge_uses_private_core_adapter() -> None:
     assert bridge_http.build_graph is private_core.build_graph
 
 
-def test_required_mode_fails_closed_without_private_distribution(monkeypatch) -> None:
+def test_private_core_is_mandatory_after_phase3_cutover() -> None:
+    assert private_core.private_core_required() is True
+
+
+def test_missing_private_distribution_always_fails_closed(monkeypatch) -> None:
     monkeypatch.setattr(private_core, "_load_private_api", lambda: None)
-    monkeypatch.setenv("ROBERTA_PRIVATE_CORE_REQUIRED", "1")
 
     with pytest.raises(private_core.PrivateCoreUnavailable):
         private_core.build_graph(model=object(), tools=[])
@@ -34,13 +35,12 @@ def test_private_contract_must_match_expected_version(monkeypatch) -> None:
         private_core.build_graph(model=object(), tools=[])
 
 
-def test_private_status_reports_expected_contract(monkeypatch) -> None:
+def test_private_status_reports_no_public_fallback(monkeypatch) -> None:
     monkeypatch.setattr(private_core, "_load_private_api", lambda: None)
-    monkeypatch.delenv("ROBERTA_PRIVATE_CORE_REQUIRED", raising=False)
 
-    status = private_core.private_core_status()
-    assert status == {
+    assert private_core.private_core_status() == {
         "available": False,
-        "required": False,
+        "required": True,
+        "source": "unavailable",
         "expected_contract": "roberta-private-core/v1",
     }
