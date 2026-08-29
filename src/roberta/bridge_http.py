@@ -18,8 +18,6 @@ from typing import Any, Optional
 from langchain_core.messages import AIMessage
 
 from roberta.private_core import build_graph
-from roberta.models import create_runtime_model
-from roberta.tools import get_roberta_tools
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8766
@@ -64,7 +62,15 @@ def _message_text(message: object) -> str:
 
 
 def build_runtime_graph():
-    """Build the same live Roberta graph used by the CLI smoke test."""
+    """Build the same live Roberta graph used by the CLI smoke test.
+
+    Runtime-only imports stay inside this function so the public transport
+    contract remains importable for deterministic boundary tests even when the
+    required private implementation package is intentionally absent.
+    """
+    from roberta.models import create_runtime_model
+    from roberta.tools import get_roberta_tools
+
     oracle_model = create_runtime_model()
     x1_planner_model = create_runtime_model()
     tools = get_roberta_tools(x1_planner_model=x1_planner_model)
