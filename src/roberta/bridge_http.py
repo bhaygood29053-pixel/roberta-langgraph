@@ -147,6 +147,25 @@ def make_handler(bridge: RobertaBridge, *, api_key: str = ""):
             )
             return False
 
+        def _require_gateway_authorized(self) -> bool:
+            if not required_key:
+                self._send_json(
+                    503,
+                    {
+                        "service": "roberta_bridge",
+                        "status": "error",
+                        "error": {
+                            "code": "gateway_auth_not_configured",
+                            "message": (
+                                "ROBERTA_API_KEY must be configured before the "
+                                "external gateway can be used."
+                            ),
+                        },
+                    },
+                )
+                return False
+            return self._require_authorized()
+
         def do_GET(self):  # noqa: N802 - BaseHTTPRequestHandler API
             if self.path == "/healthz":
                 self._send_json(
@@ -155,7 +174,7 @@ def make_handler(bridge: RobertaBridge, *, api_key: str = ""):
                 )
                 return
             if self.path == GATEWAY_CAPABILITIES_PATH:
-                if not self._require_authorized():
+                if not self._require_gateway_authorized():
                     return
                 self._send_json(
                     200,
@@ -192,7 +211,10 @@ def make_handler(bridge: RobertaBridge, *, api_key: str = ""):
                     },
                 )
                 return
-            if not self._require_authorized():
+            if self.path == GATEWAY_ASK_PATH:
+                if not self._require_gateway_authorized():
+                    return
+            elif not self._require_authorized():
                 return
 
             raw_length = self.headers.get("Content-Length")
