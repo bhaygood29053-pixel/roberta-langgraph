@@ -18,12 +18,15 @@ from typing import Any, Optional
 from langchain_core.messages import AIMessage
 
 from roberta.private_core import build_graph
-from roberta.models import create_runtime_model
-from roberta.tools import get_roberta_tools
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8766
 MAX_REQUEST_BYTES = 65_536
+GATEWAY_CONTRACT = "roberta-chat-gateway/v1"
+GATEWAY_ASK_PATH = "/v1/gateway/ask"
+GATEWAY_CAPABILITIES_PATH = "/v1/gateway/capabilities"
+_LEGACY_ASK_PATH = "/v1/roberta"
+_GATEWAY_ALLOWED_FIELDS = frozenset({"message"})
 _LOOPBACK_HOSTS = {"127.0.0.1", "localhost", "::1"}
 
 
@@ -59,7 +62,15 @@ def _message_text(message: object) -> str:
 
 
 def build_runtime_graph():
-    """Build the same live Roberta graph used by the CLI smoke test."""
+    """Build the same live Roberta graph used by the CLI smoke test.
+
+    Runtime-only imports stay inside this function so the public transport
+    contract remains importable for deterministic boundary tests even when the
+    required private implementation package is intentionally absent.
+    """
+    from roberta.models import create_runtime_model
+    from roberta.tools import get_roberta_tools
+
     oracle_model = create_runtime_model()
     x1_planner_model = create_runtime_model()
     tools = get_roberta_tools(x1_planner_model=x1_planner_model)
@@ -142,11 +153,48 @@ def make_handler(bridge: RobertaBridge, *, api_key: str = ""):
             )
             return False
 
+        def _require_gateway_authorized(self) -> bool:
+            if not required_key:
+                self._send_json(
+                    503,
+                    {
+                        "service": "roberta_bridge",
+                        "status": "error",
+                        "error": {
+                            "code": "gateway_auth_not_configured",
+                            "message": (
+                                "ROBERTA_API_KEY must be configured before the "
+                                "external gateway can be used."
+                            ),
+                        },
+                    },
+                )
+                return False
+            return self._require_authorized()
+
         def do_GET(self):  # noqa: N802 - BaseHTTPRequestHandler API
             if self.path == "/healthz":
                 self._send_json(
                     200,
                     {"service": "roberta_bridge", "status": "ok", "version": 1},
+                )
+                return
+            if self.path == GATEWAY_CAPABILITIES_PATH:
+                if not self._require_gateway_authorized():
+                    return
+                self._send_json(
+                    200,
+                    {
+                        "service": "roberta_bridge",
+                        "status": "ok",
+                        "gateway_contract": GATEWAY_CONTRACT,
+                        "mode": "read_only",
+                        "ask_path": GATEWAY_ASK_PATH,
+                        "tool_selection_allowed": False,
+                        "direct_cmis_access": False,
+                        "execution_authorized": False,
+                        "private_core_required": True,
+                    },
                 )
                 return
             self._send_json(
@@ -159,7 +207,7 @@ def make_handler(bridge: RobertaBridge, *, api_key: str = ""):
             )
 
         def do_POST(self):  # noqa: N802 - BaseHTTPRequestHandler API
-            if self.path != "/v1/roberta":
+            if self.path not in {_LEGACY_ASK_PATH, GATEWAY_ASK_PATH}:
                 self._send_json(
                     404,
                     {
@@ -169,7 +217,10 @@ def make_handler(bridge: RobertaBridge, *, api_key: str = ""):
                     },
                 )
                 return
-            if not self._require_authorized():
+            if self.path == GATEWAY_ASK_PATH:
+                if not self._require_gateway_authorized():
+                    return
+            elif not self._require_authorized():
                 return
 
             raw_length = self.headers.get("Content-Length")
@@ -233,6 +284,26 @@ def make_handler(bridge: RobertaBridge, *, api_key: str = ""):
                 )
                 return
 
+            if self.path == GATEWAY_ASK_PATH:
+                unsupported = sorted(set(request) - _GATEWAY_ALLOWED_FIELDS)
+                if unsupported:
+                    self._send_json(
+                        400,
+                        {
+                            "service": "roberta_bridge",
+                            "status": "error",
+                            "error": {
+                                "code": "unsupported_fields",
+                                "message": (
+                                    "Gateway requests accept only the message field; "
+                                    "tool/routing controls are not caller-authorized."
+                                ),
+                                "fields": unsupported,
+                            },
+                        },
+                    )
+                    return
+
             message = request.get("message")
             if not isinstance(message, str) or not message.strip():
                 self._send_json(
@@ -260,6 +331,20 @@ def make_handler(bridge: RobertaBridge, *, api_key: str = ""):
                             "code": "roberta_unavailable",
                             "message": f"Roberta could not complete the request ({type(exc).__name__}).",
                         },
+                    },
+                )
+                return
+
+            if self.path == GATEWAY_ASK_PATH:
+                self._send_json(
+                    200,
+                    {
+                        "service": "roberta_bridge",
+                        "status": "ok",
+                        "gateway_contract": GATEWAY_CONTRACT,
+                        "mode": "read_only",
+                        "reply": reply,
+                        "execution_authorized": False,
                     },
                 )
                 return
@@ -336,6 +421,9 @@ __all__ = [
     "DEFAULT_HOST",
     "DEFAULT_PORT",
     "MAX_REQUEST_BYTES",
+    "GATEWAY_CONTRACT",
+    "GATEWAY_ASK_PATH",
+    "GATEWAY_CAPABILITIES_PATH",
     "RobertaBridge",
     "build_runtime_graph",
     "create_server",

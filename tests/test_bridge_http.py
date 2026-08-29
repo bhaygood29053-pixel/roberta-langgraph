@@ -8,7 +8,13 @@ import urllib.request
 import pytest
 from langchain_core.messages import AIMessage, ToolMessage
 
-from roberta.bridge_http import RobertaBridge, create_server
+from roberta.bridge_http import (
+    GATEWAY_ASK_PATH,
+    GATEWAY_CAPABILITIES_PATH,
+    GATEWAY_CONTRACT,
+    RobertaBridge,
+    create_server,
+)
 
 
 class FakeGraph:
@@ -130,3 +136,107 @@ def test_http_bridge_honors_bearer_auth_when_configured():
 def test_non_loopback_bind_requires_api_key():
     with pytest.raises(RuntimeError, match="ROBERTA_API_KEY"):
         create_server(host="0.0.0.0", port=0, bridge=RobertaBridge(FakeGraph([])), api_key="")
+
+
+
+def test_gateway_fails_closed_when_api_key_is_not_configured():
+    bridge = RobertaBridge(FakeGraph([AIMessage(content="unused")]))
+    server, thread = _serve_once(bridge)
+    try:
+        base = f"http://127.0.0.1:{server.server_port}"
+
+        status, payload = _request(f"{base}{GATEWAY_CAPABILITIES_PATH}")
+        assert status == 503
+        assert payload["error"]["code"] == "gateway_auth_not_configured"
+
+        status, payload = _request(
+            f"{base}{GATEWAY_ASK_PATH}",
+            body={"message": "Investigate AGI"},
+        )
+        assert status == 503
+        assert payload["error"]["code"] == "gateway_auth_not_configured"
+        assert bridge._graph.calls == []
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
+
+def test_gateway_capabilities_are_authenticated_and_read_only():
+    bridge = RobertaBridge(FakeGraph([AIMessage(content="unused")]))
+    server, thread = _serve_once(bridge, api_key="gateway-secret")
+    try:
+        base = f"http://127.0.0.1:{server.server_port}"
+
+        status, payload = _request(f"{base}{GATEWAY_CAPABILITIES_PATH}")
+        assert status == 401
+        assert payload["error"]["code"] == "unauthorized"
+
+        status, payload = _request(
+            f"{base}{GATEWAY_CAPABILITIES_PATH}",
+            api_key="gateway-secret",
+        )
+        assert status == 200
+        assert payload == {
+            "service": "roberta_bridge",
+            "status": "ok",
+            "gateway_contract": GATEWAY_CONTRACT,
+            "mode": "read_only",
+            "ask_path": GATEWAY_ASK_PATH,
+            "tool_selection_allowed": False,
+            "direct_cmis_access": False,
+            "execution_authorized": False,
+            "private_core_required": True,
+        }
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
+
+
+def test_gateway_ask_returns_roberta_reply_with_no_execution_authority():
+    bridge = RobertaBridge(FakeGraph([AIMessage(content="Roberta gateway reply")]))
+    server, thread = _serve_once(bridge, api_key="gateway-secret")
+    try:
+        base = f"http://127.0.0.1:{server.server_port}"
+        status, payload = _request(
+            f"{base}{GATEWAY_ASK_PATH}",
+            body={"message": "Investigate AGI"},
+            api_key="gateway-secret",
+        )
+        assert status == 200
+        assert payload == {
+            "service": "roberta_bridge",
+            "status": "ok",
+            "gateway_contract": GATEWAY_CONTRACT,
+            "mode": "read_only",
+            "reply": "Roberta gateway reply",
+            "execution_authorized": False,
+        }
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
+
+
+def test_gateway_rejects_caller_tool_and_routing_controls():
+    bridge = RobertaBridge(FakeGraph([AIMessage(content="unused")]))
+    server, thread = _serve_once(bridge, api_key="gateway-secret")
+    try:
+        base = f"http://127.0.0.1:{server.server_port}"
+        status, payload = _request(
+            f"{base}{GATEWAY_ASK_PATH}",
+            body={
+                "message": "Investigate AGI",
+                "tool": "cmis",
+                "route": "provider-direct",
+            },
+            api_key="gateway-secret",
+        )
+        assert status == 400
+        assert payload["error"]["code"] == "unsupported_fields"
+        assert payload["error"]["fields"] == ["route", "tool"]
+        assert bridge._graph.calls == []
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
