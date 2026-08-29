@@ -42,6 +42,7 @@ Accepted on `main`:
 - read-only Learning Command Center telemetry for source mastery and autonomous-training jobs.
 - autonomous remediation hardening through PRs #241-#243: complete Boss synthesis routing, candidate-only retention memory, and bounded candidate-memory retention;
 - autonomous target-generation hardening through PRs #244-#245: bounded zero-valid-target retries and fail-closed normalization of malformed optional defensive metadata.
+- authenticated read-only ChatGPT Gateway v1 from PR #262: dedicated `/v1/gateway/ask` and `/v1/gateway/capabilities` transport seams, mandatory configured Bearer authentication for gateway use, caller tool/routing controls rejected, no direct CMIS/provider access, and `execution_authorized=false`.
 
 `main` includes the hardened Phase 10 verified-retention implementation and the separate knowledge-classification boundary. The old draft PR #136 remains open historical work and is no longer the implementation source of truth.
 
@@ -168,6 +169,21 @@ The existing X1 `historical_compare` service is accepted for `window`, `all_avai
 The core Phase 11 `intelligence_foundation` remains internal/non-promoted. The separately accepted X1 wrapper is exactly `concentration_change_intelligence/v1`, read-only, with `execution_authorized=false`.
 
 Classification, direct wallet-relationship evidence, and concentration-threshold alert evidence remain internal/read-only/non-promoted. There is no accepted next public intelligence/alert promotion by implication.
+
+## ChatGPT Gateway deployment checkpoint
+
+The first repository-side ChatGPT gateway slice is accepted on `main` via PR #262. It is a transport contract, not a live external ChatGPT connection by itself.
+
+Remaining deployment work is operational:
+
+1. configure a long random `ROBERTA_API_KEY` outside Git;
+2. keep `roberta-serve` loopback-bound on `127.0.0.1:8766`;
+3. place an HTTPS reverse proxy / secure tunnel / WAF in front of only the dedicated gateway paths;
+4. verify the live `/v1/gateway/capabilities` response reports the expected read-only contract;
+5. connect an eligible ChatGPT integration surface to the published gateway contract;
+6. prove one end-to-end live request reaches the real Roberta runtime and returns Roberta's final reply.
+
+This deployment work must not weaken the public/private source boundary, add direct ChatGPT -> CMIS access, expose caller-selected tool routing, or create execution authority.
 
 ## Near-term roadmap
 
