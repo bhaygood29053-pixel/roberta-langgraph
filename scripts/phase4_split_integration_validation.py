@@ -287,6 +287,7 @@ def _validate_promoted_service_surface(
             "chain": "x1",
             "asset": "AGI",
             "params": {
+                "asset_id": "AGI",
                 "intelligence_evidence_id": missing_intelligence_id,
             },
         },
