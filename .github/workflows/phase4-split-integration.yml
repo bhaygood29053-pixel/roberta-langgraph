@@ -3,6 +3,8 @@ name: Phase 4 Split Integration Gate
 on:
   push:
     branches:
+      - main
+      - phase4/complete
       - phase4/split-integration-ci
   pull_request:
     branches:
@@ -24,7 +26,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: bhaygood29053-pixel/cmis
-          ref: 88548287182cf3c10c24389e7355a6e3e7bf94b5
+          ref: 45551d112e0779343c0d0e50d0d2631efc88f76c
           path: cmis-public
 
       - name: Capture public heads
