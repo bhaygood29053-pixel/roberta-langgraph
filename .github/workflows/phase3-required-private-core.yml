@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - phase3/required-private-core-validation
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
