@@ -44,6 +44,39 @@ Verified:
 
 Artifact: `phase4-split-integration-evidence`.
 
+## Checkpoint 2 — promoted service surface
+
+Expanded source-stripped/private-core validation passed in Actions run
+`33249072477`.
+
+The gate exercised every promoted CMIS runtime service through authenticated
+HTTP:
+
+- `asset_lookup` — ok
+- `market_report` — partial
+- `rank` — ok
+- `historical_compare` — unavailable with no historical fixture
+- `tokenomics` — partial
+- `risk_check` — partial
+- `pre_trade_check` — partial
+- `trade_verification` — partial
+- `verified_asset_activity` — ok
+- `instant_x1_scan` — partial
+- `verification_evidence` — unavailable with no persisted evidence fixture
+- `concentration_change_intelligence` — unavailable with no persisted
+  intelligence fixture
+
+These bounded statuses are expected for deliberately absent evidence. The gate
+rejects any routing/contract `error`, requires exact public/private service
+surface parity, and recursively asserts that no response grants
+`execution_authorized=true`.
+
+Checkpoint 2 also reconfirmed `PUBLIC_FALLBACK_USED=FALSE` and
+`EXECUTION_AUTHORIZED=FALSE`.
+
+The remaining Phase 4 completion gate is a successful run of this same workflow
+from merged `main`.
+
 ## Source-removal gate
 
 Protected ROBERTA implementation must remain in public Git HEAD until Phase 4 is

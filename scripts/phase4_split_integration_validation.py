@@ -5,6 +5,7 @@ import os
 import threading
 from importlib.metadata import distribution
 from pathlib import Path
+from urllib.request import Request, urlopen
 
 from langchain_core.messages import AIMessage, ToolMessage
 
@@ -23,6 +24,7 @@ EXPECTED_CMIS_VERSION = "0.2.0"
 EXPECTED_ROBERTA_VERSION = "0.2.0"
 EXPECTED_CMIS_CONTRACT = "cmis-private-core/v1"
 EXPECTED_ROBERTA_CONTRACT = "roberta-private-core/v1"
+NON_ERROR_STATUSES = {"ok", "partial", "unavailable", "ambiguous"}
 
 
 def token(symbol: str, mint: str, name: str | None = None) -> dict[str, object]:
@@ -48,9 +50,17 @@ class FakeX1MarketProvider:
 
     def __init__(self) -> None:
         agi = token("AGI", "MINT_AGI", "Artificial General Intelligence")
+        xnt = token(
+            "XNT",
+            "So11111111111111111111111111111111111111112",
+            "Wrapped XNT",
+        )
         usdc = token("USDC", "MINT_USDC", "USD Coin")
-        self.pools = [pool("P1", agi, usdc)]
-        self.xnt_price_usd = None
+        self.pools = [
+            pool("P1", agi, usdc),
+            pool("P2", xnt, usdc),
+        ]
+        self.xnt_price_usd = 0.25
         self.last_refresh = 123.0
         self.refresh_calls = 0
 
@@ -66,6 +76,30 @@ class FakeX1MarketProvider:
             "xnt_price_usd": self.xnt_price_usd,
             "observed_at": self.last_refresh,
         }
+
+
+class FakeX1SupplyProvider:
+    chain = "x1"
+    asset = "XNT"
+
+    @staticmethod
+    def _record(metric: str, supply: str) -> dict[str, object]:
+        return {
+            "chain": "x1",
+            "asset": "XNT",
+            "network": "mainnet",
+            "metric": metric,
+            "supply": supply,
+            "supply_verified": True,
+            "representation": "provider_integer_text",
+            "source": "phase4 deterministic supply fixture",
+        }
+
+    def get_total_supply(self):
+        return self._record("total_supply", "1000000000")
+
+    def get_circulating_supply(self):
+        return self._record("circulating_supply", "500000000")
 
 
 class ScoutRoutingOracle:
@@ -129,6 +163,161 @@ def _write_evidence(payload: dict[str, object]) -> None:
     )
 
 
+def _post_cmis(
+    *,
+    base_url: str,
+    api_key: str,
+    payload: dict[str, object],
+) -> dict[str, object]:
+    request = Request(
+        base_url + "/v1/cmis",
+        data=json.dumps(payload, separators=(",", ":"), allow_nan=False).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    with urlopen(request, timeout=5) as response:
+        decoded = json.loads(response.read().decode("utf-8"))
+    if not isinstance(decoded, dict):
+        raise AssertionError(f"CMIS returned non-object response for {payload.get('service')!r}.")
+    return decoded
+
+
+def _assert_no_execution_authority(value: object) -> None:
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if key == "execution_authorized":
+                assert item is not True
+            _assert_no_execution_authority(item)
+    elif isinstance(value, list):
+        for item in value:
+            _assert_no_execution_authority(item)
+
+
+def _validate_promoted_service_surface(
+    *,
+    base_url: str,
+    api_key: str,
+    expected_services: tuple[str, ...],
+) -> dict[str, str]:
+    missing_intelligence_id = "ie_" + ("0" * 64)
+    cases: dict[str, dict[str, object]] = {
+        "asset_lookup": {
+            "service": "asset_lookup",
+            "chain": "x1",
+            "asset": "AGI",
+            "params": {},
+        },
+        "market_report": {
+            "service": "market_report",
+            "chain": "x1",
+            "asset": "AGI",
+            "params": {},
+        },
+        "rank": {
+            "service": "rank",
+            "chain": "x1",
+            "params": {"metric": "liquidity", "limit": 5},
+        },
+        "historical_compare": {
+            "service": "historical_compare",
+            "chain": "x1",
+            "asset": "AGI",
+            "params": {"question": "Has price changed in the last 24 hours?"},
+        },
+        "tokenomics": {
+            "service": "tokenomics",
+            "chain": "x1",
+            "asset": "XNT",
+            "params": {},
+        },
+        "risk_check": {
+            "service": "risk_check",
+            "chain": "x1",
+            "asset": "XNT",
+            "params": {},
+        },
+        "pre_trade_check": {
+            "service": "pre_trade_check",
+            "chain": "x1",
+            "asset": "XNT",
+            "params": {
+                "trade": {
+                    "side": "buy",
+                    "notional_usd": 25.0,
+                }
+            },
+        },
+        "trade_verification": {
+            "service": "trade_verification",
+            "chain": "x1",
+            "params": {
+                "event": {
+                    "type": "lp_add",
+                }
+            },
+        },
+        "verified_asset_activity": {
+            "service": "verified_asset_activity",
+            "chain": "x1",
+            "asset": "AGI",
+            "params": {
+                "max_pools": 1,
+                "per_pool_limit": 1,
+            },
+        },
+        "instant_x1_scan": {
+            "service": "instant_x1_scan",
+            "chain": "x1",
+            "asset": "XNT",
+            "params": {},
+        },
+        "verification_evidence": {
+            "service": "verification_evidence",
+            "chain": "x1",
+            "params": {
+                "fact_type": "phase4_service_surface",
+                "subject_id": "AGI",
+            },
+        },
+        "concentration_change_intelligence": {
+            "service": "concentration_change_intelligence",
+            "chain": "x1",
+            "asset": "AGI",
+            "params": {
+                "asset_id": "AGI",
+                "intelligence_evidence_id": missing_intelligence_id,
+            },
+        },
+    }
+
+    assert set(cases) == set(expected_services), (
+        "Phase 4 service-surface cases drifted from the private/public CMIS "
+        f"contract: cases={sorted(cases)} expected={sorted(expected_services)}"
+    )
+
+    results: dict[str, str] = {}
+    for service in expected_services:
+        envelope = _post_cmis(
+            base_url=base_url,
+            api_key=api_key,
+            payload=cases[service],
+        )
+        assert envelope.get("service") == service
+        assert envelope.get("chain") == "x1"
+        status = str(envelope.get("status") or "").strip().lower()
+        assert status in NON_ERROR_STATUSES, (
+            f"Promoted CMIS service {service!r} returned routing/contract error: "
+            f"{json.dumps(envelope, sort_keys=True)}"
+        )
+        _assert_no_execution_authority(envelope)
+        results[service] = status
+
+    return results
+
+
 def main() -> int:
     gates: dict[str, bool] = {}
 
@@ -162,10 +351,23 @@ def main() -> int:
     gates["cmis_private_core_required"] = True
 
     provider = FakeX1MarketProvider()
+    verification_db = Path("phase4-verification-evidence.db")
+    intelligence_db = Path("phase4-intelligence-evidence.db")
+    for db_path in (verification_db, intelligence_db):
+        db_path.unlink(missing_ok=True)
+
     gateway = cmis_contract["gateway_class"](
         x1_market_provider=provider,
-        verification_evidence_db_path=":memory:",
-        intelligence_evidence_db_path=":memory:",
+        x1_supply_provider=FakeX1SupplyProvider(),
+        x1_trade_history_fetcher=lambda _address: {
+            "raw_response": {"trades": []},
+            "source": "phase4 deterministic history fixture",
+            "observed_at": 123.0,
+            "semantics": {},
+            "contract": {"provider_total_raw": 0},
+        },
+        verification_evidence_db_path=str(verification_db),
+        intelligence_evidence_db_path=str(intelligence_db),
         auto_record_history=False,
     )
 
@@ -198,6 +400,13 @@ def main() -> int:
         capabilities = client.capabilities()
         assert capabilities["contract_version"] == "1.13.0"
         gates["cmis_capability_handshake"] = True
+
+        service_results = _validate_promoted_service_surface(
+            base_url=base_url,
+            api_key=api_key,
+            expected_services=tuple(cmis_contract["supported_services"]),
+        )
+        gates["promoted_cmis_service_surface"] = True
 
         tools = get_roberta_tools(cmis_client=client)
 
@@ -238,7 +447,7 @@ def main() -> int:
 
         assert all(gates.values())
         evidence = {
-            "schema_version": 1,
+            "schema_version": 2,
             "phase": 4,
             "status": "pass",
             "authority_chain": "User -> ROBERTA -> Chain Scout -> CMIS -> Chain Provider",
@@ -255,6 +464,7 @@ def main() -> int:
                 "cmis": EXPECTED_CMIS_CONTRACT,
                 "cmis_public_contract": capabilities["contract_version"],
             },
+            "promoted_service_results": service_results,
             "gates": gates,
             "execution_authorized": False,
             "public_fallback_used": False,
@@ -263,6 +473,8 @@ def main() -> int:
 
         for name in sorted(gates):
             print(f"PHASE4_{name.upper()}=PASS")
+        for service, status in sorted(service_results.items()):
+            print(f"PHASE4_SERVICE_{service.upper()}={status.upper()}")
         print("PHASE4_SPLIT_INTEGRATION=PASS")
         print("PUBLIC_FALLBACK_USED=FALSE")
         print("EXECUTION_AUTHORIZED=FALSE")
@@ -271,6 +483,8 @@ def main() -> int:
         server.shutdown()
         server.server_close()
         thread.join(timeout=2)
+        for db_path in (verification_db, intelligence_db):
+            db_path.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":
