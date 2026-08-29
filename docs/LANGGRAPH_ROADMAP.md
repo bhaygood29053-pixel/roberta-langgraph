@@ -169,7 +169,54 @@ The core Phase 11 `intelligence_foundation` remains internal/non-promoted. The s
 
 Classification, direct wallet-relationship evidence, and concentration-threshold alert evidence remain internal/read-only/non-promoted. There is no accepted next public intelligence/alert promotion by implication.
 
-## Near-term roadmap
+## Strategic product roadmap — X1 flagship (adopted 2026-08-28)
+
+Roadmap ownership: issue #246.
+
+Roberta's primary product objective is now **X1 productization**: become the user-facing intelligence analyst for the X1 ecosystem rather than chase scanner, explorer, portfolio, or trading products feature-for-feature.
+
+The public product promise is:
+
+> **Ask Roberta anything about X1.**
+
+Flagship user capabilities are:
+
+1. **Investigate** — autonomously plan and synthesize an evidence-bounded investigation of an X1 asset, wallet, pool, protocol, or other supported X1 entity.
+2. **Ask** — answer natural-language X1 questions through the canonical Roberta -> X1 Scout -> CMIS -> Provider authority path for freshness-sensitive facts.
+3. **Compare** — compare supported X1 assets/entities over current and historical evidence without manufacturing facts outside CMIS.
+4. **Watch** — surface meaningful verified changes and explain their significance while preserving alert/evidence/risk distinctions.
+5. **Discover** — identify unusual or emerging X1 activity only where accepted evidence contracts support the underlying observations.
+
+### Productization sequence
+
+The ordered product roadmap is:
+
+1. **Roberta Instant X1 Scan** — paste a supported X1 mint/symbol and receive a compact, fast intelligence card with evidence state and drill-down.
+2. **Autonomous X1 Investigation** — one user request can coordinate market, identity, tokenomics, holder/concentration, history, wallet-relationship, and deterministic risk services that are actually promoted/available.
+3. **CMIS-backed holder/wallet intelligence adoption** — promote/adopt useful CMIS foundations only through explicit reviewed service contracts; do not treat internal foundations as already callable.
+4. **Discovery Ledger integration** — persist immutable first-observation context plus subsequent verified observations so Roberta can reason about change and evaluate prior assessments.
+5. **Early Warning explanations** — expose only separately promoted alert services, with deterministic evidence first and Roberta explanation second.
+6. **Compare workflows** — make current-vs-history and entity-vs-entity comparison a first-class user experience.
+7. **X1 Daily Intelligence Brief** — synthesize supported market, network, protocol, validator, risk, and ecosystem evidence into a concise recurring brief.
+8. **Polished chat/web UX** — make verification state simple by default (Verified, Partially Verified, Unknown, Conflicting Evidence) with optional evidence drill-down.
+9. **Developer intelligence API surface** — expose bounded Roberta/CMIS intelligence to other X1 applications only after service contracts stabilize.
+
+### Scope and competitive discipline
+
+- **X1 is the flagship chain** and receives the clear majority of product-development effort.
+- **Solana Scout remains** as a maintained read-only proving ground / portability check. Broad Solana feature expansion is deprioritized unless it improves shared CMIS abstractions or directly validates cross-chain portability.
+- Do not clone Phanes, X1.Ninja, explorers, portfolio trackers, staking interfaces, or trading terminals feature-for-feature.
+- Prefer leveraging exact machine-readable ecosystem providers behind CMIS rather than rebuilding commodity indexing, but provider output remains candidate evidence until accepted CMIS verification exists.
+- Keep Controlled Execution locked. Productization does not authorize transaction construction, signing, broadcasting, custody, swaps, bridge transfer, or autonomous value movement.
+- Preserve Roberta as the primary user-facing identity; avoid depending on **X1 Intelligence** alone as the public brand where it could be confused with X1 Labs' own naming.
+
+### Product UX rule
+
+CMIS remains the deterministic trust/evidence layer, but normal users should not need to understand CMIS internals to use Roberta. Default responses should present concise intelligence plus simple evidence state; advanced users may drill into Evidence Receipts, Proof Score, provenance, freshness, disagreements, and limitations.
+
+This roadmap update changes **priority and product direction only**. It does not by itself promote a CMIS service, expand Scout authority, or mark any unimplemented feature as accepted.
+
+## Supporting roadmap — learning and platform hardening
 
 ### 1. Operate and harden the accepted Learning Plane
 

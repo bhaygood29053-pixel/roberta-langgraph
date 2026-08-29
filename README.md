@@ -28,6 +28,11 @@ Core Roberta platform work is accepted through Phase 10 plus the post-Phase-10 e
 
 **Roberta Phase 11 Controlled Execution remains locked / not started.**
 
+### Strategic product focus — 2026-08-28
+
+Roberta's near-term product priority is X1: become the user-facing intelligence analyst for the X1 ecosystem through **Investigate, Ask, Compare, Watch, and Discover**. The ordered productization path is Instant X1 Scan, autonomous X1 investigation, promoted CMIS holder/wallet intelligence, Discovery Ledger, Early Warning, Compare, X1 Daily Intelligence Brief, polished chat/web UX, and a later developer intelligence API. Solana Scout remains maintained as a read-only portability/proving surface; broad Solana expansion is deprioritized. This changes roadmap priority only and does not create new accepted capability or execution authority.
+
+
 ### Learning System
 
 Learning System Phases 1-10 are accepted on `main`:
