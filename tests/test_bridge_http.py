@@ -138,6 +138,29 @@ def test_non_loopback_bind_requires_api_key():
         create_server(host="0.0.0.0", port=0, bridge=RobertaBridge(FakeGraph([])), api_key="")
 
 
+
+def test_gateway_fails_closed_when_api_key_is_not_configured():
+    bridge = RobertaBridge(FakeGraph([AIMessage(content="unused")]))
+    server, thread = _serve_once(bridge)
+    try:
+        base = f"http://127.0.0.1:{server.server_port}"
+
+        status, payload = _request(f"{base}{GATEWAY_CAPABILITIES_PATH}")
+        assert status == 503
+        assert payload["error"]["code"] == "gateway_auth_not_configured"
+
+        status, payload = _request(
+            f"{base}{GATEWAY_ASK_PATH}",
+            body={"message": "Investigate AGI"},
+        )
+        assert status == 503
+        assert payload["error"]["code"] == "gateway_auth_not_configured"
+        assert bridge._graph.calls == []
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
+
 def test_gateway_capabilities_are_authenticated_and_read_only():
     bridge = RobertaBridge(FakeGraph([AIMessage(content="unused")]))
     server, thread = _serve_once(bridge, api_key="gateway-secret")
