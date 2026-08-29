@@ -135,7 +135,9 @@ def main() -> int:
     assert os.environ.get("ROBERTA_PRIVATE_CORE_REQUIRED") == "1"
     assert os.environ.get("CMIS_PRIVATE_CORE_REQUIRED") == "1"
     assert os.environ.get("PHASE4_PUBLIC_STRIP_VERIFIED") == "1"
+    assert os.environ.get("PHASE4_SERVICE_SURFACE_VERIFIED") == "1"
     gates["public_protected_source_stripped_before_private_install"] = True
+    gates["promoted_cmis_service_surface"] = True
 
     assert cmis_core.__version__ == EXPECTED_CMIS_VERSION
     assert roberta_core.__version__ == EXPECTED_ROBERTA_VERSION
