@@ -1,14 +1,12 @@
-"""Phase 3 adapter from the public ROBERTA shell to the private core.
+"""Public-shell adapter to the required private ROBERTA implementation.
 
-Runtime entrypoints call this boundary instead of importing protected graph
-implementation directly. During migration, the public graph remains a temporary
-fallback so the source repository stays testable. Production cutover can fail
-closed by setting ROBERTA_PRIVATE_CORE_REQUIRED=1.
+Phase 3 cutover is fail-closed: public runtime entrypoints expose integration
+surfaces while roberta-private-core owns graph/orchestration implementation.
+There is no public graph fallback.
 """
 
 from __future__ import annotations
 
-import os
 from typing import Any
 
 EXPECTED_PRIVATE_CONTRACT = "roberta-private-core/v1"
@@ -19,12 +17,8 @@ class PrivateCoreUnavailable(RuntimeError):
 
 
 def private_core_required() -> bool:
-    return os.getenv("ROBERTA_PRIVATE_CORE_REQUIRED", "").strip().lower() in {
-        "1",
-        "true",
-        "yes",
-        "on",
-    }
+    """Return True: ROBERTA private core is mandatory after Phase 3 cutover."""
+    return True
 
 
 def _load_private_api():
@@ -40,37 +34,31 @@ def _load_private_api():
 def _validated_private_api():
     api = _load_private_api()
     if api is None:
-        return None
+        raise PrivateCoreUnavailable(
+            "roberta-private-core is required but is not installed."
+        )
     if getattr(api, "CUTOVER_CONTRACT", None) != EXPECTED_PRIVATE_CONTRACT:
-        raise PrivateCoreUnavailable("ROBERTA private-core contract version is incompatible.")
+        raise PrivateCoreUnavailable(
+            "ROBERTA private-core contract version is incompatible."
+        )
     if not callable(getattr(api, "build_graph", None)):
-        raise PrivateCoreUnavailable("ROBERTA private-core facade does not expose build_graph.")
+        raise PrivateCoreUnavailable(
+            "ROBERTA private-core facade does not expose build_graph."
+        )
     return api
 
 
 def build_graph(*args: Any, **kwargs: Any):
-    """Build ROBERTA through the private facade or the Phase 3 fallback."""
-    private_api = _validated_private_api()
-    if private_api is not None:
-        return private_api.build_graph(*args, **kwargs)
-
-    if private_core_required():
-        raise PrivateCoreUnavailable(
-            "ROBERTA_PRIVATE_CORE_REQUIRED is enabled but roberta-private-core is not installed."
-        )
-
-    # Transitional fallback only. It is removed once split validation passes and
-    # before protected implementation is removed from public HEAD.
-    from roberta.graph import build_graph as public_build_graph
-
-    return public_build_graph(*args, **kwargs)
+    """Build ROBERTA only through the required private-core facade."""
+    return _validated_private_api().build_graph(*args, **kwargs)
 
 
 def private_core_status() -> dict[str, Any]:
     api = _load_private_api()
     return {
         "available": api is not None,
-        "required": private_core_required(),
+        "required": True,
+        "source": "private" if api is not None else "unavailable",
         "expected_contract": EXPECTED_PRIVATE_CONTRACT,
     }
 
