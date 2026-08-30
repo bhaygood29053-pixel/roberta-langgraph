@@ -634,6 +634,10 @@ def require_instant_x1_scan_capability(
         chain=normalized_chain,
         service="instant_x1_scan",
     )
+    if capability.get("state") != "bounded":
+        raise CMISCapabilityContractError(
+            "CMIS x1/instant_x1_scan state must remain bounded."
+        )
     if capability.get("service_contract_version") != INSTANT_X1_SCAN_CONTRACT_VERSION:
         raise CMISCapabilityContractError(
             "CMIS x1/instant_x1_scan service contract mismatch."
