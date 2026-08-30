@@ -22,6 +22,10 @@ from roberta.cmis.concentration_intelligence import (
     normalize_intelligence_evidence_id,
     require_concentration_intelligence_promotion,
 )
+from roberta.cmis.instant_scan import (
+    CMISInstantX1ScanContractError,
+    validate_instant_x1_scan_response,
+)
 from roberta.cmis.contracts import (
     CMISEnvelope,
     CMISOperation,
@@ -400,11 +404,22 @@ class CMISHTTPClient:
                 warning=True,
             )
 
-        return self._request(
+        result = self._request(
             service="instant_x1_scan",
             chain=normalized_chain,
             asset=normalized_asset,
         )
+        try:
+            return validate_instant_x1_scan_response(result)
+        except CMISInstantX1ScanContractError as exc:
+            return self._error_envelope(
+                service="instant_x1_scan",
+                chain=normalized_chain,
+                asset=normalized_asset,
+                status="error",
+                code="invalid_cmis_instant_x1_scan_response",
+                message=str(exc),
+            )
 
     def rank(
         self,
