@@ -281,14 +281,15 @@ Advanced users should be able to expand the same result into market, trade, risk
 
 ### Human flagship workflows
 
-The X1 Human ROBERTA product should converge on six primary workflows:
+The X1 Human ROBERTA product should converge on seven primary workflows:
 
 1. **SCAN** — “Analyze this token.” Consume accepted `instant_x1_scan/v1` plus only separately accepted supplemental Scout/CMIS evidence.
 2. **TRADE CHECK** — “Can this market handle my $500 buy?” Present deterministic trade-size policy, route-scoped price impact/fee evidence where accepted, slippage status, risk, and missing execution evidence.
 3. **COMPARE** — “Compare AGI and XNT.” Use first-class CMIS-returned current/history evidence and preserve per-dimension differences instead of inventing a universal score.
-4. **WHAT CHANGED?** — explain verified changes in price, liquidity, activity, concentration, risk/evidence quality, and important unknowns.
-5. **EARLY WARNING** — surface only separately accepted warning contracts for liquidity, concentration, activity, identity, evidence degradation, or future execution-quality signals; never infer manipulation/intent by implication.
-6. **X1 BRIEF** — synthesize accepted ecosystem/network evidence into one coherent daily/periodic X1 intelligence brief.
+4. **WHAT CHANGED?** — explain verified changes in price, liquidity, activity, concentration, token burns, risk/evidence quality, and important unknowns.
+5. **BURN** — “How much of this token has been burned?” After CMIS Issue #368 is explicitly promoted through X1 Scout, present cumulative verified-observed burns plus trailing **24h, 7d, and 30d** burn amounts/event counts with exact coverage/completeness limits. Never relabel partial observed coverage as definitive lifetime burn.
+6. **EARLY WARNING** — surface only separately accepted warning contracts for liquidity, concentration, activity, identity, evidence degradation, burn-rate changes where supported, or future execution-quality signals; never infer manipulation/intent by implication.
+7. **X1 BRIEF** — synthesize accepted ecosystem/network evidence into one coherent daily/periodic X1 intelligence brief.
 
 ### Human personalization and policy
 
@@ -336,6 +337,8 @@ Planned machine envelope:
 ```
 
 Machine output must preserve explicit unavailable/null states. Missing execution slippage, history, holder, concentration, or other evidence must never be serialized as zero/false merely to simplify client logic.
+
+When the accepted CMIS burn-intelligence service becomes available, Machine ROBERTA should preserve burn intelligence as structured tokenomics/evidence rather than prose, including exact mint, cumulative verified-observed burn, 24h/7d/30d burned amounts and event counts, coverage bounds, as-of time, unresolved timed events, and a boolean completeness field equivalent to `lifetime_total_burn_verified`.
 
 Stable reason codes should be preferred over prose for machine policy. Initial candidates include:
 
@@ -438,11 +441,12 @@ Recommended Roberta-side sequence:
 6. COMPARE;
 7. WHAT CHANGED?;
 8. Advanced Human Evidence View;
-9. consume accepted CMIS realized-slippage/statistical execution evidence when promoted;
-10. consume accepted Discovery Ledger;
-11. consume accepted Early Warning services;
-12. X1 Brief;
-13. agent-scale Machine ROBERTA API / SDK and monitoring integrations.
+9. consume accepted CMIS Token Burn Intelligence from Issue #368 and add Human BURN + Machine burn fields;
+10. consume accepted CMIS realized-slippage/statistical execution evidence when promoted;
+11. consume accepted Discovery Ledger;
+12. consume accepted Early Warning services;
+13. X1 Brief;
+14. agent-scale Machine ROBERTA API / SDK and monitoring integrations.
 
 This sequence is roadmap intent only. A downstream CMIS dependency remains unavailable until its explicit CMIS public-service / Scout-reliance contract is accepted.
 
@@ -468,7 +472,7 @@ Solana remains an accepted read-only specialist surface for maintenance, regress
 - use X1 Scout as the chain-specific interpretation layer for all freshness-sensitive X1 investigations;
 - consume bounded CMIS `instant_x1_scan/v1` through X1 Scout and present its verified identity, market, tokenomics, local-history, deterministic-risk, and evidence-quality fields clearly;
 - preserve CMIS statuses, timestamps, Evidence Receipts, Proof Scores, limitations, warnings, and explicit unknowns rather than smoothing partial evidence into confident prose;
-- build the user-facing X1 workflows around **Instant X1 Scan**, **Compare**, **Discovery / first-observation history**, **Early Warning**, and **X1 ecosystem/network brief** outputs as their underlying CMIS contracts become accepted;
+- build the user-facing X1 workflows around **Instant X1 Scan**, **Compare**, **Token Burn Intelligence (total verified-observed + 24h/7d/30d)**, **Discovery / first-observation history**, **Early Warning**, and **X1 ecosystem/network brief** outputs as their underlying CMIS contracts become accepted;
 - keep Proof Score separate from risk and never turn a risk `PASS` into execution permission;
 - prefer one coherent X1 intelligence response over disconnected specialist dumps.
 
@@ -479,7 +483,7 @@ Solana remains an accepted read-only specialist surface for maintenance, regress
 - do not call X1 providers directly from Roberta as a trust shortcut;
 - preserve exact-mint identity and all-available-history limitations from CMIS without recomputation;
 - support first-class deterministic X1 comparisons using CMIS-returned history/evidence rather than constructing a second fact layer in Roberta;
-- prepare Roberta's presentation/orchestration layer for future Discovery Ledger and Early Warning contracts without pre-authorizing or simulating those capabilities;
+- prepare Roberta's presentation/orchestration layer for future Token Burn Intelligence, Discovery Ledger, and Early Warning contracts without pre-authorizing, recomputing, or simulating those capabilities;
 - continue evidence-aware UX work so unavailable, partial, ambiguous, stale, or unverified data remains visible to the user.
 
 ### 3. Keep the Learning Plane operationally strong as a supporting track
