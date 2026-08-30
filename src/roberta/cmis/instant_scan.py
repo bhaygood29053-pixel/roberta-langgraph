@@ -128,6 +128,14 @@ def validate_instant_x1_scan_response(
         )
 
     risk = _mapping(sections["risk"], field="data.sections.risk")
+    for field in ("flags", "reasons"):
+        values = risk.get(field)
+        if not isinstance(values, list) or any(
+            not isinstance(item, str) or not item.strip() for item in values
+        ):
+            raise CMISInstantX1ScanContractError(
+                f"CMIS Instant X1 Scan risk.{field} must be a list of non-empty strings."
+            )
     if risk.get("execution_authorized") is not False:
         raise CMISInstantX1ScanContractError(
             "CMIS Instant X1 Scan risk section must preserve execution_authorized=false."
