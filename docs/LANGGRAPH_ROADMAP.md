@@ -199,6 +199,253 @@ local integrations such as MoltGrid/Signal; it is not an external ChatGPT
 gateway. Any future external gateway or MCP transport requires a new explicit
 architecture and security review.
 
+## Human ROBERTA + Machine ROBERTA product architecture — planned
+
+The X1 productization track will expose **one ROBERTA intelligence core through two presentation faces** rather than creating separate truth systems.
+
+```text
+                     User / client
+                         |
+              +----------+----------+
+              |                     |
+        Human ROBERTA         Machine ROBERTA
+              |                     |
+              +----------+----------+
+                         |
+                      ROBERTA
+                policy/orchestration
+                         |
+                     Chain Scout
+                         |
+                       CMIS
+                         |
+             verified provider/source
+```
+
+The architectural rule is:
+
+> **Human ROBERTA makes verified intelligence understandable. Machine ROBERTA makes the same intelligence programmable. Neither face becomes a second fact authority.**
+
+### Shared canonical decision layer
+
+Before the two faces diverge in presentation, Roberta should introduce a shared internal **Canonical ROBERTA Decision Object**. It must carry the already-established decision basis without recomputing CMIS facts.
+
+Planned fields include:
+
+- request and exact subject identity;
+- user intent / workflow;
+- recommendation or blocker;
+- stable machine reason codes;
+- accepted facts returned through Scout -> CMIS;
+- deterministic risk as returned by the accepted contract;
+- evidence quality / Proof Score summary without collapsing proof into risk;
+- missing evidence and explicit unknowns;
+- historical limitations;
+- policy identity/version;
+- capability state;
+- `execution_authorized=false`.
+
+Human and Machine renderers must be tested against the same canonical object. A release should fail if they disagree on underlying facts, ratios, policy state, risk, missing evidence, timestamps, or execution authority.
+
+### Human ROBERTA
+
+Human ROBERTA is the default individual-trader/research experience.
+
+Product rule:
+
+> **Answer first. Evidence underneath.**
+
+The default answer should avoid requiring users to understand Evidence Receipts, capability manifests, route-evidence contracts, semantic verification, exact-mint normalization, or other internal engineering vocabulary.
+
+Planned answer order:
+
+1. recommendation / conclusion / blocker;
+2. 2-4 most important evidence-backed reasons;
+3. risk, only when a dedicated accepted risk contract supports it;
+4. human-readable evidence quality;
+5. important missing evidence;
+6. optional **View Evidence** drill-down.
+
+Human recommendation labels may include `BUY CANDIDATE`, `WAIT`, `CAUTION`, `AVOID`, `BLOCK`, and `INSUFFICIENT EVIDENCE`, but these are Roberta presentation/policy outputs and must never be relabeled as CMIS market facts.
+
+Human evidence language should map technical states into understandable wording such as:
+
+- **Strong evidence**;
+- **Moderate evidence**;
+- **Limited evidence**;
+- **Insufficient evidence**;
+- **Stale evidence**;
+- **Partially verified**.
+
+Advanced users should be able to expand the same result into market, trade, risk, history, concentration, freshness, source, Evidence Receipt, Proof Score, disagreement, and unresolved-field detail without switching to a separate product.
+
+### Human flagship workflows
+
+The X1 Human ROBERTA product should converge on six primary workflows:
+
+1. **SCAN** — “Analyze this token.” Consume accepted `instant_x1_scan/v1` plus only separately accepted supplemental Scout/CMIS evidence.
+2. **TRADE CHECK** — “Can this market handle my $500 buy?” Present deterministic trade-size policy, route-scoped price impact/fee evidence where accepted, slippage status, risk, and missing execution evidence.
+3. **COMPARE** — “Compare AGI and XNT.” Use first-class CMIS-returned current/history evidence and preserve per-dimension differences instead of inventing a universal score.
+4. **WHAT CHANGED?** — explain verified changes in price, liquidity, activity, concentration, risk/evidence quality, and important unknowns.
+5. **EARLY WARNING** — surface only separately accepted warning contracts for liquidity, concentration, activity, identity, evidence degradation, or future execution-quality signals; never infer manipulation/intent by implication.
+6. **X1 BRIEF** — synthesize accepted ecosystem/network evidence into one coherent daily/periodic X1 intelligence brief.
+
+### Human personalization and policy
+
+Future Human ROBERTA may support user decision policies such as:
+
+- maximum trade/notional-to-liquidity ratio;
+- minimum verified liquidity;
+- minimum evidence strength;
+- minimum verified-history depth;
+- authority/mutability exclusions;
+- user watchlists and saved comparison sets.
+
+Personal policy may change **the user's decision threshold**, but it may not change CMIS facts, verification state, Proof Score, risk semantics, or source provenance.
+
+### Machine ROBERTA
+
+Machine ROBERTA is the structured intelligence interface for agents, DApps, developers, monitoring systems, wallets, research systems, and other AI clients.
+
+Product rule:
+
+> **Structure first. Evidence attached.**
+
+Machine ROBERTA belongs to the Roberta layer, not CMIS. CMIS remains the deterministic verification backend. Machine ROBERTA composes accepted Scout/CMIS outputs into stable versioned machine contracts without creating a second fact layer.
+
+Planned machine envelope:
+
+```json
+{
+  "schema": "roberta_intelligence/v1",
+  "request_id": "...",
+  "chain": "x1",
+  "subject": {},
+  "decision": {},
+  "facts": {},
+  "risk": {},
+  "history": {},
+  "evidence": {},
+  "limitations": [],
+  "policy": {},
+  "capabilities": {},
+  "execution": {
+    "authorized": false
+  }
+}
+```
+
+Machine output must preserve explicit unavailable/null states. Missing execution slippage, history, holder, concentration, or other evidence must never be serialized as zero/false merely to simplify client logic.
+
+Stable reason codes should be preferred over prose for machine policy. Initial candidates include:
+
+- `TRADE_SIZE_LOW`;
+- `TRADE_SIZE_MODERATE`;
+- `TRADE_SIZE_HIGH`;
+- `TRADE_SIZE_BLOCK`;
+- `LIQUIDITY_UNVERIFIED`;
+- `PRICE_STALE`;
+- `PRICE_IMPACT_UNAVAILABLE`;
+- `EXECUTION_SLIPPAGE_UNAVAILABLE`;
+- `HISTORY_INCOMPLETE`;
+- `IDENTITY_CONFLICT`;
+- `PROVIDER_DISAGREEMENT`;
+- `RISK_UNKNOWN`.
+
+Exact enums require their own accepted schema review before becoming compatibility commitments.
+
+### Machine capability discovery and evidence depth
+
+Machine clients must not assume a feature exists. Roberta should expose a versioned capability-discovery surface derived from accepted Scout/CMIS capability state.
+
+Machine responses should support at least two evidence depths:
+
+- **Standard** — decision, facts, risk, evidence summary, limitations, capability state;
+- **Full Evidence** — Evidence Receipts, Proof Scores, exact source provenance, verification methods, freshness, scope, disagreements, and accepted contract identities.
+
+### Human/Machine consistency gate
+
+For the same request and canonical evidence, Human and Machine ROBERTA must preserve the same:
+
+- exact asset;
+- numeric facts;
+- policy/version;
+- notional-to-liquidity ratio;
+- risk;
+- evidence state;
+- missing/unknown evidence;
+- timestamps/freshness;
+- historical limitations;
+- execution denial.
+
+The Human renderer may simplify language. It may not simplify away material uncertainty or create facts absent from the Machine/canonical representation.
+
+### No universal ROBERTA score
+
+Do not collapse the product into a single “ROBERTA score.”
+
+Prefer separate dimensions such as:
+
+- market depth;
+- activity;
+- historical evidence;
+- concentration;
+- deterministic risk;
+- evidence quality;
+- execution evidence.
+
+Roberta may synthesize those dimensions into a recommendation while keeping the underlying axes inspectable.
+
+### Performance and reliability
+
+Human ROBERTA should feel fast enough for interactive use, while Machine ROBERTA must be stable enough for programmatic dependence.
+
+Track at minimum:
+
+- median and p95 end-to-end latency;
+- provider latency;
+- CMIS latency;
+- Scout latency;
+- Roberta orchestration/render latency;
+- stale/unavailable-field rate;
+- provider disagreement rate;
+- machine schema/error rate.
+
+Machine contracts should add versioning, deterministic errors, request IDs, idempotent read semantics where applicable, rate-limit guidance, capability discovery, and operational status/observability before broad external release.
+
+### Authentication and access direction
+
+Future access separation may include:
+
+- Human: sessions, saved policies, watchlists, preferences;
+- Machine: API keys or agent identity, scoped permissions, quotas, and audit logs.
+
+Authentication, subscriptions, or premium access must never alter blockchain truth, verification, Proof Score, deterministic risk, or evidence semantics.
+
+### Product/access model direction
+
+Potential future packaging may include Human Free, Human Pro, Developer, Agent, and ecosystem/enterprise tiers. This remains a commercialization concern above the evidence layer. Payment or access policy must never sit inside CMIS fact authority.
+
+### Implementation sequence
+
+Recommended Roberta-side sequence:
+
+1. Canonical ROBERTA Decision Object;
+2. Human SCAN;
+3. Human TRADE CHECK;
+4. Machine SCAN contract;
+5. Machine TRADE CHECK contract;
+6. COMPARE;
+7. WHAT CHANGED?;
+8. Advanced Human Evidence View;
+9. consume accepted CMIS realized-slippage/statistical execution evidence when promoted;
+10. consume accepted Discovery Ledger;
+11. consume accepted Early Warning services;
+12. X1 Brief;
+13. agent-scale Machine ROBERTA API / SDK and monitoring integrations.
+
+This sequence is roadmap intent only. A downstream CMIS dependency remains unavailable until its explicit CMIS public-service / Scout-reliance contract is accepted.
+
 ## Near-term roadmap
 
 ### Strategic priority — X1 productization
