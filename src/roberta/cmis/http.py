@@ -242,7 +242,7 @@ class CMISHTTPClient:
                 ),
             )
         status = value.get("status")
-        if status not in _ALLOWED_STATUSES:
+        if not isinstance(status, str) or status not in _ALLOWED_STATUSES:
             return cls._error_envelope(
                 service=service,
                 chain=chain,
