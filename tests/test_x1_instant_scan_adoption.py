@@ -56,6 +56,14 @@ def test_instant_x1_scan_capability_fails_closed_on_old_or_weakened_contract() -
             chain="x1",
         )
 
+    broadened = deepcopy(MockCMISClient().capabilities())
+    broadened["chains"]["x1"]["services"]["instant_x1_scan"]["state"] = "supported"
+    with pytest.raises(CMISCapabilityContractError, match="state must remain bounded"):
+        require_instant_x1_scan_capability(
+            validate_capability_manifest(broadened),
+            chain="x1",
+        )
+
     promoted_execution = deepcopy(MockCMISClient().capabilities())
     promoted_execution["chains"]["x1"]["services"]["instant_x1_scan"][
         "execution_authorized"
@@ -142,6 +150,63 @@ def test_x1_scout_uses_single_cmis_composition_and_preserves_unknowns() -> None:
     raw_data = report["findings"]["data"]
     assert raw_data["sections"]["holder_concentration"] == holder
     assert presentation["limitations"] == raw_data["limitations"]
+
+
+def test_x1_scout_rejects_malformed_successful_scan_payload() -> None:
+    class MalformedScanCMIS(MockCMISClient):
+        def instant_x1_scan(self, *, chain: str, asset: str):
+            result = super().instant_x1_scan(chain=chain, asset=asset)
+            result["data"]["read_only"] = False
+            result["data"]["execution_authorized"] = True
+            return result
+
+    cmis = MalformedScanCMIS()
+    scout = build_x1_scout_graph(cmis)
+
+    result = scout.invoke(
+        {
+            "request": {
+                "asset": "AGI",
+                "objective": "Instant X1 scan AGI",
+            },
+            "status": "running",
+        }
+    )
+
+    assert [call["operation"] for call in cmis.calls] == ["instant_x1_scan"]
+    report = result["report"]
+    assert report["status"] == "error"
+    assert report["cmis_status"] == "error"
+    assert report["findings"]["data"] == {}
+    assert report["errors"][0]["code"] == "invalid_cmis_instant_x1_scan_response"
+    assert "instant_x1_scan_presentation" not in report
+
+
+def test_x1_scout_rejects_promoted_current_concentration_in_v1() -> None:
+    class PromotedConcentrationCMIS(MockCMISClient):
+        def instant_x1_scan(self, *, chain: str, asset: str):
+            result = super().instant_x1_scan(chain=chain, asset=asset)
+            concentration = result["data"]["sections"]["holder_concentration"][
+                "top_account_concentration"
+            ]
+            concentration["state"] = "available"
+            concentration["verified"] = True
+            concentration["value"] = 0.42
+            return result
+
+    result = build_x1_scout_graph(PromotedConcentrationCMIS()).invoke(
+        {
+            "request": {
+                "asset": "AGI",
+                "objective": "Instant X1 scan AGI",
+            },
+            "status": "running",
+        }
+    )
+
+    report = result["report"]
+    assert report["status"] == "error"
+    assert report["errors"][0]["code"] == "invalid_cmis_instant_x1_scan_response"
 
 
 def test_x1_scout_fails_closed_before_dispatch_when_scan_contract_is_stale() -> None:
