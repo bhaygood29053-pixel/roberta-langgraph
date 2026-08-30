@@ -275,7 +275,7 @@ def test_x1_scout_rejects_malformed_or_inconsistent_envelope_risk(
 
 @pytest.mark.parametrize(
     "bad_status",
-    [None, "", "complete", "success", [], {}, ["ok"]],
+    [None, "", "complete", "success", "OK", " partial ", [], {}, ["ok"]],
 )
 def test_x1_scout_rejects_unsupported_scan_status(
     bad_status: object,
@@ -329,6 +329,68 @@ def test_x1_scout_rejects_promoted_current_concentration_in_v1() -> None:
 
     report = result["report"]
     assert report["status"] == "error"
+    assert report["errors"][0]["code"] == "invalid_cmis_instant_x1_scan_response"
+
+
+def test_x1_scout_accepts_canonical_ambiguous_upstream_diagnostic_without_product_view() -> None:
+    class CanonicalAmbiguousCMIS(MockCMISClient):
+        def instant_x1_scan(self, *, chain: str, asset: str):
+            result = super().instant_x1_scan(chain=chain, asset=asset)
+            result["status"] = "ambiguous"
+            result["data"] = {"upstream_service": "asset_lookup"}
+            result["risk"] = None
+            result["warnings"] = [{
+                "code": "asset_ambiguous",
+                "message": "Asset identity is ambiguous.",
+            }]
+            return result
+
+    result = build_x1_scout_graph(CanonicalAmbiguousCMIS()).invoke(
+        {
+            "request": {
+                "asset": "AGI",
+                "objective": "scan AGI",
+            },
+            "status": "running",
+        }
+    )
+
+    report = result["report"]
+    assert report["status"] == "error"
+    assert report["cmis_status"] == "ambiguous"
+    assert report["findings"]["data"] == {"upstream_service": "asset_lookup"}
+    assert report["findings"]["risk"] is None
+    assert "instant_x1_scan_presentation" not in report
+    assert report["warnings"][0]["code"] == "asset_ambiguous"
+
+
+def test_x1_scout_rejects_extra_product_fields_on_failed_scan_diagnostic() -> None:
+    class InvalidFailedDiagnosticCMIS(MockCMISClient):
+        def instant_x1_scan(self, *, chain: str, asset: str):
+            result = super().instant_x1_scan(chain=chain, asset=asset)
+            result["status"] = "ambiguous"
+            result["data"] = {
+                "upstream_service": "asset_lookup",
+                "sections": {"market": {"price_usd": 1.0}},
+            }
+            result["risk"] = None
+            return result
+
+    result = build_x1_scout_graph(InvalidFailedDiagnosticCMIS()).invoke(
+        {
+            "request": {
+                "asset": "AGI",
+                "objective": "scan AGI",
+            },
+            "status": "running",
+        }
+    )
+
+    report = result["report"]
+    assert report["status"] == "error"
+    assert report["cmis_status"] == "error"
+    assert report["findings"]["data"] == {}
+    assert report["findings"]["risk"] is None
     assert report["errors"][0]["code"] == "invalid_cmis_instant_x1_scan_response"
 
 
