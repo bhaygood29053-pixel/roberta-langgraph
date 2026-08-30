@@ -1,6 +1,6 @@
 # Start Here — Roberta ↔ CMIS Architecture Sync
 
-Last reconciled: 2026-08-27 (America/New_York)
+Last reconciled: 2026-08-30 (America/New_York)
 
 For current cross-project architecture and status, read in this order:
 
@@ -8,7 +8,7 @@ For current cross-project architecture and status, read in this order:
 2. `docs/CMIS_CONTRACT.md`
 3. `docs/CMIS_ROADMAP_SYNC_2026-08-17.md`
 4. `docs/LANGGRAPH_ROADMAP.md`
-5. `docs/PROJECT_STATUS_2026-08-27.md`
+5. `docs/PROJECT_STATUS_2026-08-30.md`
 6. `docs/LEARNING_PLANE_ARCHITECTURE.md`
 7. `docs/learning_sources/README.md`
 
@@ -24,4 +24,4 @@ Roberta's autonomous Learning Plane is accepted for static source learning, curr
 
 Controlled Execution remains locked.
 
-The dated 2026-08-25 and 2026-08-26 project/sync files remain historical snapshots and should not be used in place of the current living roadmap/baseline or the 2026-08-27 project-status snapshot.
+The dated 2026-08-25 through 2026-08-27 project/sync files remain historical snapshots and should not be used in place of the current living roadmap/baseline or the 2026-08-30 project-status snapshot.
