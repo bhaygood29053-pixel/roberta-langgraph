@@ -78,6 +78,11 @@ def validate_instant_x1_scan_response(
         )
 
     status = envelope.get("status")
+    if not isinstance(status, str):
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan response status must be text."
+        )
+    status = status.strip().lower()
     if status in {"ambiguous", "unavailable", "error"}:
         failed_data = envelope.get("data")
         if failed_data != {}:
