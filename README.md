@@ -55,7 +55,9 @@ PR #228 merged on 2026-08-26. Roberta now has an accepted autonomous source-grou
 roberta-train --source "/path/to/source.pdf" --profile expert
 ```
 
-After a source is explicitly selected, Roberta can hash-bind and durably register it, inspect the full source, freeze a source-specific mastery plan, generate missing validated stage banks, run canonical exams, perform verified remediation with source-grounded practice, closed-source bounded candidate-memory retention, and transfer checks, reuse verified curriculum-scoped learned concepts, resume interrupted jobs, and run the final source capstone.
+After a source is explicitly selected, Roberta can hash-bind and durably register it, inspect the full source, freeze a source-specific mastery plan, generate missing validated stage banks, run canonical exams, perform verified remediation with source-grounded practice, closed-source bounded candidate-memory retention, and transfer checks, reuse verified curriculum-scoped learned concepts, resume interrupted jobs, run the final source capstone, and expose authoritative read-only operational telemetry reconciled against the source-mastery ledger.
+
+Private `roberta-core` PR #9 adds accepted `roberta-autonomous-training-telemetry/v1`: a deterministic read-only operator surface for run/source/plan identity, ledger-backed mastery/completion state, stage/remediation/checkpoint progress, controller/event diagnostics, and fail-closed state/ledger consistency findings. It preserves `execution_authorized=false` and does not grant learning, market, wallet, or execution authority.
 
 This is autonomous continual source learning, not unrestricted self-modification. Static source material cannot modify Roberta prompts/tools/policies, Scouts, CMIS contracts, provider authority, wallet permissions, human-approval semantics, or execution authority.
 
