@@ -174,6 +174,35 @@ def test_x1_scout_uses_single_cmis_composition_and_preserves_unknowns() -> None:
     assert presentation["limitations"] == raw_data["limitations"]
 
 
+@pytest.mark.parametrize("bad_envelope", [None, [], ["not", "an", "object"]])
+def test_x1_scout_rejects_non_object_scan_envelope(
+    bad_envelope: object,
+) -> None:
+    class NonObjectCMIS(MockCMISClient):
+        def instant_x1_scan(self, *, chain: str, asset: str):
+            self.calls.append(
+                {"operation": "instant_x1_scan", "chain": chain, "asset": asset}
+            )
+            return bad_envelope
+
+    result = build_x1_scout_graph(NonObjectCMIS()).invoke(
+        {
+            "request": {
+                "asset": "AGI",
+                "objective": "scan AGI",
+            },
+            "status": "running",
+        }
+    )
+
+    report = result["report"]
+    assert report["status"] == "error"
+    assert report["cmis_status"] == "error"
+    assert report["findings"]["data"] == {}
+    assert report["findings"]["risk"] is None
+    assert report["errors"][0]["code"] == "invalid_cmis_instant_x1_scan_response"
+
+
 def test_x1_scout_rejects_malformed_successful_scan_payload() -> None:
     class MalformedScanCMIS(MockCMISClient):
         def instant_x1_scan(self, *, chain: str, asset: str):
