@@ -32,6 +32,7 @@ def test_instant_x1_scan_capability_requires_exact_accepted_contract() -> None:
     assert capability["callable"] is True
     assert capability["service_contract_version"] == INSTANT_X1_SCAN_CONTRACT_VERSION
     assert capability["read_only"] is True
+    assert capability["composition_only"] is True
     assert capability["public_service_promoted"] is True
     assert capability["scout_reliance_promoted"] is True
     assert capability["execution_authorized"] is False
@@ -63,6 +64,23 @@ def test_instant_x1_scan_capability_fails_closed_on_old_or_weakened_contract() -
             validate_capability_manifest(broadened),
             chain="x1",
         )
+
+    non_composition = deepcopy(MockCMISClient().capabilities())
+    non_composition["chains"]["x1"]["services"]["instant_x1_scan"][
+        "composition_only"
+    ] = False
+    with pytest.raises(CMISCapabilityContractError, match="composition-only"):
+        require_instant_x1_scan_capability(
+            validate_capability_manifest(non_composition),
+            chain="x1",
+        )
+
+    missing_composition = deepcopy(MockCMISClient().capabilities())
+    del missing_composition["chains"]["x1"]["services"]["instant_x1_scan"][
+        "composition_only"
+    ]
+    with pytest.raises(CMISCapabilityContractError, match="composition_only must be boolean"):
+        validate_capability_manifest(missing_composition)
 
     promoted_execution = deepcopy(MockCMISClient().capabilities())
     promoted_execution["chains"]["x1"]["services"]["instant_x1_scan"][
