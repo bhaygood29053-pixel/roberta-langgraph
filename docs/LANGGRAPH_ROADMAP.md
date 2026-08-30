@@ -32,7 +32,7 @@ Accepted on `main`:
 - X1 Scout decision-production readiness under the accepted CMIS boundary;
 - Solana Scout read-only readiness for its accepted surface;
 - X1 Scout adoption of CMIS `concentration_change_intelligence/v1`;
-- X1 Scout adoption of the current CMIS `1.12.0` contract boundary, including CMIS `1.10.0` all-available history, CMIS `1.11.0` exact-mint X1 identity, and the bounded CMIS `1.12.0` verified-provider historical price-backfill semantics;
+- X1 Scout adoption of the existing CMIS service-specific behavior through `1.12.0`, including CMIS `1.10.0` all-available history, CMIS `1.11.0` exact-mint X1 identity, and the bounded CMIS `1.12.0` verified-provider historical price-backfill semantics; upstream CMIS now advertises `1.13.0`, with `instant_x1_scan/v1` awaiting explicit Roberta/X1 Scout adoption;
 - Learning System Phases 1-10;
 - fail-closed `verified_learned_knowledge` classification with no general operational-trust promotion wrapper;
 - source-specific Blockchain Reasoning Pyramid architecture and source-mastery ledger;
@@ -166,11 +166,13 @@ XenBlocks PoW documentation PR #141 remains open/unaccepted. Its current review 
 
 ## CMIS synchronization
 
-Current accepted CMIS capability contract is `1.12.0`.
+Current upstream CMIS capability contract is `1.13.0`. Roberta's already accepted service-specific behaviors through `1.12.0` remain valid; the new `1.13.0` `instant_x1_scan/v1` promotion is not yet a Roberta dispatch capability.
 
 The existing X1 `historical_compare` service is accepted for `window`, `all_available`, and `all_available_pair` use through X1 Scout. All-available modes require the service-specific CMIS `>=1.10.0` guard and exact limitation semantics. Pair requests preserve the second user/trusted-context asset explicitly and issue one CMIS pair-history call; Roberta does not recompute two independent histories. For CMIS `>=1.12.0`, Scout reliance additionally requires the accepted price-only provider-backfill limitations: provider source independence, archive completeness, continuous coverage, historical USD-stable peg behavior, and complete asset lifetime remain unverified. Returned lifetime/continuous-coverage limits remain authoritative.
 
 The core Phase 11 `intelligence_foundation` remains internal/non-promoted. The separately accepted X1 wrapper is exactly `concentration_change_intelligence/v1`, read-only, with `execution_authorized=false`.
+
+CMIS `1.13.0` also promotes the X1-only `instant_x1_scan/v1` composition service with `read_only=true`, `public_service_promoted=true`, `scout_reliance_promoted=true`, and `execution_authorized=false`. This upstream promotion does not bypass the chain-specialist boundary: Roberta must add an explicit X1 Scout operation, validate the live `1.13.0` capability record and exact service contract, preserve CMIS evidence/uncertainty, and fail closed on unsupported or weakened capability state before the service is considered adopted.
 
 Classification, direct wallet-relationship evidence, and concentration-threshold alert evidence remain internal/read-only/non-promoted. There is no accepted next public intelligence/alert promotion by implication.
 
@@ -188,7 +190,15 @@ architecture and security review.
 
 ## Near-term roadmap
 
-### 1. Operate and harden the accepted Learning Plane
+### 1. Adopt CMIS 1.13 Instant X1 Scan through X1 Scout
+
+- add an explicit X1 Scout operation for `instant_x1_scan` rather than calling CMIS directly from Roberta;
+- require live CMIS `>=1.13.0` plus exact `instant_x1_scan/v1` promotion metadata before dispatch;
+- preserve CMIS section-level evidence, unavailable fields, Proof Score/risk separation, and `execution_authorized=false` without recomputation;
+- add deterministic client/Scout/Roberta integration tests for supported, partial, unavailable, malformed-capability, and wrong-chain cases;
+- do not infer holder truth, current concentration, provider independence, or execution readiness from the scan wrapper.
+
+### 2. Operate and harden the accepted Learning Plane
 
 - exercise `roberta-train` against approved real source workflows;
 - preserve deterministic provenance/integrity hard stops;
@@ -196,7 +206,7 @@ architecture and security review.
 - add bounded background scheduling/load-throttling only under a separate accepted contract;
 - define delayed/recurrent retention scheduling without weakening the Phase 10 authority boundary.
 
-### 2. Keep MB4E mastery closed and move to new Learning Plane work
+### 3. Keep MB4E mastery closed and move to new Learning Plane work
 
 - MB4E authoritative runtime mastery is complete: 14/14 required stages plus the final capstone;
 - preserve the distinction between runtime-generated mastery evidence and repository-accepted prebuilt banks, which remain through Stage 8 / Market Structure;
@@ -204,16 +214,16 @@ architecture and security review.
 - use new approved sources or explicit operational-hardening scenarios for further Learning Plane validation;
 - prioritize telemetry, scheduling/load-throttling, retention scheduling, and operator diagnostics without weakening provenance, verification, or authority boundaries.
 
-### 3. Clean stale historical branches without treating them as current truth
+### 4. Clean stale historical branches without treating them as current truth
 
 - PR #136 remains an obsolete draft relative to the hardened Phase 10 implementation now on `main`; close/supersede it when repository housekeeping is performed;
 - PR #141 remains blocked until its exact-byte ingestion issue is fixed and re-reviewed.
 
-### 4. Future X1Labs Intelligence Scout
+### 5. Future X1Labs Intelligence Scout
 
 PR #190 remains open documentation/planning only. Its specialist/remote-agent design must be reconciled against the now-accepted Learning Plane before acceptance. Remote-agent output cannot become independent factual verification, cannot bypass X1 Scout -> CMIS for freshness-sensitive claims, and cannot obtain Learning System/HXMP, wallet, or execution authority by implication.
 
-### 5. Controlled Execution
+### 6. Controlled Execution
 
 Still locked/not started. Any future execution work requires a new explicit architecture, contract, safety, approval, and readiness gate. It is not unlocked by completion of the Learning System.
 
