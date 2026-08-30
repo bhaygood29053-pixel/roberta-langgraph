@@ -42,8 +42,6 @@ Accepted on `main`:
 - read-only Learning Command Center telemetry for source mastery and autonomous-training jobs.
 - autonomous remediation hardening through PRs #241-#243: complete Boss synthesis routing, candidate-only retention memory, and bounded candidate-memory retention;
 - autonomous target-generation hardening through PRs #244-#245: bounded zero-valid-target retries and fail-closed normalization of malformed optional defensive metadata.
-- authenticated read-only ChatGPT Gateway v1 from PR #262: dedicated `/v1/gateway/ask` and `/v1/gateway/capabilities` transport seams, mandatory configured Bearer authentication for gateway use, caller tool/routing controls rejected, no direct CMIS/provider access, and `execution_authorized=false`.
-- ChatGPT Gateway Phase 2 from PR #266: loopback Streamable HTTP MCP edge at `127.0.0.1:8767/mcp`, exactly one read-only `ask_roberta(message)` tool, exact loopback Gateway v1 upstream validation, mandatory `ROBERTA_API_KEY`, fail-closed Gateway contract verification, and permanent CI enforcement preventing MCP imports from bypassing the Roberta -> Scout -> CMIS authority path.
 
 `main` includes the hardened Phase 10 verified-retention implementation and the separate knowledge-classification boundary. The old draft PR #136 remains open historical work and is no longer the implementation source of truth.
 
@@ -171,36 +169,17 @@ The core Phase 11 `intelligence_foundation` remains internal/non-promoted. The s
 
 Classification, direct wallet-relationship evidence, and concentration-threshold alert evidence remain internal/read-only/non-promoted. There is no accepted next public intelligence/alert promotion by implication.
 
-## Gateway / MCP local checkpoint
+## Retired transport work
 
-Gateway v1 is accepted on `main` via PR #262. Gateway Phase 2 is accepted on
-`main` via PR #266.
+The ChatGPT Gateway v1 and MCP transport edge introduced by PRs #262 and #266
+were removed by project decision on 2026-08-30. They are not part of the
+current Roberta architecture or deployment plan. Issue #269 is closed as not
+planned.
 
-The accepted local path is:
-
-```text
-Local MCP client
-  -> 127.0.0.1:8767/mcp
-    -> ask_roberta(message)
-      -> 127.0.0.1:8766/v1/gateway/ask
-        -> Roberta -> Chain Scout -> CMIS -> Provider
-```
-
-The MCP edge exposes exactly one read-only tool and is prevented by code and CI
-from importing private-core, Scout, CMIS, or provider implementation as a trust
-shortcut. Operator-local validation on 2026-08-30 proved discovery of exactly
-`ask_roberta` and a live MCP -> Gateway v1 -> real Roberta round trip with
-`mode=read_only` and `execution_authorized=false`.
-
-The planned live ChatGPT / Secure MCP Tunnel deployment has been retired by
-project decision. Issue #269 is closed as not planned. No Secure MCP Tunnel,
-external ChatGPT connector, public MCP bind, or generic reverse proxy is part
-of the current roadmap.
-
-Any future external transport proposal requires a new explicit design and
-security review and must preserve the public/private source boundary, forbid
-direct transport -> CMIS/provider access, prevent caller-selected tool routing,
-and keep execution authority disabled unless separately authorized.
+The pre-existing loopback Roberta HTTP bridge at `/v1/roberta` remains for
+local integrations such as MoltGrid/Signal; it is not an external ChatGPT
+gateway. Any future external gateway or MCP transport requires a new explicit
+architecture and security review.
 
 ## Near-term roadmap
 
