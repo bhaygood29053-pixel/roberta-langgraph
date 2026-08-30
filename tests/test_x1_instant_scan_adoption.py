@@ -446,6 +446,68 @@ def test_x1_scout_rejects_incoherent_holder_count_verification(
     assert "instant_x1_scan_presentation" not in report
 
 
+@pytest.mark.parametrize(
+    "market_holders,market_verified",
+    [
+        (12, False),
+        (12, "true"),
+        (12, True),
+    ],
+)
+def test_x1_scout_rejects_incoherent_market_holder_projection(
+    market_holders: object,
+    market_verified: object,
+) -> None:
+    class IncoherentMarketHoldersCMIS(MockCMISClient):
+        def instant_x1_scan(self, *, chain: str, asset: str):
+            result = super().instant_x1_scan(chain=chain, asset=asset)
+            market = result["data"]["sections"]["market"]
+            market["holders"] = market_holders
+            market["holders_verified"] = market_verified
+            return result
+
+    result = build_x1_scout_graph(IncoherentMarketHoldersCMIS()).invoke(
+        {
+            "request": {
+                "asset": "AGI",
+                "objective": "scan AGI",
+            },
+            "status": "running",
+        }
+    )
+
+    report = result["report"]
+    assert report["status"] == "error"
+    assert report["cmis_status"] == "error"
+    assert report["findings"]["data"] == {}
+    assert report["findings"]["risk"] is None
+    assert report["errors"][0]["code"] == "invalid_cmis_instant_x1_scan_response"
+    assert "instant_x1_scan_presentation" not in report
+
+
+def test_x1_scout_rejects_partial_market_holder_pair() -> None:
+    class PartialMarketHolderPairCMIS(MockCMISClient):
+        def instant_x1_scan(self, *, chain: str, asset: str):
+            result = super().instant_x1_scan(chain=chain, asset=asset)
+            del result["data"]["sections"]["market"]["holders_verified"]
+            return result
+
+    result = build_x1_scout_graph(PartialMarketHolderPairCMIS()).invoke(
+        {
+            "request": {
+                "asset": "AGI",
+                "objective": "scan AGI",
+            },
+            "status": "running",
+        }
+    )
+
+    report = result["report"]
+    assert report["status"] == "error"
+    assert report["cmis_status"] == "error"
+    assert report["errors"][0]["code"] == "invalid_cmis_instant_x1_scan_response"
+
+
 def test_x1_scout_accepts_verified_nonnegative_holder_count() -> None:
     class VerifiedHoldersCMIS(MockCMISClient):
         def instant_x1_scan(self, *, chain: str, asset: str):
