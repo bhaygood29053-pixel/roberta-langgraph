@@ -454,9 +454,11 @@ class MockCMISClient:
                         "recommendation": "TEST_ONLY",
                         "flags": ["NOT_LIVE_DATA"],
                         "reasons": ["Deterministic mock risk only."],
+                        "confidence": {},
                         "score": None,
                         "score_verified": False,
                         "score_reason": "not_calibrated",
+                        "policy": {},
                         "execution_authorized": False,
                     },
                     "evidence": {
@@ -485,9 +487,11 @@ class MockCMISClient:
                     "recommendation": "TEST_ONLY",
                     "flags": ["NOT_LIVE_DATA"],
                     "reasons": ["Deterministic mock risk only."],
+                    "confidence": {},
                     "score": None,
                     "score_verified": False,
                     "score_reason": "not_calibrated",
+                    "policy": {},
                 }
             ),
         )
