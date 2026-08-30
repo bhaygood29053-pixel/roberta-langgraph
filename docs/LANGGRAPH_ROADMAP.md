@@ -40,7 +40,8 @@ Accepted on `main`:
 - accepted prebuilt MB4E banks through Stage 8 / Market Structure;
 - operator-local MB4E source mastery complete: the authoritative source-plan-bound ledger records all 14 required stages passed plus the required final capstone;
 - autonomous source-grounded Learning Plane controller from PR #228;
-- read-only Learning Command Center telemetry for source mastery and autonomous-training jobs.
+- read-only Learning Command Center telemetry for source mastery and autonomous-training jobs;
+- authoritative autonomous-training telemetry/diagnostics from private `roberta-core` PR #9, with ledger-backed mastery/completion reconciliation, validated frozen-plan identity checks, controller/event diagnostics, and explicit `execution_authorized=false`.
 - autonomous remediation hardening through PRs #241-#243: complete Boss synthesis routing, candidate-only retention memory, and bounded candidate-memory retention;
 - autonomous target-generation hardening through PRs #244-#245: bounded zero-valid-target retries and fail-closed normalization of malformed optional defensive metadata.
 
@@ -96,11 +97,19 @@ The controller can:
 - preserve failed attempts as immutable evidence without erasing the completed source-stage prefix;
 - run a separate 60-question final source capstone;
 - resume from durable state after interruption with advisory locking and source-registry transaction safety;
-- expose read-only job/status telemetry to the Learning Command Center.
+- expose authoritative read-only job/status telemetry to the Learning Command Center, reconciling durable state with source-mastery ledger evidence and surfacing deterministic conflicts instead of trusting stale job JSON.
 
 The accepted controller is autonomous source mastery, **not** unrestricted self-modification. It cannot change Roberta prompts, tools, policies, Scouts, CMIS contracts, provider authority, human-approval semantics, wallet permissions, or execution permissions as a consequence of learning.
 
 A broader background scheduler with explicit concurrency/model/token/question/source/retention budgets and load-aware throttling remains a separate operational hardening milestone. The current accepted controller is durable and unattended after source selection, but that does not imply an unrestricted always-on self-modification daemon.
+
+### Authoritative autonomous-training telemetry
+
+Private `roberta-core` PR #9 is accepted as protected-runtime behavior, squash-merged as `08f693ae820b073435fd3b2388bc8f0f13cb3ab0`.
+
+The telemetry contract is `roberta-autonomous-training-telemetry/v1`. It is read-only and non-authorizing. Source mastery/completion claims are reconciled against the authoritative source-mastery ledger; durable job state remains operational state. The reader validates the frozen source-mastery plan for package-bound source identity, reports controller/event/remediation/checkpoint/resume information, and fails closed on true identity conflicts.
+
+Exact-head operator validation passed with 20 focused tests, 20 full private functional tests, 1083 retained public/private split-runtime tests (5 deselected), and a real MB4E read-only proof showing mastered 14/14 plus capstone, clean diagnostics, `telemetry.authoritative=true`, `execution_authorized=false`, and unchanged state/ledger hashes.
 
 ## Blockchain Reasoning Pyramid
 
@@ -192,7 +201,7 @@ architecture and security review.
 
 - exercise `roberta-train` against approved real source workflows;
 - preserve deterministic provenance/integrity hard stops;
-- expand autonomous-training telemetry and operator diagnostics where evidence shows a need;
+- operate the accepted authoritative telemetry/diagnostics surface and extend it only when evidence shows a concrete gap;
 - add bounded background scheduling/load-throttling only under a separate accepted contract;
 - define delayed/recurrent retention scheduling without weakening the Phase 10 authority boundary.
 
@@ -202,7 +211,7 @@ architecture and security review.
 - preserve the distinction between runtime-generated mastery evidence and repository-accepted prebuilt banks, which remain through Stage 8 / Market Structure;
 - do not replay MB4E merely to exercise the controller; verified mastery is terminal/idempotent after private `roberta-core` PR #8;
 - use new approved sources or explicit operational-hardening scenarios for further Learning Plane validation;
-- prioritize telemetry, scheduling/load-throttling, retention scheduling, and operator diagnostics without weakening provenance, verification, or authority boundaries.
+- prioritize bounded scheduling/load-throttling, retention scheduling, and new-source restart/recovery validation; use the accepted telemetry surface for operator diagnosis without weakening provenance, verification, or authority boundaries.
 
 ### 3. Clean stale historical branches without treating them as current truth
 
