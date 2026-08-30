@@ -93,6 +93,7 @@ class CMISServiceCapability(TypedDict):
     normalized_identity_root: NotRequired[str]
     metaplex_xdex_reconciliation: NotRequired[bool]
     read_only: NotRequired[bool]
+    composition_only: NotRequired[bool]
     service_contract_version: NotRequired[str]
     public_service_promoted: NotRequired[bool]
     scout_reliance_promoted: NotRequired[bool]
@@ -429,6 +430,7 @@ def validate_capability_manifest(value: Any) -> CMISCapabilities:
                 normalized_capability["service_contract_version"] = contract
                 for field in (
                     "read_only",
+                    "composition_only",
                     "public_service_promoted",
                     "scout_reliance_promoted",
                     "execution_authorized",
@@ -645,6 +647,10 @@ def require_instant_x1_scan_capability(
     if capability.get("read_only") is not True:
         raise CMISCapabilityContractError(
             "CMIS x1/instant_x1_scan must remain read-only."
+        )
+    if capability.get("composition_only") is not True:
+        raise CMISCapabilityContractError(
+            "CMIS x1/instant_x1_scan must remain composition-only."
         )
     if capability.get("public_service_promoted") is not True:
         raise CMISCapabilityContractError(
