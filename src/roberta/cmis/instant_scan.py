@@ -103,6 +103,31 @@ def _validate_score(value: object, *, verified: object, field: str) -> None:
         )
 
 
+def _validate_holder_count_pair(
+    value: Mapping[str, Any],
+    *,
+    field: str,
+) -> tuple[object, bool]:
+    holders_verified = value.get("holders_verified")
+    if not isinstance(holders_verified, bool):
+        raise CMISInstantX1ScanContractError(
+            f"CMIS Instant X1 Scan {field}.holders_verified must be boolean."
+        )
+    holders = value.get("holders")
+    if holders_verified:
+        if type(holders) is not int or holders < 0:
+            raise CMISInstantX1ScanContractError(
+                f"CMIS Instant X1 Scan {field}.holders must be a "
+                "non-negative integer when verified."
+            )
+    elif holders is not None:
+        raise CMISInstantX1ScanContractError(
+            f"CMIS Instant X1 Scan {field}.holders must remain unknown when "
+            "holders_verified=false."
+        )
+    return holders, holders_verified
+
+
 def _validate_risk_projection(
     value: object,
     *,
@@ -315,26 +340,33 @@ def validate_instant_x1_scan_response(
         sections["holder_concentration"],
         field="data.sections.holder_concentration",
     )
-    holders_verified = holder.get("holders_verified")
-    if not isinstance(holders_verified, bool):
-        raise CMISInstantX1ScanContractError(
-            "CMIS Instant X1 Scan holders_verified must be boolean."
+    holders, holders_verified = _validate_holder_count_pair(
+        holder,
+        field="data.sections.holder_concentration",
+    )
+
+    market = _mapping(sections["market"], field="data.sections.market")
+    market_has_holder_pair = (
+        "holders" in market or "holders_verified" in market
+    )
+    if market_has_holder_pair:
+        if "holders" not in market or "holders_verified" not in market:
+            raise CMISInstantX1ScanContractError(
+                "CMIS Instant X1 Scan market holder projection must provide "
+                "holders and holders_verified together."
+            )
+        market_holders, market_holders_verified = _validate_holder_count_pair(
+            market,
+            field="data.sections.market",
         )
-    holders = holder.get("holders")
-    if holders_verified:
         if (
-            type(holders) is not int
-            or holders < 0
+            market_holders != holders
+            or market_holders_verified is not holders_verified
         ):
             raise CMISInstantX1ScanContractError(
-                "CMIS Instant X1 Scan verified holders must be a "
-                "non-negative integer."
+                "CMIS Instant X1 Scan market holder projection must agree "
+                "with holder_concentration."
             )
-    elif holders is not None:
-        raise CMISInstantX1ScanContractError(
-            "CMIS Instant X1 Scan unverified holders must remain unknown; "
-            "reported holder-looking values belong in holders_reported/holders_observed."
-        )
 
     current_concentration = _mapping(
         holder.get("top_account_concentration"),
