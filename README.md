@@ -24,7 +24,7 @@ Roberta does not call market providers as a trust shortcut and does not reproduc
 
 ## Current accepted status — reconciled 2026-08-30
 
-Core Roberta platform work is accepted through Phase 10 plus the post-Phase-10 evidence-aware user experience. X1 decision-production readiness, Solana read-only readiness for the accepted Scout surface, and adoption of CMIS `concentration_change_intelligence/v1` through X1 Scout are accepted.
+Core Roberta platform work is accepted through Phase 10 plus the post-Phase-10 evidence-aware user experience. X1 decision-production readiness, Solana read-only readiness for the accepted Scout surface, and adoption of CMIS `concentration_change_intelligence/v1` through X1 Scout are accepted. CMIS upstream now advertises capability contract `1.13.0`; its promoted X1-only `instant_x1_scan/v1` service is not yet a Roberta/X1 Scout dispatch path and remains the next explicit integration gate.
 
 **Roberta Phase 11 Controlled Execution remains locked / not started.**
 
@@ -63,7 +63,7 @@ See [`docs/LEARNING_PLANE_ARCHITECTURE.md`](./docs/LEARNING_PLANE_ARCHITECTURE.m
 
 ### X1 identity and all-available history
 
-Roberta/X1 Scout accepts the current CMIS `1.12.0` contract boundary. CMIS `1.11.0+` exact-mint normalization under `x1_asset_identity/v1` keeps the exact mint as the fungible identity root while preserving Metaplex and XDEX descriptors as separately sourced observations.
+Roberta/X1 Scout preserves the accepted service-specific CMIS behavior through `1.12.0`, while the current upstream CMIS capability contract is `1.13.0`. CMIS `1.11.0+` exact-mint normalization under `x1_asset_identity/v1` keeps the exact mint as the fungible identity root while preserving Metaplex and XDEX descriptors as separately sourced observations. CMIS `1.13.0` additionally promotes `instant_x1_scan/v1`, but Roberta does not treat that upstream promotion as adopted until X1 Scout adds and verifies the corresponding routing/capability gate.
 
 Roberta/X1 Scout also adopts the CMIS `1.10.0` `all_available` / `all_available_pair` historical modes. Natural full-history requests remain on the canonical path `Roberta -> X1 Scout -> CMIS`.
 
@@ -203,4 +203,4 @@ roberta-pyramid-build-mb4e-level8
 
 No accepted Roberta, Learning Plane, Pyramid, Scout, or CMIS capability authorizes transaction signing, broadcasting, custody, live trading/swaps, bridge value transfer, autonomous value movement, or broad delegated wallet authority.
 
-**Roberta coordinates and learns under evidence boundaries. CMIS verifies changing blockchain facts. Controlled Execution remains locked.**
+**Roberta coordinates and learns under evidence boundaries. CMIS verifies changing blockchain facts. Upstream CMIS capability does not become Roberta capability until Scout adoption is explicit. Controlled Execution remains locked.**
