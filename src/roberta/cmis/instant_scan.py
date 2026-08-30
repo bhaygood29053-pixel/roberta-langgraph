@@ -48,6 +48,16 @@ def _mapping(value: object, *, field: str) -> Mapping[str, Any]:
     return value
 
 
+def _validate_rationale_list(value: object, *, field: str) -> list[str]:
+    if not isinstance(value, list) or any(
+        not isinstance(item, str) or not item.strip() for item in value
+    ):
+        raise CMISInstantX1ScanContractError(
+            f"CMIS Instant X1 Scan {field} must be a list of non-empty strings."
+        )
+    return value
+
+
 def validate_instant_x1_scan_response(
     envelope: CMISEnvelope,
 ) -> CMISEnvelope:
@@ -128,18 +138,60 @@ def validate_instant_x1_scan_response(
         )
 
     risk = _mapping(sections["risk"], field="data.sections.risk")
-    for field in ("flags", "reasons"):
-        values = risk.get(field)
-        if not isinstance(values, list) or any(
-            not isinstance(item, str) or not item.strip() for item in values
-        ):
-            raise CMISInstantX1ScanContractError(
-                f"CMIS Instant X1 Scan risk.{field} must be a list of non-empty strings."
-            )
+    nested_flags = _validate_rationale_list(
+        risk.get("flags"),
+        field="data.sections.risk.flags",
+    )
+    nested_reasons = _validate_rationale_list(
+        risk.get("reasons"),
+        field="data.sections.risk.reasons",
+    )
     if risk.get("execution_authorized") is not False:
         raise CMISInstantX1ScanContractError(
             "CMIS Instant X1 Scan risk section must preserve execution_authorized=false."
         )
+
+    envelope_risk = envelope.get("risk")
+    if envelope_risk is not None:
+        top_risk = _mapping(envelope_risk, field="risk")
+        top_flags = _validate_rationale_list(
+            top_risk.get("flags"),
+            field="risk.flags",
+        )
+        top_reasons = _validate_rationale_list(
+            top_risk.get("reasons"),
+            field="risk.reasons",
+        )
+        if (
+            "execution_authorized" in top_risk
+            and top_risk.get("execution_authorized") is not False
+        ):
+            raise CMISInstantX1ScanContractError(
+                "CMIS Instant X1 Scan envelope risk must not authorize execution."
+            )
+
+        shared_fields = (
+            ("recommendation", risk.get("recommendation"), top_risk.get("recommendation")),
+            ("flags", nested_flags, top_flags),
+            ("reasons", nested_reasons, top_reasons),
+            ("score", risk.get("score"), top_risk.get("score")),
+            (
+                "score_verified",
+                risk.get("score_verified"),
+                top_risk.get("score_verified"),
+            ),
+            ("score_reason", risk.get("score_reason"), top_risk.get("score_reason")),
+        )
+        mismatched = [
+            name for name, nested_value, top_value in shared_fields
+            if nested_value != top_value
+        ]
+        if mismatched:
+            raise CMISInstantX1ScanContractError(
+                "CMIS Instant X1 Scan envelope risk does not match the nested "
+                "risk projection for fields: "
+                + ", ".join(mismatched)
+            )
 
     holder = _mapping(
         sections["holder_concentration"],
