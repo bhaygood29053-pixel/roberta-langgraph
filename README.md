@@ -63,9 +63,13 @@ This is autonomous continual source learning, not unrestricted self-modification
 
 See [`docs/LEARNING_PLANE_ARCHITECTURE.md`](./docs/LEARNING_PLANE_ARCHITECTURE.md) and [`docs/autonomous_training.md`](./docs/autonomous_training.md).
 
+### Instant X1 Scan
+
+CMIS `1.13.0` adds bounded X1 `instant_x1_scan/v1`. The service is read-only and composition-only: it combines already accepted identity, market, tokenomics, CMIS-stored verified history, deterministic risk, and runtime evidence-quality metadata. Missing/unverified holder or current-concentration facts remain explicit unknown/partial values. Roberta consumes this capability only through the accepted Scout/CMIS boundary and does not treat composition as new underlying fact authority.
+
 ### X1 identity and all-available history
 
-Roberta/X1 Scout accepts the current CMIS `1.12.0` contract boundary. CMIS `1.11.0+` exact-mint normalization under `x1_asset_identity/v1` keeps the exact mint as the fungible identity root while preserving Metaplex and XDEX descriptors as separately sourced observations.
+Roberta/X1 Scout accepts the current CMIS `1.13.0` contract boundary. CMIS `1.11.0+` exact-mint normalization under `x1_asset_identity/v1` keeps the exact mint as the fungible identity root while preserving Metaplex and XDEX descriptors as separately sourced observations.
 
 Roberta/X1 Scout also adopts the CMIS `1.10.0` `all_available` / `all_available_pair` historical modes. Natural full-history requests remain on the canonical path `Roberta -> X1 Scout -> CMIS`.
 
