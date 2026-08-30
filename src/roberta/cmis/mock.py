@@ -85,6 +85,7 @@ def _mock_capability_manifest() -> CMISCapabilities:
             limitations=list(INSTANT_X1_SCAN_REQUIRED_LIMITATIONS),
         ),
         "read_only": True,
+        "composition_only": True,
         "service_contract_version": INSTANT_X1_SCAN_CONTRACT_VERSION,
         "public_service_promoted": True,
         "scout_reliance_promoted": True,
