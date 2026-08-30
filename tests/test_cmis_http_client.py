@@ -343,6 +343,31 @@ def test_http_client_posts_exact_instant_x1_scan_request_under_cmis_1_13() -> No
     ]
 
 
+@pytest.mark.parametrize("bad_status", [[], {"state": "ok"}])
+def test_http_client_rejects_unhashable_instant_scan_status(
+    bad_status: object,
+) -> None:
+    expected = _envelope("instant_x1_scan")
+    expected["status"] = bad_status
+    expected["data"] = _instant_x1_scan_data()
+    expected["risk"] = _instant_x1_scan_risk()
+
+    with _Server(
+        expected,
+        capabilities=_cmis_1_13_instant_scan_capabilities(),
+    ) as running:
+        result = CMISHTTPClient(
+            base_url=running.base_url,
+            timeout_seconds=2,
+        ).instant_x1_scan(chain="x1", asset="AGI")
+
+    assert result["status"] == "error"
+    assert result["data"] == {}
+    assert result["risk"] is None
+    assert result["errors"][0]["code"] == "invalid_cmis_status"
+    assert len(running.requests) == 1
+
+
 def test_http_client_rejects_malformed_instant_scan_success_payload() -> None:
     expected = _envelope("instant_x1_scan")
     expected["data"] = _instant_x1_scan_data()
