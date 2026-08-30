@@ -23,6 +23,7 @@ def build_x1_scout_tool(
         asset: str,
         objective: str = "assess market risk",
         operation: Literal[
+            "instant_x1_scan",
             "pre_trade_check",
             "concentration_change_intelligence",
         ] | None = None,
@@ -40,6 +41,11 @@ def build_x1_scout_tool(
         ranking with no single asset, use ``asset='XDEX'`` as the scope label.
         For a two-asset entire/full/lifetime-history comparison, copy the exact
         second user-supplied asset into ``compare_asset``.
+
+        Natural requests for an Instant X1 Scan or quick/instant asset scan route
+        to the accepted CMIS composition service through X1 Scout. Roberta may
+        also request operation='instant_x1_scan' explicitly without adding market
+        facts or provider shortcuts.
 
         Pre-trade analysis and promoted concentration-change intelligence are
         explicit-request-only. Roberta must copy the exact user/trusted-context
@@ -66,6 +72,18 @@ def build_x1_scout_tool(
                         "compare_asset is accepted only for entire/full/lifetime-history comparisons"
                     )
                 request["compare_asset"] = normalized_compare
+        elif operation == "instant_x1_scan":
+            if compare_asset is not None:
+                raise ValueError("compare_asset is not accepted for instant_x1_scan")
+            if action is not None or amount_usd is not None:
+                raise ValueError(
+                    "trade action/amount are not accepted for instant_x1_scan"
+                )
+            if intelligence_evidence_id is not None:
+                raise ValueError(
+                    "intelligence_evidence_id is not accepted for instant_x1_scan"
+                )
+            request["operation"] = "instant_x1_scan"
         elif operation == "pre_trade_check":
             if compare_asset is not None:
                 raise ValueError("compare_asset is not accepted for pre_trade_check")
@@ -120,9 +138,12 @@ def build_x1_scout_tool(
         func=investigate_x1,
         name="x1_scout_investigate",
         description=(
-            "Delegate an X1-chain investigation to X1 Scout. Ordinary objectives cover "
-            "current market data, tokenomics, deterministic risk, XDEX rankings, and "
-            "historical comparisons. Full/complete/comprehensive assessment or due-diligence "
+            "Delegate an X1-chain investigation to X1 Scout. Natural Instant X1 Scan or "
+            "quick/instant asset-scan requests use the accepted CMIS instant_x1_scan/v1 "
+            "composition through X1 Scout; operation='instant_x1_scan' is also available "
+            "for an explicit flagship scan request. Ordinary objectives cover current market "
+            "data, tokenomics, deterministic risk, XDEX rankings, and historical comparisons. "
+            "Full/complete/comprehensive assessment or due-diligence "
             "objectives deterministically gather market_report, rank, tokenomics, "
             "historical_compare using all available verified history, and risk_check. "
             "All-available history reports include a deterministic "
