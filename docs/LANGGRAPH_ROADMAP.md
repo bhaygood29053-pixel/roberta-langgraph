@@ -32,7 +32,7 @@ Accepted on `main`:
 - X1 Scout decision-production readiness under the accepted CMIS boundary;
 - Solana Scout read-only readiness for its accepted surface;
 - X1 Scout adoption of CMIS `concentration_change_intelligence/v1`;
-- X1 Scout adoption of the current CMIS `1.12.0` contract boundary, including CMIS `1.10.0` all-available history, CMIS `1.11.0` exact-mint X1 identity, and the bounded CMIS `1.12.0` verified-provider historical price-backfill semantics;
+- X1 Scout adoption of the current CMIS `1.13.0` contract boundary, including CMIS `1.10.0` all-available history, CMIS `1.11.0` exact-mint X1 identity, bounded CMIS `1.12.0` verified-provider historical price-backfill semantics, and bounded X1 `instant_x1_scan/v1` composition;
 - Learning System Phases 1-10;
 - fail-closed `verified_learned_knowledge` classification with no general operational-trust promotion wrapper;
 - source-specific Blockchain Reasoning Pyramid architecture and source-mastery ledger;
@@ -173,9 +173,13 @@ The autonomous source registry additionally provides an accepted mechanism for e
 
 XenBlocks PoW documentation PR #141 remains open/unaccepted. Its current review blocker is the exact-byte Phase 1 rule: the canonical ingested artifact still represents the LF-normalized derivative instead of the exact uploaded CRLF bytes. Until fixed and merged, XenBlocks must not be listed as accepted.
 
+## CMIS public/private runtime migration
+
+CMIS has completed its six-phase public-shell/private-core migration and historical Git cleanup. The public package boundary now fails closed when the required protected private core is unavailable; no public reconstruction fallback is accepted. This changes deployment/source protection, not the Roberta → Scout → CMIS → Provider authority model.
+
 ## CMIS synchronization
 
-Current accepted CMIS capability contract is `1.12.0`.
+Current accepted CMIS capability contract is `1.13.0`.
 
 The existing X1 `historical_compare` service is accepted for `window`, `all_available`, and `all_available_pair` use through X1 Scout. All-available modes require the service-specific CMIS `>=1.10.0` guard and exact limitation semantics. Pair requests preserve the second user/trusted-context asset explicitly and issue one CMIS pair-history call; Roberta does not recompute two independent histories. For CMIS `>=1.12.0`, Scout reliance additionally requires the accepted price-only provider-backfill limitations: provider source independence, archive completeness, continuous coverage, historical USD-stable peg behavior, and complete asset lifetime remain unverified. Returned lifetime/continuous-coverage limits remain authoritative.
 
