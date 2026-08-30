@@ -26,6 +26,7 @@ from roberta.recommendation_policy import (
 from roberta.x1_scout.state import X1ScoutPlan, X1ScoutPlanProposal, X1ScoutRequest
 
 AUTONOMOUS_OPERATIONS: tuple[CMISOperation, ...] = (
+    "instant_x1_scan",
     "market_report",
     "rank",
     "historical_compare",
@@ -36,6 +37,17 @@ MAX_PLAN_OPERATIONS = 3
 FULL_ASSESSMENT_MAX_PLAN_OPERATIONS = 5
 MAX_RANK_LIMIT = 50
 
+_INSTANT_SCAN_TERMS = (
+    "instant x1 scan",
+    "instant scan",
+    "quick x1 scan",
+    "quick scan",
+    "scan this asset",
+    "scan this token",
+    "scan this coin",
+    "scan the asset",
+    "scan the token",
+)
 _RISK_TERMS = (
     "risk",
     "risky",
@@ -97,10 +109,11 @@ X1_SCOUT_PLANNER_SYSTEM_PROMPT = """You are the planning component inside X1 Sco
 
 Your job is only to propose which read-only CMIS investigations are useful for
 the user's X1 objective. Return JSON only, with exactly this shape:
-{"operations": ["market_report", "rank", "historical_compare", "tokenomics", "risk_check"]}
+{"operations": ["instant_x1_scan", "market_report", "rank", "historical_compare", "tokenomics", "risk_check"]}
 
 Rules:
-- You may use only: market_report, rank, historical_compare, tokenomics, risk_check.
+- You may use only: instant_x1_scan, market_report, rank, historical_compare, tokenomics, risk_check.
+- Use instant_x1_scan only when the objective explicitly asks for an Instant X1 Scan or quick/instant asset scan.
 - Use the smallest useful plan, with no duplicates and at most three operations.
 - For a full/complete/comprehensive assessment or due-diligence objective, propose
   up to five operations because deterministic policy requires market_report,
@@ -119,6 +132,13 @@ Rules:
 
 def _normalize_objective(objective: object) -> str:
     return " ".join(str(objective or "").strip().lower().split())
+
+
+def is_instant_x1_scan_objective(objective: object) -> bool:
+    """Return whether the user explicitly requested the flagship Instant X1 Scan."""
+
+    normalized = _normalize_objective(objective)
+    return bool(normalized) and any(term in normalized for term in _INSTANT_SCAN_TERMS)
 
 
 def is_rank_objective(objective: object) -> bool:
@@ -226,6 +246,8 @@ def rank_limit_from_objective(objective: object, *, default: int = 10) -> int:
 def max_plan_operations_for_objective(objective: object) -> int:
     """Return the deterministic plan ceiling for the requested evidence scope."""
 
+    if is_instant_x1_scan_objective(objective):
+        return 1
     return (
         FULL_ASSESSMENT_MAX_PLAN_OPERATIONS
         if recommendation_intent(objective) == "full_assessment"
@@ -242,6 +264,8 @@ def required_operations(objective: object) -> list[CMISOperation]:
     """
 
     normalized = _normalize_objective(objective)
+    if is_instant_x1_scan_objective(normalized):
+        return ["instant_x1_scan"]
     intent = recommendation_intent(normalized)
     if is_rank_objective(normalized) and intent != "full_assessment":
         return ["rank"]
@@ -262,6 +286,8 @@ def required_operations(objective: object) -> list[CMISOperation]:
 def select_cmis_operation(objective: object) -> CMISOperation:
     """Return the deterministic single-operation fallback for an objective."""
 
+    if is_instant_x1_scan_objective(objective):
+        return "instant_x1_scan"
     if is_rank_objective(objective):
         return "rank"
     if is_historical_objective(objective):
@@ -379,6 +405,11 @@ def enforce_plan(
         if operation not in AUTONOMOUS_OPERATIONS:
             if operation:
                 warnings.append(f"planner_operation_rejected: {operation}")
+            continue
+        if operation == "instant_x1_scan" and not is_instant_x1_scan_objective(objective):
+            warnings.append(
+                "planner_operation_rejected_without_instant_scan_objective: instant_x1_scan"
+            )
             continue
         if rank_only_objective and operation != "rank":
             warnings.append(
