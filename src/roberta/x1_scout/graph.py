@@ -455,7 +455,7 @@ def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
     report_status: Literal["complete", "error"] = (
         "error"
         if any(
-            investigation["cmis_status"] in {"unavailable", "error"}
+            investigation["cmis_status"] in {"unavailable", "ambiguous", "error"}
             for investigation in investigations
         )
         else "complete"
