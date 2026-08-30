@@ -367,7 +367,7 @@ def test_target_generation_retries_zero_valid_chunk_from_immutable_source(source
         stage=_stage(),
     )
 
-    assert AUTONOMOUS_CURRICULUM_VERSION == "1.2.0"
+    assert AUTONOMOUS_CURRICULUM_VERSION == "1.3.0"
     assert TARGET_GENERATION_ATTEMPTS == 3
     assert model.generator_calls == 2
     assert len(targets) == MIN_TARGETS
@@ -454,7 +454,7 @@ def test_optional_forbidden_inferences_malformed_shape_is_discarded(source) -> N
         package_source_key=source.source_key,
     )
 
-    assert AUTONOMOUS_CURRICULUM_VERSION == "1.2.0"
+    assert AUTONOMOUS_CURRICULUM_VERSION == "1.3.0"
     assert target.forbidden_inferences == ()
     assert target.evidence_quote == EVIDENCE
 
