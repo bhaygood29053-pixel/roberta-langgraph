@@ -3,6 +3,8 @@
 from copy import deepcopy
 import json
 import threading
+
+import pytest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.error import URLError
 from unittest.mock import patch
