@@ -305,6 +305,77 @@ def test_x1_scout_rejects_unsupported_scan_status(
     assert "instant_x1_scan_presentation" not in report
 
 
+@pytest.mark.parametrize(
+    "score,score_verified",
+    [
+        ("high", True),
+        (float("nan"), True),
+        (float("inf"), True),
+        (None, True),
+        (1.0, "true"),
+    ],
+)
+def test_x1_scout_rejects_malformed_or_incoherent_risk_score(
+    score: object,
+    score_verified: object,
+) -> None:
+    class MalformedScoreCMIS(MockCMISClient):
+        def instant_x1_scan(self, *, chain: str, asset: str):
+            result = super().instant_x1_scan(chain=chain, asset=asset)
+            for risk in (
+                result["risk"],
+                result["data"]["sections"]["risk"],
+            ):
+                risk["score"] = score
+                risk["score_verified"] = score_verified
+            return result
+
+    result = build_x1_scout_graph(MalformedScoreCMIS()).invoke(
+        {
+            "request": {
+                "asset": "AGI",
+                "objective": "scan AGI",
+            },
+            "status": "running",
+        }
+    )
+
+    report = result["report"]
+    assert report["status"] == "error"
+    assert report["cmis_status"] == "error"
+    assert report["findings"]["data"] == {}
+    assert report["findings"]["risk"] is None
+    assert report["errors"][0]["code"] == "invalid_cmis_instant_x1_scan_response"
+
+
+def test_x1_scout_rejects_failed_scan_with_incomplete_outer_envelope() -> None:
+    class MissingObservedAtCMIS(MockCMISClient):
+        def instant_x1_scan(self, *, chain: str, asset: str):
+            result = super().instant_x1_scan(chain=chain, asset=asset)
+            result["status"] = "unavailable"
+            result["data"] = {}
+            result["risk"] = None
+            del result["observed_at"]
+            return result
+
+    result = build_x1_scout_graph(MissingObservedAtCMIS()).invoke(
+        {
+            "request": {
+                "asset": "AGI",
+                "objective": "scan AGI",
+            },
+            "status": "running",
+        }
+    )
+
+    report = result["report"]
+    assert report["status"] == "error"
+    assert report["cmis_status"] == "error"
+    assert report["findings"]["data"] == {}
+    assert report["findings"]["risk"] is None
+    assert report["errors"][0]["code"] == "invalid_cmis_instant_x1_scan_response"
+
+
 def test_x1_scout_rejects_promoted_current_concentration_in_v1() -> None:
     class PromotedConcentrationCMIS(MockCMISClient):
         def instant_x1_scan(self, *, chain: str, asset: str):
