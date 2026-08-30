@@ -1,6 +1,6 @@
 # ROBERTA — Verified On-Chain Intelligence Roadmap
 
-Last reconciled: 2026-08-29 (America/New_York)
+Last reconciled: 2026-08-30 (America/New_York)
 
 Status source: accepted code and contracts on `main`. Open PRs are not current truth unless explicitly identified as pending.
 
@@ -171,40 +171,36 @@ The core Phase 11 `intelligence_foundation` remains internal/non-promoted. The s
 
 Classification, direct wallet-relationship evidence, and concentration-threshold alert evidence remain internal/read-only/non-promoted. There is no accepted next public intelligence/alert promotion by implication.
 
-## ChatGPT Gateway deployment checkpoint
+## Gateway / MCP local checkpoint
 
 Gateway v1 is accepted on `main` via PR #262. Gateway Phase 2 is accepted on
 `main` via PR #266.
 
-Accepted repository-side path:
+The accepted local path is:
 
 ```text
-ChatGPT
-  -> secure remote MCP transport / tunnel
-    -> 127.0.0.1:8767/mcp
-      -> ask_roberta(message)
-        -> 127.0.0.1:8766/v1/gateway/ask
-          -> Roberta -> Chain Scout -> CMIS -> Provider
+Local MCP client
+  -> 127.0.0.1:8767/mcp
+    -> ask_roberta(message)
+      -> 127.0.0.1:8766/v1/gateway/ask
+        -> Roberta -> Chain Scout -> CMIS -> Provider
 ```
 
 The MCP edge exposes exactly one read-only tool and is prevented by code and CI
 from importing private-core, Scout, CMIS, or provider implementation as a trust
-shortcut.
+shortcut. Operator-local validation on 2026-08-30 proved discovery of exactly
+`ask_roberta` and a live MCP -> Gateway v1 -> real Roberta round trip with
+`mode=read_only` and `execution_authorized=false`.
 
-Remaining work is deployment/account configuration rather than another Roberta
-runtime feature:
+The planned live ChatGPT / Secure MCP Tunnel deployment has been retired by
+project decision. Issue #269 is closed as not planned. No Secure MCP Tunnel,
+external ChatGPT connector, public MCP bind, or generic reverse proxy is part
+of the current roadmap.
 
-1. configure a long random `ROBERTA_API_KEY` outside Git;
-2. run `roberta-serve` on `127.0.0.1:8766`;
-3. install the `mcp` extra and run `roberta-mcp` on `127.0.0.1:8767/mcp`;
-4. verify the local MCP tool listing contains exactly `ask_roberta` with a read-only annotation;
-5. establish an approved secure remote MCP transport, preferring OpenAI Secure MCP Tunnel for a local/private deployment when the account/workspace supports it;
-6. connect an eligible ChatGPT integration surface to the remote MCP endpoint;
-7. prove one end-to-end live ChatGPT -> MCP -> Gateway v1 -> real Roberta request and record the result.
-
-This deployment work must not weaken the public/private source boundary, add
-direct ChatGPT -> CMIS access, expose caller-selected tool routing, publish the
-loopback MCP port directly to the Internet, or create execution authority.
+Any future external transport proposal requires a new explicit design and
+security review and must preserve the public/private source boundary, forbid
+direct transport -> CMIS/provider access, prevent caller-selected tool routing,
+and keep execution authority disabled unless separately authorized.
 
 ## Near-term roadmap
 
