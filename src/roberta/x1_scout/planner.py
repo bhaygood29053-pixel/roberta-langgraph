@@ -243,7 +243,7 @@ def required_operations(objective: object) -> list[CMISOperation]:
 
     normalized = _normalize_objective(objective)
     intent = recommendation_intent(normalized)
-    if is_rank_objective(normalized) and intent != "full_assessment":
+    if is_rank_objective(normalized) and intent not in {"full_assessment", "instant_scan"}:
         return ["rank"]
 
     required: list[CMISOperation] = []
@@ -262,6 +262,8 @@ def required_operations(objective: object) -> list[CMISOperation]:
 def select_cmis_operation(objective: object) -> CMISOperation:
     """Return the deterministic single-operation fallback for an objective."""
 
+    if recommendation_intent(objective) == "instant_scan":
+        return "market_report"
     if is_rank_objective(objective):
         return "rank"
     if is_historical_objective(objective):
@@ -363,9 +365,10 @@ def enforce_plan(
         return _validate_explicit_request(request)
 
     objective = request["objective"]
+    intent = recommendation_intent(objective)
     rank_only_objective = (
         is_rank_objective(objective)
-        and recommendation_intent(objective) != "full_assessment"
+        and intent not in {"full_assessment", "instant_scan"}
     )
     max_plan_operations = max_plan_operations_for_objective(objective)
     warnings: list[str] = []
