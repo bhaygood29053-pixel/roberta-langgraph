@@ -201,34 +201,67 @@ architecture and security review.
 
 ## Near-term roadmap
 
-### 1. Operate and harden the accepted Learning Plane
+### Strategic priority — X1 productization
 
-- exercise `roberta-train` against approved real source workflows;
+Roberta's primary near-term product objective is to become the leading verified X1 intelligence analyst. X1 productization is the main cross-project priority. Roberta should turn accepted X1 Scout + CMIS capabilities into a coherent, evidence-aware user experience without bypassing the canonical authority path:
+
+```text
+User
+  -> Roberta
+    -> X1 Scout
+      -> CMIS
+        -> X1 Provider / verified source
+```
+
+Solana remains an accepted read-only specialist surface for maintenance, regression coverage, and portability. Learning Plane hardening remains important supporting infrastructure, but it is not the primary product objective while X1 productization is underway.
+
+### 1. Productize the X1 intelligence experience
+
+- make X1 the flagship Roberta intelligence experience;
+- use X1 Scout as the chain-specific interpretation layer for all freshness-sensitive X1 investigations;
+- consume bounded CMIS `instant_x1_scan/v1` through X1 Scout and present its verified identity, market, tokenomics, local-history, deterministic-risk, and evidence-quality fields clearly;
+- preserve CMIS statuses, timestamps, Evidence Receipts, Proof Scores, limitations, warnings, and explicit unknowns rather than smoothing partial evidence into confident prose;
+- build the user-facing X1 workflows around **Instant X1 Scan**, **Compare**, **Discovery / first-observation history**, **Early Warning**, and **X1 ecosystem/network brief** outputs as their underlying CMIS contracts become accepted;
+- keep Proof Score separate from risk and never turn a risk `PASS` into execution permission;
+- prefer one coherent X1 intelligence response over disconnected specialist dumps.
+
+### 2. Harden Roberta ↔ X1 Scout ↔ CMIS product integration
+
+- keep the live capability manifest and accepted service-specific minimum contracts authoritative for Scout dispatch;
+- adopt new X1 CMIS services only after their explicit public-service / Scout-reliance gates are accepted;
+- do not call X1 providers directly from Roberta as a trust shortcut;
+- preserve exact-mint identity and all-available-history limitations from CMIS without recomputation;
+- support first-class deterministic X1 comparisons using CMIS-returned history/evidence rather than constructing a second fact layer in Roberta;
+- prepare Roberta's presentation/orchestration layer for future Discovery Ledger and Early Warning contracts without pre-authorizing or simulating those capabilities;
+- continue evidence-aware UX work so unavailable, partial, ambiguous, stale, or unverified data remains visible to the user.
+
+### 3. Keep the Learning Plane operationally strong as a supporting track
+
+- MB4E authoritative runtime mastery is complete: 14/14 required stages plus the final capstone;
+- do not replay MB4E merely to exercise the controller; verified mastery is terminal/idempotent under the accepted mastered-run safety contract;
+- exercise `roberta-train` against new approved sources when that improves X1 intelligence quality or validates Learning Plane reliability;
 - preserve deterministic provenance/integrity hard stops;
 - operate the accepted authoritative telemetry/diagnostics surface and extend it only when evidence shows a concrete gap;
 - add bounded background scheduling/load-throttling only under a separate accepted contract;
-- define delayed/recurrent retention scheduling without weakening the Phase 10 authority boundary.
+- define delayed/recurrent retention scheduling without weakening the Phase 10 authority boundary;
+- keep runtime-generated source mastery, retained lessons, and learned concepts subordinate to fresh Scout -> CMIS -> Provider evidence for freshness-sensitive X1 facts.
 
-### 2. Keep MB4E mastery closed and move to new Learning Plane work
+### 4. Maintain Solana as the secondary portability/read-only track
 
-- MB4E authoritative runtime mastery is complete: 14/14 required stages plus the final capstone;
-- preserve the distinction between runtime-generated mastery evidence and repository-accepted prebuilt banks, which remain through Stage 8 / Market Structure;
-- do not replay MB4E merely to exercise the controller; verified mastery is terminal/idempotent after private `roberta-core` PR #8;
-- use new approved sources or explicit operational-hardening scenarios for further Learning Plane validation;
-- prioritize bounded scheduling/load-throttling, retention scheduling, and new-source restart/recovery validation; use the accepted telemetry surface for operator diagnosis without weakening provenance, verification, or authority boundaries.
+- preserve accepted Solana Scout read-only capability and regression coverage;
+- keep Solana chain/provider semantics isolated from X1;
+- use Solana work when it materially strengthens shared Scout/CMIS abstractions or cross-chain portability;
+- defer broader Solana product expansion while X1 productization remains the flagship priority.
 
-### 3. Clean stale historical branches without treating them as current truth
+### 5. Repository and specialist housekeeping
 
 - PR #136 remains an obsolete draft relative to the hardened Phase 10 implementation now on `main`; close/supersede it when repository housekeeping is performed;
-- PR #141 remains blocked until its exact-byte ingestion issue is fixed and re-reviewed.
+- PR #141 remains blocked until its exact-byte ingestion issue is fixed and re-reviewed;
+- PR #190 remains documentation/planning only. Any future X1Labs Intelligence Scout or remote-agent design must remain subordinate to X1 Scout -> CMIS for freshness-sensitive truth and must not gain independent verification, Learning System/HXMP, wallet, or execution authority by implication.
 
-### 4. Future X1Labs Intelligence Scout
+### 6. Controlled Execution
 
-PR #190 remains open documentation/planning only. Its specialist/remote-agent design must be reconciled against the now-accepted Learning Plane before acceptance. Remote-agent output cannot become independent factual verification, cannot bypass X1 Scout -> CMIS for freshness-sensitive claims, and cannot obtain Learning System/HXMP, wallet, or execution authority by implication.
-
-### 5. Controlled Execution
-
-Still locked/not started. Any future execution work requires a new explicit architecture, contract, safety, approval, and readiness gate. It is not unlocked by completion of the Learning System.
+Still locked/not started. X1 productization does not authorize transaction construction, signing, broadcasting, custody, trading, swaps, bridge transfer, or autonomous value movement. Any future execution work requires a new explicit architecture, contract, safety, approval, and readiness gate.
 
 ## Definition of done for the current learning milestone
 
@@ -246,7 +279,7 @@ approved/static source selection
   -> durable restart-safe job state
 ```
 
-The next work is Learning Plane operational hardening and mastery of new approved sources, not replaying completed MB4E mastery or rebuilding the autonomous controller from scratch.
+The Learning Plane implementation milestone is complete enough to support the flagship roadmap. Its next work is bounded operational hardening and new approved-source validation in support of X1 productization, not replaying completed MB4E mastery or rebuilding the autonomous controller from scratch.
 
 ## Core rule
 
