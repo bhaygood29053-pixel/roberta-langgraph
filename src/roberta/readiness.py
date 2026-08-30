@@ -28,6 +28,7 @@ _ALLOWED_EVALUATION_SERVICES = frozenset(
     {
         "asset_lookup",
         "market_report",
+        "instant_x1_scan",
         "rank",
         "historical_compare",
         "tokenomics",
@@ -223,6 +224,14 @@ class ObservedCMISClient:
             "market_report",
             chain=chain,
             func=self._delegate.market_report,
+            kwargs={"chain": chain, "asset": asset},
+        )
+
+    def instant_x1_scan(self, *, chain: str, asset: str) -> Any:
+        return self._call(
+            "instant_x1_scan",
+            chain=chain,
+            func=self._delegate.instant_x1_scan,
             kwargs={"chain": chain, "asset": asset},
         )
 
