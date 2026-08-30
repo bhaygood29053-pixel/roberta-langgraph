@@ -261,15 +261,48 @@ def _cmis_1_13_instant_scan_capabilities() -> dict[str, object]:
     return capabilities
 
 
-def test_http_client_posts_exact_instant_x1_scan_request_under_cmis_1_13() -> None:
-    expected = _envelope("instant_x1_scan")
-    expected["data"] = {
+def _instant_x1_scan_data() -> dict[str, object]:
+    return {
         "contract_version": INSTANT_X1_SCAN_CONTRACT_VERSION,
         "read_only": True,
-        "sections": {},
-        "limitations": ["missing_or_unverified_fields_remain_unknown"],
+        "sections": {
+            "identity": {},
+            "market": {},
+            "tokenomics": {},
+            "holder_concentration": {
+                "holders": None,
+                "holders_verified": False,
+                "top_account_concentration": {
+                    "value": None,
+                    "verified": False,
+                    "state": "unavailable",
+                    "reason": "current_concentration_not_promoted_for_instant_x1_scan_v1",
+                },
+            },
+            "history": {},
+            "risk": {"execution_authorized": False},
+            "evidence": {
+                "proof_score_separate_from_risk": True,
+                "runtime_evidence_receipt_post_processing_only": True,
+            },
+        },
+        "limitations": [
+            "missing_or_unverified_fields_remain_unknown",
+            "holder_count_requires_existing_verified_holder_semantics",
+            "current_top_account_concentration_not_promoted_in_v1",
+            "history_is_cmis_stored_verified_observations_only",
+            "history_does_not_imply_complete_asset_lifetime",
+            "proof_score_does_not_modify_market_facts_or_risk",
+            "risk_score_remains_unavailable_until_separately_calibrated",
+            "execution_authorized_false",
+        ],
         "execution_authorized": False,
     }
+
+
+def test_http_client_posts_exact_instant_x1_scan_request_under_cmis_1_13() -> None:
+    expected = _envelope("instant_x1_scan")
+    expected["data"] = _instant_x1_scan_data()
 
     with _Server(
         expected,
@@ -290,6 +323,44 @@ def test_http_client_posts_exact_instant_x1_scan_request_under_cmis_1_13() -> No
             "params": {},
         }
     ]
+
+
+def test_http_client_rejects_malformed_instant_scan_success_payload() -> None:
+    expected = _envelope("instant_x1_scan")
+    expected["data"] = _instant_x1_scan_data()
+    expected["data"]["read_only"] = False
+
+    with _Server(
+        expected,
+        capabilities=_cmis_1_13_instant_scan_capabilities(),
+    ) as running:
+        result = CMISHTTPClient(
+            base_url=running.base_url,
+            timeout_seconds=2,
+        ).instant_x1_scan(chain="x1", asset="AGI")
+
+    assert result["status"] == "error"
+    assert result["data"] == {}
+    assert result["errors"][0]["code"] == "invalid_cmis_instant_x1_scan_response"
+    assert len(running.requests) == 1
+
+
+def test_http_client_rejects_missing_instant_scan_section() -> None:
+    expected = _envelope("instant_x1_scan")
+    expected["data"] = _instant_x1_scan_data()
+    del expected["data"]["sections"]["holder_concentration"]
+
+    with _Server(
+        expected,
+        capabilities=_cmis_1_13_instant_scan_capabilities(),
+    ) as running:
+        result = CMISHTTPClient(
+            base_url=running.base_url,
+            timeout_seconds=2,
+        ).instant_x1_scan(chain="x1", asset="AGI")
+
+    assert result["status"] == "error"
+    assert result["errors"][0]["code"] == "invalid_cmis_instant_x1_scan_response"
 
 
 def test_http_client_blocks_instant_scan_on_cmis_1_12_before_post() -> None:
