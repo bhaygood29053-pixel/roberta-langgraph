@@ -1,27 +1,25 @@
-# ChatGPT Gateway Phase 2 — Secure MCP Edge
+# Gateway Phase 2 — Loopback MCP Edge
 
 Status: implementation slice for Issue #265.
 
 ## Purpose
 
 Phase 2 adds a Model Context Protocol (MCP) transport edge in front of the
-accepted Gateway v1 HTTP seam. It is designed for a secure remote MCP tunnel or
-a separately reviewed authenticated HTTPS edge while Roberta itself remains
-loopback-only.
+accepted Gateway v1 HTTP seam. The accepted deployment is loopback-only; the
+previously planned live ChatGPT / Secure MCP Tunnel deployment has been retired
+and is not part of the current roadmap.
 
 The authority path remains:
 
 ```text
-User
-  -> ChatGPT
-    -> secure remote MCP transport / tunnel
-      -> 127.0.0.1:8767/mcp
-        -> ask_roberta
-          -> 127.0.0.1:8766/v1/gateway/ask
-            -> Roberta
-              -> Chain Scout
-                -> CMIS
-                  -> Provider
+Local MCP client
+  -> 127.0.0.1:8767/mcp
+    -> ask_roberta
+      -> 127.0.0.1:8766/v1/gateway/ask
+        -> Roberta
+          -> Chain Scout
+            -> CMIS
+              -> Provider
 ```
 
 The MCP process is a public transport adapter. It does not import
@@ -116,24 +114,14 @@ http://127.0.0.1:8767/mcp
 Do not bind the MCP server directly to a public interface. The command rejects
 a non-loopback `ROBERTA_MCP_HOST`.
 
-## Preferred remote connection
+## External transport status
 
-ChatGPT connects to remote MCP servers rather than directly to a local server.
-For a private/on-premises/developer-machine deployment, use OpenAI's supported
-Secure MCP Tunnel when available for the account/workspace. This keeps the MCP
-listener private rather than publishing it directly to the Internet.
+Live ChatGPT connectivity, Secure MCP Tunnel deployment, public MCP exposure,
+and generic reverse-proxy publication are not part of the current accepted
+deployment. Issue #269 was closed as not planned.
 
-The safe topology is:
-
-```text
-ChatGPT
-  -> Secure MCP Tunnel
-    -> local 127.0.0.1:8767/mcp
-```
-
-If a different HTTPS edge is used, it requires a separate security review. Do
-not make `127.0.0.1:8767/mcp` publicly reachable through an unauthenticated
-port-forward or generic reverse proxy.
+The MCP listener remains loopback-only. Any future external transport requires
+a new explicit architecture and security review before deployment.
 
 ## Managed service
 
