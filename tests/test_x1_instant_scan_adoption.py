@@ -405,6 +405,75 @@ def test_x1_scout_rejects_failed_scan_with_incomplete_outer_envelope() -> None:
     assert report["errors"][0]["code"] == "invalid_cmis_instant_x1_scan_response"
 
 
+@pytest.mark.parametrize(
+    "holders,holders_verified",
+    [
+        (None, True),
+        (12, "true"),
+        (12, False),
+        (-1, True),
+        (True, True),
+    ],
+)
+def test_x1_scout_rejects_incoherent_holder_count_verification(
+    holders: object,
+    holders_verified: object,
+) -> None:
+    class IncoherentHoldersCMIS(MockCMISClient):
+        def instant_x1_scan(self, *, chain: str, asset: str):
+            result = super().instant_x1_scan(chain=chain, asset=asset)
+            holder = result["data"]["sections"]["holder_concentration"]
+            holder["holders"] = holders
+            holder["holders_verified"] = holders_verified
+            return result
+
+    result = build_x1_scout_graph(IncoherentHoldersCMIS()).invoke(
+        {
+            "request": {
+                "asset": "AGI",
+                "objective": "scan AGI",
+            },
+            "status": "running",
+        }
+    )
+
+    report = result["report"]
+    assert report["status"] == "error"
+    assert report["cmis_status"] == "error"
+    assert report["findings"]["data"] == {}
+    assert report["findings"]["risk"] is None
+    assert report["errors"][0]["code"] == "invalid_cmis_instant_x1_scan_response"
+    assert "instant_x1_scan_presentation" not in report
+
+
+def test_x1_scout_accepts_verified_nonnegative_holder_count() -> None:
+    class VerifiedHoldersCMIS(MockCMISClient):
+        def instant_x1_scan(self, *, chain: str, asset: str):
+            result = super().instant_x1_scan(chain=chain, asset=asset)
+            holder = result["data"]["sections"]["holder_concentration"]
+            holder["holders"] = 12
+            holder["holders_verified"] = True
+            return result
+
+    result = build_x1_scout_graph(VerifiedHoldersCMIS()).invoke(
+        {
+            "request": {
+                "asset": "AGI",
+                "objective": "scan AGI",
+            },
+            "status": "running",
+        }
+    )
+
+    report = result["report"]
+    assert report["status"] == "complete"
+    holder = report["instant_x1_scan_presentation"]["sections"][
+        "holder_concentration"
+    ]
+    assert holder["holders"] == 12
+    assert holder["holders_verified"] is True
+
+
 def test_x1_scout_rejects_promoted_current_concentration_in_v1() -> None:
     class PromotedConcentrationCMIS(MockCMISClient):
         def instant_x1_scan(self, *, chain: str, asset: str):
