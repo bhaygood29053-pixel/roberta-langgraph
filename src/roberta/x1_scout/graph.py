@@ -20,6 +20,10 @@ from roberta.cmis.capabilities import (
 )
 from roberta.cmis.client import CMISClient
 from roberta.cmis.contracts import CMISEnvelope, CMISOperation
+from roberta.cmis.instant_scan import (
+    CMISInstantX1ScanContractError,
+    validate_instant_x1_scan_response,
+)
 from roberta.evidence_aware import evidence_context
 from roberta.presentation import format_component_status_table
 from roberta.pretrade_ux import build_pretrade_presentation
@@ -133,7 +137,26 @@ def _dispatch_cmis_operation(
                 }],
                 "errors": [],
             }
-        return cmis_client.instant_x1_scan(chain="x1", asset=asset)
+        result = cmis_client.instant_x1_scan(chain="x1", asset=asset)
+        try:
+            return validate_instant_x1_scan_response(result)
+        except CMISInstantX1ScanContractError as exc:
+            return {
+                "service": "instant_x1_scan",
+                "chain": "x1",
+                "status": "error",
+                "asset": {"query": asset},
+                "data": {},
+                "risk": None,
+                "confidence": {},
+                "sources": [],
+                "observed_at": None,
+                "warnings": [],
+                "errors": [{
+                    "code": "invalid_cmis_instant_x1_scan_response",
+                    "message": str(exc),
+                }],
+            }
     if operation == "market_report":
         return cmis_client.market_report(chain="x1", asset=asset)
     if operation == "rank":
