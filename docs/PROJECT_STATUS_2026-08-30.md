@@ -4,7 +4,7 @@
 
 Roberta's core LangGraph runtime, Scout/CMIS authority boundary, Learning System Phases 1-10, autonomous source-grounded Learning Plane controller, and current private-runtime resume-safety hardening are accepted across the split public/private runtime.
 
-Current accepted CMIS dependency remains **1.12.0**. Controlled Execution remains locked/not started.
+Current upstream CMIS capability contract is **1.13.0**. Roberta's accepted existing service-specific behavior through **1.12.0** remains valid; CMIS `1.13.0` adds the promoted X1-only `instant_x1_scan/v1` service, which is **not yet adopted as a Roberta/X1 Scout dispatch path**. Controlled Execution remains locked/not started.
 
 The operator-local *Mastering Blockchain, Fourth Edition* source-mastery job is **complete**. The authoritative source-plan-bound ledger records:
 
@@ -13,6 +13,14 @@ The operator-local *Mastering Blockchain, Fourth Edition* source-mastery job is 
 - Stage 14 / Cross-chain Reasoning canonical Attempt 3: **99.33% accuracy**, **100% integrity**, **Boss PASS**, **0 critical failures**.
 
 This closes the MB4E source-mastery milestone.
+
+## CMIS synchronization delta
+
+CMIS `main` has advanced to capability contract `1.13.0` with `instant_x1_scan/v1` promoted for X1 as a read-only, composition-only service. The service introduces no new provider truth path and remains fail-closed for holder/current-concentration facts that are not independently verified. Proof Score remains separate from deterministic risk, and `execution_authorized=false` remains authoritative.
+
+Roberta is synchronized at the architecture/status level but has not yet accepted a Scout routing implementation for this service. The next integration gate is therefore explicit X1 Scout adoption with a `CMIS >= 1.13.0` capability check, exact service-contract validation, wrong-chain fail-closed behavior, and end-to-end preservation of CMIS evidence/uncertainty.
+
+Both public repositories also completed the protected-runtime split and Phase 6 historical cleanup on 2026-08-29. Public `roberta-langgraph` and `cmis` now expose public shells/contracts/docs/tests while protected runtime implementation is supplied by private-core packages; missing/incompatible private runtime must fail closed rather than fall back to public protected source.
 
 ## MB4E mastery boundary
 
