@@ -209,6 +209,35 @@ def test_x1_scout_rejects_promoted_current_concentration_in_v1() -> None:
     assert report["errors"][0]["code"] == "invalid_cmis_instant_x1_scan_response"
 
 
+def test_x1_scout_rejects_failed_scan_that_carries_product_data() -> None:
+    class FailedScanWithDataCMIS(MockCMISClient):
+        def instant_x1_scan(self, *, chain: str, asset: str):
+            result = super().instant_x1_scan(chain=chain, asset=asset)
+            result["status"] = "unavailable"
+            result["warnings"] = [{
+                "code": "provider_unavailable",
+                "message": "provider unavailable",
+            }]
+            return result
+
+    result = build_x1_scout_graph(FailedScanWithDataCMIS()).invoke(
+        {
+            "request": {
+                "asset": "AGI",
+                "objective": "Instant X1 scan AGI",
+            },
+            "status": "running",
+        }
+    )
+
+    report = result["report"]
+    assert report["status"] == "error"
+    assert report["cmis_status"] == "error"
+    assert report["findings"]["data"] == {}
+    assert "instant_x1_scan_presentation" not in report
+    assert report["errors"][0]["code"] == "invalid_cmis_instant_x1_scan_response"
+
+
 def test_x1_scout_fails_closed_before_dispatch_when_scan_contract_is_stale() -> None:
     class OldScanCMIS(MockCMISClient):
         def capabilities(self):
