@@ -8,6 +8,7 @@ concentration, or historical coverage.
 from __future__ import annotations
 
 from collections.abc import Mapping
+import math
 from typing import Any
 
 from roberta.cmis.capabilities import INSTANT_X1_SCAN_CONTRACT_VERSION
@@ -58,6 +59,103 @@ def _validate_rationale_list(value: object, *, field: str) -> list[str]:
     return value
 
 
+def _validate_outer_envelope(envelope: Mapping[str, Any]) -> None:
+    for field in ("asset", "data", "confidence"):
+        _mapping(envelope.get(field), field=field)
+    for field in ("sources", "warnings", "errors"):
+        if not isinstance(envelope.get(field), list):
+            raise CMISInstantX1ScanContractError(
+                f"CMIS Instant X1 Scan field {field} must be a list."
+            )
+    if "observed_at" not in envelope:
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan field observed_at is required."
+        )
+    if "risk" not in envelope:
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan field risk is required."
+        )
+    for field in ("evidence_receipt", "proof_score"):
+        if field in envelope and not isinstance(envelope.get(field), Mapping):
+            raise CMISInstantX1ScanContractError(
+                f"CMIS Instant X1 Scan field {field} must be an object when present."
+            )
+
+
+def _validate_score(value: object, *, verified: object, field: str) -> None:
+    if not isinstance(verified, bool):
+        raise CMISInstantX1ScanContractError(
+            f"CMIS Instant X1 Scan {field}_verified must be boolean."
+        )
+    if value is None:
+        if verified is True:
+            raise CMISInstantX1ScanContractError(
+                f"CMIS Instant X1 Scan {field} cannot be verified when unavailable."
+            )
+        return
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise CMISInstantX1ScanContractError(
+            f"CMIS Instant X1 Scan {field} must be a finite JSON number or null."
+        )
+    if isinstance(value, float) and not math.isfinite(value):
+        raise CMISInstantX1ScanContractError(
+            f"CMIS Instant X1 Scan {field} must be finite."
+        )
+
+
+def _validate_risk_projection(
+    value: object,
+    *,
+    field: str,
+    require_execution_false: bool,
+) -> Mapping[str, Any]:
+    risk = _mapping(value, field=field)
+    recommendation = risk.get("recommendation")
+    if recommendation is not None and (
+        not isinstance(recommendation, str) or not recommendation.strip()
+    ):
+        raise CMISInstantX1ScanContractError(
+            f"CMIS Instant X1 Scan {field}.recommendation must be non-empty text or null."
+        )
+
+    _validate_rationale_list(risk.get("flags"), field=f"{field}.flags")
+    _validate_rationale_list(risk.get("reasons"), field=f"{field}.reasons")
+
+    for object_field in ("confidence", "policy"):
+        if not isinstance(risk.get(object_field), Mapping):
+            raise CMISInstantX1ScanContractError(
+                f"CMIS Instant X1 Scan {field}.{object_field} must be an object."
+            )
+
+    _validate_score(
+        risk.get("score"),
+        verified=risk.get("score_verified"),
+        field=f"{field}.score",
+    )
+
+    score_reason = risk.get("score_reason")
+    if score_reason is not None and (
+        not isinstance(score_reason, str) or not score_reason.strip()
+    ):
+        raise CMISInstantX1ScanContractError(
+            f"CMIS Instant X1 Scan {field}.score_reason must be non-empty text or null."
+        )
+
+    if require_execution_false:
+        if risk.get("execution_authorized") is not False:
+            raise CMISInstantX1ScanContractError(
+                f"CMIS Instant X1 Scan {field} must preserve execution_authorized=false."
+            )
+    elif (
+        "execution_authorized" in risk
+        and risk.get("execution_authorized") is not False
+    ):
+        raise CMISInstantX1ScanContractError(
+            f"CMIS Instant X1 Scan {field} must not authorize execution."
+        )
+    return risk
+
+
 def validate_instant_x1_scan_response(
     envelope: CMISEnvelope,
 ) -> CMISEnvelope:
@@ -76,6 +174,8 @@ def validate_instant_x1_scan_response(
         raise CMISInstantX1ScanContractError(
             "CMIS Instant X1 Scan response must remain X1-only."
         )
+
+    _validate_outer_envelope(envelope)
 
     status = envelope.get("status")
     if not isinstance(status, str):
@@ -160,41 +260,26 @@ def validate_instant_x1_scan_response(
             "CMIS Instant X1 Scan evidence-receipt runtime boundary mismatch."
         )
 
-    risk = _mapping(sections["risk"], field="data.sections.risk")
-    nested_flags = _validate_rationale_list(
-        risk.get("flags"),
-        field="data.sections.risk.flags",
+    risk = _validate_risk_projection(
+        sections["risk"],
+        field="data.sections.risk",
+        require_execution_false=True,
     )
-    nested_reasons = _validate_rationale_list(
-        risk.get("reasons"),
-        field="data.sections.risk.reasons",
-    )
-    if risk.get("execution_authorized") is not False:
-        raise CMISInstantX1ScanContractError(
-            "CMIS Instant X1 Scan risk section must preserve execution_authorized=false."
-        )
+    nested_flags = risk["flags"]
+    nested_reasons = risk["reasons"]
 
     envelope_risk = envelope.get("risk")
     if envelope_risk is None:
         raise CMISInstantX1ScanContractError(
             "Successful CMIS Instant X1 Scan responses must expose envelope risk."
         )
-    top_risk = _mapping(envelope_risk, field="risk")
-    top_flags = _validate_rationale_list(
-        top_risk.get("flags"),
-        field="risk.flags",
+    top_risk = _validate_risk_projection(
+        envelope_risk,
+        field="risk",
+        require_execution_false=False,
     )
-    top_reasons = _validate_rationale_list(
-        top_risk.get("reasons"),
-        field="risk.reasons",
-    )
-    if (
-        "execution_authorized" in top_risk
-        and top_risk.get("execution_authorized") is not False
-    ):
-        raise CMISInstantX1ScanContractError(
-            "CMIS Instant X1 Scan envelope risk must not authorize execution."
-        )
+    top_flags = top_risk["flags"]
+    top_reasons = top_risk["reasons"]
 
     shared_fields = (
         ("recommendation", risk.get("recommendation"), top_risk.get("recommendation")),
