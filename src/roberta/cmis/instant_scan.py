@@ -51,10 +51,11 @@ def _mapping(value: object, *, field: str) -> Mapping[str, Any]:
 def validate_instant_x1_scan_response(
     envelope: CMISEnvelope,
 ) -> CMISEnvelope:
-    """Validate successful/partial Instant X1 Scan results without rewriting them.
+    """Validate Instant X1 Scan results without rewriting CMIS facts.
 
-    Unavailable/error envelopes are already fail-closed and may omit the product
-    data contract. Every other service result must match the accepted v1 shape.
+    Only ok/partial envelopes may carry the product contract. Ambiguous,
+    unavailable, and error envelopes must remain fail-closed with empty product
+    data and no risk payload.
     """
 
     if envelope.get("service") != "instant_x1_scan":
@@ -66,7 +67,7 @@ def validate_instant_x1_scan_response(
             "CMIS Instant X1 Scan response must remain X1-only."
         )
 
-    if envelope.get("status") in {"unavailable", "error"}:
+    if envelope.get("status") in {"ambiguous", "unavailable", "error"}:
         failed_data = envelope.get("data")
         if failed_data != {}:
             raise CMISInstantX1ScanContractError(
