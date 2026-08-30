@@ -166,6 +166,11 @@ def validate_instant_x1_scan_response(
     data and no risk payload.
     """
 
+    if not isinstance(envelope, Mapping):
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan response envelope must be an object."
+        )
+
     if envelope.get("service") != "instant_x1_scan":
         raise CMISInstantX1ScanContractError(
             "CMIS Instant X1 Scan response service identity mismatch."
