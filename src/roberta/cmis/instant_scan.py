@@ -315,6 +315,27 @@ def validate_instant_x1_scan_response(
         sections["holder_concentration"],
         field="data.sections.holder_concentration",
     )
+    holders_verified = holder.get("holders_verified")
+    if not isinstance(holders_verified, bool):
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan holders_verified must be boolean."
+        )
+    holders = holder.get("holders")
+    if holders_verified:
+        if (
+            type(holders) is not int
+            or holders < 0
+        ):
+            raise CMISInstantX1ScanContractError(
+                "CMIS Instant X1 Scan verified holders must be a "
+                "non-negative integer."
+            )
+    elif holders is not None:
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan unverified holders must remain unknown; "
+            "reported holder-looking values belong in holders_reported/holders_observed."
+        )
+
     current_concentration = _mapping(
         holder.get("top_account_concentration"),
         field="data.sections.holder_concentration.top_account_concentration",
