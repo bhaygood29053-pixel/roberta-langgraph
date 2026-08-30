@@ -445,6 +445,7 @@ class MockCMISClient:
                         "recommendation": "TEST_ONLY",
                         "score": None,
                         "score_verified": False,
+                        "execution_authorized": False,
                     },
                     "evidence": {
                         "component_statuses": {},
@@ -453,7 +454,16 @@ class MockCMISClient:
                         "runtime_evidence_receipt_post_processing_only": True,
                     },
                 },
-                "limitations": limitations,
+                "limitations": [
+                    "missing_or_unverified_fields_remain_unknown",
+                    "holder_count_requires_existing_verified_holder_semantics",
+                    "current_top_account_concentration_not_promoted_in_v1",
+                    "history_is_cmis_stored_verified_observations_only",
+                    "history_does_not_imply_complete_asset_lifetime",
+                    "proof_score_does_not_modify_market_facts_or_risk",
+                    "risk_score_remains_unavailable_until_separately_calibrated",
+                    "execution_authorized_false",
+                ],
                 "execution_authorized": False,
             },
             risk=(
