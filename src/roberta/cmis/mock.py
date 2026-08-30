@@ -452,8 +452,11 @@ class MockCMISClient:
                     "risk": {
                         "status": self._status(),
                         "recommendation": "TEST_ONLY",
+                        "flags": ["NOT_LIVE_DATA"],
+                        "reasons": ["Deterministic mock risk only."],
                         "score": None,
                         "score_verified": False,
+                        "score_reason": "not_calibrated",
                         "execution_authorized": False,
                     },
                     "evidence": {
@@ -478,7 +481,14 @@ class MockCMISClient:
             risk=(
                 None
                 if self.scenario in {"unavailable", "error"}
-                else {"outcome": "TEST_ONLY", "score": None, "flags": ["NOT_LIVE_DATA"]}
+                else {
+                    "recommendation": "TEST_ONLY",
+                    "flags": ["NOT_LIVE_DATA"],
+                    "reasons": ["Deterministic mock risk only."],
+                    "score": None,
+                    "score_verified": False,
+                    "score_reason": "not_calibrated",
+                }
             ),
         )
 
