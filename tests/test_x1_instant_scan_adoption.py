@@ -106,6 +106,10 @@ def test_instant_x1_scan_capability_has_no_solana_fallback() -> None:
         "Instant X1 scan AGI",
         "quick X1 scan this token",
         "scan this asset",
+        "scan AGI",
+        "scan XNT",
+        "scan token AGI",
+        "please scan AGI",
     ],
 )
 def test_instant_scan_objectives_select_single_composition_service(
@@ -192,6 +196,38 @@ def test_x1_scout_rejects_malformed_successful_scan_payload() -> None:
     )
 
     assert [call["operation"] for call in cmis.calls] == ["instant_x1_scan"]
+    report = result["report"]
+    assert report["status"] == "error"
+    assert report["cmis_status"] == "error"
+    assert report["findings"]["data"] == {}
+    assert report["errors"][0]["code"] == "invalid_cmis_instant_x1_scan_response"
+    assert "instant_x1_scan_presentation" not in report
+
+
+@pytest.mark.parametrize("field,bad_value", [
+    ("flags", 7),
+    ("reasons", {"reason": "bad shape"}),
+])
+def test_x1_scout_rejects_malformed_scan_risk_collections(
+    field: str,
+    bad_value: object,
+) -> None:
+    class MalformedRiskCMIS(MockCMISClient):
+        def instant_x1_scan(self, *, chain: str, asset: str):
+            result = super().instant_x1_scan(chain=chain, asset=asset)
+            result["data"]["sections"]["risk"][field] = bad_value
+            return result
+
+    result = build_x1_scout_graph(MalformedRiskCMIS()).invoke(
+        {
+            "request": {
+                "asset": "AGI",
+                "objective": "scan AGI",
+            },
+            "status": "running",
+        }
+    )
+
     report = result["report"]
     assert report["status"] == "error"
     assert report["cmis_status"] == "error"
