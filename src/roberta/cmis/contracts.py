@@ -18,6 +18,7 @@ CMISService: TypeAlias = Literal[
     "pre_trade_check",
     "verification_evidence",
     "concentration_change_intelligence",
+    "instant_x1_scan",
 ]
 CMISOperation: TypeAlias = Literal[
     "asset_lookup",
@@ -29,6 +30,7 @@ CMISOperation: TypeAlias = Literal[
     "pre_trade_check",
     "verification_evidence",
     "concentration_change_intelligence",
+    "instant_x1_scan",
 ]
 CMISStatus: TypeAlias = Literal[
     "ok",
@@ -84,3 +86,4 @@ CMISRiskCheck: TypeAlias = CMISEnvelope
 CMISPreTradeCheck: TypeAlias = CMISEnvelope
 CMISVerificationEvidence: TypeAlias = CMISEnvelope
 CMISConcentrationChangeIntelligence: TypeAlias = CMISEnvelope
+CMISInstantX1Scan: TypeAlias = CMISEnvelope
