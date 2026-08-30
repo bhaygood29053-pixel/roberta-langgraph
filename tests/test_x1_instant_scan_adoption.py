@@ -209,6 +209,57 @@ def test_x1_scout_rejects_promoted_current_concentration_in_v1() -> None:
     assert report["errors"][0]["code"] == "invalid_cmis_instant_x1_scan_response"
 
 
+def test_x1_scout_rejects_ambiguous_scan_that_carries_product_data() -> None:
+    class AmbiguousScanWithDataCMIS(MockCMISClient):
+        def instant_x1_scan(self, *, chain: str, asset: str):
+            result = super().instant_x1_scan(chain=chain, asset=asset)
+            result["status"] = "ambiguous"
+            return result
+
+    result = build_x1_scout_graph(AmbiguousScanWithDataCMIS()).invoke(
+        {
+            "request": {
+                "asset": "AGI",
+                "objective": "Instant X1 scan AGI",
+            },
+            "status": "running",
+        }
+    )
+
+    report = result["report"]
+    assert report["status"] == "error"
+    assert report["cmis_status"] == "error"
+    assert report["findings"]["data"] == {}
+    assert "instant_x1_scan_presentation" not in report
+    assert report["errors"][0]["code"] == "invalid_cmis_instant_x1_scan_response"
+
+
+@pytest.mark.parametrize("scenario, expected_status", [
+    ("unavailable", "unavailable"),
+    ("error", "error"),
+])
+def test_mock_failed_scan_scenarios_are_data_free_and_preserve_status(
+    scenario: str,
+    expected_status: str,
+) -> None:
+    cmis = MockCMISClient(scenario=scenario)
+    result = build_x1_scout_graph(cmis).invoke(
+        {
+            "request": {
+                "asset": "AGI",
+                "objective": "Instant X1 scan AGI",
+            },
+            "status": "running",
+        }
+    )
+
+    report = result["report"]
+    assert report["cmis_status"] == expected_status
+    assert report["findings"]["data"] == {}
+    assert report["findings"]["risk"] is None
+    assert "instant_x1_scan_presentation" not in report
+
+
 def test_x1_scout_rejects_failed_scan_that_carries_product_data() -> None:
     class FailedScanWithDataCMIS(MockCMISClient):
         def instant_x1_scan(self, *, chain: str, asset: str):
