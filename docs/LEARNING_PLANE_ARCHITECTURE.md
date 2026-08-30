@@ -1,6 +1,6 @@
 # Roberta Learning Plane Architecture
 
-Last reconciled: 2026-08-26 (America/New_York)
+Last reconciled: 2026-08-30 (America/New_York)
 
 Status: **accepted architecture with the first end-to-end autonomous source-mastery implementation merged on `main`.**
 
@@ -272,7 +272,9 @@ Accepted on `main` as of 2026-08-26:
 - PR #228 autonomous source-mastery controller;
 - durable autonomous source registry/job/checkpoint state;
 - autonomous verified remediation and capstone routing;
-- read-only Learning Command Center autonomous-job telemetry.
+- read-only Learning Command Center autonomous-job telemetry;
+- operator-local MB4E source mastery complete: 14/14 required stages plus final source capstone;
+- authoritative `roberta-autonomous-training-telemetry/v1` with ledger-backed mastery/completion reconciliation and `execution_authorized=false`.
 
 Still separate/future:
 
@@ -280,9 +282,13 @@ Still separate/future:
 - recurring/delayed retention scheduling under explicit budgets;
 - durable/provider-backed general Phase 10 retention storage;
 - any general operational-trust promotion wrapper;
-- MB4E Stage 9-14 completion and final source mastery;
+- new approved-source mastery and restart/recovery validation after completed MB4E mastery;
 - XenBlocks source onboarding after its exact-byte blocker is fixed;
 - Controlled Execution.
+
+## Completed MB4E mastery boundary
+
+MB4E is mastered and terminal under its current frozen 14-stage plan: all required stages and the final source capstone are passed in the authoritative source-plan-bound ledger. Runtime-generated Stages 9-14 remain runtime mastery evidence rather than separately accepted prebuilt repository banks. Further Learning Plane validation should use new approved sources or explicit operational-hardening scenarios rather than replaying MB4E.
 
 ## Relationship to historical PRs
 
