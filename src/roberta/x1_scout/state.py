@@ -50,6 +50,7 @@ class X1ScoutInvestigation(TypedDict):
     component_status_table: str | None
     pretrade_presentation: dict[str, object] | None
     historical_coverage_presentation: NotRequired[dict[str, object]]
+    instant_x1_scan_presentation: NotRequired[dict[str, object]]
     sources: list[object]
     warnings: list[object]
     errors: list[object]
@@ -80,6 +81,7 @@ class X1ScoutReport(TypedDict):
     component_status_table: str | None
     pretrade_presentation: dict[str, object] | None
     historical_coverage_presentation: NotRequired[dict[str, object]]
+    instant_x1_scan_presentation: NotRequired[dict[str, object]]
     source: dict[str, str]
     sources: list[object]
     warnings: list[object]
