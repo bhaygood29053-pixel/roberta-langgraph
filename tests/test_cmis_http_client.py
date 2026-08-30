@@ -262,6 +262,19 @@ def _cmis_1_13_instant_scan_capabilities() -> dict[str, object]:
     return capabilities
 
 
+def _instant_x1_scan_risk() -> dict[str, object]:
+    return {
+        "recommendation": None,
+        "flags": [],
+        "reasons": [],
+        "confidence": {},
+        "score": None,
+        "score_verified": False,
+        "score_reason": None,
+        "policy": {},
+    }
+
+
 def _instant_x1_scan_data() -> dict[str, object]:
     return {
         "contract_version": INSTANT_X1_SCAN_CONTRACT_VERSION,
@@ -282,12 +295,7 @@ def _instant_x1_scan_data() -> dict[str, object]:
             },
             "history": {},
             "risk": {
-                "recommendation": None,
-                "flags": [],
-                "reasons": [],
-                "score": None,
-                "score_verified": False,
-                "score_reason": None,
+                **_instant_x1_scan_risk(),
                 "execution_authorized": False,
             },
             "evidence": {
@@ -312,6 +320,7 @@ def _instant_x1_scan_data() -> dict[str, object]:
 def test_http_client_posts_exact_instant_x1_scan_request_under_cmis_1_13() -> None:
     expected = _envelope("instant_x1_scan")
     expected["data"] = _instant_x1_scan_data()
+    expected["risk"] = _instant_x1_scan_risk()
 
     with _Server(
         expected,
