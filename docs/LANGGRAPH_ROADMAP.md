@@ -38,6 +38,7 @@ Accepted on `main`:
 - source-specific Blockchain Reasoning Pyramid architecture and source-mastery ledger;
 - Mastering Blockchain 4e frozen 14-stage source plan;
 - accepted prebuilt MB4E banks through Stage 8 / Market Structure;
+- operator-local MB4E source mastery complete: the authoritative source-plan-bound ledger records all 14 required stages passed plus the required final capstone;
 - autonomous source-grounded Learning Plane controller from PR #228;
 - read-only Learning Command Center telemetry for source mastery and autonomous-training jobs.
 - autonomous remediation hardening through PRs #241-#243: complete Boss synthesis routing, candidate-only retention memory, and bounded candidate-memory retention;
@@ -141,7 +142,11 @@ Accepted prebuilt curriculum-bank construction reaches:
 
 Stages 9-14 do not yet exist as separately accepted prebuilt repository banks. The accepted autonomous controller may generate missing later-stage banks at runtime from the exact selected source under its validation contract. Generated bank availability still does not equal mastery.
 
-MB4E is mastered only after the source-plan-bound ledger records every required stage as passed and the required final source capstone passes.
+The operator-local authoritative MB4E source-mastery ledger now satisfies the complete frozen plan: **14 of 14 required source stages passed and the required final source capstone passed**. Stage 14 / Cross-chain Reasoning passed canonical Attempt 3 at **99.33% accuracy**, **100% integrity**, **Boss PASS**, and **0 critical failures**. This is runtime mastery evidence; it does not relabel runtime-generated Stages 9-14 as separately accepted prebuilt repository banks.
+
+During post-mastery validation, the pre-fix controller created an accidental fresh run because it searched only for an active run and did not treat a verified mastered run as terminal. That was a resume-safety/controller defect, not a source-knowledge failure. Private `roberta-core` PR #8 (`d86aff9617c975fc9420847cd1d7f8e74d9d7da9`) makes verified mastery terminal/idempotent, requires the exact passed-stage prefix plus capstone, fails closed on mastered/active split-brain or ledger identity mismatch, and repairs stale durable state instead of replaying completed stages. Private PR #7 (`2ba2873878dc88ab58b81efbaff4cecbb91a9f68`) separately hardened Stage 14 support-verified target retries without relaxing evidence or mastery gates.
+
+**MB4E source mastery is closed. Do not start a new MB4E training run for learning purposes unless the source/mastery contract is intentionally changed under a new reviewed plan.**
 
 ## Static source registry
 
@@ -191,13 +196,13 @@ architecture and security review.
 - add bounded background scheduling/load-throttling only under a separate accepted contract;
 - define delayed/recurrent retention scheduling without weakening the Phase 10 authority boundary.
 
-### 2. Continue MB4E source mastery
+### 2. Keep MB4E mastery closed and move to new Learning Plane work
 
-- repository-accepted prebuilt MB4E banks remain through Stage 8 / Market Structure;
-- operator-local autonomous validation has now passed runtime-generated Stage 9 / DeFi, Stage 10 / Advanced DeFi, and Stage 11 / On-chain Analysis; Stage 11 canonical Attempt 3 reached 99.33% accuracy, 100% integrity, Boss PASS, and zero critical failures;
-- Stage 12 / Risk Reasoning is the next active stage; PRs #244-#245 harden missing-bank generation with bounded source-chunk retries and fail-closed handling of malformed optional `forbidden_inferences` metadata without weakening exact-evidence or independent-support gates;
-- continue Stages 12-14 under the frozen plan using canonical exams and verified remediation as required;
-- complete the required final source capstone before declaring MB4E mastered.
+- MB4E authoritative runtime mastery is complete: 14/14 required stages plus the final capstone;
+- preserve the distinction between runtime-generated mastery evidence and repository-accepted prebuilt banks, which remain through Stage 8 / Market Structure;
+- do not replay MB4E merely to exercise the controller; verified mastery is terminal/idempotent after private `roberta-core` PR #8;
+- use new approved sources or explicit operational-hardening scenarios for further Learning Plane validation;
+- prioritize telemetry, scheduling/load-throttling, retention scheduling, and operator diagnostics without weakening provenance, verification, or authority boundaries.
 
 ### 3. Clean stale historical branches without treating them as current truth
 
@@ -228,7 +233,7 @@ approved/static source selection
   -> durable restart-safe job state
 ```
 
-The next work is operational hardening and continued source mastery, not rebuilding the autonomous controller from scratch.
+The next work is Learning Plane operational hardening and mastery of new approved sources, not replaying completed MB4E mastery or rebuilding the autonomous controller from scratch.
 
 ## Core rule
 

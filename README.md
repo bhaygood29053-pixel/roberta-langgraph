@@ -22,7 +22,7 @@ Current chain specialists include X1 Scout and Solana Scout. Roberta owns orches
 
 Roberta does not call market providers as a trust shortcut and does not reproduce CMIS calculations to manufacture a second market fact.
 
-## Current accepted status — reconciled 2026-08-28
+## Current accepted status — reconciled 2026-08-30
 
 Core Roberta platform work is accepted through Phase 10 plus the post-Phase-10 evidence-aware user experience. X1 decision-production readiness, Solana read-only readiness for the accepted Scout surface, and adoption of CMIS `concentration_change_intelligence/v1` through X1 Scout are accepted.
 
@@ -103,7 +103,9 @@ Accepted **prebuilt** MB4E curriculum construction now reaches:
 
 Stages 9-14 are not yet separately accepted prebuilt repository banks. The accepted autonomous controller may generate missing banks from the exact selected source under its validation contract. Bank availability is not mastery; mastery state comes only from the immutable source-plan-bound training ledger and required stage/capstone gates.
 
-Current operator-local MB4E validation has now passed runtime-generated Stages 9, 10, and 11. Stage 11 / On-chain Analysis passed canonical Attempt 3 at 99.33% accuracy, 100% integrity, Boss PASS, and zero critical failures after the remediation hardening merged in PRs #241-#243. Stage 12 / Risk Reasoning is the next active stage. PRs #244-#245 harden missing-bank generation with bounded source-chunk retries and fail-closed normalization of malformed optional `forbidden_inferences` metadata while preserving exact-evidence, page/chapter, chunk-coverage, semantic-uniqueness, and independent-support gates. This operator-local progress is runtime mastery evidence, not a claim that Stages 9-12 are prebuilt repository banks.
+Operator-local MB4E source mastery is now **complete**. The authoritative source-plan-bound ledger records **14/14 required source stages passed plus the required final source capstone**. Stage 14 / Cross-chain Reasoning passed canonical Attempt 3 at **99.33% accuracy**, **100% integrity**, **Boss PASS**, and **zero critical failures**. Runtime-generated Stages 9-14 remain runtime mastery evidence, not separately accepted prebuilt repository banks; repository-accepted prebuilt banks remain through Stage 8 / Market Structure.
+
+A post-mastery replay exposed a controller resume-safety defect: the pre-fix controller could create a fresh run because it looked only for an active run instead of recognizing verified mastery as terminal. Private `roberta-core` PR #8 (`d86aff9617c975fc9420847cd1d7f8e74d9d7da9`) makes verified mastery terminal/idempotent and fail-closed on conflicting run identity. Private PR #7 (`2ba2873878dc88ab58b81efbaff4cecbb91a9f68`) hardened Stage 14 support-verified target retries. Neither fix relaxes mastery, evidence, provenance, support-verification, or execution boundaries. **MB4E should not be rerun for learning purposes unless a new reviewed source/mastery contract intentionally requires it.**
 
 ### Remediation and learned-concept boundaries
 
@@ -135,7 +137,7 @@ Static sources never override fresh Scout -> CMIS -> Provider evidence for price
 
 - [`docs/PRODUCT_IDENTITY.md`](./docs/PRODUCT_IDENTITY.md) — repository-authoritative product naming and branding boundary.
 - [`docs/LANGGRAPH_ROADMAP.md`](./docs/LANGGRAPH_ROADMAP.md) — authoritative Roberta roadmap/status.
-- [`docs/PROJECT_STATUS_2026-08-28.md`](./docs/PROJECT_STATUS_2026-08-28.md) — current dated status snapshot.
+- [`docs/PROJECT_STATUS_2026-08-30.md`](./docs/PROJECT_STATUS_2026-08-30.md) — current dated status snapshot.
 - [`docs/LEARNING_SYSTEM.md`](./docs/LEARNING_SYSTEM.md) — Learning System phase/authority map.
 - [`docs/LEARNING_SYSTEM_RETENTION.md`](./docs/LEARNING_SYSTEM_RETENTION.md) — accepted Phase 10 retention contract.
 - [`docs/LEARNING_PLANE_ARCHITECTURE.md`](./docs/LEARNING_PLANE_ARCHITECTURE.md) — Learning Plane architecture and promotion boundary.
