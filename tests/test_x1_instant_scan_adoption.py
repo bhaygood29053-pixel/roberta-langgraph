@@ -236,6 +236,43 @@ def test_x1_scout_rejects_malformed_scan_risk_collections(
     assert "instant_x1_scan_presentation" not in report
 
 
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        lambda risk: risk.__setitem__("flags", 7),
+        lambda risk: risk.__setitem__("reasons", {"reason": "bad shape"}),
+        lambda risk: risk.__setitem__("execution_authorized", True),
+        lambda risk: risk.__setitem__("recommendation", "DIFFERENT"),
+    ],
+)
+def test_x1_scout_rejects_malformed_or_inconsistent_envelope_risk(
+    mutation,
+) -> None:
+    class MalformedEnvelopeRiskCMIS(MockCMISClient):
+        def instant_x1_scan(self, *, chain: str, asset: str):
+            result = super().instant_x1_scan(chain=chain, asset=asset)
+            mutation(result["risk"])
+            return result
+
+    result = build_x1_scout_graph(MalformedEnvelopeRiskCMIS()).invoke(
+        {
+            "request": {
+                "asset": "AGI",
+                "objective": "scan AGI",
+            },
+            "status": "running",
+        }
+    )
+
+    report = result["report"]
+    assert report["status"] == "error"
+    assert report["cmis_status"] == "error"
+    assert report["findings"]["data"] == {}
+    assert report["findings"]["risk"] is None
+    assert report["errors"][0]["code"] == "invalid_cmis_instant_x1_scan_response"
+    assert "instant_x1_scan_presentation" not in report
+
+
 def test_x1_scout_rejects_promoted_current_concentration_in_v1() -> None:
     class PromotedConcentrationCMIS(MockCMISClient):
         def instant_x1_scan(self, *, chain: str, asset: str):
