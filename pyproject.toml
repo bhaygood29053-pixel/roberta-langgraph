@@ -16,13 +16,11 @@ dependencies = [
 [project.optional-dependencies]
 deepseek = ["langchain-deepseek"]
 dev = ["pytest>=8"]
-mcp = ["mcp>=2,<3"]
 
 [project.scripts]
 roberta-live = "roberta.live_demo:main"
 roberta-chat = "roberta.chat_cli:main"
 roberta-serve = "roberta.bridge_http:main"
-roberta-mcp = "roberta.mcp_gateway:main"
 roberta-readiness = "roberta.readiness_cli:main"
 roberta-readiness-replay = "roberta.readiness_replay_cli:main"
 roberta-solana-readiness-replay = "roberta.readiness_solana_replay_cli:main"

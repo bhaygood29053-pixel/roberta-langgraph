@@ -1,6 +1,6 @@
 # ROBERTA — Verified On-Chain Intelligence Roadmap
 
-Last reconciled: 2026-08-29 (America/New_York)
+Last reconciled: 2026-08-30 (America/New_York)
 
 Status source: accepted code and contracts on `main`. Open PRs are not current truth unless explicitly identified as pending.
 
@@ -42,8 +42,6 @@ Accepted on `main`:
 - read-only Learning Command Center telemetry for source mastery and autonomous-training jobs.
 - autonomous remediation hardening through PRs #241-#243: complete Boss synthesis routing, candidate-only retention memory, and bounded candidate-memory retention;
 - autonomous target-generation hardening through PRs #244-#245: bounded zero-valid-target retries and fail-closed normalization of malformed optional defensive metadata.
-- authenticated read-only ChatGPT Gateway v1 from PR #262: dedicated `/v1/gateway/ask` and `/v1/gateway/capabilities` transport seams, mandatory configured Bearer authentication for gateway use, caller tool/routing controls rejected, no direct CMIS/provider access, and `execution_authorized=false`.
-- ChatGPT Gateway Phase 2 from PR #266: loopback Streamable HTTP MCP edge at `127.0.0.1:8767/mcp`, exactly one read-only `ask_roberta(message)` tool, exact loopback Gateway v1 upstream validation, mandatory `ROBERTA_API_KEY`, fail-closed Gateway contract verification, and permanent CI enforcement preventing MCP imports from bypassing the Roberta -> Scout -> CMIS authority path.
 
 `main` includes the hardened Phase 10 verified-retention implementation and the separate knowledge-classification boundary. The old draft PR #136 remains open historical work and is no longer the implementation source of truth.
 
@@ -171,40 +169,17 @@ The core Phase 11 `intelligence_foundation` remains internal/non-promoted. The s
 
 Classification, direct wallet-relationship evidence, and concentration-threshold alert evidence remain internal/read-only/non-promoted. There is no accepted next public intelligence/alert promotion by implication.
 
-## ChatGPT Gateway deployment checkpoint
+## Retired transport work
 
-Gateway v1 is accepted on `main` via PR #262. Gateway Phase 2 is accepted on
-`main` via PR #266.
+The ChatGPT Gateway v1 and MCP transport edge introduced by PRs #262 and #266
+were removed by project decision on 2026-08-30. They are not part of the
+current Roberta architecture or deployment plan. Issue #269 is closed as not
+planned.
 
-Accepted repository-side path:
-
-```text
-ChatGPT
-  -> secure remote MCP transport / tunnel
-    -> 127.0.0.1:8767/mcp
-      -> ask_roberta(message)
-        -> 127.0.0.1:8766/v1/gateway/ask
-          -> Roberta -> Chain Scout -> CMIS -> Provider
-```
-
-The MCP edge exposes exactly one read-only tool and is prevented by code and CI
-from importing private-core, Scout, CMIS, or provider implementation as a trust
-shortcut.
-
-Remaining work is deployment/account configuration rather than another Roberta
-runtime feature:
-
-1. configure a long random `ROBERTA_API_KEY` outside Git;
-2. run `roberta-serve` on `127.0.0.1:8766`;
-3. install the `mcp` extra and run `roberta-mcp` on `127.0.0.1:8767/mcp`;
-4. verify the local MCP tool listing contains exactly `ask_roberta` with a read-only annotation;
-5. establish an approved secure remote MCP transport, preferring OpenAI Secure MCP Tunnel for a local/private deployment when the account/workspace supports it;
-6. connect an eligible ChatGPT integration surface to the remote MCP endpoint;
-7. prove one end-to-end live ChatGPT -> MCP -> Gateway v1 -> real Roberta request and record the result.
-
-This deployment work must not weaken the public/private source boundary, add
-direct ChatGPT -> CMIS access, expose caller-selected tool routing, publish the
-loopback MCP port directly to the Internet, or create execution authority.
+The pre-existing loopback Roberta HTTP bridge at `/v1/roberta` remains for
+local integrations such as MoltGrid/Signal; it is not an external ChatGPT
+gateway. Any future external gateway or MCP transport requires a new explicit
+architecture and security review.
 
 ## Near-term roadmap
 
