@@ -2,7 +2,7 @@
 
 ## Executive status
 
-Roberta's core LangGraph runtime, Scout/CMIS authority boundary, Learning System Phases 1-10, autonomous source-grounded Learning Plane controller, and current private-runtime resume-safety hardening are accepted across the split public/private runtime.
+Roberta's core LangGraph runtime, Scout/CMIS authority boundary, Learning System Phases 1-10, autonomous source-grounded Learning Plane controller, mastered-run resume safety, and authoritative autonomous-training operational telemetry are accepted across the split public/private runtime.
 
 Current accepted CMIS dependency remains **1.12.0**. Controlled Execution remains locked/not started.
 
@@ -57,6 +57,30 @@ Private `roberta-core` PR #8, merged as `d86aff9617c975fc9420847cd1d7f8e74d9d7da
 
 No mastery threshold, evidence rule, provenance rule, support-verification gate, or execution authority was relaxed.
 
+## Authoritative autonomous-training telemetry
+
+Private `roberta-core` PR #9, squash-merged as `08f693ae820b073435fd3b2388bc8f0f13cb3ab0`, adds the protected-runtime `roberta-autonomous-training-telemetry/v1` surface.
+
+The accepted telemetry layer is deterministic, read-only, and non-authorizing. It:
+
+- reconciles durable autonomous job state against the authoritative Pyramid/source-mastery ledger;
+- verifies mastered status from the exact completed source-stage prefix plus required capstone evidence;
+- reports job/run/source/curriculum/plan identity, stage/capability/activity/phase, attempts, question progress, remediation lane progress, checkpoint/resume identity, and latest committed result;
+- surfaces controller lock/PID state and recent controller events for diagnosis;
+- fails closed on real run/curriculum/plan/frozen-plan identity conflicts;
+- preserves the distinction between the autonomous import source key and the package-bound frozen-plan/ledger source key;
+- exposes `execution_authorized=false` at both the top-level and telemetry surfaces.
+
+Operator validation on the accepted head established:
+
+- focused telemetry/replay coverage: **20 passed**;
+- full private functional suite: **20 passed**;
+- retained public/private split-runtime suite: **1083 passed, 5 deselected**;
+- real MB4E telemetry: **mastered**, **14/14**, capstone passed, `telemetry.authoritative=true`, diagnostics clean;
+- before/after hashes of the MB4E durable state and Pyramid ledger were identical, proving the telemetry path did not mutate either artifact.
+
+The private GitHub Actions jobs for this PR were affected by the separately documented pre-step runner/infrastructure failure and were not treated as green test evidence; the accepted merge basis was the exact-head split-runtime/operator proof above.
+
 ## Operational rule for MB4E
 
 **Do not start a new MB4E training run for learning purposes.**
@@ -71,11 +95,11 @@ The next Learning Plane work is **operational hardening and validation with new 
 
 Priority areas:
 
-1. improve autonomous-training telemetry and operator diagnostics;
-2. define bounded background scheduling/load-throttling under explicit resource budgets;
-3. define delayed/recurrent retention scheduling without weakening Phase 10 authority boundaries;
-4. exercise restart/recovery/idempotency against new approved source workflows;
-5. preserve deterministic provenance/integrity hard stops and current public/private source boundaries.
+1. define bounded background scheduling/load-throttling under explicit resource budgets;
+2. define delayed/recurrent retention scheduling without weakening Phase 10 authority boundaries;
+3. exercise restart/recovery/idempotency against new approved source workflows;
+4. preserve deterministic provenance/integrity hard stops and current public/private source boundaries;
+5. use the accepted authoritative telemetry surface to diagnose future autonomous-training operations rather than adding ad hoc status paths.
 
 Controlled Execution remains locked/not started.
 
