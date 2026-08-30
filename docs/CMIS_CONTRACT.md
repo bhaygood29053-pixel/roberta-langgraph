@@ -38,7 +38,7 @@ Accepted milestones include:
 
 Roberta Phase 11 — Controlled Execution remains **locked / not started**.
 
-CMIS currently advertises capability contract **1.12.0**. Roberta keeps a global existing-service minimum of **1.8.0**; the promoted concentration intelligence operation keeps its service-specific minimum of **1.9.0**, legacy X1 all-available historical modes remain compatible from **1.10.0**, normalized exact-mint X1 identity requires **1.11.0**, and verified provider-price backfill semantics require the **1.12.0** historical limitation contract.
+CMIS currently advertises capability contract **1.13.0**. Roberta keeps a global existing-service minimum of **1.8.0**; the promoted concentration intelligence operation keeps its service-specific minimum of **1.9.0**, legacy X1 all-available historical modes remain compatible from **1.10.0**, normalized exact-mint X1 identity requires **1.11.0**, verified provider-price backfill semantics require the **1.12.0** historical limitation contract, and the upstream Instant X1 Scan promotion requires **1.13.0**.
 
 ## Shared public service surface
 
@@ -53,8 +53,11 @@ The shared CMIS contract includes, where the live chain capability manifest perm
 - `pre_trade_check`
 - `verification_evidence`
 - `concentration_change_intelligence` — X1-only bounded promoted service under CMIS 1.9.0
+- `instant_x1_scan` — X1-only read-only composition service promoted by CMIS under `instant_x1_scan/v1` / CMIS 1.13.0
 
 A CMIS runtime capability does not become an autonomous Scout action merely because the service exists. Every operation names its target chain explicitly. No unsupported-chain fallback is permitted.
+
+As of 2026-08-30, `instant_x1_scan/v1` is upstream-promoted by CMIS but is **not yet accepted as a Roberta/X1 Scout dispatch operation**. Adoption requires an explicit Scout/client seam and deterministic integration coverage; documentation of the upstream service must not be mistaken for implementation acceptance.
 
 ## Capability handshake
 
@@ -112,6 +115,22 @@ Roberta delegates these requests through X1 Scout. For pair history, the second 
 Before using either all-available mode, the Scout-side client requires CMIS contract `>=1.10.0` plus the exact accepted X1 historical limitations. It fails closed without a POST if the version or limitations are missing/weakened.
 
 “All available” must never be restated as proven complete token lifetime unless CMIS explicitly proves that stronger claim. `full_asset_lifetime_verified=false` and `continuous_coverage_verified=false` remain authoritative when returned. For CMIS `>=1.12.0`, X1 Scout accepts the narrower verified provider-price backfill contract only when the manifest preserves price-only promotion, non-independence, non-archive-completeness, non-continuity, and historical stable-quote uncertainty. The Scout projects CMIS coverage into deterministic presentation metadata; if verified history exists, Roberta must not describe overall history as zero. Missing history is unknown/unproven, never zero.
+
+## Instant X1 Scan — upstream CMIS 1.13 promotion, Roberta adoption pending
+
+CMIS advertises the exact upstream promotion:
+
+```text
+service = instant_x1_scan
+service_contract_version = instant_x1_scan/v1
+chain = x1
+read_only = true
+public_service_promoted = true
+scout_reliance_promoted = true
+execution_authorized = false
+```
+
+The wrapper is composition-only and does not create a new provider truth path. Roberta must not call it directly; the accepted path remains `Roberta -> X1 Scout -> CMIS`. Until the X1 Scout/client integration is implemented and reviewed, Roberta must not represent Instant X1 Scan as an available Roberta capability.
 
 ## First promoted read-only intelligence service
 
