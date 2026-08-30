@@ -138,7 +138,21 @@ def is_instant_x1_scan_objective(objective: object) -> bool:
     """Return whether the user explicitly requested the flagship Instant X1 Scan."""
 
     normalized = _normalize_objective(objective)
-    return bool(normalized) and any(term in normalized for term in _INSTANT_SCAN_TERMS)
+    if not normalized:
+        return False
+    if any(term in normalized for term in _INSTANT_SCAN_TERMS):
+        return True
+
+    # X1 Scout already owns the chain scope, so a direct user command such as
+    # "scan AGI", "scan XNT", "scan token AGI", or "please scan AGI" is an
+    # explicit request for the flagship scan. This is request routing only; the
+    # asset itself remains the separately supplied Scout request identity.
+    return re.match(
+        r"^(?:please\s+)?(?:x1\s+)?scan"
+        r"(?:\s+(?:the\s+)?(?:asset|token|coin))?"
+        r"\s+\S+",
+        normalized,
+    ) is not None
 
 
 def is_rank_objective(objective: object) -> bool:
