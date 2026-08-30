@@ -20,6 +20,8 @@ def build_instant_x1_scan_presentation(
 
     if result.get("service") != "instant_x1_scan":
         return None
+    if result.get("status") not in {"ok", "partial"}:
+        return None
     data = result.get("data")
     if not isinstance(data, Mapping):
         return None
