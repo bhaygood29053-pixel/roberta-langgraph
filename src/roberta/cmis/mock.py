@@ -377,6 +377,14 @@ class MockCMISClient:
         self.calls.append(
             {"operation": "instant_x1_scan", "chain": chain, "asset": asset}
         )
+        if self.scenario in {"unavailable", "error"}:
+            return self._response(
+                service="instant_x1_scan",
+                chain=chain,
+                asset=asset,
+                data={},
+                risk=None,
+            )
         limitations = list(INSTANT_X1_SCAN_REQUIRED_LIMITATIONS)
         return self._response(
             service="instant_x1_scan",
