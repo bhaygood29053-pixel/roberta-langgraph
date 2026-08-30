@@ -1,6 +1,6 @@
 # Roberta Learning System
 
-Last reconciled: 2026-08-28 (America/New_York)
+Last reconciled: 2026-08-30 (America/New_York)
 
 Status: **Learning System Phases 1-10 accepted on `main`; autonomous source-grounded Learning Plane controller accepted.**
 
@@ -227,16 +227,17 @@ Accepted on `main`:
 - MB4E frozen 14-stage plan;
 - prebuilt MB4E banks through Stage 8 / Market Structure;
 - autonomous `roberta-train` source-mastery controller;
-- read-only Learning Command Center autonomous-job telemetry.
+- read-only Learning Command Center autonomous-job telemetry;
+- authoritative autonomous-training telemetry with ledger-backed mastery/completion reconciliation.
 
-Current operator-local MB4E source-mastery evidence has passed runtime-generated Stages 9, 10, and 11. Stage 11 / On-chain Analysis passed canonical Attempt 3 at 99.33% accuracy with 100% integrity, Boss PASS, and zero critical failures. Stage 12 / Risk Reasoning is next; repository prebuilt-bank acceptance still remains through Stage 8, so this runtime progress must not be relabeled as prebuilt curriculum acceptance.
+Operator-local MB4E source mastery is complete. The authoritative source-plan-bound ledger records 14/14 required source stages plus the required final capstone. Stage 14 / Cross-chain Reasoning passed canonical Attempt 3 at 99.33% accuracy with 100% integrity, Boss PASS, and zero critical failures. Repository prebuilt-bank acceptance remains through Stage 8; runtime-generated Stages 9-14 are mastery evidence under the autonomous controller, not separately accepted prebuilt repository banks.
 
 Still separate/future:
 
 - general operational-trust promotion wrapper;
 - durable/provider-backed general Phase 10 retention store;
 - generalized background scheduler/load-throttling and recurring retention scheduler;
-- MB4E Stage 12-14 completion and final capstone/mastery;
+- new approved-source mastery plus restart/recovery/idempotency validation;
 - XenBlocks source acceptance after exact-byte correction;
 - any Controlled Execution work.
 
