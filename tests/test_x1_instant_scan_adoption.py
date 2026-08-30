@@ -512,6 +512,9 @@ def test_x1_scout_accepts_verified_nonnegative_holder_count() -> None:
     class VerifiedHoldersCMIS(MockCMISClient):
         def instant_x1_scan(self, *, chain: str, asset: str):
             result = super().instant_x1_scan(chain=chain, asset=asset)
+            market = result["data"]["sections"]["market"]
+            market["holders"] = 12
+            market["holders_verified"] = True
             holder = result["data"]["sections"]["holder_concentration"]
             holder["holders"] = 12
             holder["holders_verified"] = True
