@@ -67,6 +67,15 @@ def validate_instant_x1_scan_response(
         )
 
     if envelope.get("status") in {"unavailable", "error"}:
+        failed_data = envelope.get("data")
+        if failed_data != {}:
+            raise CMISInstantX1ScanContractError(
+                "Failed CMIS Instant X1 Scan responses must not expose product data."
+            )
+        if envelope.get("risk") is not None:
+            raise CMISInstantX1ScanContractError(
+                "Failed CMIS Instant X1 Scan responses must not expose risk data."
+            )
         return envelope
 
     data = _mapping(envelope.get("data"), field="data")
