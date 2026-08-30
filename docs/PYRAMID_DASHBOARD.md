@@ -1,6 +1,6 @@
 # Roberta Learning Command Center
 
-Last reconciled: 2026-08-26 (America/New_York)
+Last reconciled: 2026-08-30 (America/New_York)
 
 The Learning Command Center is a local **read-only** observability surface over Roberta's Pyramid training ledger, source-mastery plan, curriculum metadata, autonomous-training job state, and Roberta bridge health.
 
@@ -70,6 +70,12 @@ The dashboard may read the selected source, profile, job status, current activit
 The dashboard does not acquire the controller lock, alter `state.json`, append events, repair checkpoints, regenerate plans, create curricula, run exams, approve retention, or retry a hard-stopped job.
 
 A visible hard stop must remain visible. The dashboard must not infer progress from incomplete artifacts or convert missing state into success.
+
+## Authoritative autonomous-training telemetry
+
+The accepted protected runtime exposes `roberta-autonomous-training-telemetry/v1`, a deterministic read-only operator surface reconciled against the authoritative source-mastery ledger. The dashboard may display reconciled job/run/source/plan identity, stage/capability/activity, attempts, remediation/checkpoint progress, controller diagnostics, and completion state while preserving `execution_authorized=false`.
+
+Telemetry conflicts remain visible and fail closed. Reading telemetry must not mutate durable job state or the Pyramid ledger.
 
 ## Source-adaptive Pyramid display
 
