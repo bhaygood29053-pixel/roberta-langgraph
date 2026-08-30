@@ -10,6 +10,9 @@ from unittest.mock import patch
 from roberta.cmis.capabilities import (
     HISTORICAL_ALL_AVAILABLE_REQUIRED_LIMITATIONS,
     HISTORICAL_PAIR_REQUIRED_LIMITATION,
+    INSTANT_X1_SCAN_CONTRACT_VERSION,
+    INSTANT_X1_SCAN_REQUIRED_LIMITATIONS,
+    INSTANT_X1_SCAN_REQUIRED_REQUIREMENTS,
     INTELLIGENCE_FOUNDATION_CAPABILITIES,
     INTELLIGENCE_FOUNDATION_PHASE,
     INTELLIGENCE_PROMOTION_RULE,
@@ -229,6 +232,101 @@ class _Server:
         self.server.shutdown()
         self.server.server_close()
         self.thread.join(timeout=2)
+
+
+def _cmis_1_13_instant_scan_capabilities() -> dict[str, object]:
+    capabilities = deepcopy(_capabilities())
+    capabilities["contract_version"] = "1.13.0"
+    capabilities["supported_services"].append("instant_x1_scan")
+
+    capabilities["chains"]["x1"]["services"]["instant_x1_scan"] = {
+        "state": "bounded",
+        "callable": True,
+        "requirements": list(INSTANT_X1_SCAN_REQUIRED_REQUIREMENTS),
+        "limitations": list(INSTANT_X1_SCAN_REQUIRED_LIMITATIONS),
+        "read_only": True,
+        "service_contract_version": INSTANT_X1_SCAN_CONTRACT_VERSION,
+        "public_service_promoted": True,
+        "scout_reliance_promoted": True,
+        "execution_authorized": False,
+    }
+    capabilities["chains"]["x1"]["callable_services"].append("instant_x1_scan")
+
+    capabilities["chains"]["solana"]["services"]["instant_x1_scan"] = {
+        "state": "unavailable",
+        "callable": False,
+        "requirements": [],
+        "limitations": ["instant_x1_scan_not_available_for_chain"],
+    }
+    return capabilities
+
+
+def test_http_client_posts_exact_instant_x1_scan_request_under_cmis_1_13() -> None:
+    expected = _envelope("instant_x1_scan")
+    expected["data"] = {
+        "contract_version": INSTANT_X1_SCAN_CONTRACT_VERSION,
+        "read_only": True,
+        "sections": {},
+        "limitations": ["missing_or_unverified_fields_remain_unknown"],
+        "execution_authorized": False,
+    }
+
+    with _Server(
+        expected,
+        capabilities=_cmis_1_13_instant_scan_capabilities(),
+    ) as running:
+        result = CMISHTTPClient(
+            base_url=running.base_url,
+            timeout_seconds=2,
+        ).instant_x1_scan(chain="x1", asset="AGI")
+
+    assert result == expected
+    assert running.get_paths == ["/v1/cmis/capabilities"]
+    assert running.requests == [
+        {
+            "service": "instant_x1_scan",
+            "chain": "x1",
+            "asset": "AGI",
+            "params": {},
+        }
+    ]
+
+
+def test_http_client_blocks_instant_scan_on_cmis_1_12_before_post() -> None:
+    capabilities = _cmis_1_13_instant_scan_capabilities()
+    capabilities["contract_version"] = "1.12.0"
+
+    with _Server(_envelope("instant_x1_scan"), capabilities=capabilities) as running:
+        result = CMISHTTPClient(
+            base_url=running.base_url,
+            timeout_seconds=2,
+        ).instant_x1_scan(chain="x1", asset="AGI")
+
+    assert result["status"] == "unavailable"
+    assert result["warnings"][0]["code"] == "cmis_instant_x1_scan_contract_unavailable"
+    assert running.get_paths == ["/v1/cmis/capabilities"]
+    assert running.requests == []
+
+
+def test_http_client_never_falls_back_instant_scan_to_solana() -> None:
+    capabilities = _cmis_1_13_instant_scan_capabilities()
+
+    with _Server(
+        _envelope("instant_x1_scan", chain="solana"),
+        capabilities=capabilities,
+    ) as running:
+        result = CMISHTTPClient(
+            base_url=running.base_url,
+            timeout_seconds=2,
+        ).instant_x1_scan(
+            chain="solana",
+            asset="So11111111111111111111111111111111111111112",
+        )
+
+    assert result["status"] == "unavailable"
+    assert result["warnings"][0]["code"] == "cmis_instant_x1_scan_unavailable"
+    assert running.get_paths == ["/v1/cmis/capabilities"]
+    assert running.requests == []
 
 
 def test_http_client_posts_asset_lookup_under_cmis_1_11_identity_contract() -> None:
