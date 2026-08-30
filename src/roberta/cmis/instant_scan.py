@@ -77,7 +77,8 @@ def validate_instant_x1_scan_response(
             "CMIS Instant X1 Scan response must remain X1-only."
         )
 
-    if envelope.get("status") in {"ambiguous", "unavailable", "error"}:
+    status = envelope.get("status")
+    if status in {"ambiguous", "unavailable", "error"}:
         failed_data = envelope.get("data")
         if failed_data != {}:
             raise CMISInstantX1ScanContractError(
@@ -88,6 +89,12 @@ def validate_instant_x1_scan_response(
                 "Failed CMIS Instant X1 Scan responses must not expose risk data."
             )
         return envelope
+
+    if status not in {"ok", "partial"}:
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan response status must be one of "
+            "ok, partial, ambiguous, unavailable, error."
+        )
 
     data = _mapping(envelope.get("data"), field="data")
     if data.get("contract_version") != INSTANT_X1_SCAN_CONTRACT_VERSION:
