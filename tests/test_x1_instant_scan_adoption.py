@@ -273,7 +273,10 @@ def test_x1_scout_rejects_malformed_or_inconsistent_envelope_risk(
     assert "instant_x1_scan_presentation" not in report
 
 
-@pytest.mark.parametrize("bad_status", [None, "", "complete", "success"])
+@pytest.mark.parametrize(
+    "bad_status",
+    [None, "", "complete", "success", [], {}, ["ok"]],
+)
 def test_x1_scout_rejects_unsupported_scan_status(
     bad_status: object,
 ) -> None:
