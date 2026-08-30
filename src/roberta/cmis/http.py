@@ -13,6 +13,7 @@ from roberta.cmis.capabilities import (
     CMISCapabilityContractError,
     CMISCapabilityUnavailable,
     require_historical_all_available_capability,
+    require_instant_x1_scan_capability,
     require_service_capability,
     validate_capability_manifest,
 )
@@ -370,6 +371,40 @@ class CMISHTTPClient:
 
     def market_report(self, *, chain: str, asset: str) -> CMISEnvelope:
         return self._request(service="market_report", chain=chain, asset=asset)
+
+    def instant_x1_scan(self, *, chain: str, asset: str) -> CMISEnvelope:
+        normalized_chain, normalized_asset = self._identity(chain, asset)
+        try:
+            require_instant_x1_scan_capability(
+                self.capabilities(),
+                chain=normalized_chain,
+            )
+        except CMISCapabilityUnavailable as exc:
+            return self._error_envelope(
+                service="instant_x1_scan",
+                chain=normalized_chain,
+                asset=normalized_asset,
+                status="unavailable",
+                code="cmis_instant_x1_scan_unavailable",
+                message=str(exc),
+                warning=True,
+            )
+        except CMISCapabilityContractError as exc:
+            return self._error_envelope(
+                service="instant_x1_scan",
+                chain=normalized_chain,
+                asset=normalized_asset,
+                status="unavailable",
+                code="cmis_instant_x1_scan_contract_unavailable",
+                message=f"CMIS Instant X1 Scan contract unavailable: {exc}",
+                warning=True,
+            )
+
+        return self._request(
+            service="instant_x1_scan",
+            chain=normalized_chain,
+            asset=normalized_asset,
+        )
 
     def rank(
         self,
