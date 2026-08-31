@@ -178,6 +178,24 @@ def test_compare_tool_requires_second_asset_and_rejects_trade_inputs() -> None:
         )
 
 
+def test_compare_history_requires_explicit_all_available_history_intent() -> None:
+    cmis = MockCMISClient()
+    tool = build_x1_scout_tool(cmis)
+
+    with pytest.raises(ValueError, match="full/entire/lifetime-history"):
+        tool.invoke(
+            {
+                "asset": "AAA",
+                "objective": "compare AAA and BBB",
+                "operation": "compare",
+                "compare_asset": "BBB",
+                "include_history": True,
+            }
+        )
+
+    assert cmis.calls == []
+
+
 def test_include_history_is_rejected_outside_compare() -> None:
     tool = build_x1_scout_tool(MockCMISClient())
 
