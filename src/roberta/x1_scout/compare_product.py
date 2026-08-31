@@ -96,8 +96,33 @@ def _validate_scan_product_view(
         raise ValueError(f"{side} comparison input is not an accepted Instant X1 Scan view")
     if view.get("product") != "instant_x1_scan" or view.get("chain") != "x1":
         raise ValueError(f"{side} comparison input must remain an X1 Instant X1 Scan")
+    if view.get("status") not in {"ok", "partial"}:
+        raise ValueError(f"{side} comparison input must be an ok/partial Instant X1 Scan")
     if view.get("execution_authorized") is not False:
         raise ValueError(f"{side} comparison input must preserve execution_authorized=false")
+
+    risk = _mapping(view.get("risk"))
+    if risk.get("execution_authorized") is not False:
+        raise ValueError(
+            f"{side} comparison risk must preserve execution_authorized=false"
+        )
+
+    evidence = _mapping(view.get("evidence"))
+    if evidence.get("proof_score_separate_from_risk") is not True:
+        raise ValueError(
+            f"{side} comparison evidence must keep Proof Score separate from risk"
+        )
+
+    holder = _mapping(view.get("holder_concentration"))
+    concentration = _mapping(holder.get("top_account_concentration"))
+    if (
+        concentration.get("state") != "unavailable"
+        or concentration.get("verified") is not False
+        or concentration.get("value") is not None
+    ):
+        raise ValueError(
+            f"{side} comparison input must keep current concentration unavailable"
+        )
 
 
 _BASE58_CHARS = frozenset(
@@ -231,15 +256,18 @@ def _pair_history_projection(
     if mode is not None and mode != "all_available_pair":
         raise ValueError("Compare pair history must use CMIS all_available_pair mode")
 
+    primary_asset = (
+        data.get("asset")
+        if isinstance(data.get("asset"), Mapping)
+        else result.get("asset")
+    )
+    secondary_asset = data.get("compare_asset")
+    compare_request = data.get("compare_asset_request")
+
     if status in {"ok", "partial"}:
         if mode != "all_available_pair":
             raise ValueError("Compare pair history must use CMIS all_available_pair mode")
 
-        primary_asset = (
-            data.get("asset")
-            if isinstance(data.get("asset"), Mapping)
-            else result.get("asset")
-        )
         if not _history_identity_matches_scan(
             primary_asset,
             requested_asset=left_requested_asset,
@@ -249,7 +277,6 @@ def _pair_history_projection(
                 "Compare pair history primary asset does not match the left comparison asset"
             )
 
-        secondary_asset = data.get("compare_asset")
         if isinstance(secondary_asset, Mapping):
             secondary_matches = _history_identity_matches_scan(
                 secondary_asset,
@@ -257,7 +284,6 @@ def _pair_history_projection(
                 scan=right_scan,
             )
         else:
-            compare_request = data.get("compare_asset_request")
             secondary_matches = _same_identity_text(
                 compare_request,
                 right_requested_asset,
@@ -276,6 +302,33 @@ def _pair_history_projection(
             raise ValueError(
                 "Compare pair history envelope asset does not match the left comparison asset"
             )
+    else:
+        # Failure envelopes may omit pair identities entirely, but if CMIS
+        # supplies diagnostic identity fields they must still describe the
+        # requested pair rather than a cached/misrouted comparison.
+        if isinstance(primary_asset, Mapping) and primary_asset:
+            if not _history_identity_matches_scan(
+                primary_asset,
+                requested_asset=left_requested_asset,
+                scan=left_scan,
+            ):
+                raise ValueError(
+                    "Compare pair history primary asset does not match the left comparison asset"
+                )
+        if isinstance(secondary_asset, Mapping) and secondary_asset:
+            if not _history_identity_matches_scan(
+                secondary_asset,
+                requested_asset=right_requested_asset,
+                scan=right_scan,
+            ):
+                raise ValueError(
+                    "Compare pair history secondary asset does not match the right comparison asset"
+                )
+        elif str(compare_request or "").strip():
+            if not _same_identity_text(compare_request, right_requested_asset):
+                raise ValueError(
+                    "Compare pair history secondary asset does not match the right comparison asset"
+                )
 
     return {
         "asset": (
