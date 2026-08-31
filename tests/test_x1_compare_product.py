@@ -527,6 +527,83 @@ def test_compare_handles_arbitrarily_large_verified_integers_without_overflow() 
     assert view["comparison"]["transactions_24h"]["relation"] == "right_higher"
 
 
+def test_compare_rejects_failed_or_authority_drifted_scan_views() -> None:
+    failed = _right()
+    failed["status"] = "unavailable"
+    with pytest.raises(ValueError, match="ok/partial"):
+        build_x1_compare_product_view(
+            left_requested_asset="AAA",
+            right_requested_asset="BBB",
+            left_scan=_left(),
+            right_scan=failed,
+        )
+
+    risk_authorized = _right()
+    risk_authorized["risk"]["execution_authorized"] = True
+    with pytest.raises(ValueError, match="comparison risk"):
+        build_x1_compare_product_view(
+            left_requested_asset="AAA",
+            right_requested_asset="BBB",
+            left_scan=_left(),
+            right_scan=risk_authorized,
+        )
+
+    proof_rewritten = _right()
+    proof_rewritten["evidence"]["proof_score_separate_from_risk"] = False
+    with pytest.raises(ValueError, match="Proof Score separate from risk"):
+        build_x1_compare_product_view(
+            left_requested_asset="AAA",
+            right_requested_asset="BBB",
+            left_scan=_left(),
+            right_scan=proof_rewritten,
+        )
+
+
+def test_compare_rejects_promoted_current_concentration_in_input_view() -> None:
+    right = _right()
+    right["holder_concentration"]["top_account_concentration"] = {
+        "state": "available",
+        "verified": True,
+        "value": 0.42,
+    }
+
+    with pytest.raises(ValueError, match="current concentration unavailable"):
+        build_x1_compare_product_view(
+            left_requested_asset="AAA",
+            right_requested_asset="BBB",
+            left_scan=_left(),
+            right_scan=right,
+        )
+
+
+def test_compare_rejects_misrouted_identity_on_failed_pair_history() -> None:
+    pair_history = {
+        "service": "historical_compare",
+        "chain": "x1",
+        "status": "unavailable",
+        "asset": {"symbol": "CCC"},
+        "data": {
+            "mode": "all_available_pair",
+            "compare_asset_request": "DDD",
+        },
+        "risk": None,
+        "confidence": {},
+        "sources": [],
+        "observed_at": None,
+        "warnings": [{"code": "history_unavailable"}],
+        "errors": [],
+    }
+
+    with pytest.raises(ValueError, match="primary asset"):
+        build_x1_compare_product_view(
+            left_requested_asset="AAA",
+            right_requested_asset="BBB",
+            left_scan=_left(),
+            right_scan=_right(),
+            pair_history=pair_history,
+        )
+
+
 def test_compare_rejects_execution_authority_drift() -> None:
     right = deepcopy(_right())
     right["execution_authorized"] = True
