@@ -8,6 +8,7 @@ from langchain_core.tools import BaseTool, StructuredTool
 from roberta.cmis.client import CMISClient
 from roberta.cmis.concentration_intelligence import normalize_intelligence_evidence_id
 from roberta.cmis.contracts import TradeAction
+from roberta.x1_scout.compare_workflow import run_x1_compare_workflow
 from roberta.x1_scout.graph import build_x1_scout_graph
 from roberta.x1_scout.planner import is_all_available_history_objective
 
@@ -23,6 +24,7 @@ def build_x1_scout_tool(
         asset: str,
         objective: str = "assess market risk",
         operation: Literal[
+            "compare",
             "instant_x1_scan",
             "pre_trade_check",
             "concentration_change_intelligence",
@@ -31,6 +33,7 @@ def build_x1_scout_tool(
         amount_usd: float | None = None,
         intelligence_evidence_id: str | None = None,
         compare_asset: str | None = None,
+        include_history: bool = False,
     ) -> str:
         """Delegate an X1-specific investigation to X1 Scout.
 
@@ -47,6 +50,12 @@ def build_x1_scout_tool(
         also request operation='instant_x1_scan' explicitly without adding market
         facts or provider shortcuts.
 
+        For a first-class two-asset X1 comparison, use operation='compare' and
+        copy the exact second user/trusted-context asset into compare_asset.
+        Set include_history=true only when the user explicitly asks for full/
+        entire/lifetime pair history; the history path uses CMIS
+        all_available_pair and never reconstructs pair history locally.
+
         Pre-trade analysis and promoted concentration-change intelligence are
         explicit-request-only. Roberta must copy the exact user/trusted-context
         inputs and never invent a trade amount, side, or CMIS intelligence id.
@@ -57,6 +66,10 @@ def build_x1_scout_tool(
             "objective": objective,
         }
         if operation is None:
+            if include_history:
+                raise ValueError(
+                    "include_history requires operation='compare'"
+                )
             if action is not None or amount_usd is not None or intelligence_evidence_id is not None:
                 raise ValueError(
                     "action/amount_usd/intelligence_evidence_id require an explicit operation"
@@ -72,7 +85,32 @@ def build_x1_scout_tool(
                         "compare_asset is accepted only for entire/full/lifetime-history comparisons"
                     )
                 request["compare_asset"] = normalized_compare
+        elif operation == "compare":
+            normalized_compare = str(compare_asset or "").strip()
+            if not normalized_compare:
+                raise ValueError("compare requires compare_asset")
+            if action is not None or amount_usd is not None:
+                raise ValueError(
+                    "trade action/amount are not accepted for compare"
+                )
+            if intelligence_evidence_id is not None:
+                raise ValueError(
+                    "intelligence_evidence_id is not accepted for compare"
+                )
+            if type(include_history) is not bool:
+                raise ValueError("include_history must be boolean")
+            compare_report = run_x1_compare_workflow(
+                cmis_client=cmis_client,
+                scout_graph=scout_graph,
+                left_asset=str(asset or "").strip(),
+                right_asset=normalized_compare,
+                objective=objective,
+                include_history=include_history,
+            )
+            return json.dumps(compare_report, sort_keys=True)
         elif operation == "instant_x1_scan":
+            if include_history:
+                raise ValueError("include_history is accepted only for compare")
             if compare_asset is not None:
                 raise ValueError("compare_asset is not accepted for instant_x1_scan")
             if action is not None or amount_usd is not None:
@@ -85,6 +123,8 @@ def build_x1_scout_tool(
                 )
             request["operation"] = "instant_x1_scan"
         elif operation == "pre_trade_check":
+            if include_history:
+                raise ValueError("include_history is accepted only for compare")
             if compare_asset is not None:
                 raise ValueError("compare_asset is not accepted for pre_trade_check")
             if intelligence_evidence_id is not None:
@@ -105,6 +145,8 @@ def build_x1_scout_tool(
                 }
             )
         elif operation == "concentration_change_intelligence":
+            if include_history:
+                raise ValueError("include_history is accepted only for compare")
             if compare_asset is not None:
                 raise ValueError(
                     "compare_asset is not accepted for concentration intelligence"
@@ -141,7 +183,12 @@ def build_x1_scout_tool(
             "Delegate an X1-chain investigation to X1 Scout. Natural Instant X1 Scan or "
             "quick/instant asset-scan requests use the accepted CMIS instant_x1_scan/v1 "
             "composition through X1 Scout; operation='instant_x1_scan' is also available "
-            "for an explicit flagship scan request. Ordinary objectives cover current market "
+            "for an explicit flagship scan request. For a first-class two-asset current "
+            "comparison, use operation='compare' with the exact second asset in compare_asset; "
+            "set include_history=true only for explicit full/entire/lifetime pair-history "
+            "requests. Compare obtains two validated Instant X1 Scans and, when requested, "
+            "one CMIS all_available_pair result without local fact/history recomputation. "
+            "Ordinary objectives cover current market "
             "data, tokenomics, deterministic risk, XDEX rankings, and historical comparisons. "
             "Full/complete/comprehensive assessment or due-diligence "
             "objectives deterministically gather market_report, rank, tokenomics, "
