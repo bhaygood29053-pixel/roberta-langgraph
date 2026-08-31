@@ -36,6 +36,10 @@ from roberta.x1_scout.history_presentation import (
 from roberta.x1_scout.instant_scan_presentation import (
     build_instant_x1_scan_presentation,
 )
+from roberta.x1_scout.instant_scan_product_ux import (
+    build_instant_x1_scan_product_view,
+    render_instant_x1_scan_product_text,
+)
 from roberta.x1_scout.planner import (
     compare_asset_from_objective,
     enforce_plan,
@@ -520,6 +524,12 @@ def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
         report["instant_x1_scan_presentation"] = dict(
             instant_scan_presentation
         )
+        product_view = build_instant_x1_scan_product_view(report)
+        if product_view is not None:
+            report["instant_x1_scan_product_view"] = product_view
+            report["instant_x1_scan_product_text"] = (
+                render_instant_x1_scan_product_text(product_view)
+            )
     if normalized_identity is not None:
         report["normalized_asset_identity"] = normalized_identity
         report["asset_identity_reconciliation"] = identity_reconciliation or {}
