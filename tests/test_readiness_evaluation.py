@@ -33,6 +33,9 @@ class FakeCMIS:
     def market_report(self, *, chain, asset):
         return {"service": "market_report", "chain": chain, "status": "partial"}
 
+    def instant_x1_scan(self, *, chain, asset):
+        return {"service": "instant_x1_scan", "chain": chain, "status": "partial"}
+
     def rank(self, *, chain, metric="volume", limit=10):
         return {"service": "rank", "chain": chain, "status": "ok"}
 
@@ -97,6 +100,23 @@ def test_observed_cmis_records_service_status_and_latency():
     assert trace.events[0].chain == "x1"
     assert trace.events[0].status == "partial"
     assert trace.events[0].elapsed_ms >= 0
+
+
+def test_observed_cmis_forwards_and_traces_instant_x1_scan():
+    trace = CMISTrace()
+    client = ObservedCMISClient(FakeCMIS(), trace=trace)
+
+    result = client.instant_x1_scan(chain="x1", asset="AGI")
+
+    assert result == {
+        "service": "instant_x1_scan",
+        "chain": "x1",
+        "status": "partial",
+    }
+    assert len(trace.events) == 1
+    assert trace.events[0].service == "instant_x1_scan"
+    assert trace.events[0].chain == "x1"
+    assert trace.events[0].status == "partial"
 
 
 def test_evaluation_requires_service_coverage_answer_first_and_unknown_disclosure():

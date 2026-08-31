@@ -13,6 +13,7 @@ from roberta.cmis.capabilities import (
     CMISCapabilityContractError,
     CMISCapabilityUnavailable,
     require_historical_all_available_capability,
+    require_instant_x1_scan_capability,
     require_service_capability,
     validate_capability_manifest,
 )
@@ -20,6 +21,10 @@ from roberta.cmis.concentration_intelligence import (
     SERVICE as CONCENTRATION_INTELLIGENCE_SERVICE,
     normalize_intelligence_evidence_id,
     require_concentration_intelligence_promotion,
+)
+from roberta.cmis.instant_scan import (
+    CMISInstantX1ScanContractError,
+    validate_instant_x1_scan_response,
 )
 from roberta.cmis.contracts import (
     CMISEnvelope,
@@ -237,7 +242,7 @@ class CMISHTTPClient:
                 ),
             )
         status = value.get("status")
-        if status not in _ALLOWED_STATUSES:
+        if not isinstance(status, str) or status not in _ALLOWED_STATUSES:
             return cls._error_envelope(
                 service=service,
                 chain=chain,
@@ -370,6 +375,51 @@ class CMISHTTPClient:
 
     def market_report(self, *, chain: str, asset: str) -> CMISEnvelope:
         return self._request(service="market_report", chain=chain, asset=asset)
+
+    def instant_x1_scan(self, *, chain: str, asset: str) -> CMISEnvelope:
+        normalized_chain, normalized_asset = self._identity(chain, asset)
+        try:
+            require_instant_x1_scan_capability(
+                self.capabilities(),
+                chain=normalized_chain,
+            )
+        except CMISCapabilityUnavailable as exc:
+            return self._error_envelope(
+                service="instant_x1_scan",
+                chain=normalized_chain,
+                asset=normalized_asset,
+                status="unavailable",
+                code="cmis_instant_x1_scan_unavailable",
+                message=str(exc),
+                warning=True,
+            )
+        except CMISCapabilityContractError as exc:
+            return self._error_envelope(
+                service="instant_x1_scan",
+                chain=normalized_chain,
+                asset=normalized_asset,
+                status="unavailable",
+                code="cmis_instant_x1_scan_contract_unavailable",
+                message=f"CMIS Instant X1 Scan contract unavailable: {exc}",
+                warning=True,
+            )
+
+        result = self._request(
+            service="instant_x1_scan",
+            chain=normalized_chain,
+            asset=normalized_asset,
+        )
+        try:
+            return validate_instant_x1_scan_response(result)
+        except CMISInstantX1ScanContractError as exc:
+            return self._error_envelope(
+                service="instant_x1_scan",
+                chain=normalized_chain,
+                asset=normalized_asset,
+                status="error",
+                code="invalid_cmis_instant_x1_scan_response",
+                message=str(exc),
+            )
 
     def rank(
         self,

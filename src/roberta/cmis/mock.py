@@ -8,6 +8,9 @@ from roberta.cmis.capabilities import (
     INTELLIGENCE_FOUNDATION_CAPABILITIES,
     INTELLIGENCE_FOUNDATION_PHASE,
     HISTORICAL_PROVIDER_BACKFILL_REQUIRED_LIMITATIONS,
+    INSTANT_X1_SCAN_CONTRACT_VERSION,
+    INSTANT_X1_SCAN_REQUIRED_LIMITATIONS,
+    INSTANT_X1_SCAN_REQUIRED_REQUIREMENTS,
     INTELLIGENCE_PROMOTION_RULE,
     MIN_CMIS_CONTRACT_VERSION,
     X1_ASSET_IDENTITY_CONTRACT_VERSION,
@@ -54,6 +57,7 @@ def _mock_capability_manifest() -> CMISCapabilities:
     services = [
         "asset_lookup",
         "market_report",
+        "instant_x1_scan",
         "rank",
         "historical_compare",
         "tokenomics",
@@ -73,6 +77,19 @@ def _mock_capability_manifest() -> CMISCapabilities:
         "exact_mint_normalization": True,
         "normalized_identity_root": "mint",
         "metaplex_xdex_reconciliation": True,
+    }
+    x1["instant_x1_scan"] = {
+        **_capability(
+            "bounded",
+            requirements=list(INSTANT_X1_SCAN_REQUIRED_REQUIREMENTS),
+            limitations=list(INSTANT_X1_SCAN_REQUIRED_LIMITATIONS),
+        ),
+        "read_only": True,
+        "composition_only": True,
+        "service_contract_version": INSTANT_X1_SCAN_CONTRACT_VERSION,
+        "public_service_promoted": True,
+        "scout_reliance_promoted": True,
+        "execution_authorized": False,
     }
     x1["historical_compare"] = _capability(
         "supported",
@@ -106,7 +123,7 @@ def _mock_capability_manifest() -> CMISCapabilities:
         "service": "cmis_gateway",
         "version": 1,
         "schema_version": 1,
-        "contract_version": "1.12.0",
+        "contract_version": "1.13.0",
         "request_path": "/v1/cmis",
         "evidence_quality": {
             "evidence_receipt_schema_version": 1,
@@ -354,6 +371,129 @@ class MockCMISClient:
             chain=chain,
             asset=asset,
             data={"price": None, "liquidity": None, "#LPs": None, "volume_24h": None},
+        )
+
+    def instant_x1_scan(self, *, chain: str, asset: str) -> CMISEnvelope:
+        chain, asset = self._identity(chain, asset)
+        self.calls.append(
+            {"operation": "instant_x1_scan", "chain": chain, "asset": asset}
+        )
+        if self.scenario in {"unavailable", "error"}:
+            return self._response(
+                service="instant_x1_scan",
+                chain=chain,
+                asset=asset,
+                data={},
+                risk=None,
+            )
+        limitations = list(INSTANT_X1_SCAN_REQUIRED_LIMITATIONS)
+        return self._response(
+            service="instant_x1_scan",
+            chain=chain,
+            asset=asset,
+            data={
+                "contract_version": INSTANT_X1_SCAN_CONTRACT_VERSION,
+                "read_only": True,
+                "sections": {
+                    "identity": {
+                        "status": self._status(),
+                        "verified": False,
+                        "symbol": asset,
+                        "name": None,
+                        "mint": None,
+                        "resolved_by": None,
+                        "match_quality": None,
+                        "identity_key": None,
+                        "normalized_identity": None,
+                        "identity_reconciliation": None,
+                    },
+                    "market": {
+                        "status": self._status(),
+                        "price_usd": None,
+                        "price_verified": False,
+                        "liquidity_usd": None,
+                        "liquidity_verified": False,
+                        "volume_24h_usd": None,
+                        "volume_24h_verified": False,
+                        "transactions_24h": None,
+                        "transactions_24h_verified": False,
+                        "#LPs": None,
+                        "holders": None,
+                        "holders_verified": False,
+                    },
+                    "tokenomics": {
+                        "status": self._status(),
+                        "current_total_supply": None,
+                        "supply_verified": False,
+                        "mint_authority": None,
+                        "mint_authority_verified": False,
+                        "freeze_authority": None,
+                        "freeze_authority_verified": False,
+                        "circulating_supply": None,
+                        "circulating_supply_verified": False,
+                    },
+                    "holder_concentration": {
+                        "holders": None,
+                        "holders_verified": False,
+                        "holders_reported": None,
+                        "top_account_concentration": {
+                            "state": "unavailable",
+                            "verified": False,
+                            "value": None,
+                        },
+                    },
+                    "history": {
+                        "status": self._status(),
+                        "coverage_scope": "cmis_stored_verified_observations",
+                        "metrics": {},
+                        "full_asset_lifetime_verified": False,
+                        "continuous_coverage_verified": False,
+                    },
+                    "risk": {
+                        "status": self._status(),
+                        "recommendation": "TEST_ONLY",
+                        "flags": ["NOT_LIVE_DATA"],
+                        "reasons": ["Deterministic mock risk only."],
+                        "confidence": {},
+                        "score": None,
+                        "score_verified": False,
+                        "score_reason": "not_calibrated",
+                        "policy": {},
+                        "execution_authorized": False,
+                    },
+                    "evidence": {
+                        "component_statuses": {},
+                        "component_source_count": 1,
+                        "proof_score_separate_from_risk": True,
+                        "runtime_evidence_receipt_post_processing_only": True,
+                    },
+                },
+                "limitations": [
+                    "missing_or_unverified_fields_remain_unknown",
+                    "holder_count_requires_existing_verified_holder_semantics",
+                    "current_top_account_concentration_not_promoted_in_v1",
+                    "history_is_cmis_stored_verified_observations_only",
+                    "history_does_not_imply_complete_asset_lifetime",
+                    "proof_score_does_not_modify_market_facts_or_risk",
+                    "risk_score_remains_unavailable_until_separately_calibrated",
+                    "execution_authorized_false",
+                ],
+                "execution_authorized": False,
+            },
+            risk=(
+                None
+                if self.scenario in {"unavailable", "error"}
+                else {
+                    "recommendation": "TEST_ONLY",
+                    "flags": ["NOT_LIVE_DATA"],
+                    "reasons": ["Deterministic mock risk only."],
+                    "confidence": {},
+                    "score": None,
+                    "score_verified": False,
+                    "score_reason": "not_calibrated",
+                    "policy": {},
+                }
+            ),
         )
 
     def rank(

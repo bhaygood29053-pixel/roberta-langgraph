@@ -23,6 +23,9 @@ class CMISClient(Protocol):
     def market_report(self, *, chain: str, asset: str) -> CMISEnvelope:
         ...
 
+    def instant_x1_scan(self, *, chain: str, asset: str) -> CMISEnvelope:
+        ...
+
     def rank(
         self,
         *,

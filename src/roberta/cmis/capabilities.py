@@ -20,6 +20,24 @@ HISTORICAL_ALL_AVAILABLE_MIN_CMIS_CONTRACT_VERSION = "1.10.0"
 HISTORICAL_PROVIDER_BACKFILL_MIN_CMIS_CONTRACT_VERSION = "1.12.0"
 X1_ASSET_IDENTITY_MIN_CMIS_CONTRACT_VERSION = "1.11.0"
 X1_ASSET_IDENTITY_CONTRACT_VERSION = "x1_asset_identity/v1"
+INSTANT_X1_SCAN_MIN_CMIS_CONTRACT_VERSION = "1.13.0"
+INSTANT_X1_SCAN_CONTRACT_VERSION = "instant_x1_scan/v1"
+INSTANT_X1_SCAN_REQUIRED_REQUIREMENTS = (
+    "verified_x1_asset_identity",
+    "accepted_market_report",
+    "accepted_tokenomics_service",
+    "cmis_stored_verified_history_only",
+    "deterministic_risk_core",
+)
+INSTANT_X1_SCAN_REQUIRED_LIMITATIONS = (
+    "holder_count_may_remain_unverified",
+    "current_top_account_concentration_not_promoted_in_v1",
+    "history_does_not_imply_complete_asset_lifetime",
+    "proof_score_separate_from_risk",
+    "risk_score_unavailable_until_calibrated",
+    "execution_authorized_false",
+    "x1_only_initial_scope",
+)
 X1_ASSET_IDENTITY_REQUIRED_LIMITATIONS = (
     "exact_mint_is_canonical_fungible_identity_root",
     "same_mint_descriptor_conflicts_return_partial",
@@ -74,6 +92,12 @@ class CMISServiceCapability(TypedDict):
     exact_mint_normalization: NotRequired[bool]
     normalized_identity_root: NotRequired[str]
     metaplex_xdex_reconciliation: NotRequired[bool]
+    read_only: NotRequired[bool]
+    composition_only: NotRequired[bool]
+    service_contract_version: NotRequired[str]
+    public_service_promoted: NotRequired[bool]
+    scout_reliance_promoted: NotRequired[bool]
+    execution_authorized: NotRequired[bool]
 
 
 class CMISChainCapabilities(TypedDict):
@@ -397,6 +421,26 @@ def validate_capability_manifest(value: Any) -> CMISCapabilities:
                 "requirements": requirements,
                 "limitations": limitations,
             }
+            if chain == "x1" and service == "instant_x1_scan":
+                contract = capability_raw.get("service_contract_version")
+                if not isinstance(contract, str) or not contract.strip():
+                    raise CMISCapabilityContractError(
+                        "CMIS x1/instant_x1_scan service_contract_version must be text."
+                    )
+                normalized_capability["service_contract_version"] = contract
+                for field in (
+                    "read_only",
+                    "composition_only",
+                    "public_service_promoted",
+                    "scout_reliance_promoted",
+                    "execution_authorized",
+                ):
+                    raw_flag = capability_raw.get(field)
+                    if not isinstance(raw_flag, bool):
+                        raise CMISCapabilityContractError(
+                            f"CMIS x1/instant_x1_scan {field} must be boolean."
+                        )
+                    normalized_capability[field] = raw_flag
             if chain == "x1" and service == "asset_lookup":
                 identity_contract = capability_raw.get("identity_contract_version")
                 if identity_contract is not None:
@@ -564,6 +608,85 @@ def require_x1_normalized_asset_identity_capability(
     return capability
 
 
+def require_instant_x1_scan_capability(
+    manifest: Mapping[str, Any],
+    *,
+    chain: str = "x1",
+) -> CMISServiceCapability:
+    """Require the exact accepted CMIS 1.13 Instant X1 Scan contract."""
+
+    normalized_chain = str(chain or "").strip().lower()
+    if normalized_chain != "x1":
+        raise CMISCapabilityUnavailable(
+            chain=normalized_chain,
+            service="instant_x1_scan",
+            state=None,
+            limitations=["instant_x1_scan_x1_only"],
+        )
+
+    version = manifest.get("contract_version")
+    if _semver(version) < _semver(INSTANT_X1_SCAN_MIN_CMIS_CONTRACT_VERSION):
+        raise CMISCapabilityContractError(
+            "CMIS Instant X1 Scan requires contract "
+            f">={INSTANT_X1_SCAN_MIN_CMIS_CONTRACT_VERSION}, got {version!r}."
+        )
+
+    capability = require_service_capability(
+        manifest,
+        chain=normalized_chain,
+        service="instant_x1_scan",
+    )
+    if capability.get("state") != "bounded":
+        raise CMISCapabilityContractError(
+            "CMIS x1/instant_x1_scan state must remain bounded."
+        )
+    if capability.get("service_contract_version") != INSTANT_X1_SCAN_CONTRACT_VERSION:
+        raise CMISCapabilityContractError(
+            "CMIS x1/instant_x1_scan service contract mismatch."
+        )
+    if capability.get("read_only") is not True:
+        raise CMISCapabilityContractError(
+            "CMIS x1/instant_x1_scan must remain read-only."
+        )
+    if capability.get("composition_only") is not True:
+        raise CMISCapabilityContractError(
+            "CMIS x1/instant_x1_scan must remain composition-only."
+        )
+    if capability.get("public_service_promoted") is not True:
+        raise CMISCapabilityContractError(
+            "CMIS x1/instant_x1_scan is not public-service promoted."
+        )
+    if capability.get("scout_reliance_promoted") is not True:
+        raise CMISCapabilityContractError(
+            "CMIS x1/instant_x1_scan is not Scout-reliance promoted."
+        )
+    if capability.get("execution_authorized") is not False:
+        raise CMISCapabilityContractError(
+            "CMIS x1/instant_x1_scan must preserve execution_authorized=false."
+        )
+
+    missing_requirements = sorted(
+        set(INSTANT_X1_SCAN_REQUIRED_REQUIREMENTS)
+        - set(capability["requirements"])
+    )
+    if missing_requirements:
+        raise CMISCapabilityContractError(
+            "CMIS x1/instant_x1_scan is missing accepted requirements: "
+            f"{missing_requirements!r}."
+        )
+
+    missing_limitations = sorted(
+        set(INSTANT_X1_SCAN_REQUIRED_LIMITATIONS)
+        - set(capability["limitations"])
+    )
+    if missing_limitations:
+        raise CMISCapabilityContractError(
+            "CMIS x1/instant_x1_scan is missing accepted limitations: "
+            f"{missing_limitations!r}."
+        )
+    return capability
+
+
 def require_historical_all_available_capability(
     manifest: Mapping[str, Any],
     *,
@@ -628,6 +751,10 @@ __all__ = [
     "HISTORICAL_PROVIDER_BACKFILL_MIN_CMIS_CONTRACT_VERSION",
     "HISTORICAL_PROVIDER_BACKFILL_REQUIRED_LIMITATIONS",
     "HISTORICAL_PAIR_REQUIRED_LIMITATION",
+    "INSTANT_X1_SCAN_CONTRACT_VERSION",
+    "INSTANT_X1_SCAN_MIN_CMIS_CONTRACT_VERSION",
+    "INSTANT_X1_SCAN_REQUIRED_LIMITATIONS",
+    "INSTANT_X1_SCAN_REQUIRED_REQUIREMENTS",
     "X1_ASSET_IDENTITY_CONTRACT_VERSION",
     "X1_ASSET_IDENTITY_MIN_CMIS_CONTRACT_VERSION",
     "X1_ASSET_IDENTITY_REQUIRED_LIMITATIONS",
@@ -638,6 +765,7 @@ __all__ = [
     "INTELLIGENCE_PROMOTION_RULE",
     "MIN_CMIS_CONTRACT_VERSION",
     "require_historical_all_available_capability",
+    "require_instant_x1_scan_capability",
     "require_service_capability",
     "require_x1_normalized_asset_identity_capability",
     "service_capability",

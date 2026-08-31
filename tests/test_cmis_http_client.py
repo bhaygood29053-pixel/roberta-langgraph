@@ -3,6 +3,8 @@
 from copy import deepcopy
 import json
 import threading
+
+import pytest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.error import URLError
 from unittest.mock import patch
@@ -10,6 +12,9 @@ from unittest.mock import patch
 from roberta.cmis.capabilities import (
     HISTORICAL_ALL_AVAILABLE_REQUIRED_LIMITATIONS,
     HISTORICAL_PAIR_REQUIRED_LIMITATION,
+    INSTANT_X1_SCAN_CONTRACT_VERSION,
+    INSTANT_X1_SCAN_REQUIRED_LIMITATIONS,
+    INSTANT_X1_SCAN_REQUIRED_REQUIREMENTS,
     INTELLIGENCE_FOUNDATION_CAPABILITIES,
     INTELLIGENCE_FOUNDATION_PHASE,
     INTELLIGENCE_PROMOTION_RULE,
@@ -229,6 +234,215 @@ class _Server:
         self.server.shutdown()
         self.server.server_close()
         self.thread.join(timeout=2)
+
+
+def _cmis_1_13_instant_scan_capabilities() -> dict[str, object]:
+    capabilities = deepcopy(_capabilities())
+    capabilities["contract_version"] = "1.13.0"
+    capabilities["supported_services"].append("instant_x1_scan")
+
+    capabilities["chains"]["x1"]["services"]["instant_x1_scan"] = {
+        "state": "bounded",
+        "callable": True,
+        "requirements": list(INSTANT_X1_SCAN_REQUIRED_REQUIREMENTS),
+        "limitations": list(INSTANT_X1_SCAN_REQUIRED_LIMITATIONS),
+        "read_only": True,
+        "composition_only": True,
+        "service_contract_version": INSTANT_X1_SCAN_CONTRACT_VERSION,
+        "public_service_promoted": True,
+        "scout_reliance_promoted": True,
+        "execution_authorized": False,
+    }
+    capabilities["chains"]["x1"]["callable_services"].append("instant_x1_scan")
+
+    capabilities["chains"]["solana"]["services"]["instant_x1_scan"] = {
+        "state": "unavailable",
+        "callable": False,
+        "requirements": [],
+        "limitations": ["instant_x1_scan_not_available_for_chain"],
+    }
+    return capabilities
+
+
+def _instant_x1_scan_risk() -> dict[str, object]:
+    return {
+        "recommendation": None,
+        "flags": [],
+        "reasons": [],
+        "confidence": {},
+        "score": None,
+        "score_verified": False,
+        "score_reason": None,
+        "policy": {},
+    }
+
+
+def _instant_x1_scan_data() -> dict[str, object]:
+    return {
+        "contract_version": INSTANT_X1_SCAN_CONTRACT_VERSION,
+        "read_only": True,
+        "sections": {
+            "identity": {},
+            "market": {},
+            "tokenomics": {},
+            "holder_concentration": {
+                "holders": None,
+                "holders_verified": False,
+                "top_account_concentration": {
+                    "value": None,
+                    "verified": False,
+                    "state": "unavailable",
+                    "reason": "current_concentration_not_promoted_for_instant_x1_scan_v1",
+                },
+            },
+            "history": {},
+            "risk": {
+                **_instant_x1_scan_risk(),
+                "execution_authorized": False,
+            },
+            "evidence": {
+                "proof_score_separate_from_risk": True,
+                "runtime_evidence_receipt_post_processing_only": True,
+            },
+        },
+        "limitations": [
+            "missing_or_unverified_fields_remain_unknown",
+            "holder_count_requires_existing_verified_holder_semantics",
+            "current_top_account_concentration_not_promoted_in_v1",
+            "history_is_cmis_stored_verified_observations_only",
+            "history_does_not_imply_complete_asset_lifetime",
+            "proof_score_does_not_modify_market_facts_or_risk",
+            "risk_score_remains_unavailable_until_separately_calibrated",
+            "execution_authorized_false",
+        ],
+        "execution_authorized": False,
+    }
+
+
+def test_http_client_posts_exact_instant_x1_scan_request_under_cmis_1_13() -> None:
+    expected = _envelope("instant_x1_scan")
+    expected["data"] = _instant_x1_scan_data()
+    expected["risk"] = _instant_x1_scan_risk()
+
+    with _Server(
+        expected,
+        capabilities=_cmis_1_13_instant_scan_capabilities(),
+    ) as running:
+        result = CMISHTTPClient(
+            base_url=running.base_url,
+            timeout_seconds=2,
+        ).instant_x1_scan(chain="x1", asset="AGI")
+
+    assert result == expected
+    assert running.get_paths == ["/v1/cmis/capabilities"]
+    assert running.requests == [
+        {
+            "service": "instant_x1_scan",
+            "chain": "x1",
+            "asset": "AGI",
+            "params": {},
+        }
+    ]
+
+
+@pytest.mark.parametrize("bad_status", [[], {"state": "ok"}])
+def test_http_client_rejects_unhashable_instant_scan_status(
+    bad_status: object,
+) -> None:
+    expected = _envelope("instant_x1_scan")
+    expected["status"] = bad_status
+    expected["data"] = _instant_x1_scan_data()
+    expected["risk"] = _instant_x1_scan_risk()
+
+    with _Server(
+        expected,
+        capabilities=_cmis_1_13_instant_scan_capabilities(),
+    ) as running:
+        result = CMISHTTPClient(
+            base_url=running.base_url,
+            timeout_seconds=2,
+        ).instant_x1_scan(chain="x1", asset="AGI")
+
+    assert result["status"] == "error"
+    assert result["data"] == {}
+    assert result["risk"] is None
+    assert result["errors"][0]["code"] == "invalid_cmis_status"
+    assert len(running.requests) == 1
+
+
+def test_http_client_rejects_malformed_instant_scan_success_payload() -> None:
+    expected = _envelope("instant_x1_scan")
+    expected["data"] = _instant_x1_scan_data()
+    expected["data"]["read_only"] = False
+
+    with _Server(
+        expected,
+        capabilities=_cmis_1_13_instant_scan_capabilities(),
+    ) as running:
+        result = CMISHTTPClient(
+            base_url=running.base_url,
+            timeout_seconds=2,
+        ).instant_x1_scan(chain="x1", asset="AGI")
+
+    assert result["status"] == "error"
+    assert result["data"] == {}
+    assert result["errors"][0]["code"] == "invalid_cmis_instant_x1_scan_response"
+    assert len(running.requests) == 1
+
+
+def test_http_client_rejects_missing_instant_scan_section() -> None:
+    expected = _envelope("instant_x1_scan")
+    expected["data"] = _instant_x1_scan_data()
+    del expected["data"]["sections"]["holder_concentration"]
+
+    with _Server(
+        expected,
+        capabilities=_cmis_1_13_instant_scan_capabilities(),
+    ) as running:
+        result = CMISHTTPClient(
+            base_url=running.base_url,
+            timeout_seconds=2,
+        ).instant_x1_scan(chain="x1", asset="AGI")
+
+    assert result["status"] == "error"
+    assert result["errors"][0]["code"] == "invalid_cmis_instant_x1_scan_response"
+
+
+def test_http_client_blocks_instant_scan_on_cmis_1_12_before_post() -> None:
+    capabilities = _cmis_1_13_instant_scan_capabilities()
+    capabilities["contract_version"] = "1.12.0"
+
+    with _Server(_envelope("instant_x1_scan"), capabilities=capabilities) as running:
+        result = CMISHTTPClient(
+            base_url=running.base_url,
+            timeout_seconds=2,
+        ).instant_x1_scan(chain="x1", asset="AGI")
+
+    assert result["status"] == "unavailable"
+    assert result["warnings"][0]["code"] == "cmis_instant_x1_scan_contract_unavailable"
+    assert running.get_paths == ["/v1/cmis/capabilities"]
+    assert running.requests == []
+
+
+def test_http_client_never_falls_back_instant_scan_to_solana() -> None:
+    capabilities = _cmis_1_13_instant_scan_capabilities()
+
+    with _Server(
+        _envelope("instant_x1_scan", chain="solana"),
+        capabilities=capabilities,
+    ) as running:
+        result = CMISHTTPClient(
+            base_url=running.base_url,
+            timeout_seconds=2,
+        ).instant_x1_scan(
+            chain="solana",
+            asset="So11111111111111111111111111111111111111112",
+        )
+
+    assert result["status"] == "unavailable"
+    assert result["warnings"][0]["code"] == "cmis_instant_x1_scan_unavailable"
+    assert running.get_paths == ["/v1/cmis/capabilities"]
+    assert running.requests == []
 
 
 def test_http_client_posts_asset_lookup_under_cmis_1_11_identity_contract() -> None:

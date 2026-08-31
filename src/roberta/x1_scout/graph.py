@@ -15,10 +15,15 @@ from roberta.cmis.capabilities import (
     CMISCapabilityContractError,
     CMISCapabilityUnavailable,
     X1_ASSET_IDENTITY_CONTRACT_VERSION,
+    require_instant_x1_scan_capability,
     require_x1_normalized_asset_identity_capability,
 )
 from roberta.cmis.client import CMISClient
 from roberta.cmis.contracts import CMISEnvelope, CMISOperation
+from roberta.cmis.instant_scan import (
+    CMISInstantX1ScanContractError,
+    validate_instant_x1_scan_response,
+)
 from roberta.evidence_aware import evidence_context
 from roberta.presentation import format_component_status_table
 from roberta.pretrade_ux import build_pretrade_presentation
@@ -27,6 +32,9 @@ from roberta.status_help import build_cmis_status_help
 from roberta.time_utils import format_observed_at_utc, normalize_observed_at
 from roberta.x1_scout.history_presentation import (
     build_historical_coverage_presentation,
+)
+from roberta.x1_scout.instant_scan_presentation import (
+    build_instant_x1_scan_presentation,
 )
 from roberta.x1_scout.planner import (
     compare_asset_from_objective,
@@ -89,6 +97,66 @@ def _dispatch_cmis_operation(
 ) -> CMISEnvelope:
     asset = request["asset"]
     objective = request["objective"]
+    if operation == "instant_x1_scan":
+        try:
+            require_instant_x1_scan_capability(
+                cmis_client.capabilities(),
+                chain="x1",
+            )
+        except CMISCapabilityUnavailable as exc:
+            return {
+                "service": "instant_x1_scan",
+                "chain": "x1",
+                "status": "unavailable",
+                "asset": {"query": asset},
+                "data": {},
+                "risk": None,
+                "confidence": {},
+                "sources": [],
+                "observed_at": None,
+                "warnings": [{
+                    "code": "cmis_instant_x1_scan_unavailable",
+                    "message": str(exc),
+                }],
+                "errors": [],
+            }
+        except CMISCapabilityContractError as exc:
+            return {
+                "service": "instant_x1_scan",
+                "chain": "x1",
+                "status": "unavailable",
+                "asset": {"query": asset},
+                "data": {},
+                "risk": None,
+                "confidence": {},
+                "sources": [],
+                "observed_at": None,
+                "warnings": [{
+                    "code": "cmis_instant_x1_scan_contract_unavailable",
+                    "message": f"CMIS Instant X1 Scan contract unavailable: {exc}",
+                }],
+                "errors": [],
+            }
+        result = cmis_client.instant_x1_scan(chain="x1", asset=asset)
+        try:
+            return validate_instant_x1_scan_response(result)
+        except CMISInstantX1ScanContractError as exc:
+            return {
+                "service": "instant_x1_scan",
+                "chain": "x1",
+                "status": "error",
+                "asset": {"query": asset},
+                "data": {},
+                "risk": None,
+                "confidence": {},
+                "sources": [],
+                "observed_at": None,
+                "warnings": [],
+                "errors": [{
+                    "code": "invalid_cmis_instant_x1_scan_response",
+                    "message": str(exc),
+                }],
+            }
     if operation == "market_report":
         return cmis_client.market_report(chain="x1", asset=asset)
     if operation == "rank":
@@ -236,8 +304,15 @@ def make_cmis_calls_node(cmis_client: CMISClient) -> Callable[[X1ScoutState], di
             if inferred_compare is not None:
                 request["compare_asset"] = inferred_compare
 
+        operations = state["plan"]["operations"]
         identity_result = None
-        if _looks_like_exact_x1_mint(request.get("asset")):
+        # Instant X1 Scan is an accepted CMIS composition service. Do not
+        # recreate part of that composition with a separate Scout-side identity
+        # request; preserve the single service result and its own identity section.
+        if (
+            "instant_x1_scan" not in operations
+            and _looks_like_exact_x1_mint(request.get("asset"))
+        ):
             try:
                 require_x1_normalized_asset_identity_capability(
                     cmis_client.capabilities()
@@ -250,7 +325,6 @@ def make_cmis_calls_node(cmis_client: CMISClient) -> Callable[[X1ScoutState], di
                     asset=str(request["asset"]),
                 )
 
-        operations = state["plan"]["operations"]
         results = [
             _dispatch_cmis_operation(cmis_client, request, operation)
             for operation in operations
@@ -286,6 +360,7 @@ def _summarize_cmis_result(
     risk_help = build_risk_help(risk, confidence)
     proof = evidence_context(result)
     historical_coverage_presentation = build_historical_coverage_presentation(result)
+    instant_scan_presentation = build_instant_x1_scan_presentation(result)
 
     investigation: X1ScoutInvestigation = {
         "operation": service,
@@ -309,6 +384,8 @@ def _summarize_cmis_result(
         investigation["historical_coverage_presentation"] = (
             historical_coverage_presentation
         )
+    if instant_scan_presentation is not None:
+        investigation["instant_x1_scan_presentation"] = instant_scan_presentation
     return investigation
 
 
@@ -378,7 +455,7 @@ def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
     report_status: Literal["complete", "error"] = (
         "error"
         if any(
-            investigation["cmis_status"] in {"unavailable", "error"}
+            investigation["cmis_status"] in {"unavailable", "ambiguous", "error"}
             for investigation in investigations
         )
         else "complete"
@@ -437,6 +514,11 @@ def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
     if historical_coverage_presentation is not None:
         report["historical_coverage_presentation"] = dict(
             historical_coverage_presentation
+        )
+    instant_scan_presentation = primary.get("instant_x1_scan_presentation")
+    if instant_scan_presentation is not None:
+        report["instant_x1_scan_presentation"] = dict(
+            instant_scan_presentation
         )
     if normalized_identity is not None:
         report["normalized_asset_identity"] = normalized_identity
