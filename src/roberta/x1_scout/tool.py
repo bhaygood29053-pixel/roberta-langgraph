@@ -99,6 +99,10 @@ def build_x1_scout_tool(
                 )
             if type(include_history) is not bool:
                 raise ValueError("include_history must be boolean")
+            if include_history and not is_all_available_history_objective(objective):
+                raise ValueError(
+                    "include_history requires an explicit full/entire/lifetime-history objective"
+                )
             compare_report = run_x1_compare_workflow(
                 cmis_client=cmis_client,
                 scout_graph=scout_graph,
