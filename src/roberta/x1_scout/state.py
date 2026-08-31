@@ -82,6 +82,8 @@ class X1ScoutReport(TypedDict):
     pretrade_presentation: dict[str, object] | None
     historical_coverage_presentation: NotRequired[dict[str, object]]
     instant_x1_scan_presentation: NotRequired[dict[str, object]]
+    instant_x1_scan_product_view: NotRequired[dict[str, object]]
+    instant_x1_scan_product_text: NotRequired[str]
     source: dict[str, str]
     sources: list[object]
     warnings: list[object]
