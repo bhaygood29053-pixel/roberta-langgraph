@@ -247,6 +247,29 @@ def test_product_view_does_not_apply_to_non_scan_report() -> None:
     assert build_instant_x1_scan_product_view(report) is None
 
 
+def test_product_view_rejects_wrong_chain_or_non_cmis_source() -> None:
+    wrong_chain = _scan_report()
+    wrong_chain["chain"] = "solana"
+    assert build_instant_x1_scan_product_view(wrong_chain) is None
+
+    wrong_source = _scan_report()
+    wrong_source["source"] = {
+        "service": "provider",
+        "operation": "instant_x1_scan",
+    }
+    assert build_instant_x1_scan_product_view(wrong_source) is None
+
+
+def test_product_view_rejects_stale_or_non_read_only_scan_presentation() -> None:
+    stale = _scan_report()
+    stale["instant_x1_scan_presentation"]["contract_version"] = "instant_x1_scan/v0"
+    assert build_instant_x1_scan_product_view(stale) is None
+
+    writable = _scan_report()
+    writable["instant_x1_scan_presentation"]["read_only"] = False
+    assert build_instant_x1_scan_product_view(writable) is None
+
+
 def test_product_view_rejects_any_execution_authority_drift() -> None:
     report = _scan_report()
     report["instant_x1_scan_presentation"]["execution_authorized"] = True
