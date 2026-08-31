@@ -36,13 +36,22 @@ def build_instant_x1_scan_product_view(
 ) -> dict[str, object] | None:
     """Build one compact deterministic view from a validated Scout scan report."""
 
-    if _mapping(report.get("source")).get("operation") != "instant_x1_scan":
+    source = _mapping(report.get("source"))
+    if (
+        source.get("service") != "cmis"
+        or source.get("operation") != "instant_x1_scan"
+        or report.get("chain") != "x1"
+    ):
         return None
     if report.get("cmis_status") not in {"ok", "partial"}:
         return None
 
     presentation = _mapping(report.get("instant_x1_scan_presentation"))
     if not presentation:
+        return None
+    if presentation.get("contract_version") != "instant_x1_scan/v1":
+        return None
+    if presentation.get("read_only") is not True:
         return None
     if presentation.get("execution_authorized") is not False:
         return None
