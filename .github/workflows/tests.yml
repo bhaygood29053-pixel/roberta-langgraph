@@ -118,7 +118,7 @@ jobs:
           request = overview_request("XNT")
           assert "Instant X1 Scan for XNT" in request
           assert "operation='instant_x1_scan'" in request
-          assert "instant_x1_scan/v1" in request
+          assert "instant_x1_scan/v2" in request
           assert "CURRENT MARKET" not in request
           assert "HISTORY" not in request
           assert "[VERIFIED]" not in request
