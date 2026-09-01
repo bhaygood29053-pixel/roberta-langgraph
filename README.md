@@ -22,9 +22,9 @@ Current chain specialists include X1 Scout and Solana Scout. Roberta owns orches
 
 Roberta does not call market providers as a trust shortcut and does not reproduce CMIS calculations to manufacture a second market fact.
 
-## Current accepted status — reconciled 2026-08-30
+## Current accepted status — reconciled 2026-09-01
 
-Core Roberta platform work is accepted through Phase 10 plus the post-Phase-10 evidence-aware user experience. X1 decision-production readiness, Solana read-only readiness for the accepted Scout surface, and adoption of CMIS `concentration_change_intelligence/v1` through X1 Scout are accepted.
+Core Roberta platform work is accepted through Phase 10 plus the post-Phase-10 evidence-aware user experience. X1 decision-production readiness, Solana read-only readiness for the accepted Scout surface, CMIS `concentration_change_intelligence/v1` adoption, Instant X1 Scan, first-class X1 Compare, the Canonical ROBERTA Decision Object v1 foundation, and the first deterministic `x1_burn_intelligence/v1` X1 Scout projection are accepted.
 
 **Roberta Phase 11 Controlled Execution remains locked / not started.**
 
@@ -66,6 +66,12 @@ See [`docs/LEARNING_PLANE_ARCHITECTURE.md`](./docs/LEARNING_PLANE_ARCHITECTURE.m
 ### Instant X1 Scan
 
 CMIS `1.13.0` adds bounded X1 `instant_x1_scan/v1`. The service is read-only and composition-only: it combines already accepted identity, market, tokenomics, CMIS-stored verified history, deterministic risk, and runtime evidence-quality metadata. Missing/unverified holder or current-concentration facts remain explicit unknown/partial values. Roberta consumes this capability only through the accepted Scout/CMIS boundary and does not treat composition as new underlying fact authority.
+
+### X1 Burn Intelligence
+
+CMIS burn metrics, scanner time-coverage wiring, deterministic circulating-supply evidence, and exact historical burn-time valuation are accepted upstream. Roberta public `main` now includes `x1_burn_intelligence/v1`, a deterministic X1 Scout product projection over the accepted CMIS `tokenomics` response. The projection binds to exact X1 mint identity, preserves CMIS amounts/comparison states/coverage/completeness/evidence, performs no burn or price recomputation, and preserves `execution_authorized=false`.
+
+Human/Machine Decision Object integration for BURN remains a separate next product gate; the accepted Scout projection does not by itself authorize a new CMIS service or execution path.
 
 ### X1 identity and all-available history
 
@@ -143,7 +149,7 @@ Static sources never override fresh Scout -> CMIS -> Provider evidence for price
 
 - [`docs/PRODUCT_IDENTITY.md`](./docs/PRODUCT_IDENTITY.md) — repository-authoritative product naming and branding boundary.
 - [`docs/LANGGRAPH_ROADMAP.md`](./docs/LANGGRAPH_ROADMAP.md) — authoritative Roberta roadmap/status.
-- [`docs/PROJECT_STATUS_2026-08-30.md`](./docs/PROJECT_STATUS_2026-08-30.md) — current dated status snapshot.
+- [`docs/PROJECT_STATUS_2026-09-01.md`](./docs/PROJECT_STATUS_2026-09-01.md) — current dated status snapshot.
 - [`docs/LEARNING_SYSTEM.md`](./docs/LEARNING_SYSTEM.md) — Learning System phase/authority map.
 - [`docs/LEARNING_SYSTEM_RETENTION.md`](./docs/LEARNING_SYSTEM_RETENTION.md) — accepted Phase 10 retention contract.
 - [`docs/LEARNING_PLANE_ARCHITECTURE.md`](./docs/LEARNING_PLANE_ARCHITECTURE.md) — Learning Plane architecture and promotion boundary.
