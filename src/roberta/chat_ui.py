@@ -620,13 +620,12 @@ def automatic_status_summary(content: object) -> str | None:
 
 def overview_request(asset: str) -> str:
     return (
-        f"On X1, give me a complete current overview of {asset}. "
-        "Use X1 Scout and fresh CMIS evidence. Gather a market_report, "
-        "deterministic risk_check, and tokenomics for this asset. Do not rely "
-        "on stale values from earlier conversation turns. Separate verified "
-        "facts from interpretation, explain evidence quality, and identify "
-        "warnings, incomplete checks, and unavailable fields."
-    ) + SINGLE_ASSET_TERMINAL_STYLE
+        f"On X1, run the flagship Instant X1 Scan for {asset}. "
+        "Use X1 Scout with operation='instant_x1_scan' and the accepted CMIS "
+        "instant_x1_scan/v1 product path. Treat this as the Asset Overview "
+        "workflow and keep the investigation scope to that scan unless the "
+        "user explicitly asks for supplemental evidence in a separate request."
+    )
 
 
 def compare_request(asset1: str, asset2: str) -> str:
