@@ -49,7 +49,7 @@ def build_instant_x1_scan_product_view(
     presentation = _mapping(report.get("instant_x1_scan_presentation"))
     if not presentation:
         return None
-    if presentation.get("contract_version") != "instant_x1_scan/v1":
+    if presentation.get("contract_version") != "instant_x1_scan/v2":
         return None
     if presentation.get("read_only") is not True:
         return None
