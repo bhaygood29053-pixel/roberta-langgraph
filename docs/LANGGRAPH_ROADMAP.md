@@ -535,3 +535,14 @@ The Learning Plane implementation milestone is complete enough to support the fl
 ## Core rule
 
 **Roberta may learn autonomously from accepted static evidence, but learning never self-authorizes truth or operational power. Fresh chain facts remain behind Chain Scout -> CMIS -> Provider, and operational/execution authority remains separately gated.**
+
+## Live reconciliation — 2026-09-01 11:20 America/New_York
+
+Current product order:
+
+1. **BURN:** complete ROBERTA PR #295 (clean and CI green) and accept the X1 Burn Intelligence projection contract over CMIS-owned burn facts.
+2. **Decision Object expansion:** add BURN to the canonical Decision Object, then expand one workflow at a time.
+3. **Discovery / WHAT CHANGED? / Early Warning:** blocked until CMIS public #365 + protected `cmis-core` #6 are accepted together.
+4. **Learning operations:** repair private CI for `roberta-core` #11 and accept bounded one-cycle orchestration before broader background scheduling.
+5. **Telegram:** PR #264 is currently dirty/non-mergeable and remains lower priority than the intelligence product gates.
+6. **Controlled Execution:** locked/not started; `execution_authorized=false`.
