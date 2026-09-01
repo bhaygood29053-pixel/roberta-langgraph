@@ -111,6 +111,8 @@ def build_instant_x1_scan_product_view(
         },
         "tokenomics": {
             "status": tokenomics.get("status"),
+            "scope": tokenomics.get("scope"),
+            "asset_type": tokenomics.get("asset_type"),
             "current_total_supply": _verified_value(
                 tokenomics,
                 "current_total_supply",
@@ -121,11 +123,13 @@ def build_instant_x1_scan_product_view(
                 "mint_authority",
                 "mint_authority_verified",
             ),
+            "mint_authority_state": tokenomics.get("mint_authority_state"),
             "freeze_authority": _verified_value(
                 tokenomics,
                 "freeze_authority",
                 "freeze_authority_verified",
             ),
+            "freeze_authority_state": tokenomics.get("freeze_authority_state"),
             "circulating_supply": _verified_value(
                 tokenomics,
                 "circulating_supply",

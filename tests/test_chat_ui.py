@@ -90,16 +90,27 @@ def test_compare_request_requires_terminal_friendly_structure() -> None:
 
 
 
-def test_single_asset_requests_require_compact_terminal_sections() -> None:
+def test_asset_overview_routes_to_one_flagship_scan_without_presentation_cues() -> None:
     overview = overview_request("AGI")
-    history = history_request("AGI")
 
-    assert "CURRENT MARKET" in overview
-    assert "HISTORY" in overview
-    assert "EVIDENCE STATUS" in overview
-    assert "KEY LIMITATIONS" in overview
-    assert "Do not lead with a long limitation paragraph" in overview
-    assert "live market snapshot first" in overview
+    assert "Instant X1 Scan for AGI" in overview
+    assert "operation='instant_x1_scan'" in overview
+    assert "instant_x1_scan/v1" in overview
+    assert "Asset Overview" in overview
+    assert "CURRENT MARKET" not in overview
+    assert "HISTORY" not in overview
+    assert "EVIDENCE STATUS" not in overview
+    assert "[VERIFIED]" not in overview
+
+    plan = enforce_plan(
+        {"asset": "AGI", "objective": overview},
+        {"operations": ["market_report", "tokenomics", "risk_check"]},
+    )
+    assert plan["operations"] == ["instant_x1_scan"]
+
+
+def test_history_request_keeps_compact_terminal_sections() -> None:
+    history = history_request("AGI")
 
     assert "Status: UNAVAILABLE" in history
     assert "1-3 concise bullets" in history
