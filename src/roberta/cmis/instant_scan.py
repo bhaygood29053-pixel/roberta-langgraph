@@ -25,7 +25,7 @@ _REQUIRED_SECTIONS = (
     "evidence",
 )
 
-_REQUIRED_LIMITATIONS = (
+INSTANT_X1_SCAN_REQUIRED_RESPONSE_LIMITATIONS = (
     "missing_or_unverified_fields_remain_unknown",
     "holder_count_requires_existing_verified_holder_semantics",
     "current_top_account_concentration_not_promoted_in_v2",
@@ -277,7 +277,9 @@ def validate_instant_x1_scan_response(
         raise CMISInstantX1ScanContractError(
             "CMIS Instant X1 Scan limitations must be a list of non-empty strings."
         )
-    missing_limitations = sorted(set(_REQUIRED_LIMITATIONS) - set(limitations))
+    missing_limitations = sorted(
+        set(INSTANT_X1_SCAN_REQUIRED_RESPONSE_LIMITATIONS) - set(limitations)
+    )
     if missing_limitations:
         raise CMISInstantX1ScanContractError(
             "CMIS Instant X1 Scan response is missing accepted limitations: "
