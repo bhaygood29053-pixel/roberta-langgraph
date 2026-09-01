@@ -1,6 +1,6 @@
 # ROBERTA — Verified On-Chain Intelligence Roadmap
 
-Last reconciled: 2026-08-30 (America/New_York)
+Last reconciled: 2026-09-01 (America/New_York)
 
 Status source: accepted code and contracts on `main`. Open PRs are not current truth unless explicitly identified as pending.
 
@@ -33,6 +33,8 @@ Accepted on `main`:
 - Solana Scout read-only readiness for its accepted surface;
 - X1 Scout adoption of CMIS `concentration_change_intelligence/v1`;
 - X1 Scout adoption of the current CMIS `1.13.0` contract boundary, including CMIS `1.10.0` all-available history, CMIS `1.11.0` exact-mint X1 identity, bounded CMIS `1.12.0` verified-provider historical price-backfill semantics, and bounded X1 `instant_x1_scan/v1` composition;
+- Canonical ROBERTA Decision Object v1 public contract with protected `roberta_decision/v1` implementation, preserving one shared fact/risk/evidence basis for Human and Machine projections;
+- deterministic X1 Scout `x1_burn_intelligence/v1` projection over accepted CMIS tokenomics burn intelligence, exact-mint-bound and non-recomputing;
 - Learning System Phases 1-10;
 - fail-closed `verified_learned_knowledge` classification with no general operational-trust promotion wrapper;
 - source-specific Blockchain Reasoning Pyramid architecture and source-mastery ledger;
@@ -199,7 +201,7 @@ local integrations such as MoltGrid/Signal; it is not an external ChatGPT
 gateway. Any future external gateway or MCP transport requires a new explicit
 architecture and security review.
 
-## Human ROBERTA + Machine ROBERTA product architecture — planned
+## Human ROBERTA + Machine ROBERTA product architecture — accepted foundation / planned expansion
 
 The X1 productization track will expose **one ROBERTA intelligence core through two presentation faces** rather than creating separate truth systems.
 
@@ -228,7 +230,7 @@ The architectural rule is:
 
 ### Shared canonical decision layer
 
-Before the two faces diverge in presentation, Roberta should introduce a shared internal **Canonical ROBERTA Decision Object**. It must carry the already-established decision basis without recomputing CMIS facts.
+The shared **Canonical ROBERTA Decision Object v1** foundation is accepted for the first Instant X1 Scan tracer. It carries the established decision basis without recomputing CMIS facts. Each additional workflow, beginning with BURN, must enter this shared object through its own reviewed adapter/contract rather than by widening Instant Scan semantics.
 
 Planned fields include:
 
@@ -287,7 +289,7 @@ The X1 Human ROBERTA product should converge on seven primary workflows:
 2. **TRADE CHECK** — “Can this market handle my $500 buy?” Present deterministic trade-size policy, route-scoped price impact/fee evidence where accepted, slippage status, risk, and missing execution evidence.
 3. **COMPARE** — “Compare AGI and XNT.” Use first-class CMIS-returned current/history evidence and preserve per-dimension differences instead of inventing a universal score.
 4. **WHAT CHANGED?** — explain verified changes in price, liquidity, activity, concentration, token burns, risk/evidence quality, and important unknowns.
-5. **BURN** — “How much of this token has been burned?” After CMIS Issue #368 is explicitly promoted through X1 Scout, present cumulative verified-observed burns plus trailing **24h, 7d, and 30d** burn amounts/event counts and the **period-over-period percentage change for each window** (current 24h vs prior 24h, current 7d vs prior 7d, current 30d vs prior 30d), with exact coverage/completeness limits. Never relabel partial observed coverage as definitive lifetime burn or an undefined zero-denominator comparison as an infinite percentage.
+5. **BURN** — “How much of this token has been burned?” CMIS burn metrics/valuation are accepted upstream and X1 Scout now has accepted `x1_burn_intelligence/v1`. The next product gate is to map that accepted projection into the Canonical Decision Object and Human/Machine renderers while preserving cumulative verified-observed burns, trailing **24h, 7d, and 30d** amounts/event counts, period-over-period changes, exact coverage/completeness, valuation completeness, Proof lineage, and explicit unknown states. Never relabel partial observed coverage as definitive lifetime burn or an undefined zero-denominator comparison as an infinite percentage.
 6. **EARLY WARNING** — surface only separately accepted warning contracts for liquidity, concentration, activity, identity, evidence degradation, burn-rate changes where supported, or future execution-quality signals; never infer manipulation/intent by implication.
 7. **X1 BRIEF** — synthesize accepted ecosystem/network evidence into one coherent daily/periodic X1 intelligence brief.
 
@@ -338,7 +340,7 @@ Planned machine envelope:
 
 Machine output must preserve explicit unavailable/null states. Missing execution slippage, history, holder, concentration, or other evidence must never be serialized as zero/false merely to simplify client logic.
 
-When the accepted CMIS burn-intelligence service becomes available, Machine ROBERTA should preserve burn intelligence as structured tokenomics/evidence rather than prose, including exact mint, cumulative verified-observed burn, 24h/7d/30d burned amounts and event counts, **current-vs-prior equal-period absolute and percentage changes**, exact prior-period denominators, comparison-state/reason codes, coverage bounds for both periods, as-of time, unresolved timed events, and a boolean completeness field equivalent to `lifetime_total_burn_verified`.
+The accepted X1 Scout `x1_burn_intelligence/v1` projection now provides the bounded burn-intelligence basis Machine ROBERTA should preserve as structured tokenomics/evidence rather than prose, including exact mint, cumulative verified-observed burn, 24h/7d/30d burned amounts and event counts, **current-vs-prior equal-period absolute and percentage changes**, exact prior-period denominators, comparison-state/reason codes, coverage bounds for both periods, as-of time, unresolved timed events, valuation completeness, and lifetime/coverage completeness state. Machine Decision Object integration remains pending and must not recompute CMIS facts.
 
 Stable reason codes should be preferred over prose for machine policy. Initial candidates include:
 
@@ -431,24 +433,24 @@ Potential future packaging may include Human Free, Human Pro, Developer, Agent, 
 
 ### Implementation sequence
 
-Recommended Roberta-side sequence:
+Accepted foundation:
 
-1. Canonical ROBERTA Decision Object;
-2. Human SCAN;
-3. Human TRADE CHECK;
-4. Machine SCAN contract;
-5. Machine TRADE CHECK contract;
-6. COMPARE;
-7. WHAT CHANGED?;
-8. Advanced Human Evidence View;
-9. consume accepted CMIS Token Burn Intelligence from Issue #368 and add Human BURN + Machine burn fields;
-10. consume accepted CMIS realized-slippage/statistical execution evidence when promoted;
-11. consume accepted Discovery Ledger;
-12. consume accepted Early Warning services;
-13. X1 Brief;
-14. agent-scale Machine ROBERTA API / SDK and monitoring integrations.
+1. Canonical ROBERTA Decision Object v1 for the first Instant X1 Scan tracer;
+2. deterministic Human/Machine projection of the same canonical Scan decision basis;
+3. first-class X1 Compare workflow;
+4. deterministic X1 Scout `x1_burn_intelligence/v1` projection over accepted CMIS tokenomics.
 
-This sequence is roadmap intent only. A downstream CMIS dependency remains unavailable until its explicit CMIS public-service / Scout-reliance contract is accepted.
+Current ordered expansion:
+
+1. map `x1_burn_intelligence/v1` into the Canonical Decision Object, Human BURN, and Machine burn fields without recomputation;
+2. finish accepted Discovery Ledger foundations in CMIS/private core, then add a narrow Scout/Roberta Discovery adapter;
+3. build WHAT CHANGED? and Early Warning only on accepted Discovery/history primitives;
+4. extend Advanced Human Evidence View and machine evidence-depth contracts where product testing shows a concrete gap;
+5. consume realized-slippage/statistical execution evidence only after CMIS separately promotes it;
+6. build X1 Brief from accepted Scout/CMIS inputs;
+7. expand the Machine ROBERTA API/SDK only after schemas, capability discovery, authentication, observability, and failure contracts are accepted.
+
+A downstream CMIS dependency remains unavailable until its explicit CMIS public-service / Scout-reliance contract is accepted.
 
 ## Near-term roadmap
 
@@ -472,7 +474,7 @@ Solana remains an accepted read-only specialist surface for maintenance, regress
 - use X1 Scout as the chain-specific interpretation layer for all freshness-sensitive X1 investigations;
 - consume bounded CMIS `instant_x1_scan/v1` through X1 Scout and present its verified identity, market, tokenomics, local-history, deterministic-risk, and evidence-quality fields clearly;
 - preserve CMIS statuses, timestamps, Evidence Receipts, Proof Scores, limitations, warnings, and explicit unknowns rather than smoothing partial evidence into confident prose;
-- build the user-facing X1 workflows around **Instant X1 Scan**, **Compare**, **Token Burn Intelligence (total verified-observed + 24h/7d/30d)**, **Discovery / first-observation history**, **Early Warning**, and **X1 ecosystem/network brief** outputs as their underlying CMIS contracts become accepted;
+- build the user-facing X1 workflows around accepted **Instant X1 Scan**, **Compare**, and the accepted X1 Scout **BURN** projection; then add **Discovery / first-observation history**, **Early Warning**, and **X1 ecosystem/network brief** outputs only as their underlying CMIS contracts become accepted;
 - keep Proof Score separate from risk and never turn a risk `PASS` into execution permission;
 - prefer one coherent X1 intelligence response over disconnected specialist dumps.
 
@@ -483,7 +485,7 @@ Solana remains an accepted read-only specialist surface for maintenance, regress
 - do not call X1 providers directly from Roberta as a trust shortcut;
 - preserve exact-mint identity and all-available-history limitations from CMIS without recomputation;
 - support first-class deterministic X1 comparisons using CMIS-returned history/evidence rather than constructing a second fact layer in Roberta;
-- prepare Roberta's presentation/orchestration layer for future Token Burn Intelligence, Discovery Ledger, and Early Warning contracts without pre-authorizing, recomputing, or simulating those capabilities;
+- integrate accepted `x1_burn_intelligence/v1` into the shared Decision Object/renderers without recomputation, and prepare separately for future Discovery Ledger and Early Warning contracts without pre-authorizing or simulating them;
 - continue evidence-aware UX work so unavailable, partial, ambiguous, stale, or unverified data remains visible to the user.
 
 ### 3. Keep the Learning Plane operationally strong as a supporting track
