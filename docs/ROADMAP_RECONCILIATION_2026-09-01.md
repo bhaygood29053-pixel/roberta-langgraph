@@ -41,3 +41,28 @@ This dated reconciliation advances the living ROBERTA roadmap without changing C
 Roberta may orchestrate and render CMIS facts but must not recreate burn, valuation, historical comparison, Discovery, provider freshness, risk, or execution-quality truth locally. Missing evidence remains unknown and open CMIS investigations remain diagnostic until accepted.
 
 `execution_authorized=false`
+
+## Live GitHub reconciliation — 2026-09-01 11:20 America/New_York
+
+### Accepted on `main`
+- Canonical ROBERTA Decision Object v1 and Human/Machine projections remain accepted.
+- X1 Instant Scan and Compare remain accepted product foundations.
+- CMIS historical burn-time valuation is now accepted upstream.
+- ROBERTA X1 Burn Intelligence v1 has advanced to the current hardening gate.
+
+### Active gates
+- **PR #295 — Harden X1 Burn Intelligence v1 projection contract:** open, clean, and CI green at head `ce5cb9bac4fd4b0f718ed3f043b979f570f87bfc`. This is the immediate productization gate.
+- **CMIS #363:** delayed-vault evidence workflow remains in progress; ROBERTA must not treat the diagnostic branch as accepted product truth.
+- **Discovery:** CMIS public #365 is clean, but protected `cmis-core` #6 has failing CI. ROBERTA Discovery remains blocked on that upstream pair.
+- **Protected Learning Plane — `roberta-core` #11:** open/mergeable but unstable; private-core CI is failing on head `29f5c42c59398a4a1467ea04d81ddc0cb207f2d9`.
+- **Telegram #264:** open but currently dirty/non-mergeable. Telegram remains transport-only and must route through ROBERTA; no OpenClaw dependency is accepted.
+
+### Ordered next actions
+1. Finish review and acceptance of ROBERTA #295.
+2. Extend the canonical Decision Object with the accepted BURN tracer without recomputing CMIS burn facts.
+3. Repair `roberta-core` #11 CI and complete bounded one-cycle training orchestration before broader unattended scheduling.
+4. After CMIS Discovery Ledger acceptance, add ROBERTA Discovery / WHAT CHANGED? / Watch adapters one at a time.
+5. Rebase/repair Telegram #264 only after the core product gates above.
+6. Keep Solana secondary/read-only and Controlled Execution locked.
+
+`execution_authorized=false`
