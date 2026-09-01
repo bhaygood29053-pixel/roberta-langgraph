@@ -61,3 +61,15 @@ Human ROBERTA and Machine ROBERTA may render the same accepted decision evidence
 ## Safety boundary
 
 `execution_authorized=false`. No Learning Plane result, Human/Machine renderer, Scout result, CMIS result, risk result, Proof Score, alert, pre-trade PASS, transport message, or human approval authorizes transaction construction, signing, broadcasting, custody, trading, bridge movement, or autonomous value movement.
+
+## Live status — 2026-09-01 11:20 America/New_York
+
+- Repository: `bhaygood29053-pixel/roberta-langgraph`
+- Current main head observed before this status commit: `5a8964a59f053c400eafeceb128f5548cf5f1057`
+- PR #295 X1 Burn Intelligence hardening: **OPEN / CLEAN / CI GREEN**
+- CMIS #363 delayed departure evidence: **UPSTREAM LIVE EVIDENCE IN PROGRESS**
+- CMIS Discovery #365 + `cmis-core` #6: **BLOCKED BY PRIVATE CI**
+- `roberta-core` #11 one-cycle orchestration: **OPEN / PRIVATE CI FAILING**
+- Telegram #264: **OPEN / DIRTY / NON-MERGEABLE**
+- OpenClaw: **NOT ACCEPTED**
+- Execution authorization: **FALSE**
