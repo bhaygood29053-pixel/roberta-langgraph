@@ -1,4 +1,4 @@
-# CMIS Roadmap Sync — refreshed 2026-08-30
+# CMIS Roadmap Sync — refreshed 2026-09-01
 
 This document is Roberta's current CMIS integration snapshot. It is a consumption guide, not a second CMIS roadmap. The authoritative CMIS living roadmap remains in the CMIS repository.
 
@@ -34,6 +34,8 @@ Accepted CMIS state consumed by Roberta includes:
 - exact-mint normalized X1 identity complete under `x1_asset_identity/v1` from CMIS `1.11.0`;
 - bounded verified-provider historical price backfill semantics complete under CMIS `1.12.0`;
 - bounded X1 `instant_x1_scan/v1` composition complete under CMIS `1.13.0`;
+- deterministic X1 burn metrics, scanner fact-time coverage, deterministic circulating-supply evidence, and exact historical burn-time valuation accepted upstream;
+- merged Roberta/X1 Scout `x1_burn_intelligence/v1` tracer preserves CMIS burn evidence without recomputation; PR #295 is the immediate hardening gate before BURN Decision Object integration;
 - Oracle V2 structural/timestamp/freshness governance complete for the accepted evidence policy, with current-price use still unauthorized because the latest accepted live relay slots were stale;
 - CMIS public-shell/private-core migration and historical Git cleanup complete.
 
@@ -90,6 +92,13 @@ The service composes already accepted identity, market, tokenomics, CMIS-stored 
 It does not create new underlying fact authority. Missing/unverified holder or current-concentration fields remain explicit unknown/partial values.
 
 Roberta should consume it only through the accepted X1 Scout -> CMIS path.
+
+## X1 burn-intelligence consumption
+
+CMIS owns the accepted burn arithmetic, period-over-period comparison states, scanner coverage, circulating-supply evidence, and exact historical burn-time valuation. The Roberta-side `x1_burn_intelligence/v1` tracer is an X1 Scout projection over that accepted `tokenomics` evidence; it is not a new CMIS service and does not recalculate burn or historical price facts.
+
+PR #295 remains the immediate hardening gate. Human/Machine BURN integration must then use the Canonical ROBERTA Decision Object and preserve exact mint, coverage/completeness, valuation state, evidence lineage, limitations, unknowns, and `execution_authorized=false`.
+
 
 ## X1 history and identity
 
