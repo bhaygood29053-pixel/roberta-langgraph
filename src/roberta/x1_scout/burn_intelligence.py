@@ -22,6 +22,9 @@ _ACCEPTED_CHANGE_STATES = {
     "NEW_BURN_ACTIVITY",
     "INSUFFICIENT_COVERAGE",
 }
+_BASE58_CHARS = frozenset(
+    "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+)
 
 
 class X1BurnIntelligenceContractError(ValueError):
@@ -44,6 +47,18 @@ def _require_bool(container: Mapping[str, Any], key: str) -> bool:
     if not isinstance(value, bool):
         raise X1BurnIntelligenceContractError(f"required burn boolean malformed: {key}")
     return value
+
+
+def _exact_x1_mint(value: object) -> str:
+    text = str(value or "").strip()
+    if not (
+        32 <= len(text) <= 44
+        and all(character in _BASE58_CHARS for character in text)
+    ):
+        raise X1BurnIntelligenceContractError(
+            "burn intelligence requires an exact address-shaped X1 mint"
+        )
+    return text
 
 
 def _validate_window(label: str, value: object) -> None:
@@ -174,6 +189,13 @@ def build_x1_burn_intelligence(
 
     asset = _require_mapping(tokenomics_result, "asset")
     data = _require_mapping(tokenomics_result, "data")
+    asset_mint = _exact_x1_mint(asset.get("mint"))
+    data_mint = _exact_x1_mint(data.get("mint"))
+    if data_mint != asset_mint:
+        raise X1BurnIntelligenceContractError(
+            "CMIS tokenomics data mint does not match resolved asset mint"
+        )
+
     metrics = data.get("burn_metrics")
     if not isinstance(metrics, Mapping):
         raise X1BurnIntelligenceContractError("CMIS tokenomics burn_metrics missing")
