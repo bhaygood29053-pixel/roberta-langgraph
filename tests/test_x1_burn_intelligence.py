@@ -164,6 +164,62 @@ class X1BurnIntelligenceTests(unittest.TestCase):
         self.assertIsNone(projected["percent_change"])
         self.assertEqual(projected["change_state"], "NEW_BURN_ACTIVITY")
 
+    def test_verified_window_requires_complete_issuance_facts(self):
+        required = (
+            "minted_raw",
+            "minted_tokens",
+            "mint_events",
+            "burn_to_emission_ratio",
+            "net_issuance_raw",
+            "net_issuance_tokens",
+            "issuance_state",
+        )
+        for key in required:
+            source = tokenomics_result()
+            del source["data"]["burn_metrics"]["windows"]["24h"][key]
+            with self.subTest(key=key), self.assertRaisesRegex(
+                X1BurnIntelligenceContractError,
+                f"missing {key}",
+            ):
+                build_x1_burn_intelligence(source)
+
+    def test_available_comparison_requires_complete_numeric_facts(self):
+        for key in (
+            "prior_start_exclusive",
+            "prior_end_inclusive",
+            "prior_burned_raw",
+            "prior_burned_tokens",
+        ):
+            source = tokenomics_result()
+            del source["data"]["burn_metrics"]["windows"]["24h"]["period_over_period"][key]
+            with self.subTest(key=key), self.assertRaisesRegex(
+                X1BurnIntelligenceContractError,
+                f"missing {key}",
+            ):
+                build_x1_burn_intelligence(source)
+
+        source = tokenomics_result()
+        source["data"]["burn_metrics"]["windows"]["24h"]["period_over_period"]["percent_change"] = None
+        with self.assertRaisesRegex(
+            X1BurnIntelligenceContractError,
+            "required numeric burn value",
+        ):
+            build_x1_burn_intelligence(source)
+
+    def test_malformed_evidence_containers_fail_closed(self):
+        cases = (
+            ("confidence", []),
+            ("sources", {"provider": "x1_rpc"}),
+            ("warnings", "oops"),
+            ("errors", {"code": "bad"}),
+        )
+        for key, value in cases:
+            source = tokenomics_result()
+            source[key] = value
+            with self.subTest(key=key), self.assertRaises(
+                X1BurnIntelligenceContractError
+            ):
+                build_x1_burn_intelligence(source)
     def test_unavailable_comparison_preserves_insufficient_coverage(self):
         source = tokenomics_result()
         comparison = source["data"]["burn_metrics"]["windows"]["30d"]["period_over_period"]
