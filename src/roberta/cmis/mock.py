@@ -23,6 +23,7 @@ from roberta.cmis.contracts import (
     RankMetric,
     TradeAction,
 )
+from roberta.cmis.instant_scan import INSTANT_X1_SCAN_REQUIRED_RESPONSE_LIMITATIONS
 from roberta.cmis.verification import normalize_verification_evidence_selector
 
 MockScenario = Literal["test_only", "warning", "unavailable", "error"]
@@ -386,7 +387,7 @@ class MockCMISClient:
                 data={},
                 risk=None,
             )
-        limitations = list(INSTANT_X1_SCAN_REQUIRED_LIMITATIONS)
+        limitations = list(INSTANT_X1_SCAN_REQUIRED_RESPONSE_LIMITATIONS)
         return self._response(
             service="instant_x1_scan",
             chain=chain,
