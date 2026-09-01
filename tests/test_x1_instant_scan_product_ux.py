@@ -149,6 +149,8 @@ def test_product_view_projects_values_without_recomputing_authority() -> None:
         "value": "authority-1",
         "verified": False,
     }
+    assert view["tokenomics"]["mint_authority_state"] is None
+    assert view["tokenomics"]["freeze_authority_state"] is None
     assert view["holder_concentration"]["holders"] == {
         "value": None,
         "verified": False,
@@ -168,6 +170,31 @@ def test_product_view_projects_values_without_recomputing_authority() -> None:
     assert view["limitations"] == report["instant_x1_scan_presentation"]["limitations"]
     assert view["warnings"] == report["warnings"]
     assert view["execution_authorized"] is False
+
+
+def test_product_view_preserves_native_authority_not_applicable_states() -> None:
+    report = _scan_report()
+    tokenomics = report["instant_x1_scan_presentation"]["sections"]["tokenomics"]
+    tokenomics.update(
+        {
+            "scope": "native_network",
+            "asset_type": "native",
+            "mint_authority": None,
+            "mint_authority_verified": True,
+            "mint_authority_state": "not_applicable",
+            "freeze_authority": None,
+            "freeze_authority_verified": True,
+            "freeze_authority_state": "not_applicable",
+        }
+    )
+
+    view = build_instant_x1_scan_product_view(report)
+
+    assert view is not None
+    assert view["tokenomics"]["scope"] == "native_network"
+    assert view["tokenomics"]["asset_type"] == "native"
+    assert view["tokenomics"]["mint_authority_state"] == "not_applicable"
+    assert view["tokenomics"]["freeze_authority_state"] == "not_applicable"
 
 
 def test_product_text_renders_unknowns_and_keeps_proof_separate_from_risk() -> None:
