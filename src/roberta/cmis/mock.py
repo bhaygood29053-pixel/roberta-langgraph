@@ -444,8 +444,48 @@ class MockCMISClient:
                     },
                     "history": {
                         "status": self._status(),
-                        "coverage_scope": "cmis_stored_verified_observations",
-                        "metrics": {},
+                        "coverage_scope": (
+                            "cmis_verified_observations_with_bounded_provider_price_backfill"
+                        ),
+                        "base_coverage_scope": "cmis_stored_verified_observations",
+                        "first_verified_observed_at": 1_725_000_000,
+                        "last_verified_observed_at": 1_726_000_000,
+                        "coverage_seconds": 1_000_000,
+                        "provider_history_imported": True,
+                        "provider_price_history": {
+                            "available": True,
+                            "usable_observation_count": 3,
+                            "first_observed_at": 1_725_000_000,
+                            "last_observed_at": 1_725_900_000,
+                        },
+                        "provider_history_backfill": {
+                            "status": "partial",
+                            "provider_history_imported": True,
+                            "stored_verified_provider_observation_count": 3,
+                            "full_asset_lifetime_verified": False,
+                            "continuous_coverage_verified": False,
+                        },
+                        "coverage": {
+                            "market": {
+                                "status": "partial",
+                                "coverage_scope": "cmis_stored_verified_observations",
+                                "provider_history_imported": True,
+                            },
+                            "onchain": {
+                                "status": "not_requested",
+                                "reason": "onchain_coverage_not_requested",
+                            },
+                        },
+                        "metrics": {
+                            "price": {
+                                "status": "partial",
+                                "observation_count": 4,
+                                "coverage_seconds": 1_000_000,
+                                "provider_backfill_observation_count": 3,
+                                "provider_history_imported": True,
+                                "continuous_coverage_verified": False,
+                            }
+                        },
                         "full_asset_lifetime_verified": False,
                         "continuous_coverage_verified": False,
                     },
@@ -468,16 +508,7 @@ class MockCMISClient:
                         "runtime_evidence_receipt_post_processing_only": True,
                     },
                 },
-                "limitations": [
-                    "missing_or_unverified_fields_remain_unknown",
-                    "holder_count_requires_existing_verified_holder_semantics",
-                    "current_top_account_concentration_not_promoted_in_v1",
-                    "history_is_cmis_stored_verified_observations_only",
-                    "history_does_not_imply_complete_asset_lifetime",
-                    "proof_score_does_not_modify_market_facts_or_risk",
-                    "risk_score_remains_unavailable_until_separately_calibrated",
-                    "execution_authorized_false",
-                ],
+                "limitations": limitations,
                 "execution_authorized": False,
             },
             risk=(
