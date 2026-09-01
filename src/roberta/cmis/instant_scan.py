@@ -1,4 +1,4 @@
-"""Strict validator for the accepted CMIS Instant X1 Scan v1 payload.
+"""Strict validator for the accepted CMIS Instant X1 Scan v2 payload.
 
 CMIS owns the composed facts. This module validates authority/evidence contract
 shape only; it never recomputes market data, proof, risk, holder semantics,
@@ -28,9 +28,12 @@ _REQUIRED_SECTIONS = (
 _REQUIRED_LIMITATIONS = (
     "missing_or_unverified_fields_remain_unknown",
     "holder_count_requires_existing_verified_holder_semantics",
-    "current_top_account_concentration_not_promoted_in_v1",
-    "history_is_cmis_stored_verified_observations_only",
+    "current_top_account_concentration_not_promoted_in_v2",
+    "history_may_include_bounded_verified_provider_price_backfill",
+    "provider_price_backfill_is_price_only",
+    "provider_archive_completeness_not_verified",
     "history_does_not_imply_complete_asset_lifetime",
+    "continuous_coverage_requires_separate_archive_completeness_proof",
     "proof_score_does_not_modify_market_facts_or_risk",
     "risk_score_remains_unavailable_until_separately_calibrated",
     "execution_authorized_false",
@@ -38,7 +41,7 @@ _REQUIRED_LIMITATIONS = (
 
 
 class CMISInstantX1ScanContractError(RuntimeError):
-    """CMIS returned a successful scan outside the accepted v1 authority shape."""
+    """CMIS returned a successful scan outside the accepted v2 authority shape."""
 
 
 def _mapping(value: object, *, field: str) -> Mapping[str, Any]:
@@ -378,7 +381,27 @@ def validate_instant_x1_scan_response(
         or current_concentration.get("value") is not None
     ):
         raise CMISInstantX1ScanContractError(
-            "CMIS Instant X1 Scan v1 current concentration must remain explicitly unavailable."
+            "CMIS Instant X1 Scan v2 current concentration must remain explicitly unavailable."
+        )
+
+    history = _mapping(sections["history"], field="data.sections.history")
+    provider_history_imported = history.get("provider_history_imported")
+    if not isinstance(provider_history_imported, bool):
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan v2 history.provider_history_imported must be boolean."
+        )
+    for field in ("provider_price_history", "provider_history_backfill", "coverage"):
+        if not isinstance(history.get(field), Mapping):
+            raise CMISInstantX1ScanContractError(
+                f"CMIS Instant X1 Scan v2 history.{field} must be an object."
+            )
+    if history.get("full_asset_lifetime_verified") is not False:
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan v2 must not promote full asset lifetime coverage."
+        )
+    if history.get("continuous_coverage_verified") is not False:
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan v2 must not promote continuous historical coverage."
         )
 
     return envelope
