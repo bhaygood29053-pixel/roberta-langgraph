@@ -123,7 +123,7 @@ def _mock_capability_manifest() -> CMISCapabilities:
         "service": "cmis_gateway",
         "version": 1,
         "schema_version": 1,
-        "contract_version": "1.13.0",
+        "contract_version": "1.14.0",
         "request_path": "/v1/cmis",
         "evidence_quality": {
             "evidence_receipt_schema_version": 1,
