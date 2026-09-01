@@ -1,4 +1,4 @@
-# CMIS Roadmap Sync — refreshed 2026-08-30
+# CMIS Roadmap Sync — refreshed 2026-09-01
 
 This document is Roberta's current CMIS integration snapshot. It is a consumption guide, not a second CMIS roadmap. The authoritative CMIS living roadmap remains in the CMIS repository.
 
@@ -34,6 +34,8 @@ Accepted CMIS state consumed by Roberta includes:
 - exact-mint normalized X1 identity complete under `x1_asset_identity/v1` from CMIS `1.11.0`;
 - bounded verified-provider historical price backfill semantics complete under CMIS `1.12.0`;
 - bounded X1 `instant_x1_scan/v1` composition complete under CMIS `1.13.0`;
+- deterministic X1 burn metrics, scanner time-coverage wiring, circulating-supply evidence, and exact historical burn-time valuation accepted in CMIS tokenomics;
+- Roberta/X1 Scout `x1_burn_intelligence/v1` accepted as a non-recomputing product projection over that CMIS tokenomics evidence;
 - Oracle V2 structural/timestamp/freshness governance complete for the accepted evidence policy, with current-price use still unauthorized because the latest accepted live relay slots were stale;
 - CMIS public-shell/private-core migration and historical Git cleanup complete.
 
@@ -90,6 +92,14 @@ The service composes already accepted identity, market, tokenomics, CMIS-stored 
 It does not create new underlying fact authority. Missing/unverified holder or current-concentration fields remain explicit unknown/partial values.
 
 Roberta should consume it only through the accepted X1 Scout -> CMIS path.
+
+## X1 burn intelligence
+
+CMIS has accepted deterministic burn metrics, compatible scanner fact-time coverage, deterministic circulating-supply evidence, and exact historical burn-time valuation. Valuation completeness remains denomination-specific and fails closed when compatible burn-time price evidence is missing; no current-price, nearest-price, or interpolation substitute is accepted.
+
+Roberta public `main` now includes X1 Scout `x1_burn_intelligence/v1`, a deterministic projection over the accepted CMIS `tokenomics` envelope. It preserves exact mint identity, burn windows/comparisons, circulation/valuation completeness, evidence and limitations, and `execution_authorized=false` without recomputing CMIS facts.
+
+The next product gate is to map that Scout projection into the Canonical ROBERTA Decision Object and Human/Machine BURN renderers. That integration remains a Roberta-layer concern, not a new CMIS service.
 
 ## X1 history and identity
 
