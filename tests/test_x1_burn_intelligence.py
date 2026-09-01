@@ -9,6 +9,7 @@ from roberta.x1_scout.burn_intelligence import (
 
 
 MINT = "7SXmUpcBGSAwW5LmtzQVF9jHswZ7xzmdKqWa4nDgL3ER"
+OTHER_MINT = "So11111111111111111111111111111111111111112"
 
 
 def window(label, *, burned="10", percent="25", change_state="AVAILABLE"):
@@ -138,6 +139,17 @@ class X1BurnIntelligenceTests(unittest.TestCase):
 
         self.assertEqual(product["burn_metrics"]["windows"]["24h"]["burned_raw"], "10")
         self.assertNotIn({"code": "mutated"}, product["warnings"])
+
+    def test_exact_mint_identity_is_required_and_must_match_data(self):
+        source = tokenomics_result()
+        source["asset"]["mint"] = "AGI"
+        with self.assertRaisesRegex(X1BurnIntelligenceContractError, "exact address-shaped"):
+            build_x1_burn_intelligence(source)
+
+        source = tokenomics_result()
+        source["data"]["mint"] = OTHER_MINT
+        with self.assertRaisesRegex(X1BurnIntelligenceContractError, "does not match"):
+            build_x1_burn_intelligence(source)
 
     def test_new_burn_activity_preserves_null_percent_change(self):
         source = tokenomics_result()
