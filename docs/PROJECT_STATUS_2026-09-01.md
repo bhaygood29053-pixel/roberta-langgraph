@@ -2,7 +2,7 @@
 
 ## Executive status
 
-ROBERTA — Verified On-Chain Intelligence is in active X1 productization. Public `main` is at `9b3de1de8ba5033df046657fc936bee8d496c6a3` at this reconciliation. Instant X1 Scan and first-class X1 Compare are accepted through the canonical Roberta -> X1 Scout -> CMIS authority path. The previous dated status statement that CMIS dependency remained at `1.12.0` is superseded; the accepted CMIS capability boundary is `1.13.0`.
+ROBERTA — Verified On-Chain Intelligence is in active X1 productization. Public `main` is at `5a8964a59f053c400eafeceb128f5548cf5f1057` at this reconciliation. Instant X1 Scan, first-class X1 Compare, the Canonical ROBERTA Decision Object v1 foundation, and deterministic X1 Scout `x1_burn_intelligence/v1` are accepted through the canonical Roberta -> X1 Scout -> CMIS authority path. The accepted CMIS capability boundary remains `1.13.0`.
 
 The public-shell/private-core migration is complete. Protected orchestration remains in `roberta-core`. Controlled Execution remains locked/not started.
 
@@ -15,8 +15,9 @@ Accepted on public `main`:
 - deterministic `x1_compare/v1` product contract;
 - first-class Compare workflow using two validated Instant X1 Scan product views;
 - optional full-history comparison uses one capability-gated CMIS `historical_compare(mode="all_available_pair")` request only for explicit full/entire/lifetime-history intent;
-- Human ROBERTA + Machine ROBERTA two-face product roadmap under one canonical decision/evidence layer;
-- planned BURN workflow consumption of CMIS burn amounts and 24h/7d/30d period-over-period changes without local recomputation;
+- Canonical ROBERTA Decision Object v1 public contract plus protected implementation for one shared Human/Machine fact/risk/evidence basis;
+- deterministic X1 Scout `x1_burn_intelligence/v1` projection over accepted CMIS tokenomics, preserving exact mint, burn windows/comparisons, circulation/valuation completeness, evidence, and `execution_authorized=false` without local recomputation;
+- Human ROBERTA + Machine ROBERTA two-face product roadmap under that canonical decision/evidence layer;
 - Learning System Phases 1-10, autonomous source-grounded Learning Plane, mastered-run replay protection, and authoritative read-only training telemetry.
 
 ## Learning Plane operational status
@@ -29,7 +30,7 @@ Protected `roberta-core` PR #11 remains open/mergeable for deterministic one-cyc
 
 ### CMIS burn intelligence
 
-CMIS has accepted deterministic burn metrics, verified scanner coverage wiring, and deterministic circulating-supply evidence on `main`. Historical burn-time valuation remains pending in CMIS PR #377. ROBERTA must not expose burn valuation as accepted truth until the CMIS layer and a valid X1 Scout consumption contract are accepted.
+CMIS has accepted deterministic burn metrics, verified scanner coverage wiring, deterministic circulating-supply evidence, and exact historical burn-time valuation on `main`. Roberta has accepted `x1_burn_intelligence/v1` as the first X1 Scout burn-consumption projection. The remaining product gate is Canonical Decision Object plus Human/Machine BURN integration; Roberta must preserve CMIS valuation/completeness semantics and must not recompute burn or historical prices.
 
 ### Discovery / first observation
 
@@ -45,9 +46,9 @@ Native Telegram adapter PR #264 remains pending. Its required boundary remains: 
 
 ## Current roadmap
 
-1. Build the shared Canonical ROBERTA Decision Object and Human/Machine renderers over accepted Scout/CMIS evidence.
-2. Harden the Human X1 experience around SCAN and COMPARE, then add BURN only after CMIS burn valuation/Scout gates are accepted.
-3. Add WHAT CHANGED?, Discovery, and Early Warning only on accepted CMIS Discovery/history evidence; do not invent local historical facts.
+1. Extend the accepted Canonical ROBERTA Decision Object with a reviewed adapter for `x1_burn_intelligence/v1`, then ship consistent Human BURN and Machine burn projections.
+2. Keep SCAN and COMPARE on the same canonical fact/risk/evidence basis and add workflow adapters one at a time rather than widening Instant Scan by implication.
+3. Finish CMIS Discovery Ledger public/private acceptance before adding Discovery; build WHAT CHANGED? and Early Warning only on accepted Discovery/history primitives.
 4. Complete bounded Learning Plane one-cycle orchestration and cooperative resource checkpoints before any always-on background scheduler.
 5. Continue Telegram as a Roberta-owned transport if its security/authority gates pass.
 6. Build X1 ecosystem/network brief workflows from accepted CMIS/Scout facts.
