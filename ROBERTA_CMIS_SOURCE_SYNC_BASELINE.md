@@ -21,7 +21,7 @@ This file is the compact cross-project synchronization baseline and is intention
 
 ### ROBERTA public + protected core
 
-Current accepted public head at reconciliation: `ecad683bdc2f8e8474e33a476b3f2f758b84f183`.
+Current accepted public head at reconciliation: `5a8964a59f053c400eafeceb128f5548cf5f1057`.
 Current accepted protected `roberta-core` head at reconciliation: `c57aac701ea112fff3fc25bba28c55a4a8219adb`.
 
 Accepted product milestones include:
@@ -34,7 +34,8 @@ Accepted product milestones include:
 - deterministic Human ROBERTA and Machine ROBERTA projections from the same canonical Decision Object for the first Instant X1 Scan tracer bullet;
 - Machine projection contract `roberta_intelligence/v1` with explicit null/unavailable preservation and bounded evidence depth;
 - no new ROBERTA trade-decision policy in the Decision Object tracer: source risk recommendation is preserved, `reason_codes=[]`, and `policy_applied=false`;
-- planned BURN / WHAT CHANGED? consumption of accepted CMIS burn intelligence without Roberta recomputation;
+- deterministic X1 Scout `x1_burn_intelligence/v1` projection over accepted CMIS `tokenomics`, bound to exact X1 mint identity and preserving burn windows/comparisons, circulation/valuation completeness, evidence, limitations, and `execution_authorized=false` without burn or price recomputation;
+- Human/Machine BURN Decision Object integration remains the next separate product gate;
 - Learning System Phases 1-10, autonomous source-grounded Learning Plane, mastered-run replay protection, authoritative read-only training telemetry, and bounded scheduler/queue foundation;
 - repaired protected-core CI that validates Python 3.11, Python 3.12, and the pinned public-shell overlay rather than testing the protected overlay as a standalone host;
 - public-shell/private-core migration closure.
@@ -43,7 +44,7 @@ Roberta does not gain a direct provider or direct product-level CMIS shortcut fr
 
 ### CMIS public `main`
 
-Current accepted public head at reconciliation: `c4e55265d11186da50ec809d896cac7a44e575c2`.
+Current accepted public head at reconciliation: `b8bb2af4653a3c55d52efc2c8d954fc0d390183d`.
 
 Current capability contract remains `1.13.0`. Accepted milestones include:
 
@@ -64,11 +65,11 @@ Accepted burn metrics do not imply complete lifetime burn coverage. Current on-c
 
 ### 1. Roberta burn-intelligence consumption
 
-CMIS burn arithmetic, coverage semantics, period-over-period changes, circulating-supply context, and exact burn-time valuation are accepted upstream.
+CMIS burn arithmetic, coverage semantics, period-over-period changes, circulating-supply context, and exact burn-time valuation are accepted upstream. X1 Scout `x1_burn_intelligence/v1` is now also accepted as the deterministic Roberta-side projection over that CMIS tokenomics evidence.
 
-The next flagship product gate is a separately reviewed X1 Scout/Roberta consumption path for **BURN** and **WHAT CHANGED?**. Roberta must preserve CMIS amounts, comparison denominators/states, valuation completeness, Evidence Receipt / Proof Score lineage, and unknown/partial states without recalculating burns or historical prices.
+The next flagship product gate is a separately reviewed Canonical Decision Object adapter plus Human BURN and Machine burn renderers. Roberta must preserve CMIS amounts, comparison denominators/states, valuation completeness, Evidence Receipt / Proof Score lineage, and unknown/partial states without recalculating burns or historical prices.
 
-The accepted Decision Object should be extended only through a separately tested workflow contract; burn output must not be squeezed into Instant X1 Scan semantics by implication.
+Burn output must not be squeezed into Instant X1 Scan semantics by implication.
 
 ### 2. CMIS delayed catalog-departure evidence — PR #363
 
@@ -106,15 +107,16 @@ Native Telegram adapter PR #264 remains pending. Telegram is a transport boundar
 
 ## Near-term synchronized roadmap
 
-1. **Burn intelligence productization:** define and implement the X1 Scout/Roberta BURN + WHAT CHANGED? consumption contract over accepted CMIS burn intelligence, then project it through the canonical Decision Object without Roberta-side fact recomputation.
-2. **Decision Object expansion:** after the burn tracer is accepted, add additional workflow adapters one at a time (Compare, Discovery, Watch) while keeping one canonical intelligence basis and separate Human/Machine renderers.
-3. **Delayed price evidence:** resolve #363 using the existing strict evidence thresholds; consume routed target-leg evidence only through a separately reviewed classifier change if the evidence supports it.
+1. **BURN Decision Object integration:** map accepted X1 Scout `x1_burn_intelligence/v1` into the Canonical Decision Object, then ship consistent Human BURN and Machine burn projections without Roberta-side fact recomputation.
+2. **Decision Object expansion discipline:** keep SCAN, COMPARE, BURN, and future workflows on one canonical intelligence basis; add adapters one at a time.
+3. **Delayed price/provider evidence:** resolve #363 using the existing strict evidence thresholds; consume routed target-leg evidence only through a separately reviewed classifier change if the evidence supports it.
 4. **Discovery:** finish public #365 + protected `cmis-core` #6, then build Scout-facing discovery/history workflows only after the foundation is accepted.
-5. **Early Warning / What Changed?:** build deterministic CMIS evidence contracts on accepted Discovery/history primitives; keep presentation/policy in Roberta.
+5. **WHAT CHANGED? / Early Warning:** build deterministic CMIS evidence contracts on accepted Discovery/history primitives; keep presentation/policy in Roberta.
 6. **Execution-quality evidence:** accumulate quote-to-executed-swap matching, realized-slippage evidence, and comparable-trade statistics before any expected-slippage contract is considered.
 7. **Learning operations:** complete bounded one-cycle orchestration and cooperative budget checkpoints before any broader unattended background scheduler.
-8. **Solana:** maintain as a secondary read-only portability track; X1 capability/promotion state does not transfer automatically.
-9. **Controlled Execution:** remains locked/not started.
+8. **Transport / brief:** complete Telegram only if its authority gates pass, and build X1 brief inputs only from accepted Scout/CMIS evidence.
+9. **Solana:** maintain as a secondary read-only portability track; X1 capability/promotion state does not transfer automatically.
+10. **Controlled Execution:** remains locked/not started.
 
 ## Provider and evidence boundary
 
