@@ -110,6 +110,21 @@ jobs:
           print("EXECUTION_AUTHORIZED=FALSE")
           PY
 
+      - name: Validate Asset Overview product intent
+        run: |
+          python - <<'PY'
+          from roberta.chat_ui import overview_request
+
+          request = overview_request("XNT")
+          assert "Instant X1 Scan for XNT" in request
+          assert "operation='instant_x1_scan'" in request
+          assert "instant_x1_scan/v1" in request
+          assert "CURRENT MARKET" not in request
+          assert "HISTORY" not in request
+          assert "[VERIFIED]" not in request
+          print("ASSET_OVERVIEW_PUBLIC_INTENT=PASS")
+          PY
+
       - name: Run public bridge contract tests
         run: python -m pytest -q tests/test_bridge_http.py
 
