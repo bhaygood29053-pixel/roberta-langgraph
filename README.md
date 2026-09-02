@@ -22,9 +22,9 @@ Current chain specialists include X1 Scout and Solana Scout. Roberta owns orches
 
 Roberta does not call market providers as a trust shortcut and does not reproduce CMIS calculations to manufacture a second market fact.
 
-## Current accepted status — reconciled 2026-09-01
+## Current accepted status — reconciled 2026-09-02
 
-Core Roberta platform work is accepted through Phase 10 plus the post-Phase-10 evidence-aware user experience. X1 decision-production readiness, Solana read-only readiness for the accepted Scout surface, CMIS `concentration_change_intelligence/v1`, Instant X1 Scan, first-class X1 Compare, and the Canonical ROBERTA Decision Object v1 foundation are accepted. The merged X1 Burn Intelligence v1 tracer is under follow-up contract hardening in PR #295 before BURN is added to the shared Decision Object.
+Core Roberta platform work is accepted through Phase 10 plus the post-Phase-10 evidence-aware user experience. X1 decision-production readiness, Solana read-only readiness for the accepted Scout surface, CMIS `concentration_change_intelligence/v1`, Instant X1 Scan, first-class X1 Compare, and the Canonical ROBERTA Decision Object v1 foundation are accepted. X1 Burn Intelligence is accepted through hardened Scout projection PR #295 and protected `roberta-core` #23; this branch moves the Scout source to the first-class CMIS 1.15.0 `burn_intelligence/v1` service.
 
 **Roberta Phase 11 Controlled Execution remains locked / not started.**
 
@@ -69,9 +69,9 @@ CMIS `1.14.0` promotes bounded X1 `instant_x1_scan/v2`. The service remains read
 
 ### X1 Burn Intelligence
 
-CMIS historical burn-time valuation is accepted upstream together with deterministic burn metrics, scanner fact-time coverage, and circulating-supply evidence. Roberta's merged `x1_burn_intelligence/v1` X1 Scout projection preserves exact-mint identity, CMIS-owned burn/comparison/valuation semantics, evidence, limitations, and `execution_authorized=false` without recalculation.
+CMIS 1.15.0 promotes first-class X1 `burn_intelligence/v1` as the deterministic Burn Intelligence authority. It reuses CMIS-owned tokenomics/burn-scanner evidence and exposes verified-observed cumulative burn, 1h/24h/7d/30d windows, event counts, 24h/7d/30d equal-period changes, issuance context, independently gated circulation context, burn-time valuation, coverage, and evidence state without creating a second arithmetic path.
 
-Follow-up hardening PR #295 remains the immediate acceptance gate. After that gate, BURN should enter the Canonical ROBERTA Decision Object and Human/Machine renderers through a separately tested workflow adapter rather than by widening Instant Scan semantics.
+Roberta's hardened `x1_burn_intelligence/v1` X1 Scout projection now requires that dedicated CMIS service and preserves exact-mint identity, CMIS-owned burn/comparison/valuation semantics, Evidence Receipt / Proof Score lineage, limitations, and `execution_authorized=false` without recalculation. Protected `roberta-core` #23 already maps the same Scout product into `roberta_decision/v1`, so Human ROBERTA and Machine ROBERTA consume the exact same canonical burn facts. Burn remains a separate workflow rather than widening Instant X1 Scan semantics.
 
 
 ### X1 identity and all-available history
