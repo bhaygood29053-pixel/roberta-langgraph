@@ -265,12 +265,28 @@ def render_instant_x1_scan_product_text(view: Mapping[str, Any]) -> str:
         f"Coverage status: {history.get('status') or 'unknown'}",
         f"Coverage scope: {history.get('coverage_scope') or 'unknown'}",
         (
-            "Full asset lifetime verified: "
-            f"{history.get('full_asset_lifetime_verified') is True}"
+            "Supported pair lifetime verified: "
+            f"{history.get('full_supported_pair_lifetime_verified') is True}"
         ),
         (
-            "Continuous coverage verified: "
-            f"{history.get('continuous_coverage_verified') is True}"
+            "Pair price continuity verified: "
+            f"{history.get('continuous_pair_price_coverage_verified') is True}"
+        ),
+        (
+            "Provider supported range complete: "
+            f"{history.get('provider_range_complete_verified') is True}"
+        ),
+        (
+            "Historical quote-to-USD equivalence verified: "
+            f"{history.get('historical_quote_usd_equivalence_verified') is True}"
+        ),
+        (
+            "Full USD lifetime verified: "
+            f"{history.get('full_usd_lifetime_verified') is True}"
+        ),
+        (
+            "Legacy full asset lifetime verified: "
+            f"{history.get('full_asset_lifetime_verified') is True}"
         ),
     ]
 
