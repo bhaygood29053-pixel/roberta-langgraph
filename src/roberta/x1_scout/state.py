@@ -84,6 +84,7 @@ class X1ScoutReport(TypedDict):
     instant_x1_scan_presentation: NotRequired[dict[str, object]]
     instant_x1_scan_product_view: NotRequired[dict[str, object]]
     instant_x1_scan_product_text: NotRequired[str]
+    x1_burn_intelligence: NotRequired[dict[str, object]]
     source: dict[str, str]
     sources: list[object]
     warnings: list[object]

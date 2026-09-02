@@ -31,6 +31,7 @@ AUTONOMOUS_OPERATIONS: tuple[CMISOperation, ...] = (
     "rank",
     "historical_compare",
     "tokenomics",
+    "burn_intelligence",
     "risk_check",
 )
 MAX_PLAN_OPERATIONS = 3
@@ -62,6 +63,18 @@ _TOKENOMICS_TERMS = (
     "mint authority",
     "freeze authority",
     "minting",
+)
+_BURN_TERMS = (
+    "burn intelligence",
+    "burned",
+    "burning",
+    "burn rate",
+    "burn activity",
+    "burn event",
+    "burn events",
+    "token burn",
+    "burn ",
+    " burn",
 )
 _RANK_TERMS = (
     " rank",
@@ -109,10 +122,10 @@ X1_SCOUT_PLANNER_SYSTEM_PROMPT = """You are the planning component inside X1 Sco
 
 Your job is only to propose which read-only CMIS investigations are useful for
 the user's X1 objective. Return JSON only, with exactly this shape:
-{"operations": ["instant_x1_scan", "market_report", "rank", "historical_compare", "tokenomics", "risk_check"]}
+{"operations": ["instant_x1_scan", "market_report", "rank", "historical_compare", "tokenomics", "burn_intelligence", "risk_check"]}
 
 Rules:
-- You may use only: instant_x1_scan, market_report, rank, historical_compare, tokenomics, risk_check.
+- You may use only: instant_x1_scan, market_report, rank, historical_compare, tokenomics, burn_intelligence, risk_check.
 - Use instant_x1_scan only when the objective explicitly asks for an Instant X1 Scan or quick/instant asset scan.
 - Use the smallest useful plan, with no duplicates and at most three operations.
 - For a full/complete/comprehensive assessment or due-diligence objective, propose
@@ -127,6 +140,8 @@ Rules:
 - Risk questions should include risk_check.
 - Supply, mint-authority, freeze-authority, or tokenomics questions should
   include tokenomics.
+- Burn, burned-token, burn-rate, burn-event, or burn-intelligence questions
+  should include burn_intelligence.
 """
 
 
@@ -153,6 +168,14 @@ def is_instant_x1_scan_objective(objective: object) -> bool:
         r"\s+\S+",
         normalized,
     ) is not None
+
+
+def is_burn_objective(objective: object) -> bool:
+    normalized = _normalize_objective(objective)
+    if not normalized:
+        return False
+    padded = f" {normalized} "
+    return any(term in padded for term in _BURN_TERMS)
 
 
 def is_rank_objective(objective: object) -> bool:
@@ -290,6 +313,8 @@ def required_operations(objective: object) -> list[CMISOperation]:
             required.append(operation)
     if any(term in normalized for term in _TOKENOMICS_TERMS) and "tokenomics" not in required:
         required.append("tokenomics")
+    if is_burn_objective(normalized) and "burn_intelligence" not in required:
+        required.append("burn_intelligence")
     if any(term in normalized for term in _RISK_TERMS) and "risk_check" not in required:
         required.append("risk_check")
     if is_historical_objective(normalized) and "historical_compare" not in required:
@@ -304,11 +329,15 @@ def select_cmis_operation(objective: object) -> CMISOperation:
         return "instant_x1_scan"
     if is_rank_objective(objective):
         return "rank"
+    if is_burn_objective(objective):
+        return "burn_intelligence"
     if is_historical_objective(objective):
         return "historical_compare"
     required = required_operations(objective)
     if "risk_check" in required:
         return "risk_check"
+    if "burn_intelligence" in required:
+        return "burn_intelligence"
     if "tokenomics" in required:
         return "tokenomics"
     if "market_report" in required:

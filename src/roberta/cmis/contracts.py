@@ -14,6 +14,7 @@ CMISService: TypeAlias = Literal[
     "rank",
     "historical_compare",
     "tokenomics",
+    "burn_intelligence",
     "risk_check",
     "pre_trade_check",
     "verification_evidence",
@@ -82,6 +83,7 @@ CMISMarketReport: TypeAlias = CMISEnvelope
 CMISRankReport: TypeAlias = CMISEnvelope
 CMISHistoricalCompare: TypeAlias = CMISEnvelope
 CMISTokenomicsReport: TypeAlias = CMISEnvelope
+CMISBurnIntelligence: TypeAlias = CMISEnvelope
 CMISRiskCheck: TypeAlias = CMISEnvelope
 CMISPreTradeCheck: TypeAlias = CMISEnvelope
 CMISVerificationEvidence: TypeAlias = CMISEnvelope

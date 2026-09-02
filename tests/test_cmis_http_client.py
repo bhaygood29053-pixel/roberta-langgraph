@@ -10,6 +10,9 @@ from urllib.error import URLError
 from unittest.mock import patch
 
 from roberta.cmis.capabilities import (
+    BURN_INTELLIGENCE_CONTRACT_VERSION,
+    BURN_INTELLIGENCE_REQUIRED_LIMITATIONS,
+    BURN_INTELLIGENCE_REQUIRED_REQUIREMENTS,
     HISTORICAL_ALL_AVAILABLE_REQUIRED_LIMITATIONS,
     HISTORICAL_PAIR_REQUIRED_LIMITATION,
     INSTANT_X1_SCAN_CONTRACT_VERSION,
@@ -152,6 +155,39 @@ def _cmis_1_11_identity_capabilities() -> dict[str, object]:
     lookup["exact_mint_normalization"] = True
     lookup["normalized_identity_root"] = "mint"
     lookup["metaplex_xdex_reconciliation"] = True
+    return capabilities
+
+
+def _cmis_1_15_burn_capabilities() -> dict[str, object]:
+    capabilities = deepcopy(_capabilities())
+    capabilities["contract_version"] = "1.15.0"
+    services = capabilities["supported_services"]
+    services.insert(services.index("risk_check"), "burn_intelligence")
+
+    x1 = capabilities["chains"]["x1"]
+    x1["services"]["burn_intelligence"] = {
+        "state": "bounded",
+        "callable": True,
+        "requirements": list(BURN_INTELLIGENCE_REQUIRED_REQUIREMENTS),
+        "limitations": list(BURN_INTELLIGENCE_REQUIRED_LIMITATIONS),
+        "read_only": True,
+        "service_contract_version": BURN_INTELLIGENCE_CONTRACT_VERSION,
+        "public_service_promoted": True,
+        "scout_reliance_promoted": True,
+        "execution_authorized": False,
+    }
+    x1["callable_services"].insert(
+        x1["callable_services"].index("risk_check"),
+        "burn_intelligence",
+    )
+
+    solana = capabilities["chains"]["solana"]
+    solana["services"]["burn_intelligence"] = {
+        "state": "unavailable",
+        "callable": False,
+        "requirements": [],
+        "limitations": ["burn_intelligence_not_available_for_chain"],
+    }
     return capabilities
 
 
@@ -490,6 +526,56 @@ def test_http_client_handshakes_then_posts_market_report_and_preserves_envelope(
     assert running.requests == [
         {"service": "market_report", "chain": "x1", "asset": "AGI", "params": {}}
     ]
+
+
+def test_http_client_posts_first_class_burn_intelligence_request() -> None:
+    expected = _envelope("burn_intelligence")
+    expected["data"] = {
+        "contract_version": "burn_intelligence/v1",
+        "mint": "7SXmUpcBGSAwW5LmtzQVF9jHswZ7xzmdKqWa4nDgL3ER",
+        "burn_metrics": {
+            "available": False,
+            "status": "unavailable",
+            "reason": "fixture",
+            "lifetime_total_burn_verified": False,
+        },
+    }
+    with _Server(
+        expected,
+        capabilities=_cmis_1_15_burn_capabilities(),
+    ) as running:
+        result = CMISHTTPClient(
+            base_url=running.base_url,
+            timeout_seconds=2,
+        ).burn_intelligence(chain="x1", asset="AGI")
+
+    assert result == expected
+    assert running.get_paths == ["/v1/cmis/capabilities"]
+    assert running.requests == [
+        {
+            "service": "burn_intelligence",
+            "chain": "x1",
+            "asset": "AGI",
+            "params": {},
+        }
+    ]
+
+
+def test_http_client_blocks_burn_intelligence_before_cmis_1_15() -> None:
+    capabilities = _cmis_1_15_burn_capabilities()
+    capabilities["contract_version"] = "1.14.0"
+    with _Server(
+        _envelope("burn_intelligence"),
+        capabilities=capabilities,
+    ) as running:
+        result = CMISHTTPClient(
+            base_url=running.base_url,
+            timeout_seconds=2,
+        ).burn_intelligence(chain="x1", asset="AGI")
+
+    assert result["status"] == "unavailable"
+    assert result["warnings"][0]["code"] == "cmis_burn_intelligence_contract_unavailable"
+    assert running.requests == []
 
 
 def test_http_client_sends_bearer_auth_for_capabilities_and_pre_trade() -> None:

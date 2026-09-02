@@ -338,7 +338,7 @@ Planned machine envelope:
 
 Machine output must preserve explicit unavailable/null states. Missing execution slippage, history, holder, concentration, or other evidence must never be serialized as zero/false merely to simplify client logic.
 
-When the accepted CMIS burn-intelligence service becomes available, Machine ROBERTA should preserve burn intelligence as structured tokenomics/evidence rather than prose, including exact mint, cumulative verified-observed burn, 24h/7d/30d burned amounts and event counts, **current-vs-prior equal-period absolute and percentage changes**, exact prior-period denominators, comparison-state/reason codes, coverage bounds for both periods, as-of time, unresolved timed events, and a boolean completeness field equivalent to `lifetime_total_burn_verified`.
+With CMIS 1.15.0 `burn_intelligence/v1` accepted, Machine ROBERTA preserves Burn Intelligence as structured canonical evidence rather than prose, including exact mint, cumulative verified-observed burn, 24h/7d/30d burned amounts and event counts, **current-vs-prior equal-period absolute and percentage changes**, exact prior-period denominators, comparison-state/reason codes, coverage bounds for both periods, as-of time, unresolved timed events, and `lifetime_total_burn_verified`.
 
 Stable reason codes should be preferred over prose for machine policy. Initial candidates include:
 
@@ -483,7 +483,7 @@ Solana remains an accepted read-only specialist surface for maintenance, regress
 - do not call X1 providers directly from Roberta as a trust shortcut;
 - preserve exact-mint identity and all-available-history limitations from CMIS without recomputation;
 - support first-class deterministic X1 comparisons using CMIS-returned history/evidence rather than constructing a second fact layer in Roberta;
-- prepare Roberta's presentation/orchestration layer for future Token Burn Intelligence, Discovery Ledger, and Early Warning contracts without pre-authorizing, recomputing, or simulating those capabilities;
+- consume accepted first-class CMIS Token Burn Intelligence through X1 Scout and the Canonical Decision Object without recomputation; prepare Discovery Ledger and Early Warning only after their separate contracts are accepted;
 - continue evidence-aware UX work so unavailable, partial, ambiguous, stale, or unverified data remains visible to the user.
 
 ### 3. Keep the Learning Plane operationally strong as a supporting track
@@ -536,12 +536,12 @@ The Learning Plane implementation milestone is complete enough to support the fl
 
 **Roberta may learn autonomously from accepted static evidence, but learning never self-authorizes truth or operational power. Fresh chain facts remain behind Chain Scout -> CMIS -> Provider, and operational/execution authority remains separately gated.**
 
-## Live reconciliation — 2026-09-01 11:20 America/New_York
+## Live reconciliation — 2026-09-02 America/New_York
 
 Current product order:
 
-1. **BURN:** complete ROBERTA PR #295 (clean and CI green) and accept the X1 Burn Intelligence projection contract over CMIS-owned burn facts.
-2. **Decision Object expansion:** add BURN to the canonical Decision Object, then expand one workflow at a time.
+1. **BURN:** CMIS public #389 and protected `cmis-core` #12 are accepted, ROBERTA #295 is merged, and protected `roberta-core` #23 provides the shared Human/Machine Decision Object path. Complete the X1 Scout switch to dedicated CMIS `burn_intelligence/v1` and keep `/burn` as the first-class user workflow.
+2. **Decision Object expansion:** BURN is accepted in the canonical Decision Object; expand later workflows one at a time without widening Burn Intelligence or Instant Scan semantics.
 3. **Discovery / WHAT CHANGED? / Early Warning:** blocked until CMIS public #365 + protected `cmis-core` #6 are accepted together.
 4. **Learning operations:** repair private CI for `roberta-core` #11 and accept bounded one-cycle orchestration before broader background scheduling.
 5. **Telegram:** PR #264 is currently dirty/non-mergeable and remains lower priority than the intelligence product gates.

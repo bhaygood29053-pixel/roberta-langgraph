@@ -3,6 +3,10 @@ from copy import deepcopy
 import pytest
 
 from roberta.cmis.capabilities import (
+    BURN_INTELLIGENCE_CONTRACT_VERSION,
+    BURN_INTELLIGENCE_MIN_CMIS_CONTRACT_VERSION,
+    BURN_INTELLIGENCE_REQUIRED_LIMITATIONS,
+    BURN_INTELLIGENCE_REQUIRED_REQUIREMENTS,
     CMISCapabilityContractError,
     CMISCapabilityUnavailable,
     HISTORICAL_ALL_AVAILABLE_MIN_CMIS_CONTRACT_VERSION,
@@ -15,6 +19,7 @@ from roberta.cmis.capabilities import (
     X1_ASSET_IDENTITY_CONTRACT_VERSION,
     X1_ASSET_IDENTITY_MIN_CMIS_CONTRACT_VERSION,
     X1_ASSET_IDENTITY_REQUIRED_LIMITATIONS,
+    require_burn_intelligence_capability,
     require_historical_all_available_capability,
     require_service_capability,
     require_x1_normalized_asset_identity_capability,
@@ -236,6 +241,67 @@ def test_require_service_capability_allows_partial_but_blocks_unavailable() -> N
             manifest,
             chain="solana",
             service="pre_trade_check",
+        )
+
+
+def _cmis_1_15_burn_manifest() -> dict[str, object]:
+    manifest = deepcopy(_manifest())
+    manifest["contract_version"] = BURN_INTELLIGENCE_MIN_CMIS_CONTRACT_VERSION
+    services = manifest["supported_services"]
+    services.insert(services.index("risk_check"), "burn_intelligence")
+
+    x1 = manifest["chains"]["x1"]
+    x1["services"]["burn_intelligence"] = {
+        "state": "bounded",
+        "callable": True,
+        "read_only": True,
+        "public_service_promoted": True,
+        "scout_reliance_promoted": True,
+        "service_contract_version": BURN_INTELLIGENCE_CONTRACT_VERSION,
+        "requirements": list(BURN_INTELLIGENCE_REQUIRED_REQUIREMENTS),
+        "limitations": list(BURN_INTELLIGENCE_REQUIRED_LIMITATIONS),
+        "execution_authorized": False,
+    }
+    x1["callable_services"].insert(
+        x1["callable_services"].index("risk_check"),
+        "burn_intelligence",
+    )
+
+    solana = manifest["chains"]["solana"]
+    solana["services"]["burn_intelligence"] = {
+        "state": "unavailable",
+        "callable": False,
+        "requirements": [],
+        "limitations": ["burn_intelligence_not_available_for_chain"],
+    }
+    return manifest
+
+
+def test_burn_intelligence_requires_exact_cmis_1_15_promotion_contract() -> None:
+    validated = validate_capability_manifest(_cmis_1_15_burn_manifest())
+    capability = require_burn_intelligence_capability(validated)
+
+    assert capability["state"] == "bounded"
+    assert capability["service_contract_version"] == "burn_intelligence/v1"
+    assert capability["read_only"] is True
+    assert capability["public_service_promoted"] is True
+    assert capability["scout_reliance_promoted"] is True
+    assert capability["execution_authorized"] is False
+
+
+def test_burn_intelligence_fails_closed_on_old_or_weakened_contract() -> None:
+    old = _cmis_1_15_burn_manifest()
+    old["contract_version"] = "1.14.0"
+    with pytest.raises(CMISCapabilityContractError, match="requires contract"):
+        require_burn_intelligence_capability(validate_capability_manifest(old))
+
+    weakened = _cmis_1_15_burn_manifest()
+    weakened["chains"]["x1"]["services"]["burn_intelligence"]["limitations"].remove(
+        "observed_cumulative_burn_is_not_lifetime_without_archive_completeness"
+    )
+    with pytest.raises(CMISCapabilityContractError, match="missing accepted"):
+        require_burn_intelligence_capability(
+            validate_capability_manifest(weakened)
         )
 
 

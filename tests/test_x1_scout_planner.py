@@ -152,6 +152,27 @@ def test_tokenomics_requirement_is_forced_and_made_primary() -> None:
     assert result["report"]["source"]["operation"] == "tokenomics"
 
 
+def test_burn_requirement_is_forced_and_made_primary() -> None:
+    planner = ScriptedPlannerModel(["market_report"])
+    cmis = MockCMISClient()
+    scout = build_x1_scout_graph(cmis, planner_model=planner)
+
+    result = _invoke(scout, "show burn intelligence and 24h burn activity")
+
+    assert [call["operation"] for call in cmis.calls] == [
+        "market_report",
+        "burn_intelligence",
+    ]
+    report = result["report"]
+    assert report["source"]["operation"] == "burn_intelligence"
+    assert report["x1_burn_intelligence"]["contract_version"] == "x1_burn_intelligence/v1"
+    assert (
+        report["x1_burn_intelligence"]["burn_metrics"]["windows"]["24h"]["burned_tokens"]
+        == "10"
+    )
+    assert report["x1_burn_intelligence"]["execution_authorized"] is False
+
+
 def test_planner_cannot_grant_itself_pre_trade_or_unknown_operations() -> None:
     request = {"asset": "AGI", "objective": "assess market risk"}
     plan = enforce_plan(

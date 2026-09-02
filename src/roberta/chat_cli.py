@@ -13,6 +13,7 @@ from roberta.chat_ui import (
     SUBLINE,
     activity_request,
     automatic_status_summary,
+    burn_request,
     compare_request,
     concentration_request,
     evidence_request,
@@ -108,7 +109,9 @@ def _menu_request(choice: str) -> str | None:
         print(STATUS_KEY)
         print(LINE)
         return None
-    raise ValueError("Choose a service number from 1 through 13.")
+    if choice == "14":
+        return burn_request(_prompt_asset())
+    raise ValueError("Choose a service number from 1 through 14.")
 
 
 def _shortcut_request(user_text: str) -> str | None:
@@ -126,6 +129,8 @@ def _shortcut_request(user_text: str) -> str | None:
         return risk_request(args[0] if args else _prompt_asset())
     if command == "/tokenomics":
         return tokenomics_request(args[0] if args else _prompt_asset())
+    if command == "/burn":
+        return burn_request(args[0] if args else _prompt_asset())
     if command == "/liquidity":
         return liquidity_request(args[0] if args else _prompt_asset())
     if command == "/history":
@@ -233,7 +238,7 @@ def main() -> None:
             continue
 
         try:
-            if user_text in {str(number) for number in range(1, 14)}:
+            if user_text in {str(number) for number in range(1, 15)}:
                 expanded_request = _menu_request(user_text)
                 if expanded_request is None:
                     continue

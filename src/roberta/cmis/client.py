@@ -51,6 +51,9 @@ class CMISClient(Protocol):
     def tokenomics(self, *, chain: str, asset: str) -> CMISEnvelope:
         ...
 
+    def burn_intelligence(self, *, chain: str, asset: str) -> CMISEnvelope:
+        ...
+
     def risk_check(self, *, chain: str, asset: str) -> CMISEnvelope:
         ...
 

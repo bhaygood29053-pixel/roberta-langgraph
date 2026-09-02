@@ -1,7 +1,7 @@
 """Deterministic X1 Scout burn-intelligence projection.
 
-This module projects an accepted CMIS ``tokenomics`` envelope into the first
-``x1_burn_intelligence/v1`` product contract. It performs no burn arithmetic,
+This module projects the accepted CMIS ``burn_intelligence/v1`` envelope into
+the X1 Scout ``x1_burn_intelligence/v1`` product contract. It performs no burn arithmetic,
 price valuation, supply inference, or historical comparison calculation.
 Every numerical/state field remains CMIS-owned.
 """
@@ -15,6 +15,7 @@ from typing import Any
 
 
 BURN_INTELLIGENCE_CONTRACT = "x1_burn_intelligence/v1"
+CMIS_BURN_INTELLIGENCE_CONTRACT = "burn_intelligence/v1"
 _REQUIRED_WINDOWS = ("1h", "24h", "7d", "30d")
 _COMPARISON_WINDOWS = ("24h", "7d", "30d")
 _ACCEPTED_CHANGE_STATES = {
@@ -29,7 +30,7 @@ _BASE58_CHARS = frozenset(
 
 
 class X1BurnIntelligenceContractError(ValueError):
-    """Raised when CMIS tokenomics cannot satisfy burn-intelligence v1."""
+    """Raised when CMIS Burn Intelligence cannot satisfy the X1 Scout contract."""
 
 
 def _require_sequence(container: Mapping[str, Any], key: str) -> list[Any]:
@@ -235,64 +236,70 @@ def _validate_burn_metrics(metrics: Mapping[str, Any]) -> None:
 
 
 def build_x1_burn_intelligence(
-    tokenomics_result: Mapping[str, Any],
+    burn_result: Mapping[str, Any],
     *,
     requested_asset: str | None = None,
 ) -> dict[str, object]:
-    """Project one CMIS tokenomics envelope without recomputing its burn facts."""
+    """Project one CMIS Burn Intelligence envelope without recomputing facts."""
 
-    if not isinstance(tokenomics_result, Mapping):
-        raise X1BurnIntelligenceContractError("CMIS tokenomics result must be an object")
-    if tokenomics_result.get("service") != "tokenomics":
-        raise X1BurnIntelligenceContractError("burn intelligence requires CMIS tokenomics")
-    if tokenomics_result.get("chain") != "x1":
+    if not isinstance(burn_result, Mapping):
+        raise X1BurnIntelligenceContractError("CMIS burn result must be an object")
+    if burn_result.get("service") != "burn_intelligence":
+        raise X1BurnIntelligenceContractError(
+            "burn intelligence requires CMIS burn_intelligence"
+        )
+    if burn_result.get("chain") != "x1":
         raise X1BurnIntelligenceContractError("burn intelligence v1 is X1-only")
-    if tokenomics_result.get("status") not in {
+    if burn_result.get("status") not in {
         "ok",
         "partial",
         "unavailable",
     }:
-        raise X1BurnIntelligenceContractError("unsupported CMIS tokenomics status")
+        raise X1BurnIntelligenceContractError("unsupported CMIS burn status")
 
-    if tokenomics_result.get("execution_authorized") not in {None, False}:
+    if burn_result.get("execution_authorized") not in {None, False}:
         raise X1BurnIntelligenceContractError(
             "burn intelligence must preserve execution_authorized=false"
         )
 
-    asset = _require_mapping(tokenomics_result, "asset")
-    data = _require_mapping(tokenomics_result, "data")
+    asset = _require_mapping(burn_result, "asset")
+    data = _require_mapping(burn_result, "data")
+    if data.get("contract_version") != CMIS_BURN_INTELLIGENCE_CONTRACT:
+        raise X1BurnIntelligenceContractError(
+            "CMIS burn_intelligence service contract mismatch"
+        )
     asset_mint = _exact_x1_mint(asset.get("mint"))
     data_mint = _exact_x1_mint(data.get("mint"))
     if data_mint != asset_mint:
         raise X1BurnIntelligenceContractError(
-            "CMIS tokenomics data mint does not match resolved asset mint"
+            "CMIS burn data mint does not match resolved asset mint"
         )
 
     metrics = data.get("burn_metrics")
     if not isinstance(metrics, Mapping):
-        raise X1BurnIntelligenceContractError("CMIS tokenomics burn_metrics missing")
+        raise X1BurnIntelligenceContractError("CMIS burn_metrics missing")
     _validate_burn_metrics(metrics)
 
-    confidence = _require_mapping(tokenomics_result, "confidence")
-    sources = _require_sequence(tokenomics_result, "sources")
-    warnings = _require_sequence(tokenomics_result, "warnings")
-    errors = _require_sequence(tokenomics_result, "errors")
+    confidence = _require_mapping(burn_result, "confidence")
+    sources = _require_sequence(burn_result, "sources")
+    warnings = _require_sequence(burn_result, "warnings")
+    errors = _require_sequence(burn_result, "errors")
 
     result: dict[str, object] = {
         "contract_version": BURN_INTELLIGENCE_CONTRACT,
         "product": "x1_burn_intelligence",
         "chain": "x1",
-        "status": tokenomics_result.get("status"),
+        "status": burn_result.get("status"),
         "requested_asset": requested_asset,
         "asset": deepcopy(dict(asset)),
         "burn_metrics": deepcopy(dict(metrics)),
-        "observed_at": tokenomics_result.get("observed_at"),
+        "observed_at": burn_result.get("observed_at"),
         "confidence": deepcopy(dict(confidence)),
         "sources": deepcopy(sources),
         "warnings": deepcopy(warnings),
         "errors": deepcopy(errors),
-        "evidence_receipt": deepcopy(tokenomics_result.get("evidence_receipt")),
-        "proof_score": deepcopy(tokenomics_result.get("proof_score")),
+        "evidence_receipt": deepcopy(burn_result.get("evidence_receipt")),
+        "proof_score": deepcopy(burn_result.get("proof_score")),
         "proof_score_separate_from_risk": True,
         "execution_authorized": False,
     }
@@ -301,6 +308,7 @@ def build_x1_burn_intelligence(
 
 __all__ = [
     "BURN_INTELLIGENCE_CONTRACT",
+    "CMIS_BURN_INTELLIGENCE_CONTRACT",
     "X1BurnIntelligenceContractError",
     "build_x1_burn_intelligence",
 ]

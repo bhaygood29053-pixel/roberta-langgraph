@@ -239,6 +239,8 @@ def test_x1_scout_preserves_raw_numeric_observed_at_and_adds_iso() -> None:
         ("is this asset safe?", "risk_check"),
         ("check token supply", "tokenomics"),
         ("verify mint authority", "tokenomics"),
+        ("show 24h burn activity", "burn_intelligence"),
+        ("how many tokens were burned?", "burn_intelligence"),
         ("show price and liquidity", "market_report"),
         ("current market activity", "market_report"),
     ],
@@ -252,7 +254,7 @@ def test_objective_planner_selects_minimum_required_operation(
 
 @pytest.mark.parametrize(
     "operation",
-    ["market_report", "tokenomics", "risk_check", "pre_trade_check"],
+    ["market_report", "tokenomics", "burn_intelligence", "risk_check", "pre_trade_check"],
 )
 def test_x1_scout_dispatches_explicit_cmis_operations(operation: str) -> None:
     cmis = MockCMISClient()

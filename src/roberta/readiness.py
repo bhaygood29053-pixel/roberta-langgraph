@@ -32,6 +32,7 @@ _ALLOWED_EVALUATION_SERVICES = frozenset(
         "rank",
         "historical_compare",
         "tokenomics",
+        "burn_intelligence",
         "risk_check",
         "pre_trade_check",
         "verification_evidence",
@@ -256,6 +257,14 @@ class ObservedCMISClient:
             "tokenomics",
             chain=chain,
             func=self._delegate.tokenomics,
+            kwargs={"chain": chain, "asset": asset},
+        )
+
+    def burn_intelligence(self, *, chain: str, asset: str) -> Any:
+        return self._call(
+            "burn_intelligence",
+            chain=chain,
+            func=self._delegate.burn_intelligence,
             kwargs={"chain": chain, "asset": asset},
         )
 

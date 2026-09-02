@@ -6,6 +6,7 @@ from roberta.chat_ui import (
     SERVICE_MENU,
     STATUS_KEY,
     automatic_status_summary,
+    burn_request,
     compare_request,
     format_terminal_text,
     full_request,
@@ -38,6 +39,8 @@ def test_service_menu_exposes_requested_user_flows() -> None:
     assert "Evidence Quality Report" in SERVICE_MENU
     assert "Full Assessment" in SERVICE_MENU
     assert "Alert & Warning Key" in SERVICE_MENU
+    assert "Burn Intelligence" in SERVICE_MENU
+    assert "/burn <asset>" in SERVICE_MENU
     assert "ROBERTA -> X1 Scout (scanner) -> CMIS -> X1 providers" in SERVICE_MENU
 
 
@@ -259,3 +262,10 @@ def test_every_x1_chat_request_visibly_routes_through_x1_scout() -> None:
     for request in requests:
         assert "X1 Scout" in request
         assert "CMIS" in request
+
+
+def test_burn_request_uses_first_class_cmis_service() -> None:
+    request = burn_request("AGI")
+    assert "CMIS burn_intelligence service" in request
+    assert "burn_intelligence/v1" in request
+    assert "execution_authorized=false" in request

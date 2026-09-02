@@ -133,6 +133,7 @@ ROBERTA SERVICE MENU
  11. Evidence Quality Report     /evidence <asset>
  12. Full Assessment             /full <asset>
  13. Alert & Warning Key         /key
+ 14. Burn Intelligence           /burn <asset>
 
 Other commands:
      /menu   Show this menu
@@ -675,6 +676,21 @@ def tokenomics_request(asset: str) -> str:
         "verified supply, mint "
         "authority, freeze authority, token activity/burn evidence when "
         "available, risk implications, and all verification limitations."
+    ) + SINGLE_ASSET_TERMINAL_STYLE
+
+
+def burn_request(asset: str) -> str:
+    return (
+        f"On X1, run Burn Intelligence for {asset}. Use X1 Scout to call the "
+        "first-class CMIS burn_intelligence service and preserve the accepted "
+        "burn_intelligence/v1 contract. Report cumulative verified-observed "
+        "burn, burn events, 24h / 7d / 30d burned amounts and event counts, "
+        "the immediately preceding equal-period comparisons and percentage "
+        "changes, issuance state, coverage/completeness, circulation context, "
+        "valuation state, Evidence Receipt, Proof Score, warnings, and unknowns. "
+        "Do not recalculate burn facts in ROBERTA. Do not label cumulative "
+        "observed burn as lifetime unless lifetime_total_burn_verified=true. "
+        "Preserve execution_authorized=false."
     ) + SINGLE_ASSET_TERMINAL_STYLE
 
 

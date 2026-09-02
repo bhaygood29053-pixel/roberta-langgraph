@@ -43,13 +43,14 @@ def window(label, *, burned="10", percent="25", change_state="AVAILABLE"):
     return result
 
 
-def tokenomics_result():
+def burn_result():
     return {
-        "service": "tokenomics",
+        "service": "burn_intelligence",
         "chain": "x1",
         "status": "partial",
         "asset": {"symbol": "AGI", "name": "AGI", "mint": MINT},
         "data": {
+            "contract_version": "burn_intelligence/v1",
             "mint": MINT,
             "symbol": "AGI",
             "burn_metrics": {
@@ -112,7 +113,7 @@ def tokenomics_result():
 
 class X1BurnIntelligenceTests(unittest.TestCase):
     def test_projects_cmis_burn_metrics_without_recomputation(self):
-        source = tokenomics_result()
+        source = burn_result()
         product = build_x1_burn_intelligence(source, requested_asset="AGI")
 
         self.assertEqual(product["contract_version"], BURN_INTELLIGENCE_CONTRACT)
@@ -132,7 +133,7 @@ class X1BurnIntelligenceTests(unittest.TestCase):
         self.assertFalse(product["execution_authorized"])
 
     def test_projection_is_detached_from_mutable_cmis_payload(self):
-        source = tokenomics_result()
+        source = burn_result()
         product = build_x1_burn_intelligence(source)
         source["data"]["burn_metrics"]["windows"]["24h"]["burned_raw"] = "999"
         source["warnings"].append({"code": "mutated"})
@@ -141,18 +142,18 @@ class X1BurnIntelligenceTests(unittest.TestCase):
         self.assertNotIn({"code": "mutated"}, product["warnings"])
 
     def test_exact_mint_identity_is_required_and_must_match_data(self):
-        source = tokenomics_result()
+        source = burn_result()
         source["asset"]["mint"] = "AGI"
         with self.assertRaisesRegex(X1BurnIntelligenceContractError, "exact address-shaped"):
             build_x1_burn_intelligence(source)
 
-        source = tokenomics_result()
+        source = burn_result()
         source["data"]["mint"] = OTHER_MINT
         with self.assertRaisesRegex(X1BurnIntelligenceContractError, "does not match"):
             build_x1_burn_intelligence(source)
 
     def test_new_burn_activity_preserves_null_percent_change(self):
-        source = tokenomics_result()
+        source = burn_result()
         comparison = source["data"]["burn_metrics"]["windows"]["24h"]["period_over_period"]
         comparison["percent_change"] = None
         comparison["prior_burned_raw"] = "0"
@@ -175,7 +176,7 @@ class X1BurnIntelligenceTests(unittest.TestCase):
             "issuance_state",
         )
         for key in required:
-            source = tokenomics_result()
+            source = burn_result()
             del source["data"]["burn_metrics"]["windows"]["24h"][key]
             with self.subTest(key=key), self.assertRaisesRegex(
                 X1BurnIntelligenceContractError,
@@ -190,7 +191,7 @@ class X1BurnIntelligenceTests(unittest.TestCase):
             "prior_burned_raw",
             "prior_burned_tokens",
         ):
-            source = tokenomics_result()
+            source = burn_result()
             del source["data"]["burn_metrics"]["windows"]["24h"]["period_over_period"][key]
             with self.subTest(key=key), self.assertRaisesRegex(
                 X1BurnIntelligenceContractError,
@@ -198,7 +199,7 @@ class X1BurnIntelligenceTests(unittest.TestCase):
             ):
                 build_x1_burn_intelligence(source)
 
-        source = tokenomics_result()
+        source = burn_result()
         source["data"]["burn_metrics"]["windows"]["24h"]["period_over_period"]["percent_change"] = None
         with self.assertRaisesRegex(
             X1BurnIntelligenceContractError,
@@ -214,14 +215,14 @@ class X1BurnIntelligenceTests(unittest.TestCase):
             ("errors", {"code": "bad"}),
         )
         for key, value in cases:
-            source = tokenomics_result()
+            source = burn_result()
             source[key] = value
             with self.subTest(key=key), self.assertRaises(
                 X1BurnIntelligenceContractError
             ):
                 build_x1_burn_intelligence(source)
     def test_unavailable_comparison_preserves_insufficient_coverage(self):
-        source = tokenomics_result()
+        source = burn_result()
         comparison = source["data"]["burn_metrics"]["windows"]["30d"]["period_over_period"]
         comparison.update({
             "status": "unavailable",
@@ -237,7 +238,7 @@ class X1BurnIntelligenceTests(unittest.TestCase):
         self.assertIsNone(projected["percent_change"])
 
     def test_unavailable_burn_metrics_are_preserved_without_zero_fabrication(self):
-        source = tokenomics_result()
+        source = burn_result()
         source["status"] = "partial"
         source["data"]["burn_metrics"] = {
             "available": False,
@@ -255,26 +256,26 @@ class X1BurnIntelligenceTests(unittest.TestCase):
 
     def test_wrong_service_or_chain_fails_closed(self):
         for key, value in (("service", "market_report"), ("chain", "solana")):
-            source = tokenomics_result()
+            source = burn_result()
             source[key] = value
             with self.subTest(key=key), self.assertRaises(X1BurnIntelligenceContractError):
                 build_x1_burn_intelligence(source)
 
     def test_missing_burn_metrics_fails_closed(self):
-        source = tokenomics_result()
+        source = burn_result()
         del source["data"]["burn_metrics"]
         with self.assertRaisesRegex(X1BurnIntelligenceContractError, "burn_metrics"):
             build_x1_burn_intelligence(source)
 
     def test_malformed_window_coverage_fails_closed(self):
-        source = tokenomics_result()
+        source = burn_result()
         source["data"]["burn_metrics"]["windows"]["7d"]["coverage_verified"] = "yes"
         with self.assertRaisesRegex(X1BurnIntelligenceContractError, "coverage malformed"):
             build_x1_burn_intelligence(source)
 
     def test_numeric_percent_is_forbidden_for_new_activity_or_insufficient_coverage(self):
         for state in ("NEW_BURN_ACTIVITY", "INSUFFICIENT_COVERAGE"):
-            source = tokenomics_result()
+            source = burn_result()
             comparison = source["data"]["burn_metrics"]["windows"]["24h"]["period_over_period"]
             comparison["change_state"] = state
             comparison["percent_change"] = "999"
@@ -287,13 +288,13 @@ class X1BurnIntelligenceTests(unittest.TestCase):
                 build_x1_burn_intelligence(source)
 
     def test_execution_authority_fails_closed(self):
-        source = tokenomics_result()
+        source = burn_result()
         source["execution_authorized"] = True
         with self.assertRaisesRegex(X1BurnIntelligenceContractError, "execution_authorized=false"):
             build_x1_burn_intelligence(source)
 
     def test_projection_does_not_mutate_source(self):
-        source = tokenomics_result()
+        source = burn_result()
         before = copy.deepcopy(source)
         build_x1_burn_intelligence(source)
         self.assertEqual(source, before)
