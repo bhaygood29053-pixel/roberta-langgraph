@@ -578,8 +578,21 @@ def automatic_status_summary(content: object) -> str | None:
                     block.append(f"    Meaning: {meaning}")
 
         if evidence:
+            freshness_state = (_text(evidence.get("freshness_state")) or "").upper()
             freshness = evidence.get("freshness_verified")
-            if freshness is True:
+            if freshness_state == "VERIFIED":
+                block.append("  Freshness: [VERIFIED]")
+            elif freshness_state == "PARTIAL":
+                block.append("  Freshness: [PARTIAL]")
+                block.append(
+                    "    Meaning: Freshness is verified for some scoped facts but not all."
+                )
+            elif freshness_state in {"UNVERIFIED", "NOT_VERIFIED"}:
+                block.append("  Freshness: [NOT VERIFIED]")
+                block.append(
+                    "    Meaning: The evidence freshness requirement was not proven."
+                )
+            elif freshness is True:
                 block.append("  Freshness: [VERIFIED]")
             elif freshness is False:
                 block.append("  Freshness: [NOT VERIFIED]")
@@ -627,7 +640,7 @@ def overview_request(asset: str) -> str:
     return (
         f"On X1, run the flagship Instant X1 Scan for {asset}. "
         "Use X1 Scout with operation='instant_x1_scan' and the accepted CMIS "
-        "instant_x1_scan/v2 product path. Treat this as the Asset Overview "
+        "instant_x1_scan/v3 product path. Treat this as the Asset Overview "
         "workflow and keep the investigation scope to that scan unless the "
         "user explicitly asks for supplemental evidence in a separate request."
     )
