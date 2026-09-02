@@ -540,9 +540,16 @@ The Learning Plane implementation milestone is complete enough to support the fl
 
 Current product order:
 
-1. **BURN:** CMIS public #389 and protected `cmis-core` #12 are accepted, ROBERTA #295 is merged, and protected `roberta-core` #23 provides the shared Human/Machine Decision Object path. Complete the X1 Scout switch to dedicated CMIS `burn_intelligence/v1` and keep `/burn` as the first-class user workflow.
-2. **Decision Object expansion:** BURN is accepted in the canonical Decision Object; expand later workflows one at a time without widening Burn Intelligence or Instant Scan semantics.
-3. **Discovery / WHAT CHANGED? / Early Warning:** blocked until CMIS public #365 + protected `cmis-core` #6 are accepted together.
-4. **Learning operations:** repair private CI for `roberta-core` #11 and accept bounded one-cycle orchestration before broader background scheduling.
-5. **Telegram:** PR #264 is currently dirty/non-mergeable and remains lower priority than the intelligence product gates.
-6. **Controlled Execution:** locked/not started; `execution_authorized=false`.
+1. **BURN — COMPLETE.** CMIS public #389 and protected `cmis-core` #12 are accepted; ROBERTA public #295 and #304 are merged; protected `roberta-core` #23/#24 provide and validate the shared Human/Machine Decision Object path. X1 Scout consumes dedicated CMIS `burn_intelligence/v1`, and `/burn <asset>` is a first-class Human ROBERTA workflow.
+2. **DISCOVERY — COMPLETE.** CMIS public #365/#391 and protected `cmis-core` #6 provide the accepted Discovery Ledger and `discovery_intelligence/v1` under CMIS capability contract 1.16.0. ROBERTA public #306 promotes the service through X1 Scout, and protected `roberta-core` #25 preserves the exact Discovery history in the Canonical ROBERTA Decision Object for both Human and Machine ROBERTA. First verified observation remains explicitly distinct from token launch time; continuous coverage and archive completeness remain unverified.
+3. **WHAT CHANGED? — ACTIVE GATE.** Build the next deterministic product workflow from accepted current facts, Historical Coverage Proof, Burn Intelligence, and Discovery Intelligence. Preserve per-dimension unknowns and do not infer causality, manipulation, launch timing, or missing values.
+4. **FIELD-SCOPED FRESHNESS — REBASE BEFORE PROMOTION.** The earlier CMIS #386 / `cmis-core` #9 / ROBERTA #301 / `roberta-core` #19 draft family predates accepted CMIS 1.15 Burn and 1.16 Discovery. Reconcile it onto current public/private heads and advance it under a new CMIS contract version rather than merging stale assumptions.
+5. **EARLY WARNING — AFTER WHAT CHANGED?.** Promote warning families one at a time with explicit persistence, freshness, replay/deduplication, severity, and evidence contracts.
+6. **Decision Object expansion:** continue one workflow at a time so Human and Machine ROBERTA preserve the same facts, unknowns, evidence state, and execution denial.
+7. **Learning operations:** keep private-core CI/background scheduling hardening as a supporting track; it should not displace the X1 intelligence product gates.
+8. **Telegram:** remains lower priority than WHAT CHANGED? / freshness / Early Warning.
+9. **Controlled Execution:** locked/not started; `execution_authorized=false`.
+
+### Cross-project status note
+
+CMIS PR #363 remains an open delayed-vault evidence investigation. It may continue in parallel, but it is not a blocker for the main ROBERTA product roadmap. Historical Coverage Proof v1 (#383), Burn Intelligence v1, Discovery Ledger v1, and Discovery Intelligence v1 are complete.
