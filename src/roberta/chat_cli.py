@@ -14,6 +14,7 @@ from roberta.chat_ui import (
     activity_request,
     automatic_status_summary,
     burn_request,
+    discovery_request,
     compare_request,
     concentration_request,
     evidence_request,
@@ -111,7 +112,9 @@ def _menu_request(choice: str) -> str | None:
         return None
     if choice == "14":
         return burn_request(_prompt_asset())
-    raise ValueError("Choose a service number from 1 through 14.")
+    if choice == "15":
+        return discovery_request(_prompt_asset())
+    raise ValueError("Choose a service number from 1 through 15.")
 
 
 def _shortcut_request(user_text: str) -> str | None:
@@ -131,6 +134,8 @@ def _shortcut_request(user_text: str) -> str | None:
         return tokenomics_request(args[0] if args else _prompt_asset())
     if command == "/burn":
         return burn_request(args[0] if args else _prompt_asset())
+    if command == "/discovery":
+        return discovery_request(args[0] if args else _prompt_asset())
     if command == "/liquidity":
         return liquidity_request(args[0] if args else _prompt_asset())
     if command == "/history":

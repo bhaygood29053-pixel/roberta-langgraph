@@ -32,6 +32,7 @@ AUTONOMOUS_OPERATIONS: tuple[CMISOperation, ...] = (
     "historical_compare",
     "tokenomics",
     "burn_intelligence",
+    "discovery_intelligence",
     "risk_check",
 )
 MAX_PLAN_OPERATIONS = 3
@@ -75,6 +76,15 @@ _BURN_TERMS = (
     "token burn",
     "burn ",
     " burn",
+)
+_DISCOVERY_TERMS = (
+    "discovery intelligence",
+    "discovery history",
+    "first verified observation",
+    "first observed",
+    "first seen",
+    "most recent verified observation",
+    "observed history",
 )
 _RANK_TERMS = (
     " rank",
@@ -122,10 +132,10 @@ X1_SCOUT_PLANNER_SYSTEM_PROMPT = """You are the planning component inside X1 Sco
 
 Your job is only to propose which read-only CMIS investigations are useful for
 the user's X1 objective. Return JSON only, with exactly this shape:
-{"operations": ["instant_x1_scan", "market_report", "rank", "historical_compare", "tokenomics", "burn_intelligence", "risk_check"]}
+{"operations": ["instant_x1_scan", "market_report", "rank", "historical_compare", "tokenomics", "burn_intelligence", "discovery_intelligence", "risk_check"]}
 
 Rules:
-- You may use only: instant_x1_scan, market_report, rank, historical_compare, tokenomics, burn_intelligence, risk_check.
+- You may use only: instant_x1_scan, market_report, rank, historical_compare, tokenomics, burn_intelligence, discovery_intelligence, risk_check.
 - Use instant_x1_scan only when the objective explicitly asks for an Instant X1 Scan or quick/instant asset scan.
 - Use the smallest useful plan, with no duplicates and at most three operations.
 - For a full/complete/comprehensive assessment or due-diligence objective, propose
@@ -142,6 +152,8 @@ Rules:
   include tokenomics.
 - Burn, burned-token, burn-rate, burn-event, or burn-intelligence questions
   should include burn_intelligence.
+- Discovery, first-seen, first-observed, or observed-history questions should
+  include discovery_intelligence. First observation is not token launch time.
 """
 
 
@@ -176,6 +188,11 @@ def is_burn_objective(objective: object) -> bool:
         return False
     padded = f" {normalized} "
     return any(term in padded for term in _BURN_TERMS)
+
+
+def is_discovery_objective(objective: object) -> bool:
+    normalized = _normalize_objective(objective)
+    return bool(normalized) and any(term in normalized for term in _DISCOVERY_TERMS)
 
 
 def is_rank_objective(objective: object) -> bool:
@@ -303,6 +320,8 @@ def required_operations(objective: object) -> list[CMISOperation]:
     normalized = _normalize_objective(objective)
     if is_instant_x1_scan_objective(normalized):
         return ["instant_x1_scan"]
+    if is_discovery_objective(normalized):
+        return ["discovery_intelligence"]
     intent = recommendation_intent(normalized)
     if is_rank_objective(normalized) and intent != "full_assessment":
         return ["rank"]
@@ -329,6 +348,8 @@ def select_cmis_operation(objective: object) -> CMISOperation:
         return "instant_x1_scan"
     if is_rank_objective(objective):
         return "rank"
+    if is_discovery_objective(objective):
+        return "discovery_intelligence"
     if is_burn_objective(objective):
         return "burn_intelligence"
     if is_historical_objective(objective):
@@ -338,6 +359,8 @@ def select_cmis_operation(objective: object) -> CMISOperation:
         return "risk_check"
     if "burn_intelligence" in required:
         return "burn_intelligence"
+    if "discovery_intelligence" in required:
+        return "discovery_intelligence"
     if "tokenomics" in required:
         return "tokenomics"
     if "market_report" in required:

@@ -13,6 +13,7 @@ from roberta.cmis.capabilities import (
     CMISCapabilityContractError,
     CMISCapabilityUnavailable,
     require_burn_intelligence_capability,
+    require_discovery_intelligence_capability,
     require_historical_all_available_capability,
     require_instant_x1_scan_capability,
     require_service_capability,
@@ -574,6 +575,39 @@ class CMISHTTPClient:
             )
         return self._request(
             service="burn_intelligence",
+            chain=normalized_chain,
+            asset=normalized_asset,
+        )
+
+    def discovery_intelligence(self, *, chain: str, asset: str) -> CMISEnvelope:
+        normalized_chain, normalized_asset = self._identity(chain, asset)
+        try:
+            require_discovery_intelligence_capability(
+                self.capabilities(),
+                chain=normalized_chain,
+            )
+        except CMISCapabilityUnavailable as exc:
+            return self._error_envelope(
+                service="discovery_intelligence",
+                chain=normalized_chain,
+                asset=normalized_asset,
+                status="unavailable",
+                code="cmis_discovery_intelligence_unavailable",
+                message=str(exc),
+                warning=True,
+            )
+        except CMISCapabilityContractError as exc:
+            return self._error_envelope(
+                service="discovery_intelligence",
+                chain=normalized_chain,
+                asset=normalized_asset,
+                status="unavailable",
+                code="cmis_discovery_intelligence_contract_unavailable",
+                message=f"CMIS Discovery Intelligence contract unavailable: {exc}",
+                warning=True,
+            )
+        return self._request(
+            service="discovery_intelligence",
             chain=normalized_chain,
             asset=normalized_asset,
         )

@@ -7,6 +7,7 @@ from roberta.chat_ui import (
     STATUS_KEY,
     automatic_status_summary,
     burn_request,
+    discovery_request,
     compare_request,
     format_terminal_text,
     full_request,
@@ -268,4 +269,11 @@ def test_burn_request_uses_first_class_cmis_service() -> None:
     request = burn_request("AGI")
     assert "CMIS burn_intelligence service" in request
     assert "burn_intelligence/v1" in request
+
+
+def test_discovery_request_preserves_verified_history_boundary() -> None:
+    request = discovery_request("AGI")
+    assert "operation='discovery_intelligence'" in request
+    assert "discovery_intelligence/v1" in request
+    assert "not token launch time" in request
     assert "execution_authorized=false" in request

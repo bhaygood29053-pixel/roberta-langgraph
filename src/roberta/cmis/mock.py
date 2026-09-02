@@ -11,6 +11,8 @@ from roberta.cmis.capabilities import (
     INSTANT_X1_SCAN_CONTRACT_VERSION,
     INSTANT_X1_SCAN_REQUIRED_LIMITATIONS,
     INSTANT_X1_SCAN_REQUIRED_REQUIREMENTS,
+    DISCOVERY_INTELLIGENCE_REQUIRED_LIMITATIONS,
+    DISCOVERY_INTELLIGENCE_REQUIRED_REQUIREMENTS,
     INTELLIGENCE_PROMOTION_RULE,
     MIN_CMIS_CONTRACT_VERSION,
     X1_ASSET_IDENTITY_CONTRACT_VERSION,
@@ -64,6 +66,7 @@ def _mock_capability_manifest() -> CMISCapabilities:
         "historical_compare",
         "tokenomics",
         "burn_intelligence",
+        "discovery_intelligence",
         "risk_check",
         "pre_trade_check",
         "trade_verification",
@@ -120,6 +123,18 @@ def _mock_capability_manifest() -> CMISCapabilities:
         "scout_reliance_promoted": True,
         "execution_authorized": False,
     }
+    x1["discovery_intelligence"] = {
+        **_capability(
+            "bounded",
+            requirements=list(DISCOVERY_INTELLIGENCE_REQUIRED_REQUIREMENTS),
+            limitations=list(DISCOVERY_INTELLIGENCE_REQUIRED_LIMITATIONS),
+        ),
+        "read_only": True,
+        "service_contract_version": "discovery_intelligence/v1",
+        "public_service_promoted": True,
+        "scout_reliance_promoted": True,
+        "execution_authorized": False,
+    }
     x1["historical_compare"] = _capability(
         "supported",
         requirements=["verified_current_market_snapshot"],
@@ -152,7 +167,7 @@ def _mock_capability_manifest() -> CMISCapabilities:
         "service": "cmis_gateway",
         "version": 1,
         "schema_version": 1,
-        "contract_version": "1.15.0",
+        "contract_version": "1.16.0",
         "request_path": "/v1/cmis",
         "evidence_quality": {
             "evidence_receipt_schema_version": 1,
@@ -838,6 +853,32 @@ class MockCMISClient:
             "mint": _MOCK_X1_MINT,
         }
         response["execution_authorized"] = False  # type: ignore[typeddict-unknown-key]
+        return response
+
+    def discovery_intelligence(self, *, chain: str, asset: str) -> CMISEnvelope:
+        chain, asset = self._identity(chain, asset)
+        self.calls.append({"operation": "discovery_intelligence", "chain": chain, "asset": asset})
+        data = {
+            "contract_version": "discovery_intelligence/v1",
+            "mint": _MOCK_X1_MINT,
+            "available": True,
+            "verified_observation_count": 2,
+            "first_verified_observation": {"fact_time_unix": 100, "observation_id": "obs_first"},
+            "most_recent_verified_observation": {"fact_time_unix": 200, "observation_id": "obs_recent"},
+            "coverage": {
+                "start_fact_time_unix": 100,
+                "end_fact_time_unix": 200,
+                "elapsed_observed_seconds": 100,
+                "continuous_coverage_verified": False,
+                "archive_completeness_verified": False,
+            },
+            "token_launch_time": None,
+            "token_launch_time_verified": False,
+        }
+        response = self._response(service="discovery_intelligence", chain=chain, asset=asset, data=data)
+        response["status"] = "partial"
+        response["asset"] = {"symbol": asset, "mint": _MOCK_X1_MINT}
+        response["execution_authorized"] = False
         return response
 
     def risk_check(self, *, chain: str, asset: str) -> CMISEnvelope:
