@@ -110,7 +110,7 @@ def test_asset_overview_routes_to_one_flagship_scan_without_presentation_cues() 
 
     assert "Instant X1 Scan for AGI" in overview
     assert "operation='instant_x1_scan'" in overview
-    assert "instant_x1_scan/v2" in overview
+    assert "instant_x1_scan/v3" in overview
     assert "Asset Overview" in overview
     assert "CURRENT MARKET" not in overview
     assert "HISTORY" not in overview
@@ -216,6 +216,33 @@ def test_automatic_status_summary_explains_warning_states() -> None:
     assert "Verification: [INSUFFICIENT_EVIDENCE]" in summary
     assert "Freshness: [UNKNOWN]" in summary
     assert "Verified historical price evidence is unavailable" in summary
+
+
+def test_automatic_status_summary_renders_partial_freshness() -> None:
+    report = {
+        "investigations": [
+            {
+                "operation": "instant_x1_scan",
+                "cmis_status": "partial",
+                "risk_help": None,
+                "evidence_context": {
+                    "proof_strength": "WEAK",
+                    "verification_status": "UNVERIFIED",
+                    "freshness_verified": False,
+                    "freshness_state": "PARTIAL",
+                    "unknown_categories": ["source_independence"],
+                },
+                "warnings": [],
+                "errors": [],
+            }
+        ]
+    }
+
+    summary = automatic_status_summary(report)
+
+    assert summary is not None
+    assert "Freshness: [PARTIAL]" in summary
+    assert "Freshness is verified for some scoped facts but not all." in summary
 
 
 def test_automatic_status_summary_keeps_clean_states_compact() -> None:
