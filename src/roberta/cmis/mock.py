@@ -27,6 +27,7 @@ from roberta.cmis.instant_scan import INSTANT_X1_SCAN_REQUIRED_RESPONSE_LIMITATI
 from roberta.cmis.verification import normalize_verification_evidence_selector
 
 MockScenario = Literal["test_only", "warning", "unavailable", "error"]
+_MOCK_X1_MINT = "7SXmUpcBGSAwW5LmtzQVF9jHswZ7xzmdKqWa4nDgL3ER"
 
 
 def _capability(
@@ -62,6 +63,7 @@ def _mock_capability_manifest() -> CMISCapabilities:
         "rank",
         "historical_compare",
         "tokenomics",
+        "burn_intelligence",
         "risk_check",
         "pre_trade_check",
         "trade_verification",
@@ -88,6 +90,32 @@ def _mock_capability_manifest() -> CMISCapabilities:
         "read_only": True,
         "composition_only": True,
         "service_contract_version": INSTANT_X1_SCAN_CONTRACT_VERSION,
+        "public_service_promoted": True,
+        "scout_reliance_promoted": True,
+        "execution_authorized": False,
+    }
+    x1["burn_intelligence"] = {
+        **_capability(
+            "bounded",
+            requirements=[
+                "exact_x1_mint_identity",
+                "accepted_tokenomics_burn_metrics",
+                "verified_burn_event_semantics",
+                "verified_window_coverage_for_numeric_window_claims",
+                "verified_prior_window_coverage_for_numeric_percent_change",
+            ],
+            limitations=[
+                "observed_cumulative_burn_is_not_lifetime_without_archive_completeness",
+                "dead_address_transfers_are_not_burns_without_separate_semantic_proof",
+                "circulating_supply_requires_independent_supply_semantics",
+                "historical_value_destroyed_requires_burn_time_price_evidence",
+                "proof_score_separate_from_risk",
+                "no_execution_authorization",
+                "x1_only_initial_scope",
+            ],
+        ),
+        "read_only": True,
+        "service_contract_version": "burn_intelligence/v1",
         "public_service_promoted": True,
         "scout_reliance_promoted": True,
         "execution_authorized": False,
@@ -124,7 +152,7 @@ def _mock_capability_manifest() -> CMISCapabilities:
         "service": "cmis_gateway",
         "version": 1,
         "schema_version": 1,
-        "contract_version": "1.14.0",
+        "contract_version": "1.15.0",
         "request_path": "/v1/cmis",
         "evidence_quality": {
             "evidence_receipt_schema_version": 1,
@@ -701,6 +729,116 @@ class MockCMISClient:
             asset=asset,
             data={"total_supply": None, "mint_authority": None, "freeze_authority": None},
         )
+
+    def burn_intelligence(self, *, chain: str, asset: str) -> CMISEnvelope:
+        chain, asset = self._identity(chain, asset)
+        self.calls.append(
+            {"operation": "burn_intelligence", "chain": chain, "asset": asset}
+        )
+        if chain != "x1" or self.scenario in {"unavailable", "error"}:
+            return self._response(
+                service="burn_intelligence",
+                chain=chain,
+                asset=asset,
+                data={
+                    "contract_version": "burn_intelligence/v1",
+                    "burn_metrics": {
+                        "available": False,
+                        "status": "unavailable",
+                        "reason": "mock_burn_unavailable",
+                        "lifetime_total_burn_verified": False,
+                    },
+                },
+            )
+
+        def window(label: str) -> dict[str, object]:
+            result: dict[str, object] = {
+                "status": "ok",
+                "coverage_verified": True,
+                "burned_raw": "10",
+                "burned_tokens": "10",
+                "burn_events": 2,
+                "minted_raw": "20",
+                "minted_tokens": "20",
+                "mint_events": 1,
+                "burn_to_emission_ratio": "0.5",
+                "net_issuance_raw": "10",
+                "net_issuance_tokens": "10",
+                "issuance_state": "INFLATIONARY",
+            }
+            if label != "1h":
+                result["period_over_period"] = {
+                    "status": "ok",
+                    "prior_start_exclusive": 0,
+                    "prior_end_inclusive": 100,
+                    "prior_burned_raw": "8",
+                    "prior_burned_tokens": "8",
+                    "percent_change": "25",
+                    "change_state": "AVAILABLE",
+                }
+            return result
+
+        burn_metrics = {
+            "available": True,
+            "status": "partial",
+            "burn_events_observed": 7,
+            "verified_burned_raw_observed": "70",
+            "verified_burned_observed": "70",
+            "lifetime_total_burn_verified": False,
+            "coverage_verified": True,
+            "time_buckets_verified": True,
+            "observed_event_totals_verified": True,
+            "coverage_start_time": 0,
+            "coverage_end_time": 200,
+            "observed_at": 200,
+            "windows": {
+                "1h": window("1h"),
+                "24h": window("24h"),
+                "7d": window("7d"),
+                "30d": window("30d"),
+            },
+            "valuation": {
+                "status": "partial",
+                "valuation_coverage_complete": False,
+            },
+            "circulating_supply": {
+                "status": "unavailable",
+                "circulating_supply_verified": False,
+            },
+        }
+        response = self._response(
+            service="burn_intelligence",
+            chain="x1",
+            asset=asset,
+            data={
+                "contract_version": "burn_intelligence/v1",
+                "mint": _MOCK_X1_MINT,
+                "symbol": asset,
+                "name": "Mock Asset",
+                "cumulative": {
+                    "verified_burned_raw_observed": "70",
+                    "verified_burned_observed": "70",
+                    "burn_events_observed": 7,
+                    "lifetime_total_burn_verified": False,
+                },
+                "coverage": {
+                    "coverage_verified": True,
+                    "time_buckets_verified": True,
+                    "observed_event_totals_verified": True,
+                },
+                "windows": burn_metrics["windows"],
+                "valuation": burn_metrics["valuation"],
+                "circulating_supply": burn_metrics["circulating_supply"],
+                "burn_metrics": burn_metrics,
+            },
+        )
+        response["asset"] = {
+            "symbol": asset,
+            "name": "Mock Asset",
+            "mint": _MOCK_X1_MINT,
+        }
+        response["execution_authorized"] = False  # type: ignore[typeddict-unknown-key]
+        return response
 
     def risk_check(self, *, chain: str, asset: str) -> CMISEnvelope:
         chain, asset = self._identity(chain, asset)
