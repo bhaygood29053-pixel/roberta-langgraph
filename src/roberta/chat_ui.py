@@ -692,8 +692,11 @@ def history_request(asset: str) -> str:
         "with every verified historical observation CMIS can support. Cover "
         "price, liquidity, volume, activity, volatility or drawdown only when "
         "those facts are actually supported. State the earliest and latest "
-        "verified coverage, whether history is partial or complete, and all "
-        "missing evidence explicitly."
+        "verified coverage and all missing evidence explicitly. When CMIS "
+        "provides supported-pair lifetime fields, distinguish complete price "
+        "history in the exact market quote from complete USD-denominated "
+        "history. Never infer historical quote-to-USD equivalence from a "
+        "stable-token name or configuration."
     ) + SINGLE_ASSET_TERMINAL_STYLE
 
 
@@ -757,8 +760,11 @@ def full_request(asset: str) -> str:
         "context when useful, and evidence-quality metadata. For history, "
         "treat this as an all available history / entire history request rather "
         "than requiring a fixed comparison period; use the supported CMIS "
-        "all-available history mode and preserve verified partial-coverage "
-        "semantics. Include concentration intelligence only if an exact eligible "
+        "all-available history mode and preserve CMIS coverage semantics. If "
+        "CMIS verifies the exact supported-pair lifetime, present that separately "
+        "from USD-denominated lifetime and preserve historical quote-to-USD "
+        "equivalence as unverified unless CMIS proves it. Include concentration "
+        "intelligence only if an exact eligible "
         "CMIS-owned evidence id is already available; never invent one. Separate "
         "verified facts, X1 Scout interpretation, and Roberta reasoning. Cover "
         "market structure, liquidity, activity, tokenomics, risk, history, "

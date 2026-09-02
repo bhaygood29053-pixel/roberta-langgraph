@@ -213,8 +213,12 @@ def test_product_text_renders_unknowns_and_keeps_proof_separate_from_risk() -> N
     assert "Mint Authority: authority-1 (unverified)" in rendered
     assert "Holders: unknown" in rendered
     assert "Top-account concentration: unknown" in rendered
-    assert "Full asset lifetime verified: False" in rendered
-    assert "Continuous coverage verified: False" in rendered
+    assert "Supported pair lifetime verified: False" in rendered
+    assert "Pair price continuity verified: False" in rendered
+    assert "Provider supported range complete: False" in rendered
+    assert "Historical quote-to-USD equivalence verified: False" in rendered
+    assert "Full USD lifetime verified: False" in rendered
+    assert "Legacy full asset lifetime verified: False" in rendered
     assert "Verified history metrics:" in rendered
     assert "- Price status: partial" in rendered
     assert "  total change pct: 12.5" in rendered
@@ -347,3 +351,31 @@ def test_non_scan_scout_report_does_not_gain_instant_scan_product_fields() -> No
     assert report["source"]["operation"] == "risk_check"
     assert "instant_x1_scan_product_view" not in report
     assert "instant_x1_scan_product_text" not in report
+
+
+def test_product_text_renders_verified_pair_lifetime_separately_from_usd():
+    report = _scan_report()
+    history = report["instant_x1_scan_presentation"]["sections"]["history"]
+    history.update(
+        {
+            "price_coverage_scope": "full_supported_pair_lifetime",
+            "full_supported_pair_lifetime_verified": True,
+            "continuous_pair_price_coverage_verified": True,
+            "provider_range_complete_verified": True,
+            "historical_quote_usd_equivalence_verified": False,
+            "full_usd_lifetime_verified": False,
+            "full_asset_lifetime_verified": False,
+            "continuous_coverage_verified": False,
+        }
+    )
+
+    view = build_instant_x1_scan_product_view(report)
+    assert view is not None
+    rendered = render_instant_x1_scan_product_text(view)
+
+    assert "Supported pair lifetime verified: True" in rendered
+    assert "Pair price continuity verified: True" in rendered
+    assert "Provider supported range complete: True" in rendered
+    assert "Historical quote-to-USD equivalence verified: False" in rendered
+    assert "Full USD lifetime verified: False" in rendered
+    assert "Legacy full asset lifetime verified: False" in rendered
