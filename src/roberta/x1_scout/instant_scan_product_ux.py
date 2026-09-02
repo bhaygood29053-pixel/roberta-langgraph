@@ -31,6 +31,19 @@ def _verified_value(
     }
 
 
+def _market_value(
+    section: Mapping[str, Any],
+    value_key: str,
+    verified_key: str,
+    freshness_key: str,
+) -> dict[str, object]:
+    return {
+        "value": section.get(value_key),
+        "verified": section.get(verified_key) is True,
+        "freshness_verified": section.get(freshness_key) is True,
+    }
+
+
 def build_instant_x1_scan_product_view(
     report: Mapping[str, Any],
 ) -> dict[str, object] | None:
@@ -49,7 +62,7 @@ def build_instant_x1_scan_product_view(
     presentation = _mapping(report.get("instant_x1_scan_presentation"))
     if not presentation:
         return None
-    if presentation.get("contract_version") != "instant_x1_scan/v2":
+    if presentation.get("contract_version") != "instant_x1_scan/v3":
         return None
     if presentation.get("read_only") is not True:
         return None
@@ -91,23 +104,32 @@ def build_instant_x1_scan_product_view(
         },
         "market": {
             "status": market.get("status"),
-            "price_usd": _verified_value(market, "price_usd", "price_verified"),
-            "liquidity_usd": _verified_value(
+            "price_usd": _market_value(
+                market,
+                "price_usd",
+                "price_verified",
+                "price_freshness_verified",
+            ),
+            "liquidity_usd": _market_value(
                 market,
                 "liquidity_usd",
                 "liquidity_verified",
+                "liquidity_freshness_verified",
             ),
-            "volume_24h_usd": _verified_value(
+            "volume_24h_usd": _market_value(
                 market,
                 "volume_24h_usd",
                 "volume_24h_verified",
+                "volume_24h_freshness_verified",
             ),
-            "transactions_24h": _verified_value(
+            "transactions_24h": _market_value(
                 market,
                 "transactions_24h",
                 "transactions_24h_verified",
+                "transactions_24h_freshness_verified",
             ),
             "#LPs": market.get("#LPs"),
+            "freshness": dict(_mapping(market.get("freshness"))),
         },
         "tokenomics": {
             "status": tokenomics.get("status"),
