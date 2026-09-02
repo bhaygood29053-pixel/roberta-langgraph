@@ -414,11 +414,11 @@ def validate_instant_x1_scan_response(
             )
     if history.get("full_asset_lifetime_verified") is not False:
         raise CMISInstantX1ScanContractError(
-            "CMIS Instant X1 Scan v2 must not promote full USD/asset lifetime coverage."
+            "CMIS Instant X1 Scan v2 must not promote full asset lifetime coverage; USD lifetime remains separately gated."
         )
     if history.get("continuous_coverage_verified") is not False:
         raise CMISInstantX1ScanContractError(
-            "CMIS Instant X1 Scan v2 must not promote legacy continuous USD coverage."
+            "CMIS Instant X1 Scan v2 must not promote continuous historical coverage; pair-price continuity is separately gated."
         )
 
     pair_lifetime = history.get("full_supported_pair_lifetime_verified")
