@@ -26,6 +26,7 @@ def build_x1_scout_tool(
         operation: Literal[
             "compare",
             "instant_x1_scan",
+            "discovery_intelligence",
             "pre_trade_check",
             "concentration_change_intelligence",
         ] | None = None,
@@ -126,6 +127,12 @@ def build_x1_scout_tool(
                     "intelligence_evidence_id is not accepted for instant_x1_scan"
                 )
             request["operation"] = "instant_x1_scan"
+        elif operation == "discovery_intelligence":
+            if include_history or compare_asset is not None:
+                raise ValueError("history/compare inputs are not accepted for discovery_intelligence")
+            if action is not None or amount_usd is not None or intelligence_evidence_id is not None:
+                raise ValueError("trade and intelligence-evidence inputs are not accepted for discovery_intelligence")
+            request["operation"] = "discovery_intelligence"
         elif operation == "pre_trade_check":
             if include_history:
                 raise ValueError("include_history is accepted only for compare")
@@ -188,6 +195,8 @@ def build_x1_scout_tool(
             "quick/instant asset-scan requests use the accepted CMIS instant_x1_scan/v2 "
             "composition through X1 Scout; operation='instant_x1_scan' is also available "
             "for an explicit flagship scan request. For a first-class two-asset current "
+            "comparison. For Discovery Intelligence, use operation='discovery_intelligence'; "
+            "it preserves verified observation bounds and never treats first observation as launch. "
             "comparison, use operation='compare' with the exact second asset in compare_asset; "
             "set include_history=true only for explicit full/entire/lifetime pair-history "
             "requests. Compare obtains two validated Instant X1 Scans and, when requested, "

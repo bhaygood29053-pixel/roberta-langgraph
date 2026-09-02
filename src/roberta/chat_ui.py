@@ -134,6 +134,7 @@ ROBERTA SERVICE MENU
  12. Full Assessment             /full <asset>
  13. Alert & Warning Key         /key
  14. Burn Intelligence           /burn <asset>
+ 15. Discovery Intelligence      /discovery <asset>
 
 Other commands:
      /menu   Show this menu
@@ -691,6 +692,18 @@ def burn_request(asset: str) -> str:
         "Do not recalculate burn facts in ROBERTA. Do not label cumulative "
         "observed burn as lifetime unless lifetime_total_burn_verified=true. "
         "Preserve execution_authorized=false."
+    ) + SINGLE_ASSET_TERMINAL_STYLE
+
+
+def discovery_request(asset: str) -> str:
+    return (
+        f"On X1, run Discovery Intelligence for {asset}. Use X1 Scout with "
+        "operation='discovery_intelligence' to call CMIS discovery_intelligence/v1. "
+        "Report the first and most recent verified observations, verified observation "
+        "count, evidence and coverage bounds, and elapsed observed history. Preserve "
+        "unknowns and execution_authorized=false. First verified observation is not "
+        "token launch time; do not infer launch, continuous coverage, archive completeness, "
+        "or causality. Map the result into the Canonical Decision Object when available."
     ) + SINGLE_ASSET_TERMINAL_STYLE
 
 

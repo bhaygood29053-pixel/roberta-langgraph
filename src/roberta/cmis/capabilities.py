@@ -24,6 +24,23 @@ INSTANT_X1_SCAN_MIN_CMIS_CONTRACT_VERSION = "1.14.0"
 INSTANT_X1_SCAN_CONTRACT_VERSION = "instant_x1_scan/v2"
 BURN_INTELLIGENCE_MIN_CMIS_CONTRACT_VERSION = "1.15.0"
 BURN_INTELLIGENCE_CONTRACT_VERSION = "burn_intelligence/v1"
+DISCOVERY_INTELLIGENCE_MIN_CMIS_CONTRACT_VERSION = "1.16.0"
+DISCOVERY_INTELLIGENCE_CONTRACT_VERSION = "discovery_intelligence/v1"
+DISCOVERY_INTELLIGENCE_REQUIRED_REQUIREMENTS = (
+    "exact_resolved_x1_mint_identity",
+    "cmis_owned_x1_discovery_ledger",
+    "verified_observation_state",
+    "verified_fact_time",
+)
+DISCOVERY_INTELLIGENCE_REQUIRED_LIMITATIONS = (
+    "first_verified_observation_is_not_token_launch_time",
+    "sparse_observations_do_not_prove_continuous_coverage",
+    "archive_completeness_not_verified",
+    "missing_observations_are_unknown_not_zero",
+    "no_causal_inference",
+    "no_execution_authorization",
+    "x1_only_initial_scope",
+)
 BURN_INTELLIGENCE_REQUIRED_REQUIREMENTS = (
     "exact_x1_mint_identity",
     "accepted_tokenomics_burn_metrics",
@@ -483,6 +500,25 @@ def validate_capability_manifest(value: Any) -> CMISCapabilities:
                             f"CMIS x1/burn_intelligence {field} must be boolean."
                         )
                     normalized_capability[field] = raw_flag
+            if chain == "x1" and service == "discovery_intelligence":
+                contract = capability_raw.get("service_contract_version")
+                if not isinstance(contract, str) or not contract.strip():
+                    raise CMISCapabilityContractError(
+                        "CMIS x1/discovery_intelligence service_contract_version must be text."
+                    )
+                normalized_capability["service_contract_version"] = contract
+                for field in (
+                    "read_only",
+                    "public_service_promoted",
+                    "scout_reliance_promoted",
+                    "execution_authorized",
+                ):
+                    raw_flag = capability_raw.get(field)
+                    if not isinstance(raw_flag, bool):
+                        raise CMISCapabilityContractError(
+                            f"CMIS x1/discovery_intelligence {field} must be boolean."
+                        )
+                    normalized_capability[field] = raw_flag
             if chain == "x1" and service == "asset_lookup":
                 identity_contract = capability_raw.get("identity_contract_version")
                 if identity_contract is not None:
@@ -804,6 +840,71 @@ def require_burn_intelligence_capability(
     return capability
 
 
+def require_discovery_intelligence_capability(
+    manifest: Mapping[str, Any],
+    *,
+    chain: str = "x1",
+) -> CMISServiceCapability:
+    """Require the exact accepted CMIS 1.16 Discovery Intelligence contract."""
+
+    normalized_chain = str(chain or "").strip().lower()
+    if normalized_chain != "x1":
+        raise CMISCapabilityUnavailable(
+            chain=normalized_chain,
+            service="discovery_intelligence",
+            state=None,
+            limitations=["discovery_intelligence_x1_only"],
+        )
+    version = manifest.get("contract_version")
+    if _semver(version) < _semver(DISCOVERY_INTELLIGENCE_MIN_CMIS_CONTRACT_VERSION):
+        raise CMISCapabilityContractError(
+            "CMIS Discovery Intelligence requires contract "
+            f">={DISCOVERY_INTELLIGENCE_MIN_CMIS_CONTRACT_VERSION}, got {version!r}."
+        )
+    capability = require_service_capability(
+        manifest,
+        chain=normalized_chain,
+        service="discovery_intelligence",
+    )
+    if capability.get("state") != "bounded":
+        raise CMISCapabilityContractError(
+            "CMIS x1/discovery_intelligence state must remain bounded."
+        )
+    if capability.get("service_contract_version") != DISCOVERY_INTELLIGENCE_CONTRACT_VERSION:
+        raise CMISCapabilityContractError(
+            "CMIS x1/discovery_intelligence service contract mismatch."
+        )
+    for field, expected in (
+        ("read_only", True),
+        ("public_service_promoted", True),
+        ("scout_reliance_promoted", True),
+        ("execution_authorized", False),
+    ):
+        if capability.get(field) is not expected:
+            raise CMISCapabilityContractError(
+                f"CMIS x1/discovery_intelligence {field} must be {str(expected).lower()}."
+            )
+    missing_requirements = sorted(
+        set(DISCOVERY_INTELLIGENCE_REQUIRED_REQUIREMENTS)
+        - set(capability["requirements"])
+    )
+    if missing_requirements:
+        raise CMISCapabilityContractError(
+            "CMIS x1/discovery_intelligence is missing accepted requirements: "
+            f"{missing_requirements!r}."
+        )
+    missing_limitations = sorted(
+        set(DISCOVERY_INTELLIGENCE_REQUIRED_LIMITATIONS)
+        - set(capability["limitations"])
+    )
+    if missing_limitations:
+        raise CMISCapabilityContractError(
+            "CMIS x1/discovery_intelligence is missing accepted limitations: "
+            f"{missing_limitations!r}."
+        )
+    return capability
+
+
 def require_historical_all_available_capability(
     manifest: Mapping[str, Any],
     *,
@@ -876,6 +977,10 @@ __all__ = [
     "INSTANT_X1_SCAN_MIN_CMIS_CONTRACT_VERSION",
     "INSTANT_X1_SCAN_REQUIRED_LIMITATIONS",
     "INSTANT_X1_SCAN_REQUIRED_REQUIREMENTS",
+    "DISCOVERY_INTELLIGENCE_CONTRACT_VERSION",
+    "DISCOVERY_INTELLIGENCE_MIN_CMIS_CONTRACT_VERSION",
+    "DISCOVERY_INTELLIGENCE_REQUIRED_LIMITATIONS",
+    "DISCOVERY_INTELLIGENCE_REQUIRED_REQUIREMENTS",
     "X1_ASSET_IDENTITY_CONTRACT_VERSION",
     "X1_ASSET_IDENTITY_MIN_CMIS_CONTRACT_VERSION",
     "X1_ASSET_IDENTITY_REQUIRED_LIMITATIONS",
@@ -886,6 +991,7 @@ __all__ = [
     "INTELLIGENCE_PROMOTION_RULE",
     "MIN_CMIS_CONTRACT_VERSION",
     "require_burn_intelligence_capability",
+    "require_discovery_intelligence_capability",
     "require_historical_all_available_capability",
     "require_instant_x1_scan_capability",
     "require_service_capability",
