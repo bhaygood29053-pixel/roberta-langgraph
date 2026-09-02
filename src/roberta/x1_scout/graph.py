@@ -15,6 +15,7 @@ from roberta.cmis.capabilities import (
     CMISCapabilityContractError,
     CMISCapabilityUnavailable,
     X1_ASSET_IDENTITY_CONTRACT_VERSION,
+    require_burn_intelligence_capability,
     require_instant_x1_scan_capability,
     require_x1_normalized_asset_identity_capability,
 )
@@ -30,6 +31,10 @@ from roberta.pretrade_ux import build_pretrade_presentation
 from roberta.risk_help import build_risk_help
 from roberta.status_help import build_cmis_status_help
 from roberta.time_utils import format_observed_at_utc, normalize_observed_at
+from roberta.x1_scout.burn_intelligence import (
+    X1BurnIntelligenceContractError,
+    build_x1_burn_intelligence,
+)
 from roberta.x1_scout.history_presentation import (
     build_historical_coverage_presentation,
 )
@@ -191,6 +196,71 @@ def _dispatch_cmis_operation(
                 else None
             ),
         )
+    if operation == "burn_intelligence":
+        try:
+            require_burn_intelligence_capability(
+                cmis_client.capabilities(),
+                chain="x1",
+            )
+        except CMISCapabilityUnavailable as exc:
+            return {
+                "service": "burn_intelligence",
+                "chain": "x1",
+                "status": "unavailable",
+                "asset": {"query": asset},
+                "data": {},
+                "risk": None,
+                "confidence": {},
+                "sources": [],
+                "observed_at": None,
+                "warnings": [{
+                    "code": "cmis_burn_intelligence_unavailable",
+                    "message": str(exc),
+                }],
+                "errors": [],
+            }
+        except CMISCapabilityContractError as exc:
+            return {
+                "service": "burn_intelligence",
+                "chain": "x1",
+                "status": "unavailable",
+                "asset": {"query": asset},
+                "data": {},
+                "risk": None,
+                "confidence": {},
+                "sources": [],
+                "observed_at": None,
+                "warnings": [{
+                    "code": "cmis_burn_intelligence_contract_unavailable",
+                    "message": f"CMIS Burn Intelligence contract unavailable: {exc}",
+                }],
+                "errors": [],
+            }
+        result = cmis_client.burn_intelligence(chain="x1", asset=asset)
+        if result.get("status") in {"ok", "partial"}:
+            try:
+                build_x1_burn_intelligence(
+                    result,
+                    requested_asset=str(asset),
+                )
+            except X1BurnIntelligenceContractError as exc:
+                return {
+                    "service": "burn_intelligence",
+                    "chain": "x1",
+                    "status": "error",
+                    "asset": dict(result.get("asset") or {"query": asset}),
+                    "data": {},
+                    "risk": None,
+                    "confidence": {},
+                    "sources": list(result.get("sources") or []),
+                    "observed_at": result.get("observed_at"),
+                    "warnings": list(result.get("warnings") or []),
+                    "errors": [{
+                        "code": "invalid_cmis_burn_intelligence_response",
+                        "message": str(exc),
+                    }],
+                }
+        return result
     if operation == "tokenomics":
         return cmis_client.tokenomics(chain="x1", asset=asset)
     if operation == "risk_check":
@@ -543,6 +613,17 @@ def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
                 "error",
             }:
                 report["asset_identity_status"] = identity_status
+
+    if primary_result.get("service") == "burn_intelligence" and primary_result.get("status") in {"ok", "partial"}:
+        try:
+            report["x1_burn_intelligence"] = build_x1_burn_intelligence(
+                primary_result,
+                requested_asset=str(request["asset"]),
+            )
+        except X1BurnIntelligenceContractError:
+            # Dispatch validation should already have converted malformed
+            # dedicated burn responses into a CMIS error envelope.
+            pass
 
     compare_asset = request.get("compare_asset")
     if compare_asset is not None:
