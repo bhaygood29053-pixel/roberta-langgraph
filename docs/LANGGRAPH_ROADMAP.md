@@ -536,13 +536,19 @@ The Learning Plane implementation milestone is complete enough to support the fl
 
 **Roberta may learn autonomously from accepted static evidence, but learning never self-authorizes truth or operational power. Fresh chain facts remain behind Chain Scout -> CMIS -> Provider, and operational/execution authority remains separately gated.**
 
-## Live reconciliation — 2026-09-02 America/New_York
+## Live reconciliation — 2026-09-02 12:18 America/New_York
 
 Current product order:
 
-1. **BURN:** CMIS public #389 and protected `cmis-core` #12 are accepted, ROBERTA #295 is merged, and protected `roberta-core` #23 provides the shared Human/Machine Decision Object path. Complete the X1 Scout switch to dedicated CMIS `burn_intelligence/v1` and keep `/burn` as the first-class user workflow.
-2. **Decision Object expansion:** BURN is accepted in the canonical Decision Object; expand later workflows one at a time without widening Burn Intelligence or Instant Scan semantics.
-3. **Discovery / WHAT CHANGED? / Early Warning:** blocked until CMIS public #365 + protected `cmis-core` #6 are accepted together.
-4. **Learning operations:** repair private CI for `roberta-core` #11 and accept bounded one-cycle orchestration before broader background scheduling.
-5. **Telegram:** PR #264 is currently dirty/non-mergeable and remains lower priority than the intelligence product gates.
-6. **Controlled Execution:** locked/not started; `execution_authorized=false`.
+1. **BURN — COMPLETE.** CMIS public #389 and protected `cmis-core` #12 are accepted; ROBERTA public #295 and #304 are merged; protected `roberta-core` #23/#24 provide and validate the shared Human/Machine Decision Object path. X1 Scout now consumes dedicated CMIS `burn_intelligence/v1`, and `/burn <asset>` is a first-class Human ROBERTA workflow.
+2. **DISCOVERY — ACTIVE GATE.** CMIS public #391 has merged `discovery_intelligence/v1` under capability contract 1.16.0. ROBERTA PR #306 is open, clean, and mergeable to promote the accepted service through X1 Scout. This is the immediate productization priority.
+3. **WHAT CHANGED? — NEXT.** Build only after Discovery is accepted in ROBERTA, using canonical Discovery/history evidence rather than a second fact layer.
+4. **EARLY WARNING — AFTER WHAT CHANGED?.** Promote warning families one at a time with explicit persistence, freshness, replay/deduplication, severity, and evidence contracts.
+5. **Decision Object expansion:** continue one workflow at a time so Human and Machine ROBERTA preserve the same facts, unknowns, evidence state, and execution denial.
+6. **Learning operations:** keep private-core CI/background scheduling hardening as a supporting track; it should not displace the X1 intelligence product gates.
+7. **Telegram:** remains lower priority than Discovery / WHAT CHANGED? / Early Warning.
+8. **Controlled Execution:** locked/not started; `execution_authorized=false`.
+
+### Cross-project status note
+
+CMIS PR #363 remains an open delayed-vault evidence investigation. It may continue in parallel, but it is no longer treated as a blocker for the main ROBERTA product roadmap. Historical Coverage Proof v1 (#383) is complete, and CMIS Discovery Intelligence v1 (#391) is accepted.
