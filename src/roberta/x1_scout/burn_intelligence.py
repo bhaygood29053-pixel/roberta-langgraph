@@ -30,7 +30,7 @@ _BASE58_CHARS = frozenset(
 
 
 class X1BurnIntelligenceContractError(ValueError):
-    """Raised when CMIS tokenomics cannot satisfy burn-intelligence v1."""
+    """Raised when CMIS Burn Intelligence cannot satisfy the X1 Scout contract."""
 
 
 def _require_sequence(container: Mapping[str, Any], key: str) -> list[Any]:
@@ -280,10 +280,10 @@ def build_x1_burn_intelligence(
         raise X1BurnIntelligenceContractError("CMIS burn_metrics missing")
     _validate_burn_metrics(metrics)
 
-    confidence = _require_mapping(tokenomics_result, "confidence")
-    sources = _require_sequence(tokenomics_result, "sources")
-    warnings = _require_sequence(tokenomics_result, "warnings")
-    errors = _require_sequence(tokenomics_result, "errors")
+    confidence = _require_mapping(burn_result, "confidence")
+    sources = _require_sequence(burn_result, "sources")
+    warnings = _require_sequence(burn_result, "warnings")
+    errors = _require_sequence(burn_result, "errors")
 
     result: dict[str, object] = {
         "contract_version": BURN_INTELLIGENCE_CONTRACT,
