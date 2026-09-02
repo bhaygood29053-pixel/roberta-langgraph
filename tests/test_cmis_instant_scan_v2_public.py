@@ -12,18 +12,27 @@ from roberta.cmis.instant_scan import validate_instant_x1_scan_response
 from roberta.cmis.mock import MockCMISClient
 
 
-def test_cmis_114_scan_v2_capability_and_payload_are_accepted():
+def test_cmis_117_scan_v3_capability_and_payload_are_accepted():
     client = MockCMISClient()
     manifest = client.capabilities()
 
     capability = require_instant_x1_scan_capability(manifest)
-    assert INSTANT_X1_SCAN_MIN_CMIS_CONTRACT_VERSION == "1.14.0"
-    assert INSTANT_X1_SCAN_CONTRACT_VERSION == "instant_x1_scan/v2"
-    assert capability["service_contract_version"] == "instant_x1_scan/v2"
+    assert INSTANT_X1_SCAN_MIN_CMIS_CONTRACT_VERSION == "1.17.0"
+    assert INSTANT_X1_SCAN_CONTRACT_VERSION == "instant_x1_scan/v3"
+    assert capability["service_contract_version"] == "instant_x1_scan/v3"
 
     response = validate_instant_x1_scan_response(
         client.instant_x1_scan(chain="x1", asset="XNT")
     )
+    market = response["data"]["sections"]["market"]
+    freshness = market["freshness"]
+    assert freshness["contract_version"] == "x1_current_market_freshness/v1"
+    assert freshness["freshness_state"] == "PARTIAL"
+    assert market["price_freshness_verified"] is True
+    assert market["liquidity_freshness_verified"] is False
+    assert market["volume_24h_freshness_verified"] is False
+    assert market["transactions_24h_freshness_verified"] is False
+
     history = response["data"]["sections"]["history"]
     assert history["provider_history_imported"] is True
     assert history["provider_history_backfill"]["status"] == "partial"
@@ -33,16 +42,16 @@ def test_cmis_114_scan_v2_capability_and_payload_are_accepted():
     assert response["data"]["execution_authorized"] is False
 
 
-def test_scan_v2_capability_fails_closed_on_cmis_113():
+def test_scan_v3_capability_fails_closed_on_cmis_113():
     manifest = MockCMISClient().capabilities()
     stale = copy.deepcopy(manifest)
-    stale["contract_version"] = "1.13.0"
+    stale["contract_version"] = "1.16.0"
 
     with pytest.raises(CMISCapabilityContractError):
         require_instant_x1_scan_capability(stale)
 
 
-def test_scan_v2_rejects_lifetime_or_continuity_promotion():
+def test_scan_v3_rejects_lifetime_or_continuity_promotion():
     client = MockCMISClient()
     response = client.instant_x1_scan(chain="x1", asset="XNT")
 
@@ -57,7 +66,7 @@ def test_scan_v2_rejects_lifetime_or_continuity_promotion():
         validate_instant_x1_scan_response(promoted)
 
 
-def test_scan_v2_accepts_verified_pair_lifetime_without_usd_promotion():
+def test_scan_v3_accepts_verified_pair_lifetime_without_usd_promotion():
     client = MockCMISClient()
     response = client.instant_x1_scan(chain="x1", asset="XNT")
     promoted = copy.deepcopy(response)
@@ -100,7 +109,7 @@ def test_scan_v2_accepts_verified_pair_lifetime_without_usd_promotion():
     assert accepted_history["full_asset_lifetime_verified"] is False
 
 
-def test_scan_v2_rejects_inconsistent_pair_lifetime_promotion():
+def test_scan_v3_rejects_inconsistent_pair_lifetime_promotion():
     client = MockCMISClient()
     response = client.instant_x1_scan(chain="x1", asset="XNT")
     promoted = copy.deepcopy(response)
