@@ -25,19 +25,33 @@ _REQUIRED_SECTIONS = (
     "evidence",
 )
 
-INSTANT_X1_SCAN_REQUIRED_RESPONSE_LIMITATIONS = (
+INSTANT_X1_SCAN_COMMON_RESPONSE_LIMITATIONS = (
     "missing_or_unverified_fields_remain_unknown",
     "holder_count_requires_existing_verified_holder_semantics",
     "current_top_account_concentration_not_promoted_in_v2",
     "history_may_include_bounded_verified_provider_price_backfill",
     "provider_price_backfill_is_price_only",
     "provider_source_independence_not_verified",
-    "provider_archive_completeness_not_verified",
-    "history_does_not_imply_complete_asset_lifetime",
-    "continuous_coverage_requires_separate_archive_completeness_proof",
     "proof_score_does_not_modify_market_facts_or_risk",
     "risk_score_remains_unavailable_until_separately_calibrated",
     "execution_authorized_false",
+)
+
+INSTANT_X1_SCAN_LEGACY_HISTORY_LIMITATIONS = (
+    "provider_archive_completeness_not_verified",
+    "history_does_not_imply_complete_asset_lifetime",
+    "continuous_coverage_requires_separate_archive_completeness_proof",
+)
+
+INSTANT_X1_SCAN_PAIR_LIFETIME_LIMITATIONS = (
+    "full_supported_pair_lifetime_price_does_not_imply_other_metric_lifetimes",
+    "historical_quote_usd_equivalence_not_verified",
+)
+
+# Retained for the deterministic mock and legacy v2 fixtures.
+INSTANT_X1_SCAN_REQUIRED_RESPONSE_LIMITATIONS = (
+    *INSTANT_X1_SCAN_COMMON_RESPONSE_LIMITATIONS,
+    *INSTANT_X1_SCAN_LEGACY_HISTORY_LIMITATIONS,
 )
 
 
@@ -278,7 +292,7 @@ def validate_instant_x1_scan_response(
             "CMIS Instant X1 Scan limitations must be a list of non-empty strings."
         )
     missing_limitations = sorted(
-        set(INSTANT_X1_SCAN_REQUIRED_RESPONSE_LIMITATIONS) - set(limitations)
+        set(INSTANT_X1_SCAN_COMMON_RESPONSE_LIMITATIONS) - set(limitations)
     )
     if missing_limitations:
         raise CMISInstantX1ScanContractError(
@@ -400,11 +414,66 @@ def validate_instant_x1_scan_response(
             )
     if history.get("full_asset_lifetime_verified") is not False:
         raise CMISInstantX1ScanContractError(
-            "CMIS Instant X1 Scan v2 must not promote full asset lifetime coverage."
+            "CMIS Instant X1 Scan v2 must not promote full USD/asset lifetime coverage."
         )
     if history.get("continuous_coverage_verified") is not False:
         raise CMISInstantX1ScanContractError(
-            "CMIS Instant X1 Scan v2 must not promote continuous historical coverage."
+            "CMIS Instant X1 Scan v2 must not promote legacy continuous USD coverage."
+        )
+
+    pair_lifetime = history.get("full_supported_pair_lifetime_verified")
+    pair_continuity = history.get("continuous_pair_price_coverage_verified")
+    provider_range_complete = history.get("provider_range_complete_verified")
+    quote_usd_equivalence = history.get(
+        "historical_quote_usd_equivalence_verified"
+    )
+    full_usd_lifetime = history.get("full_usd_lifetime_verified")
+
+    for field_name, field_value in (
+        ("full_supported_pair_lifetime_verified", pair_lifetime),
+        ("continuous_pair_price_coverage_verified", pair_continuity),
+        ("provider_range_complete_verified", provider_range_complete),
+        ("historical_quote_usd_equivalence_verified", quote_usd_equivalence),
+        ("full_usd_lifetime_verified", full_usd_lifetime),
+    ):
+        if field_value is not None and not isinstance(field_value, bool):
+            raise CMISInstantX1ScanContractError(
+                f"CMIS Instant X1 Scan v2 history.{field_name} must be boolean when present."
+            )
+
+    if full_usd_lifetime is True or quote_usd_equivalence is True:
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan v2 USD lifetime promotion is not accepted by this ROBERTA contract."
+        )
+
+    if pair_lifetime is True:
+        if history.get("price_coverage_scope") != "full_supported_pair_lifetime":
+            raise CMISInstantX1ScanContractError(
+                "Verified supported-pair lifetime requires price_coverage_scope=full_supported_pair_lifetime."
+            )
+        if pair_continuity is not True or provider_range_complete is not True:
+            raise CMISInstantX1ScanContractError(
+                "Verified supported-pair lifetime requires pair continuity and provider-range completeness."
+            )
+        if quote_usd_equivalence is not False or full_usd_lifetime is not False:
+            raise CMISInstantX1ScanContractError(
+                "Supported-pair lifetime must preserve unverified historical quote-to-USD equivalence."
+            )
+        required_history_limitations = INSTANT_X1_SCAN_PAIR_LIFETIME_LIMITATIONS
+    else:
+        if pair_continuity is True or provider_range_complete is True:
+            raise CMISInstantX1ScanContractError(
+                "Pair continuity/provider-range completeness cannot be promoted without supported-pair lifetime verification."
+            )
+        required_history_limitations = INSTANT_X1_SCAN_LEGACY_HISTORY_LIMITATIONS
+
+    missing_history_limitations = sorted(
+        set(required_history_limitations) - set(limitations)
+    )
+    if missing_history_limitations:
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan response is missing accepted history limitations: "
+            f"{missing_history_limitations!r}."
         )
 
     return envelope
