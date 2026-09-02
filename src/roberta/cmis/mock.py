@@ -167,7 +167,7 @@ def _mock_capability_manifest() -> CMISCapabilities:
         "service": "cmis_gateway",
         "version": 1,
         "schema_version": 1,
-        "contract_version": "1.16.0",
+        "contract_version": "1.17.0",
         "request_path": "/v1/cmis",
         "evidence_quality": {
             "evidence_receipt_schema_version": 1,
@@ -253,7 +253,10 @@ def _mock_evidence_metadata(
                 "provider_assertion_promoted": False,
             },
             "evidence_scope": {"claims": [], "explicit_scope_available": False},
-            "freshness": {"verified": None, "flags": {}},
+            "freshness": {
+                "verified": freshness_verified,
+                "flags": dict(freshness_flags),
+            },
             "sources": [
                 {
                     "evidence_class": "source_record",
@@ -262,7 +265,7 @@ def _mock_evidence_metadata(
                     "observed_at": observed_at,
                 }
             ],
-            "evidence_flags": {},
+            "evidence_flags": dict(freshness_flags),
             "disagreements": [],
             "limitations": [
                 {"code": "NOT_LIVE_DATA", "message": "Mock evidence only."}
@@ -276,7 +279,11 @@ def _mock_evidence_metadata(
             "proof_percent": 0,
             "category_coverage_percent": 0,
             "categories": categories,
-            "unknown_categories": list(categories),
+            "unknown_categories": [
+                name
+                for name, category in categories.items()
+                if category["score"] is None
+            ],
             "risk_considered": False,
             "risk_separate": True,
             "method": "deterministic_mock_v1",
@@ -453,15 +460,43 @@ class MockCMISClient:
                     },
                     "market": {
                         "status": self._status(),
-                        "price_usd": None,
-                        "price_verified": False,
+                        "price_usd": 1.0,
+                        "price_verified": True,
+                        "price_freshness_verified": True,
                         "liquidity_usd": None,
                         "liquidity_verified": False,
+                        "liquidity_freshness_verified": False,
                         "volume_24h_usd": None,
                         "volume_24h_verified": False,
+                        "volume_24h_freshness_verified": False,
                         "transactions_24h": None,
                         "transactions_24h_verified": False,
+                        "transactions_24h_freshness_verified": False,
                         "#LPs": None,
+                        "freshness": {
+                            "contract_version": "x1_current_market_freshness/v1",
+                            "freshness_state": "PARTIAL",
+                            "collection_freshness_verified": True,
+                            "current_market_freshness_verified": False,
+                            "fields": {
+                                "price_usd": {
+                                    "freshness_verified": True,
+                                    "reason": "timestamped_provider_price_matches_current_market_price",
+                                },
+                                "liquidity_usd": {
+                                    "freshness_verified": False,
+                                    "reason": "liquidity_provider_fact_time_not_verified",
+                                },
+                                "volume_24h_usd": {
+                                    "freshness_verified": False,
+                                    "reason": "rolling_volume_provider_fact_time_not_verified",
+                                },
+                                "transactions_24h": {
+                                    "freshness_verified": False,
+                                    "reason": "rolling_transactions_provider_fact_time_not_verified",
+                                },
+                            },
+                        },
                         "holders": None,
                         "holders_verified": False,
                     },
