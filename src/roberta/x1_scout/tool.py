@@ -10,6 +10,7 @@ from roberta.cmis.concentration_intelligence import normalize_intelligence_evide
 from roberta.cmis.contracts import TradeAction
 from roberta.x1_scout.compare_workflow import run_x1_compare_workflow
 from roberta.x1_scout.graph import build_x1_scout_graph
+from roberta.x1_scout.what_changed_workflow import run_x1_what_changed_workflow
 from roberta.x1_scout.planner import is_all_available_history_objective
 
 
@@ -25,6 +26,7 @@ def build_x1_scout_tool(
         objective: str = "assess market risk",
         operation: Literal[
             "compare",
+            "what_changed",
             "instant_x1_scan",
             "discovery_intelligence",
             "pre_trade_check",
@@ -113,6 +115,22 @@ def build_x1_scout_tool(
                 include_history=include_history,
             )
             return json.dumps(compare_report, sort_keys=True)
+        elif operation == "what_changed":
+            if include_history:
+                raise ValueError("include_history is not accepted for what_changed")
+            if compare_asset is not None:
+                raise ValueError("compare_asset is not accepted for what_changed")
+            if action is not None or amount_usd is not None:
+                raise ValueError("trade action/amount are not accepted for what_changed")
+            if intelligence_evidence_id is not None:
+                raise ValueError("intelligence_evidence_id is not accepted for what_changed")
+            report = run_x1_what_changed_workflow(
+                cmis_client=cmis_client,
+                scout_graph=scout_graph,
+                asset=str(asset or "").strip(),
+                objective=objective,
+            )
+            return json.dumps(report, sort_keys=True)
         elif operation == "instant_x1_scan":
             if include_history:
                 raise ValueError("include_history is accepted only for compare")
@@ -197,7 +215,10 @@ def build_x1_scout_tool(
             "for an explicit flagship scan request. For a first-class two-asset current "
             "comparison. For Discovery Intelligence, use operation='discovery_intelligence'; "
             "it preserves verified observation bounds and never treats first observation as launch. "
-            "comparison, use operation='compare' with the exact second asset in compare_asset; "
+            "comparison, use operation='compare' with the exact second asset in compare_asset. "
+            "For WHAT CHANGED?, use operation='what_changed'; X1 Scout composes one validated "
+            "Instant X1 Scan, one Burn Intelligence result, and one Discovery Intelligence result "
+            "without locally calculating market changes or inferring causality. "
             "set include_history=true only for explicit full/entire/lifetime pair-history "
             "requests. Compare obtains two validated Instant X1 Scans and, when requested, "
             "one CMIS all_available_pair result without local fact/history recomputation. "

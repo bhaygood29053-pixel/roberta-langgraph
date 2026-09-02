@@ -8,6 +8,7 @@ from roberta.chat_ui import (
     automatic_status_summary,
     burn_request,
     discovery_request,
+    what_changed_request,
     compare_request,
     format_terminal_text,
     full_request,
@@ -42,6 +43,8 @@ def test_service_menu_exposes_requested_user_flows() -> None:
     assert "Alert & Warning Key" in SERVICE_MENU
     assert "Burn Intelligence" in SERVICE_MENU
     assert "/burn <asset>" in SERVICE_MENU
+    assert "What Changed?" in SERVICE_MENU
+    assert "/changed <asset>" in SERVICE_MENU
     assert "ROBERTA -> X1 Scout (scanner) -> CMIS -> X1 providers" in SERVICE_MENU
 
 
@@ -258,6 +261,7 @@ def test_every_x1_chat_request_visibly_routes_through_x1_scout() -> None:
         pretrade_request("XNT", "BUY", 100),
         evidence_request("XNT"),
         full_request("XNT"),
+        what_changed_request("XNT"),
     ]
 
     for request in requests:
@@ -276,4 +280,15 @@ def test_discovery_request_preserves_verified_history_boundary() -> None:
     assert "operation='discovery_intelligence'" in request
     assert "discovery_intelligence/v1" in request
     assert "not token launch time" in request
+    assert "execution_authorized=false" in request
+
+
+def test_what_changed_request_is_first_class_and_fail_closed() -> None:
+    request = what_changed_request("XNT")
+    assert "operation='what_changed'" in request
+    assert "Instant X1 Scan" in request
+    assert "Burn Intelligence" in request
+    assert "Discovery Intelligence" in request
+    assert "do not calculate new deltas in ROBERTA" in request
+    assert "do not infer causality" in request.lower()
     assert "execution_authorized=false" in request

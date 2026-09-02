@@ -135,6 +135,7 @@ ROBERTA SERVICE MENU
  13. Alert & Warning Key         /key
  14. Burn Intelligence           /burn <asset>
  15. Discovery Intelligence      /discovery <asset>
+ 16. What Changed?               /changed <asset>
 
 Other commands:
      /menu   Show this menu
@@ -704,6 +705,21 @@ def discovery_request(asset: str) -> str:
         "unknowns and execution_authorized=false. First verified observation is not "
         "token launch time; do not infer launch, continuous coverage, archive completeness, "
         "or causality. Map the result into the Canonical Decision Object when available."
+    ) + SINGLE_ASSET_TERMINAL_STYLE
+
+
+def what_changed_request(asset: str) -> str:
+    return (
+        f"On X1, run the first-class WHAT CHANGED? workflow for {asset}. Use "
+        "X1 Scout with operation='what_changed'. Compose only the accepted "
+        "Instant X1 Scan, Burn Intelligence, and Discovery Intelligence product "
+        "views. Surface market/history changes only when CMIS already returned "
+        "accepted change values; do not calculate new deltas in ROBERTA. Preserve "
+        "24h / 7d / 30d burn comparison states exactly, preserve Discovery first "
+        "and most-recent verified observations, and keep token launch time, "
+        "continuous Discovery coverage, and archive completeness explicitly "
+        "unverified unless separately proven. Do not infer causality, manipulation, "
+        "ownership, or intent. Preserve execution_authorized=false."
     ) + SINGLE_ASSET_TERMINAL_STYLE
 
 
