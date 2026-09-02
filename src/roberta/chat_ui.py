@@ -118,6 +118,8 @@ WARNING_CODE_MEANINGS = {
 SERVICE_MENU = """\
 ROBERTA SERVICE MENU
 ------------------------------------------------------------------------
+  X1 route: ROBERTA -> X1 Scout (scanner) -> CMIS -> X1 providers
+
   1. Asset Overview              /overview <asset>
   2. Compare Two Assets          /compare <asset1> <asset2>
   3. Risk Assessment             /risk <asset>
@@ -630,10 +632,11 @@ def overview_request(asset: str) -> str:
 
 def compare_request(asset1: str, asset2: str) -> str:
     return (
-        f"On X1, compare {asset1} vs {asset2}. For EACH asset, gather fresh "
-        "CMIS market_report, deterministic risk_check, and tokenomics evidence. "
-        "Then run separate historical_compare investigations for both assets "
-        "when historical evidence is available; use separate X1 Scout calls if "
+        f"On X1, compare {asset1} vs {asset2}. Use X1 Scout for EACH asset. "
+        "Through X1 Scout, gather fresh CMIS market_report, deterministic "
+        "risk_check, and tokenomics evidence. Then run separate "
+        "historical_compare investigations for both assets when historical "
+        "evidence is available; use separate X1 Scout calls if "
         "needed because each Scout investigation is bounded. Do not reuse an "
         "earlier risk result. Compare liquidity, 24-hour volume, transactions, "
         "risk components, tokenomics, evidence quality, and historical context. "
@@ -657,8 +660,9 @@ def compare_request(asset1: str, asset2: str) -> str:
 
 def risk_request(asset: str) -> str:
     return (
-        f"On X1, assess the current risk of {asset}. Run a fresh deterministic "
-        "CMIS risk_check plus market_report and tokenomics. Explain each risk "
+        f"On X1, assess the current risk of {asset}. Use X1 Scout to run a "
+        "fresh deterministic CMIS risk_check plus market_report and tokenomics. "
+        "Explain each risk "
         "component, returned reasons and flags, evidence quality, and anything "
         "CMIS could not verify. Do not convert Proof Score into risk."
     ) + SINGLE_ASSET_TERMINAL_STYLE
@@ -666,8 +670,9 @@ def risk_request(asset: str) -> str:
 
 def tokenomics_request(asset: str) -> str:
     return (
-        f"On X1, analyze the tokenomics of {asset}. Use fresh CMIS tokenomics, "
-        "market_report, and risk_check evidence. Cover verified supply, mint "
+        f"On X1, analyze the tokenomics of {asset}. Use X1 Scout to gather "
+        "fresh CMIS tokenomics, market_report, and risk_check evidence. Cover "
+        "verified supply, mint "
         "authority, freeze authority, token activity/burn evidence when "
         "available, risk implications, and all verification limitations."
     ) + SINGLE_ASSET_TERMINAL_STYLE
@@ -675,8 +680,9 @@ def tokenomics_request(asset: str) -> str:
 
 def liquidity_request(asset: str) -> str:
     return (
-        f"On X1, analyze liquidity for {asset}. Use fresh CMIS market_report "
-        "and risk_check evidence. Cover verified liquidity, pool count and "
+        f"On X1, analyze liquidity for {asset}. Use X1 Scout to gather fresh "
+        "CMIS market_report and risk_check evidence. Cover verified liquidity, "
+        "pool count and "
         "primary-pool context when available, 24-hour volume, transaction "
         "activity, volume-to-liquidity context, evidence scope, and liquidity "
         "risk. Do not invent route, slippage, fill, or price-impact evidence."
@@ -685,9 +691,10 @@ def liquidity_request(asset: str) -> str:
 
 def history_request(asset: str) -> str:
     return (
-        f"On X1, analyze the verified market history of {asset}. Treat this as "
-        "an all available history / entire history request, not a fixed-window "
-        "request. Run CMIS historical_compare in the supported all-available "
+        f"On X1, analyze the verified market history of {asset}. Use X1 Scout "
+        "for the investigation. Treat this as an all available history / entire "
+        "history request, not a fixed-window request. Through X1 Scout, run CMIS "
+        "historical_compare in the supported all-available "
         "history mode plus a fresh market_report. Compare the current state "
         "with every verified historical observation CMIS can support. Cover "
         "price, liquidity, volume, activity, volatility or drawdown only when "
@@ -702,8 +709,9 @@ def history_request(asset: str) -> str:
 
 def activity_request(asset: str) -> str:
     return (
-        f"On X1, analyze current market activity for {asset}. Use fresh CMIS "
-        "market_report and historical_compare evidence where supported. Cover "
+        f"On X1, analyze current market activity for {asset}. Use X1 Scout to "
+        "gather fresh CMIS market_report and historical_compare evidence where "
+        "supported. Cover "
         "24-hour volume, transaction count, recent activity, available changes "
         "over time, and evidence quality. Do not infer complete wallet history, "
         "intent, manipulation, or ownership from bounded activity."
@@ -712,8 +720,9 @@ def activity_request(asset: str) -> str:
 
 def concentration_request(asset: str, evidence_id: str) -> str:
     return (
-        f"On X1, use the promoted CMIS concentration_change_intelligence "
-        f"service for {asset} with this exact CMIS-owned intelligence evidence "
+        f"On X1, use X1 Scout to request the promoted CMIS "
+        f"concentration_change_intelligence service for {asset} with this exact "
+        "CMIS-owned intelligence evidence "
         f"id: {evidence_id}. Preserve the exact scope and proof. Explain the "
         "verified top-account concentration change and any threshold output, "
         "but do not infer unique holders, beneficial owners, whales, insiders, "
@@ -723,8 +732,8 @@ def concentration_request(asset: str, evidence_id: str) -> str:
 
 def rank_request(metric: str, limit: int) -> str:
     return (
-        f"On X1, rank the top {limit} XDEX assets by {metric} using X1 Scout "
-        "and the CMIS rank service. Preserve verification status and evidence "
+        f"On X1, use X1 Scout to rank the top {limit} XDEX assets by {metric} "
+        "through the CMIS rank service. Preserve verification status and evidence "
         "limitations. Do not silently substitute a different ranking metric."
     )
 
@@ -732,7 +741,7 @@ def rank_request(metric: str, limit: int) -> str:
 def pretrade_request(asset: str, action: str, amount_usd: float) -> str:
     return (
         f"On X1, run an explicit analysis-only pre-trade check for {asset}: "
-        f"{action.upper()} $" + f"{amount_usd:.2f}. Use X1 Scout with the CMIS "
+        f"{action.upper()} $" + f"{amount_usd:.2f}. Use X1 Scout to call the CMIS "
         "pre_trade_check operation and copy this exact side and USD amount. "
         "Explain verified liquidity/notional constraints, warnings, and missing "
         "route/slippage/fee/simulation evidence. Preserve analysis_only=true and "
@@ -742,8 +751,9 @@ def pretrade_request(asset: str, action: str, amount_usd: float) -> str:
 
 def evidence_request(asset: str) -> str:
     return (
-        f"On X1, give me an evidence-quality report for {asset}. Use fresh X1 "
-        "Scout/CMIS market and risk evidence so Evidence Receipt and Proof Score "
+        f"On X1, give me an evidence-quality report for {asset}. Use X1 Scout "
+        "to gather fresh CMIS market and risk evidence so Evidence Receipt and "
+        "Proof Score "
         "metadata are current. Explain verification status, proof strength, "
         "freshness, evidence scope, unknown categories, unresolved fields, "
         "disagreements, source independence when proven, and limitations. "
@@ -753,9 +763,10 @@ def evidence_request(asset: str) -> str:
 
 def full_request(asset: str) -> str:
     return (
-        f"On X1, produce a full assessment of {asset}. Treat this explicitly as "
-        "a deterministic full assessment, not as a ranking-only or general "
-        "market request. Use multiple X1 Scout calls only if needed. Gather fresh CMIS "
+        f"On X1, produce a full assessment of {asset}. Use X1 Scout as the X1 "
+        "scanner and specialist path. Treat this explicitly as a deterministic "
+        "full assessment, not as a ranking-only or general market request. Use "
+        "multiple X1 Scout calls only if needed. Through X1 Scout, gather fresh CMIS "
         "market_report, risk_check, tokenomics, historical_compare, ranking "
         "context when useful, and evidence-quality metadata. For history, "
         "treat this as an all available history / entire history request rather "
