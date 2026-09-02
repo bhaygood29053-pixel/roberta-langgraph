@@ -1,4 +1,4 @@
-"""Strict validator for the accepted CMIS Instant X1 Scan v2 payload.
+"""Strict validator for the accepted CMIS Instant X1 Scan v3 payload.
 
 CMIS owns the composed facts. This module validates authority/evidence contract
 shape only; it never recomputes market data, proof, risk, holder semantics,
@@ -28,7 +28,7 @@ _REQUIRED_SECTIONS = (
 INSTANT_X1_SCAN_COMMON_RESPONSE_LIMITATIONS = (
     "missing_or_unverified_fields_remain_unknown",
     "holder_count_requires_existing_verified_holder_semantics",
-    "current_top_account_concentration_not_promoted_in_v2",
+    "current_top_account_concentration_not_promoted_in_v3",
     "history_may_include_bounded_verified_provider_price_backfill",
     "provider_price_backfill_is_price_only",
     "provider_source_independence_not_verified",
@@ -39,6 +39,10 @@ INSTANT_X1_SCAN_COMMON_RESPONSE_LIMITATIONS = (
 
 INSTANT_X1_SCAN_LEGACY_HISTORY_LIMITATIONS = (
     "provider_archive_completeness_not_verified",
+    "current_market_freshness_is_field_scoped",
+    "price_freshness_uses_timestamped_provider_backfill",
+    "liquidity_volume_transaction_fact_time_not_verified",
+    "collection_time_is_not_provider_fact_time",
     "history_does_not_imply_complete_asset_lifetime",
     "continuous_coverage_requires_separate_archive_completeness_proof",
 )
@@ -388,6 +392,49 @@ def validate_instant_x1_scan_response(
                 "with holder_concentration."
             )
 
+    freshness = _mapping(
+        market.get("freshness"),
+        field="data.sections.market.freshness",
+    )
+    if freshness.get("contract_version") != "x1_current_market_freshness/v1":
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan v3 current-market freshness contract mismatch."
+        )
+    if freshness.get("freshness_state") not in {
+        "VERIFIED",
+        "PARTIAL",
+        "NOT_VERIFIED",
+    }:
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan v3 freshness_state is invalid."
+        )
+    if not isinstance(freshness.get("collection_freshness_verified"), bool):
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan v3 collection freshness must be boolean."
+        )
+    if not isinstance(freshness.get("current_market_freshness_verified"), bool):
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan v3 current market freshness must be boolean."
+        )
+    freshness_fields = _mapping(
+        freshness.get("fields"),
+        field="data.sections.market.freshness.fields",
+    )
+    for field_name in (
+        "price_usd",
+        "liquidity_usd",
+        "volume_24h_usd",
+        "transactions_24h",
+    ):
+        field_freshness = _mapping(
+            freshness_fields.get(field_name),
+            field=f"data.sections.market.freshness.fields.{field_name}",
+        )
+        if not isinstance(field_freshness.get("freshness_verified"), bool):
+            raise CMISInstantX1ScanContractError(
+                "CMIS Instant X1 Scan v3 field freshness must be boolean."
+            )
+
     current_concentration = _mapping(
         holder.get("top_account_concentration"),
         field="data.sections.holder_concentration.top_account_concentration",
@@ -398,27 +445,27 @@ def validate_instant_x1_scan_response(
         or current_concentration.get("value") is not None
     ):
         raise CMISInstantX1ScanContractError(
-            "CMIS Instant X1 Scan v2 current concentration must remain explicitly unavailable."
+            "CMIS Instant X1 Scan v3 current concentration must remain explicitly unavailable."
         )
 
     history = _mapping(sections["history"], field="data.sections.history")
     provider_history_imported = history.get("provider_history_imported")
     if not isinstance(provider_history_imported, bool):
         raise CMISInstantX1ScanContractError(
-            "CMIS Instant X1 Scan v2 history.provider_history_imported must be boolean."
+            "CMIS Instant X1 Scan v3 history.provider_history_imported must be boolean."
         )
     for field in ("provider_price_history", "provider_history_backfill", "coverage"):
         if not isinstance(history.get(field), Mapping):
             raise CMISInstantX1ScanContractError(
-                f"CMIS Instant X1 Scan v2 history.{field} must be an object."
+                f"CMIS Instant X1 Scan v3 history.{field} must be an object."
             )
     if history.get("full_asset_lifetime_verified") is not False:
         raise CMISInstantX1ScanContractError(
-            "CMIS Instant X1 Scan v2 must not promote full asset lifetime coverage; USD lifetime remains separately gated."
+            "CMIS Instant X1 Scan v3 must not promote full asset lifetime coverage; USD lifetime remains separately gated."
         )
     if history.get("continuous_coverage_verified") is not False:
         raise CMISInstantX1ScanContractError(
-            "CMIS Instant X1 Scan v2 must not promote continuous historical coverage; pair-price continuity is separately gated."
+            "CMIS Instant X1 Scan v3 must not promote continuous historical coverage; pair-price continuity is separately gated."
         )
 
     pair_lifetime = history.get("full_supported_pair_lifetime_verified")
@@ -438,12 +485,12 @@ def validate_instant_x1_scan_response(
     ):
         if field_value is not None and not isinstance(field_value, bool):
             raise CMISInstantX1ScanContractError(
-                f"CMIS Instant X1 Scan v2 history.{field_name} must be boolean when present."
+                f"CMIS Instant X1 Scan v3 history.{field_name} must be boolean when present."
             )
 
     if full_usd_lifetime is True or quote_usd_equivalence is True:
         raise CMISInstantX1ScanContractError(
-            "CMIS Instant X1 Scan v2 USD lifetime promotion is not accepted by this ROBERTA contract."
+            "CMIS Instant X1 Scan v3 USD lifetime promotion is not accepted by this ROBERTA contract."
         )
 
     if pair_lifetime is True:
