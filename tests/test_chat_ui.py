@@ -12,6 +12,13 @@ from roberta.chat_ui import (
     overview_request,
     history_request,
     pretrade_request,
+    risk_request,
+    tokenomics_request,
+    liquidity_request,
+    activity_request,
+    concentration_request,
+    rank_request,
+    evidence_request,
 )
 from roberta.recommendation_policy import recommendation_intent
 from roberta.x1_scout.planner import enforce_plan
@@ -31,6 +38,7 @@ def test_service_menu_exposes_requested_user_flows() -> None:
     assert "Evidence Quality Report" in SERVICE_MENU
     assert "Full Assessment" in SERVICE_MENU
     assert "Alert & Warning Key" in SERVICE_MENU
+    assert "ROBERTA -> X1 Scout (scanner) -> CMIS -> X1 providers" in SERVICE_MENU
 
 
 def test_status_key_keeps_risk_service_and_proof_meanings_separate() -> None:
@@ -230,3 +238,24 @@ def test_automatic_status_summary_keeps_clean_states_compact() -> None:
     assert "Verification: [AGREEMENT]" in summary
     assert "Freshness: [VERIFIED]" in summary
     assert "Meaning:" not in summary
+
+
+def test_every_x1_chat_request_visibly_routes_through_x1_scout() -> None:
+    requests = [
+        overview_request("XNT"),
+        compare_request("XNT", "ANL"),
+        risk_request("XNT"),
+        tokenomics_request("XNT"),
+        liquidity_request("XNT"),
+        history_request("XNT"),
+        activity_request("XNT"),
+        concentration_request("XNT", "ie_test"),
+        rank_request("liquidity", 10),
+        pretrade_request("XNT", "BUY", 100),
+        evidence_request("XNT"),
+        full_request("XNT"),
+    ]
+
+    for request in requests:
+        assert "X1 Scout" in request
+        assert "CMIS" in request
