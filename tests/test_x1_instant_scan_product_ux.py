@@ -15,11 +15,15 @@ def _scan_report() -> dict[str, object]:
     limitations = [
         "missing_or_unverified_fields_remain_unknown",
         "holder_count_requires_existing_verified_holder_semantics",
-        "current_top_account_concentration_not_promoted_in_v2",
+        "current_top_account_concentration_not_promoted_in_v3",
         "history_may_include_bounded_verified_provider_price_backfill",
         "provider_price_backfill_is_price_only",
         "provider_source_independence_not_verified",
         "provider_archive_completeness_not_verified",
+        "current_market_freshness_is_field_scoped",
+        "price_freshness_uses_timestamped_provider_backfill",
+        "liquidity_volume_transaction_fact_time_not_verified",
+        "collection_time_is_not_provider_fact_time",
         "history_does_not_imply_complete_asset_lifetime",
         "continuous_coverage_requires_separate_archive_completeness_proof",
         "proof_score_does_not_modify_market_facts_or_risk",
@@ -47,7 +51,7 @@ def _scan_report() -> dict[str, object]:
         ],
         "errors": [],
         "instant_x1_scan_presentation": {
-            "contract_version": "instant_x1_scan/v2",
+            "contract_version": "instant_x1_scan/v3",
             "read_only": True,
             "sections": {
                 "identity": {
@@ -63,13 +67,29 @@ def _scan_report() -> dict[str, object]:
                     "status": "partial",
                     "price_usd": 1.25,
                     "price_verified": True,
+                    "price_freshness_verified": True,
                     "liquidity_usd": None,
                     "liquidity_verified": False,
+                    "liquidity_freshness_verified": False,
                     "volume_24h_usd": 4200.0,
                     "volume_24h_verified": True,
+                    "volume_24h_freshness_verified": False,
                     "transactions_24h": 88,
                     "transactions_24h_verified": True,
+                    "transactions_24h_freshness_verified": False,
                     "#LPs": 2,
+                    "freshness": {
+                        "contract_version": "x1_current_market_freshness/v1",
+                        "freshness_state": "PARTIAL",
+                        "collection_freshness_verified": True,
+                        "current_market_freshness_verified": False,
+                        "fields": {
+                            "price_usd": {"freshness_verified": True},
+                            "liquidity_usd": {"freshness_verified": False},
+                            "volume_24h_usd": {"freshness_verified": False},
+                            "transactions_24h": {"freshness_verified": False},
+                        },
+                    },
                 },
                 "tokenomics": {
                     "status": "partial",
@@ -147,8 +167,19 @@ def test_product_view_projects_values_without_recomputing_authority() -> None:
     assert view is not None
     assert view["contract_version"] == PRODUCT_VIEW_CONTRACT
     assert view["status"] == "partial"
-    assert view["market"]["price_usd"] == {"value": 1.25, "verified": True}
-    assert view["market"]["liquidity_usd"] == {"value": None, "verified": False}
+    assert view["market"]["price_usd"] == {
+        "value": 1.25,
+        "verified": True,
+        "freshness_verified": True,
+    }
+    assert view["market"]["liquidity_usd"] == {
+        "value": None,
+        "verified": False,
+        "freshness_verified": False,
+    }
+    assert view["market"]["volume_24h_usd"]["freshness_verified"] is False
+    assert view["market"]["transactions_24h"]["freshness_verified"] is False
+    assert view["market"]["freshness"]["freshness_state"] == "PARTIAL"
     assert view["tokenomics"]["mint_authority"] == {
         "value": "authority-1",
         "verified": False,
@@ -229,7 +260,7 @@ def test_product_text_renders_unknowns_and_keeps_proof_separate_from_risk() -> N
     assert "Risk flags:" in rendered
     assert "- TEST_FLAG" in rendered
     assert "Proof Score is separate from risk: True" in rendered
-    assert "- current_top_account_concentration_not_promoted_in_v2" in rendered
+    assert "- current_top_account_concentration_not_promoted_in_v3" in rendered
     assert "execution_authorized_false" in rendered
     assert "Holders: 0" not in rendered
     assert "Top-account concentration: 0" not in rendered
