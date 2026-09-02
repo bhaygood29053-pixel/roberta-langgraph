@@ -20,19 +20,24 @@ HISTORICAL_ALL_AVAILABLE_MIN_CMIS_CONTRACT_VERSION = "1.10.0"
 HISTORICAL_PROVIDER_BACKFILL_MIN_CMIS_CONTRACT_VERSION = "1.12.0"
 X1_ASSET_IDENTITY_MIN_CMIS_CONTRACT_VERSION = "1.11.0"
 X1_ASSET_IDENTITY_CONTRACT_VERSION = "x1_asset_identity/v1"
-INSTANT_X1_SCAN_MIN_CMIS_CONTRACT_VERSION = "1.13.0"
-INSTANT_X1_SCAN_CONTRACT_VERSION = "instant_x1_scan/v1"
+INSTANT_X1_SCAN_MIN_CMIS_CONTRACT_VERSION = "1.14.0"
+INSTANT_X1_SCAN_CONTRACT_VERSION = "instant_x1_scan/v2"
 INSTANT_X1_SCAN_REQUIRED_REQUIREMENTS = (
     "verified_x1_asset_identity",
     "accepted_market_report",
     "accepted_tokenomics_service",
-    "cmis_stored_verified_history_only",
+    "cmis_verified_history",
+    "bounded_verified_provider_price_backfill",
     "deterministic_risk_core",
 )
 INSTANT_X1_SCAN_REQUIRED_LIMITATIONS = (
     "holder_count_may_remain_unverified",
-    "current_top_account_concentration_not_promoted_in_v1",
+    "current_top_account_concentration_not_promoted_in_v2",
+    "provider_price_backfill_is_price_only",
+    "provider_source_independence_not_verified",
+    "provider_archive_completeness_not_verified",
     "history_does_not_imply_complete_asset_lifetime",
+    "continuous_coverage_requires_separate_archive_completeness_proof",
     "proof_score_separate_from_risk",
     "risk_score_unavailable_until_calibrated",
     "execution_authorized_false",
@@ -613,7 +618,7 @@ def require_instant_x1_scan_capability(
     *,
     chain: str = "x1",
 ) -> CMISServiceCapability:
-    """Require the exact accepted CMIS 1.13 Instant X1 Scan contract."""
+    """Require the exact accepted CMIS 1.14 Instant X1 Scan v2 contract."""
 
     normalized_chain = str(chain or "").strip().lower()
     if normalized_chain != "x1":

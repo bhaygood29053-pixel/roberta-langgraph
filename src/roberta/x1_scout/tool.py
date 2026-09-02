@@ -185,7 +185,7 @@ def build_x1_scout_tool(
         name="x1_scout_investigate",
         description=(
             "Delegate an X1-chain investigation to X1 Scout. Natural Instant X1 Scan or "
-            "quick/instant asset-scan requests use the accepted CMIS instant_x1_scan/v1 "
+            "quick/instant asset-scan requests use the accepted CMIS instant_x1_scan/v2 "
             "composition through X1 Scout; operation='instant_x1_scan' is also available "
             "for an explicit flagship scan request. For a first-class two-asset current "
             "comparison, use operation='compare' with the exact second asset in compare_asset; "

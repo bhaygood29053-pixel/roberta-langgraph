@@ -65,7 +65,7 @@ See [`docs/LEARNING_PLANE_ARCHITECTURE.md`](./docs/LEARNING_PLANE_ARCHITECTURE.m
 
 ### Instant X1 Scan
 
-CMIS `1.13.0` adds bounded X1 `instant_x1_scan/v1`. The service is read-only and composition-only: it combines already accepted identity, market, tokenomics, CMIS-stored verified history, deterministic risk, and runtime evidence-quality metadata. Missing/unverified holder or current-concentration facts remain explicit unknown/partial values. Roberta consumes this capability only through the accepted Scout/CMIS boundary and does not treat composition as new underlying fact authority.
+CMIS `1.14.0` promotes bounded X1 `instant_x1_scan/v2`. The service remains read-only and composition-only, but it may deepen price history through the accepted bounded XDEX/X1.Ninja corroborated backfill before producing its history section. Roberta preserves the returned observation bounds, provider-backfill evidence, and gap diagnostics while keeping provider archive completeness, full asset lifetime, and continuity explicitly unverified. Missing/unverified holder or current-concentration facts remain explicit unknown/partial values, and Roberta does not treat composition as new underlying fact authority.
 
 ### X1 Burn Intelligence
 
@@ -76,7 +76,7 @@ Follow-up hardening PR #295 remains the immediate acceptance gate. After that ga
 
 ### X1 identity and all-available history
 
-Roberta/X1 Scout accepts the current CMIS `1.13.0` contract boundary. CMIS `1.11.0+` exact-mint normalization under `x1_asset_identity/v1` keeps the exact mint as the fungible identity root while preserving Metaplex and XDEX descriptors as separately sourced observations.
+Roberta/X1 Scout accepts the CMIS `1.14.0` Instant X1 Scan v2 contract boundary on this branch. CMIS `1.11.0+` exact-mint normalization under `x1_asset_identity/v1` keeps the exact mint as the fungible identity root while preserving Metaplex and XDEX descriptors as separately sourced observations.
 
 Roberta/X1 Scout also adopts the CMIS `1.10.0` `all_available` / `all_available_pair` historical modes. Natural full-history requests remain on the canonical path `Roberta -> X1 Scout -> CMIS`.
 

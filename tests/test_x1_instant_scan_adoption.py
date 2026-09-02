@@ -40,7 +40,7 @@ def test_instant_x1_scan_capability_requires_exact_accepted_contract() -> None:
 
 def test_instant_x1_scan_capability_fails_closed_on_old_or_weakened_contract() -> None:
     old = deepcopy(MockCMISClient().capabilities())
-    old["contract_version"] = "1.12.0"
+    old["contract_version"] = "1.13.0"
     with pytest.raises(CMISCapabilityContractError, match="requires contract"):
         require_instant_x1_scan_capability(
             validate_capability_manifest(old),
@@ -539,7 +539,7 @@ def test_x1_scout_accepts_verified_nonnegative_holder_count() -> None:
     assert holder["holders_verified"] is True
 
 
-def test_x1_scout_rejects_promoted_current_concentration_in_v1() -> None:
+def test_x1_scout_rejects_promoted_current_concentration_in_v2() -> None:
     class PromotedConcentrationCMIS(MockCMISClient):
         def instant_x1_scan(self, *, chain: str, asset: str):
             result = super().instant_x1_scan(chain=chain, asset=asset)
@@ -712,7 +712,7 @@ def test_x1_scout_fails_closed_before_dispatch_when_scan_contract_is_stale() -> 
     class OldScanCMIS(MockCMISClient):
         def capabilities(self):
             manifest = super().capabilities()
-            manifest["contract_version"] = "1.12.0"
+            manifest["contract_version"] = "1.13.0"
             return manifest
 
     cmis = OldScanCMIS()

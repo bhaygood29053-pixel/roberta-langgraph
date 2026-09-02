@@ -15,9 +15,13 @@ def _scan_report() -> dict[str, object]:
     limitations = [
         "missing_or_unverified_fields_remain_unknown",
         "holder_count_requires_existing_verified_holder_semantics",
-        "current_top_account_concentration_not_promoted_in_v1",
-        "history_is_cmis_stored_verified_observations_only",
+        "current_top_account_concentration_not_promoted_in_v2",
+        "history_may_include_bounded_verified_provider_price_backfill",
+        "provider_price_backfill_is_price_only",
+        "provider_source_independence_not_verified",
+        "provider_archive_completeness_not_verified",
         "history_does_not_imply_complete_asset_lifetime",
+        "continuous_coverage_requires_separate_archive_completeness_proof",
         "proof_score_does_not_modify_market_facts_or_risk",
         "risk_score_remains_unavailable_until_separately_calibrated",
         "execution_authorized_false",
@@ -43,7 +47,7 @@ def _scan_report() -> dict[str, object]:
         ],
         "errors": [],
         "instant_x1_scan_presentation": {
-            "contract_version": "instant_x1_scan/v1",
+            "contract_version": "instant_x1_scan/v2",
             "read_only": True,
             "sections": {
                 "identity": {
@@ -221,7 +225,7 @@ def test_product_text_renders_unknowns_and_keeps_proof_separate_from_risk() -> N
     assert "Risk flags:" in rendered
     assert "- TEST_FLAG" in rendered
     assert "Proof Score is separate from risk: True" in rendered
-    assert "- current_top_account_concentration_not_promoted_in_v1" in rendered
+    assert "- current_top_account_concentration_not_promoted_in_v2" in rendered
     assert "execution_authorized_false" in rendered
     assert "Holders: 0" not in rendered
     assert "Top-account concentration: 0" not in rendered
