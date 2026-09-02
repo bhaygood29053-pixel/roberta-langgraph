@@ -233,6 +233,25 @@ def _mock_evidence_metadata(
             "source_traceability",
         )
     }
+    freshness_flags: dict[str, bool] = {}
+    freshness_verified = None
+    if service == "instant_x1_scan":
+        freshness_flags = {
+            "data.sections.market.price_freshness_verified": True,
+            "data.sections.market.liquidity_freshness_verified": False,
+            "data.sections.market.volume_24h_freshness_verified": False,
+            "data.sections.market.transactions_24h_freshness_verified": False,
+        }
+        freshness_verified = False
+        categories["freshness"] = {
+            "state": "PARTIAL",
+            "score": 50,
+            "reasons": [
+                "freshness verification gates satisfied",
+                "one or more freshness gates are explicitly unverified",
+            ],
+            "evidence_paths": sorted(freshness_flags),
+        }
     return {
         "evidence_receipt": {
             "receipt_id": f"er_mock_{chain}_{service}",
