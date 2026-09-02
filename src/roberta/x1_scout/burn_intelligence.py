@@ -8,8 +8,9 @@ Every numerical/state field remains CMIS-owned.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from copy import deepcopy
+from decimal import Decimal, InvalidOperation
 from typing import Any
 
 
@@ -31,8 +32,31 @@ class X1BurnIntelligenceContractError(ValueError):
     """Raised when CMIS tokenomics cannot satisfy burn-intelligence v1."""
 
 
-def _mapping(value: object) -> Mapping[str, Any]:
-    return value if isinstance(value, Mapping) else {}
+def _require_sequence(container: Mapping[str, Any], key: str) -> list[Any]:
+    value = container.get(key)
+    if not isinstance(value, Sequence) or isinstance(value, (str, bytes, Mapping)):
+        raise X1BurnIntelligenceContractError(
+            f"required burn evidence list malformed: {key}"
+        )
+    return list(value)
+
+
+def _finite_decimal(value: object, *, context: str) -> Decimal:
+    if value is None or isinstance(value, bool):
+        raise X1BurnIntelligenceContractError(
+            f"required numeric burn value missing: {context}"
+        )
+    try:
+        parsed = Decimal(str(value))
+    except (InvalidOperation, TypeError, ValueError) as exc:
+        raise X1BurnIntelligenceContractError(
+            f"required numeric burn value malformed: {context}"
+        ) from exc
+    if not parsed.is_finite():
+        raise X1BurnIntelligenceContractError(
+            f"required numeric burn value malformed: {context}"
+        )
+    return parsed
 
 
 def _require_mapping(container: Mapping[str, Any], key: str) -> Mapping[str, Any]:
@@ -76,7 +100,34 @@ def _validate_window(label: str, value: object) -> None:
             raise X1BurnIntelligenceContractError(
                 f"verified burn window must preserve ok status: {label}"
             )
-        for key in ("burned_raw", "burned_tokens", "burn_events"):
+        required_fields = (
+            "burned_raw",
+            "burned_tokens",
+            "burn_events",
+            "minted_raw",
+            "minted_tokens",
+            "mint_events",
+            "burn_to_emission_ratio",
+            "net_issuance_raw",
+            "net_issuance_tokens",
+            "issuance_state",
+        )
+        for key in required_fields:
+            if key not in value:
+                raise X1BurnIntelligenceContractError(
+                    f"verified burn window missing {key}: {label}"
+                )
+        for key in (
+            "burned_raw",
+            "burned_tokens",
+            "burn_events",
+            "minted_raw",
+            "minted_tokens",
+            "mint_events",
+            "net_issuance_raw",
+            "net_issuance_tokens",
+            "issuance_state",
+        ):
             if value.get(key) is None:
                 raise X1BurnIntelligenceContractError(
                     f"verified burn window missing {key}: {label}"
@@ -103,19 +154,40 @@ def _validate_window(label: str, value: object) -> None:
                 f"unsupported burn comparison state: {label}"
             )
         percent_change = comparison.get("percent_change")
-        if change_state in {"NEW_BURN_ACTIVITY", "INSUFFICIENT_COVERAGE"}:
+        if comparison_status == "ok":
+            if change_state == "INSUFFICIENT_COVERAGE":
+                raise X1BurnIntelligenceContractError(
+                    f"available burn comparison cannot claim insufficient coverage: {label}"
+                )
+            for key in (
+                "prior_start_exclusive",
+                "prior_end_inclusive",
+                "prior_burned_raw",
+                "prior_burned_tokens",
+            ):
+                if comparison.get(key) is None:
+                    raise X1BurnIntelligenceContractError(
+                        f"available burn comparison missing {key}: {label}"
+                    )
+            if change_state in {"AVAILABLE", "NO_CHANGE_ZERO_BASE"}:
+                _finite_decimal(
+                    percent_change,
+                    context=f"{label}.period_over_period.percent_change",
+                )
+            elif change_state == "NEW_BURN_ACTIVITY":
+                if percent_change is not None:
+                    raise X1BurnIntelligenceContractError(
+                        f"non-numeric burn comparison state must preserve null percent: {label}"
+                    )
+        else:
+            if change_state != "INSUFFICIENT_COVERAGE":
+                raise X1BurnIntelligenceContractError(
+                    f"unavailable burn comparison must preserve insufficient coverage: {label}"
+                )
             if percent_change is not None:
                 raise X1BurnIntelligenceContractError(
                     f"non-numeric burn comparison state must preserve null percent: {label}"
                 )
-        if comparison_status == "ok" and change_state == "INSUFFICIENT_COVERAGE":
-            raise X1BurnIntelligenceContractError(
-                f"available burn comparison cannot claim insufficient coverage: {label}"
-            )
-        if comparison_status == "unavailable" and change_state != "INSUFFICIENT_COVERAGE":
-            raise X1BurnIntelligenceContractError(
-                f"unavailable burn comparison must preserve insufficient coverage: {label}"
-            )
 
 
 def _validate_burn_metrics(metrics: Mapping[str, Any]) -> None:
@@ -201,6 +273,11 @@ def build_x1_burn_intelligence(
         raise X1BurnIntelligenceContractError("CMIS tokenomics burn_metrics missing")
     _validate_burn_metrics(metrics)
 
+    confidence = _require_mapping(tokenomics_result, "confidence")
+    sources = _require_sequence(tokenomics_result, "sources")
+    warnings = _require_sequence(tokenomics_result, "warnings")
+    errors = _require_sequence(tokenomics_result, "errors")
+
     result: dict[str, object] = {
         "contract_version": BURN_INTELLIGENCE_CONTRACT,
         "product": "x1_burn_intelligence",
@@ -210,10 +287,10 @@ def build_x1_burn_intelligence(
         "asset": deepcopy(dict(asset)),
         "burn_metrics": deepcopy(dict(metrics)),
         "observed_at": tokenomics_result.get("observed_at"),
-        "confidence": deepcopy(dict(_mapping(tokenomics_result.get("confidence")))),
-        "sources": deepcopy(list(tokenomics_result.get("sources") or [])),
-        "warnings": deepcopy(list(tokenomics_result.get("warnings") or [])),
-        "errors": deepcopy(list(tokenomics_result.get("errors") or [])),
+        "confidence": deepcopy(dict(confidence)),
+        "sources": deepcopy(sources),
+        "warnings": deepcopy(warnings),
+        "errors": deepcopy(errors),
         "evidence_receipt": deepcopy(tokenomics_result.get("evidence_receipt")),
         "proof_score": deepcopy(tokenomics_result.get("proof_score")),
         "proof_score_separate_from_risk": True,
