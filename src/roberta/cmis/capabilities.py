@@ -22,6 +22,24 @@ X1_ASSET_IDENTITY_MIN_CMIS_CONTRACT_VERSION = "1.11.0"
 X1_ASSET_IDENTITY_CONTRACT_VERSION = "x1_asset_identity/v1"
 INSTANT_X1_SCAN_MIN_CMIS_CONTRACT_VERSION = "1.14.0"
 INSTANT_X1_SCAN_CONTRACT_VERSION = "instant_x1_scan/v2"
+BURN_INTELLIGENCE_MIN_CMIS_CONTRACT_VERSION = "1.15.0"
+BURN_INTELLIGENCE_CONTRACT_VERSION = "burn_intelligence/v1"
+BURN_INTELLIGENCE_REQUIRED_REQUIREMENTS = (
+    "exact_x1_mint_identity",
+    "accepted_tokenomics_burn_metrics",
+    "verified_burn_event_semantics",
+    "verified_window_coverage_for_numeric_window_claims",
+    "verified_prior_window_coverage_for_numeric_percent_change",
+)
+BURN_INTELLIGENCE_REQUIRED_LIMITATIONS = (
+    "observed_cumulative_burn_is_not_lifetime_without_archive_completeness",
+    "dead_address_transfers_are_not_burns_without_separate_semantic_proof",
+    "circulating_supply_requires_independent_supply_semantics",
+    "historical_value_destroyed_requires_burn_time_price_evidence",
+    "proof_score_separate_from_risk",
+    "no_execution_authorization",
+    "x1_only_initial_scope",
+)
 INSTANT_X1_SCAN_REQUIRED_REQUIREMENTS = (
     "verified_x1_asset_identity",
     "accepted_market_report",
@@ -446,6 +464,25 @@ def validate_capability_manifest(value: Any) -> CMISCapabilities:
                             f"CMIS x1/instant_x1_scan {field} must be boolean."
                         )
                     normalized_capability[field] = raw_flag
+            if chain == "x1" and service == "burn_intelligence":
+                contract = capability_raw.get("service_contract_version")
+                if not isinstance(contract, str) or not contract.strip():
+                    raise CMISCapabilityContractError(
+                        "CMIS x1/burn_intelligence service_contract_version must be text."
+                    )
+                normalized_capability["service_contract_version"] = contract
+                for field in (
+                    "read_only",
+                    "public_service_promoted",
+                    "scout_reliance_promoted",
+                    "execution_authorized",
+                ):
+                    raw_flag = capability_raw.get(field)
+                    if not isinstance(raw_flag, bool):
+                        raise CMISCapabilityContractError(
+                            f"CMIS x1/burn_intelligence {field} must be boolean."
+                        )
+                    normalized_capability[field] = raw_flag
             if chain == "x1" and service == "asset_lookup":
                 identity_contract = capability_raw.get("identity_contract_version")
                 if identity_contract is not None:
@@ -692,6 +729,81 @@ def require_instant_x1_scan_capability(
     return capability
 
 
+def require_burn_intelligence_capability(
+    manifest: Mapping[str, Any],
+    *,
+    chain: str = "x1",
+) -> CMISServiceCapability:
+    """Require the exact accepted CMIS 1.15 Burn Intelligence v1 contract."""
+
+    normalized_chain = str(chain or "").strip().lower()
+    if normalized_chain != "x1":
+        raise CMISCapabilityUnavailable(
+            chain=normalized_chain,
+            service="burn_intelligence",
+            state=None,
+            limitations=["burn_intelligence_x1_only"],
+        )
+
+    version = manifest.get("contract_version")
+    if _semver(version) < _semver(BURN_INTELLIGENCE_MIN_CMIS_CONTRACT_VERSION):
+        raise CMISCapabilityContractError(
+            "CMIS Burn Intelligence requires contract "
+            f">={BURN_INTELLIGENCE_MIN_CMIS_CONTRACT_VERSION}, got {version!r}."
+        )
+
+    capability = require_service_capability(
+        manifest,
+        chain=normalized_chain,
+        service="burn_intelligence",
+    )
+    if capability.get("state") != "bounded":
+        raise CMISCapabilityContractError(
+            "CMIS x1/burn_intelligence state must remain bounded."
+        )
+    if capability.get("service_contract_version") != BURN_INTELLIGENCE_CONTRACT_VERSION:
+        raise CMISCapabilityContractError(
+            "CMIS x1/burn_intelligence service contract mismatch."
+        )
+    if capability.get("read_only") is not True:
+        raise CMISCapabilityContractError(
+            "CMIS x1/burn_intelligence must remain read-only."
+        )
+    if capability.get("public_service_promoted") is not True:
+        raise CMISCapabilityContractError(
+            "CMIS x1/burn_intelligence is not public-service promoted."
+        )
+    if capability.get("scout_reliance_promoted") is not True:
+        raise CMISCapabilityContractError(
+            "CMIS x1/burn_intelligence is not Scout-reliance promoted."
+        )
+    if capability.get("execution_authorized") is not False:
+        raise CMISCapabilityContractError(
+            "CMIS x1/burn_intelligence must preserve execution_authorized=false."
+        )
+
+    missing_requirements = sorted(
+        set(BURN_INTELLIGENCE_REQUIRED_REQUIREMENTS)
+        - set(capability["requirements"])
+    )
+    if missing_requirements:
+        raise CMISCapabilityContractError(
+            "CMIS x1/burn_intelligence is missing accepted requirements: "
+            f"{missing_requirements!r}."
+        )
+
+    missing_limitations = sorted(
+        set(BURN_INTELLIGENCE_REQUIRED_LIMITATIONS)
+        - set(capability["limitations"])
+    )
+    if missing_limitations:
+        raise CMISCapabilityContractError(
+            "CMIS x1/burn_intelligence is missing accepted limitations: "
+            f"{missing_limitations!r}."
+        )
+    return capability
+
+
 def require_historical_all_available_capability(
     manifest: Mapping[str, Any],
     *,
@@ -741,6 +853,10 @@ def require_historical_all_available_capability(
 
 
 __all__ = [
+    "BURN_INTELLIGENCE_CONTRACT_VERSION",
+    "BURN_INTELLIGENCE_MIN_CMIS_CONTRACT_VERSION",
+    "BURN_INTELLIGENCE_REQUIRED_LIMITATIONS",
+    "BURN_INTELLIGENCE_REQUIRED_REQUIREMENTS",
     "CAPABILITY_SCHEMA_VERSION",
     "CMISCapabilities",
     "CMISCapabilityContractError",
@@ -769,6 +885,7 @@ __all__ = [
     "INTELLIGENCE_FOUNDATION_SCHEMA_VERSION",
     "INTELLIGENCE_PROMOTION_RULE",
     "MIN_CMIS_CONTRACT_VERSION",
+    "require_burn_intelligence_capability",
     "require_historical_all_available_capability",
     "require_instant_x1_scan_capability",
     "require_service_capability",
