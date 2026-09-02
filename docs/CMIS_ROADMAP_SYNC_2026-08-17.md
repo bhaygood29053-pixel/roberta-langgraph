@@ -95,9 +95,9 @@ Roberta should consume it only through the accepted X1 Scout -> CMIS path.
 
 ## X1 burn-intelligence consumption
 
-CMIS owns the accepted burn arithmetic, period-over-period comparison states, scanner coverage, circulating-supply evidence, and exact historical burn-time valuation. The Roberta-side `x1_burn_intelligence/v1` tracer is an X1 Scout projection over that accepted `tokenomics` evidence; it is not a new CMIS service and does not recalculate burn or historical price facts.
+CMIS owns the accepted burn arithmetic, period-over-period comparison states, scanner coverage, circulating-supply evidence, and exact historical burn-time valuation. CMIS 1.15.0 promotes those accepted facts through first-class X1 `burn_intelligence/v1`; the service reuses the existing tokenomics/burn-scanner foundation rather than creating a second parser or arithmetic path. Roberta-side `x1_burn_intelligence/v1` is the X1 Scout projection of that dedicated CMIS service and does not recalculate burn or historical price facts.
 
-PR #295 remains the immediate hardening gate. Human/Machine BURN integration must then use the Canonical ROBERTA Decision Object and preserve exact mint, coverage/completeness, valuation state, evidence lineage, limitations, unknowns, and `execution_authorized=false`.
+ROBERTA PR #295 and protected `roberta-core` #23 are accepted. BURN uses the Canonical ROBERTA Decision Object and preserves exact mint, coverage/completeness, valuation state, evidence lineage, limitations, unknowns, and `execution_authorized=false` for both Human and Machine ROBERTA. The current integration gate is the X1 Scout switch to first-class CMIS `burn_intelligence/v1`.
 
 
 ## X1 history and identity
