@@ -89,6 +89,7 @@ def build_instant_x1_scan_product_view(
             "mint": identity.get("mint"),
             "resolved_by": identity.get("resolved_by"),
             "match_quality": identity.get("match_quality"),
+            "identity_key": identity.get("identity_key"),
         },
         "market": {
             "status": market.get("status"),
@@ -146,6 +147,8 @@ def build_instant_x1_scan_product_view(
                 "holders",
                 "holders_verified",
             ),
+            "holders_state": holders.get("holders_state"),
+            "holders_reason": holders.get("holders_reason"),
             "holders_reported": holders.get("holders_reported"),
             "holders_observed": holders.get("holders_observed"),
             "holder_semantics": holders.get("holder_semantics"),
@@ -154,7 +157,17 @@ def build_instant_x1_scan_product_view(
                 "verified": top_concentration.get("verified") is True,
                 "value": top_concentration.get("value"),
                 "reason": top_concentration.get("reason"),
+                "basis": top_concentration.get("basis"),
+                "counted_entity": top_concentration.get("counted_entity"),
             },
+            "native_account_concentration": (
+                dict(_mapping(holders.get("native_account_concentration")))
+                if isinstance(
+                    holders.get("native_account_concentration"),
+                    Mapping,
+                )
+                else None
+            ),
         },
         "history": dict(history),
         "risk": {
@@ -280,11 +293,21 @@ def render_instant_x1_scan_product_text(view: Mapping[str, Any]) -> str:
         ),
         "",
         "Holders / Concentration",
-        _render_verified("Holders", holder.get("holders")),
+        (
+            "Holder count: NOT APPLICABLE — native XNT account distribution"
+            if holder.get("holders_state") == "not_applicable"
+            else _render_verified("Holders", holder.get("holders"))
+        ),
         (
             "Top-account concentration: unknown"
             if concentration.get("verified") is not True
-            else f"Top-account concentration: {concentration.get('value')}"
+            else (
+                "Top-20 native XNT account concentration: "
+                f"{concentration.get('value')}%"
+                if concentration.get("basis")
+                == "top_20_native_xnt_accounts_percent_of_circulating_xnt"
+                else f"Top-account concentration: {concentration.get('value')}"
+            )
         ),
         "",
         "History",
