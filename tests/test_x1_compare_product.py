@@ -56,6 +56,16 @@ def _scan(
                 "value": transactions,
                 "verified": transactions_verified,
             },
+            "freshness": {
+                "contract_version": "x1_current_market_freshness/v1",
+                "freshness_state": "VERIFIED",
+                "fields": {
+                    "price_usd": {"freshness_verified": True},
+                    "liquidity_usd": {"freshness_verified": True},
+                    "volume_24h_usd": {"freshness_verified": True},
+                    "transactions_24h": {"freshness_verified": True},
+                },
+            },
             "#LPs": None,
         },
         "tokenomics": {
@@ -193,8 +203,34 @@ def test_compare_marks_one_side_unknown_as_not_comparable_not_zero() -> None:
     assert liquidity["right"] == {"value": None, "verified": False}
 
     rendered = render_x1_compare_product_text(view)
-    assert "Liquidity USD: not comparable from verified evidence" in rendered
+    assert "Liquidity USD: not comparable from verified fresh evidence" in rendered
     assert "Liquidity USD: right higher" not in rendered
+
+
+def test_compare_rejects_stale_current_metric_even_when_value_is_verified() -> None:
+    right = _right()
+    right["market"]["freshness"]["freshness_state"] = "PARTIAL"
+    right["market"]["freshness"]["fields"]["liquidity_usd"] = {
+        "freshness_verified": False,
+        "reason": "liquidity_provider_fact_time_not_verified",
+    }
+
+    view = build_x1_compare_product_view(
+        left_requested_asset="AAA",
+        right_requested_asset="BBB",
+        left_scan=_left(),
+        right_scan=right,
+    )
+
+    liquidity = view["comparison"]["liquidity_usd"]
+    assert liquidity["left"]["verified"] is True
+    assert liquidity["right"]["verified"] is True
+    assert liquidity["freshness_comparable"] is False
+    assert liquidity["comparable"] is False
+    assert liquidity["relation"] == "not_comparable"
+
+    rendered = render_x1_compare_product_text(view)
+    assert "Liquidity USD: not comparable from verified fresh evidence" in rendered
 
 
 def test_compare_requires_matching_verified_holder_semantics() -> None:
