@@ -361,9 +361,13 @@ def test_every_x1_chat_request_visibly_routes_through_x1_scout() -> None:
 
 def test_human_roberta_presentation_policy_is_systemwide() -> None:
     assert "WHAT ROBERTA STILL NEEDS" in HUMAN_ROBERTA_PRESENTATION_POLICY
-    assert "no more than five grouped" in HUMAN_ROBERTA_PRESENTATION_POLICY
+    assert "no more than three prioritized" in HUMAN_ROBERTA_PRESENTATION_POLICY
     assert "raw snake_case limitation codes" in HUMAN_ROBERTA_PRESENTATION_POLICY
     assert "Round DISPLAY values" in HUMAN_ROBERTA_PRESENTATION_POLICY
+    assert "Do not repeat field-level freshness problems inside RISK" in HUMAN_ROBERTA_PRESENTATION_POLICY
+    assert "Show an unavailable numeric risk score only when" in HUMAN_ROBERTA_PRESENTATION_POLICY
+    assert "Use EVIDENCE QUALITY instead of a raw Evidence Status dump" in HUMAN_ROBERTA_PRESENTATION_POLICY
+    assert "BOTTOM LINE" in HUMAN_ROBERTA_PRESENTATION_POLICY
 
     requests = [
         overview_request("XNT"),
