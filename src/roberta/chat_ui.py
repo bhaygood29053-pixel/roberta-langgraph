@@ -627,7 +627,7 @@ def overview_request(asset: str) -> str:
     return (
         f"On X1, run the flagship Instant X1 Scan for {asset}. "
         "Use X1 Scout with operation='instant_x1_scan' and the accepted CMIS "
-        "instant_x1_scan/v2 product path. Treat this as the Asset Overview "
+        "instant_x1_scan/v3 product path. Treat this as the Asset Overview "
         "workflow and keep the investigation scope to that scan unless the "
         "user explicitly asks for supplemental evidence in a separate request."
     )
