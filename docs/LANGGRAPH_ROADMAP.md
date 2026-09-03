@@ -32,7 +32,7 @@ Accepted on `main`:
 - X1 Scout decision-production readiness under the accepted CMIS boundary;
 - Solana Scout read-only readiness for its accepted surface;
 - X1 Scout adoption of CMIS `concentration_change_intelligence/v1`;
-- X1 Scout adoption of accepted CMIS capability through `1.16.0`, including all-available history, exact-mint X1 identity, bounded verified-provider historical price backfill, Instant X1 Scan, Burn Intelligence, and Discovery Intelligence;
+- X1 Scout adoption of accepted CMIS capability through `1.17.0`, including all-available history, exact-mint X1 identity, bounded verified-provider historical price backfill, Instant X1 Scan v3, Burn Intelligence, Discovery Intelligence, and field-scoped current-market freshness;
 - Learning System Phases 1-10;
 - fail-closed `verified_learned_knowledge` classification with no general operational-trust promotion wrapper;
 - source-specific Blockchain Reasoning Pyramid architecture and source-mastery ledger;
@@ -179,7 +179,7 @@ CMIS has completed its six-phase public-shell/private-core migration and histori
 
 ## CMIS synchronization
 
-Current accepted CMIS capability contract is `1.16.0`, including first-class X1 Burn Intelligence under 1.15.0 and Discovery Intelligence under 1.16.0.
+Current accepted CMIS capability contract is `1.17.0`, including first-class X1 Burn Intelligence under 1.15.0, Discovery Intelligence under 1.16.0, and `instant_x1_scan/v3` field-scoped current-market freshness under 1.17.0.
 
 The existing X1 `historical_compare` service is accepted for `window`, `all_available`, and `all_available_pair` use through X1 Scout. All-available modes require the service-specific CMIS `>=1.10.0` guard and exact limitation semantics. Pair requests preserve the second user/trusted-context asset explicitly and issue one CMIS pair-history call; Roberta does not recompute two independent histories. For CMIS `>=1.12.0`, Scout reliance additionally requires the accepted price-only provider-backfill limitations: provider source independence, archive completeness, continuous coverage, historical USD-stable peg behavior, and complete asset lifetime remain unverified. Returned lifetime/continuous-coverage limits remain authoritative.
 
@@ -283,7 +283,7 @@ Advanced users should be able to expand the same result into market, trade, risk
 
 The X1 Human ROBERTA product should converge on seven primary workflows:
 
-1. **SCAN** — “Analyze this token.” Consume accepted `instant_x1_scan/v1` plus only separately accepted supplemental Scout/CMIS evidence.
+1. **SCAN** — “Analyze this token.” Consume accepted `instant_x1_scan/v3` plus only separately accepted supplemental Scout/CMIS evidence.
 2. **TRADE CHECK** — “Can this market handle my $500 buy?” Present deterministic trade-size policy, route-scoped price impact/fee evidence where accepted, slippage status, risk, and missing execution evidence.
 3. **COMPARE** — “Compare AGI and XNT.” Use first-class CMIS-returned current/history evidence and preserve per-dimension differences instead of inventing a universal score.
 4. **WHAT CHANGED?** — explain verified changes in price, liquidity, activity, concentration, token burns, risk/evidence quality, and important unknowns.
@@ -470,7 +470,7 @@ Solana remains an accepted read-only specialist surface for maintenance, regress
 
 - make X1 the flagship Roberta intelligence experience;
 - use X1 Scout as the chain-specific interpretation layer for all freshness-sensitive X1 investigations;
-- consume bounded CMIS `instant_x1_scan/v1` through X1 Scout and present its verified identity, market, tokenomics, local-history, deterministic-risk, and evidence-quality fields clearly;
+- consume bounded CMIS `instant_x1_scan/v3` through X1 Scout and present its verified identity, market, tokenomics, local-history, deterministic-risk, and evidence-quality fields clearly;
 - preserve CMIS statuses, timestamps, Evidence Receipts, Proof Scores, limitations, warnings, and explicit unknowns rather than smoothing partial evidence into confident prose;
 - build the user-facing X1 workflows around **Instant X1 Scan**, **Compare**, **Token Burn Intelligence (total verified-observed + 24h/7d/30d)**, **Discovery / first-observation history**, **Early Warning**, and **X1 ecosystem/network brief** outputs as their underlying CMIS contracts become accepted;
 - keep Proof Score separate from risk and never turn a risk `PASS` into execution permission;
@@ -540,16 +540,17 @@ The Learning Plane implementation milestone is complete enough to support the fl
 
 Current product order:
 
-1. **BURN — COMPLETE.** CMIS public #389 and protected `cmis-core` #12 are accepted; ROBERTA public #295/#304 and protected `roberta-core` #23/#24 provide the first-class X1 Scout and shared Human/Machine Decision Object path. `/burn <asset>` is accepted.
-2. **DISCOVERY — COMPLETE.** CMIS public #365/#391 and protected `cmis-core` #6 provide Discovery Ledger + `discovery_intelligence/v1`; ROBERTA public #306 and protected `roberta-core` #25 provide the X1 Scout and shared Human/Machine path. `/discovery <asset>` is accepted.
-3. **WHAT CHANGED? — COMPLETE.** ROBERTA public #308 and protected `roberta-core` #26 provide first-class `x1_what_changed/v1` and the Canonical Decision Object workflow. `/changed <asset>` composes accepted Scan/Burn/Discovery evidence without local market-delta calculation or causal inference. Issue #293 is closed completed.
-4. **FIELD-SCOPED FRESHNESS — ACTIVE RELIABILITY GATE / REBASE REQUIRED.** Reconcile CMIS #386 / `cmis-core` #9 / ROBERTA #301 / `roberta-core` #19 onto current accepted public/private heads. The stale drafts predate CMIS 1.15 Burn and 1.16 Discovery and must advance under a new CMIS contract version rather than being merged as-is.
-5. **EARLY WARNING — NEXT AFTER FRESHNESS.** Promote warning families one at a time with explicit persistence, freshness, replay/deduplication, identity, severity, and delivery semantics.
-6. **Decision Object expansion:** continue one workflow at a time so Human and Machine ROBERTA preserve the same facts, unknowns, evidence state, and execution denial.
-7. **Learning operations:** private-core CI/background scheduling hardening remains supporting work and does not displace X1 product gates.
-8. **Telegram:** remains lower priority than freshness / Early Warning.
-9. **Controlled Execution:** locked/not started; `execution_authorized=false`.
+1. **HISTORICAL COVERAGE PROOF — COMPLETE.** CMIS #383 remains the accepted XNT supported-pair lifetime foundation with USD-lifetime caveats preserved.
+2. **BURN — COMPLETE.** CMIS public #389 / protected `cmis-core` #12 and ROBERTA public #295/#304 / protected `roberta-core` #23/#24 remain accepted.
+3. **DISCOVERY — COMPLETE.** CMIS public #365/#391 / protected `cmis-core` #6 and ROBERTA public #306 / protected `roberta-core` #25 remain accepted.
+4. **WHAT CHANGED? — COMPLETE.** ROBERTA public #308 and protected `roberta-core` #26 provide first-class `/changed <asset>` without local market-delta calculation or causal inference.
+5. **FIELD-SCOPED CURRENT-MARKET FRESHNESS — COMPLETE.** CMIS public #386 + protected `cmis-core` #9 establish CMIS 1.17 / `instant_x1_scan/v3`; ROBERTA public #301 + protected `roberta-core` #19 validate, preserve, and render the same per-field freshness. Price may be VERIFIED while liquidity, rolling 24h volume, and rolling transactions remain NOT VERIFIED. One fresh field never promotes global freshness.
+6. **EARLY WARNING — ACTIVE GATE.** Build one deterministic warning family at a time from accepted multi-observation evidence. Require explicit identity, persistence, freshness, comparator, replay/deduplication, severity, Evidence Receipt/Proof Score, and delivery semantics before any public/Scout reliance.
+7. **Decision Object expansion:** Human and Machine ROBERTA must continue to share one canonical fact/evidence basis.
+8. **Learning operations:** supporting track only; it does not displace X1 intelligence product gates.
+9. **Telegram:** lower priority than Early Warning.
+10. **Controlled Execution:** locked/not started; `execution_authorized=false`.
 
 ### Cross-project status note
 
-CMIS PR #363 remains parallel delayed-vault/X1.Ninja evidence research and is not a blocker for the flagship roadmap. Historical Coverage Proof v1 (#383), Burn Intelligence v1, Discovery Ledger/Intelligence v1, and WHAT CHANGED? v1 are complete.
+CMIS PR #363 remains parallel delayed-vault/X1.Ninja evidence research and is not a blocker for the flagship roadmap. Historical Coverage Proof, Burn Intelligence, Discovery Intelligence, WHAT CHANGED?, and Field-Scoped Freshness are complete.
