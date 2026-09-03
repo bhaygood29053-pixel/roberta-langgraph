@@ -203,7 +203,7 @@ def test_compare_marks_one_side_unknown_as_not_comparable_not_zero() -> None:
     assert liquidity["right"] == {"value": None, "verified": False}
 
     rendered = render_x1_compare_product_text(view)
-    assert "Liquidity USD: not comparable from verified fresh evidence" in rendered
+    assert "Liquidity USD: not comparable from verified evidence" in rendered
     assert "Liquidity USD: right higher" not in rendered
 
 
