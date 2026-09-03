@@ -34,6 +34,10 @@ def test_web_ui_contains_current_service_surface():
     assert "WHAT ROBERTA STILL NEEDS" in ROBERTA_WEB_UI_HTML
     assert "raw snake_case limitation codes" in ROBERTA_WEB_UI_HTML
     assert "humanServicePrompt" in ROBERTA_WEB_UI_HTML
+    assert "three highest-priority missing items" in ROBERTA_WEB_UI_HTML
+    assert "Do not repeat freshness warnings inside RISK" in ROBERTA_WEB_UI_HTML
+    assert "Use EVIDENCE QUALITY instead of a raw evidence-status dump" in ROBERTA_WEB_UI_HTML
+    assert "plain-English BOTTOM LINE" in ROBERTA_WEB_UI_HTML
 
 
 def test_bridge_serves_web_ui_and_keeps_roberta_api_path():
