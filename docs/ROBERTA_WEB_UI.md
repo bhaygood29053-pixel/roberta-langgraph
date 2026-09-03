@@ -47,7 +47,8 @@ The interface presents the accepted user-facing ROBERTA services, including:
 - What Changed?;
 - Full Assessment;
 - Alert & Status Key;
-- natural-language ROBERTA questions.
+- natural-language ROBERTA questions;
+- configured Solana read-only Market Report, Tokenomics, and Risk for exact mints.
 
 Warp / bridge-flow intelligence is intentionally not exposed as a completed runnable service while its CMIS evidence and coverage gates remain open.
 
@@ -72,3 +73,21 @@ The browser never selects or calls CMIS/provider tools directly. Missing evidenc
 Default loopback use requires no bearer token. If `ROBERTA_API_KEY` is configured, the UI includes a Connection panel where the operator may enter the token. The token is stored only in browser session storage and is sent as a Bearer token to `/v1/roberta`.
 
 Do not expose the loopback bridge to an untrusted network merely to make the UI externally reachable. Non-loopback deployment remains subject to the existing bridge security boundary.
+
+
+## Solana scope
+
+The website reflects the accepted Solana Scout surface without claiming X1/Solana parity. Solana cards are marked **Configured** because the provider path is disabled by default and must be explicitly enabled against an accepted CMIS deployment.
+
+The only promoted Solana web options are:
+
+- market report;
+- tokenomics / authorities;
+- deterministic risk;
+- exact-mint identity handling required by those services.
+
+Solana history, rank, pre-trade, concentration, burn, discovery, warning, and other X1-specific intelligence services are not presented as Solana capabilities.
+
+## Learning Plane
+
+ROBERTA's Learning Command Center remains a separate loopback, read-only operator surface. The market/intelligence website does not start training, mutate the Pyramid ledger, approve lessons, or create a new learning-control authority path.
