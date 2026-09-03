@@ -116,12 +116,14 @@ jobs:
           from roberta.chat_ui import overview_request
 
           request = overview_request("XNT")
-          assert "Instant X1 Scan for XNT" in request
-          assert "operation='instant_x1_scan'" in request
+          assert "Asset Overview for XNT" in request
+          assert "operation='asset_overview'" in request
           assert "instant_x1_scan/v3" in request
-          assert "CURRENT MARKET" not in request
-          assert "HISTORY" not in request
-          assert "[VERIFIED]" not in request
+          assert "burn_intelligence/v1" in request
+          assert "same exact verified X1 mint" in request
+          assert "1h/24h/7d/30d Burn Intelligence" in request
+          assert "Do not claim lifetime burn" in request
+          assert "execution_authorized=false" in request
           print("ASSET_OVERVIEW_PUBLIC_INTENT=PASS")
           PY
 
