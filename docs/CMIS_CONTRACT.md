@@ -1,6 +1,6 @@
 # CMIS Contract Boundary
 
-Last refreshed: 2026-08-26
+Last refreshed: 2026-09-03
 
 CMIS is Roberta's deterministic cross-chain market-intelligence service layer. Roberta does not own provider collection, fact verification, Evidence Receipt generation, Proof Score calculation, deterministic market risk, or bounded pre-trade calculations. Chain Scouts select and interpret allowed CMIS operations; CMIS and its providers remain authoritative for freshness-sensitive market facts.
 
@@ -38,7 +38,45 @@ Accepted milestones include:
 
 Roberta Phase 11 — Controlled Execution remains **locked / not started**.
 
-CMIS currently advertises capability contract **1.12.0**. Roberta keeps a global existing-service minimum of **1.8.0**; the promoted concentration intelligence operation keeps its service-specific minimum of **1.9.0**, legacy X1 all-available historical modes remain compatible from **1.10.0**, normalized exact-mint X1 identity requires **1.11.0**, and verified provider-price backfill semantics require the **1.12.0** historical limitation contract.
+CMIS currently advertises capability contract **1.18.0**. Roberta keeps a global existing-service minimum of **1.8.0**; the promoted concentration intelligence operation keeps its service-specific minimum of **1.9.0**, legacy X1 all-available historical modes remain compatible from **1.10.0**, normalized exact-mint X1 identity requires **1.11.0**, verified provider-price backfill semantics require the **1.12.0** historical limitation contract, Burn Intelligence is accepted from **1.15.0**, Discovery Intelligence from **1.16.0**, field-scoped current-market freshness from **1.17.0**, and pull-only Concentration Warning Intelligence from **1.18.0**.
+
+## September 3 Warp / bridge checkpoint
+
+The old boundary that treated Warp as blocked on exact endpoint semantics is
+superseded.
+
+Accepted CMIS cross-chain evidence now includes:
+
+- exact Warp config semantics under `warp_config/exact-mint-pair/v1`;
+- deterministic `bridge_flow_intelligence/v1` calculation;
+- canonical settled transfer events through
+  `warp_onchain_transfer_history/v1` exact OutgoingMsg/IncomingMsg pairing;
+- connected wallet-history endpoint/response semantics as corroboration only;
+- current message-universe counter/account closure under
+  `warp_message_retention_coverage/v1`.
+
+The active CMIS gate is **#441**, which must prove the required 60-day
+message-account lifecycle retention before #409 may claim complete current/prior
+30-day coverage.
+
+ROBERTA must preserve:
+
+```text
+historical_retention_complete_verified = false
+requested_60d_window_coverage_verified = false
+coverage_complete_verified = false
+missing_history_zero_authorized = false
+verified_bridged_supply = false
+public_service_promoted = false
+scout_reliance_promoted = false
+execution_authorized = false
+```
+
+until the corresponding CMIS gates pass.
+
+The downstream sequence is:
+
+`CMIS #441 -> finish #409 -> #410 -> ROBERTA #314`.
 
 ## Shared public service surface
 
