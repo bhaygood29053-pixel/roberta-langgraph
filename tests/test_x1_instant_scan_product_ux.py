@@ -47,7 +47,7 @@ def _scan_report() -> dict[str, object]:
         ],
         "errors": [],
         "instant_x1_scan_presentation": {
-            "contract_version": "instant_x1_scan/v2",
+            "contract_version": "instant_x1_scan/v3",
             "read_only": True,
             "sections": {
                 "identity": {
@@ -69,6 +69,41 @@ def _scan_report() -> dict[str, object]:
                     "volume_24h_verified": True,
                     "transactions_24h": 88,
                     "transactions_24h_verified": True,
+                    "freshness": {
+                        "contract_version": "x1_current_market_freshness/v1",
+                        "scope": "instant_x1_scan.current_market",
+                        "freshness_state": "PARTIAL",
+                        "collection_freshness_verified": True,
+                        "provider_price_fact_time_verified": True,
+                        "current_market_freshness_verified": False,
+                        "verified_field_count": 1,
+                        "total_field_count": 4,
+                        "fields": {
+                            "price_usd": {
+                                "freshness_verified": True,
+                                "reason": "timestamped_provider_price_matches_current_market_price",
+                            },
+                            "liquidity_usd": {
+                                "freshness_verified": False,
+                                "reason": "liquidity_provider_fact_time_not_verified",
+                            },
+                            "volume_24h_usd": {
+                                "freshness_verified": False,
+                                "reason": "rolling_volume_provider_fact_time_not_verified",
+                            },
+                            "transactions_24h": {
+                                "freshness_verified": False,
+                                "reason": "rolling_transactions_provider_fact_time_not_verified",
+                            },
+                        },
+                        "limitations": [
+                            "collection_time_is_not_provider_fact_time",
+                        ],
+                    },
+                    "price_freshness_verified": True,
+                    "liquidity_freshness_verified": False,
+                    "volume_24h_freshness_verified": False,
+                    "transactions_24h_freshness_verified": False,
                     "#LPs": 2,
                 },
                 "tokenomics": {
@@ -149,6 +184,9 @@ def test_product_view_projects_values_without_recomputing_authority() -> None:
     assert view["status"] == "partial"
     assert view["market"]["price_usd"] == {"value": 1.25, "verified": True}
     assert view["market"]["liquidity_usd"] == {"value": None, "verified": False}
+    assert view["market"]["freshness_state"] == "PARTIAL"
+    assert view["market"]["freshness"]["fields"]["price_usd"]["freshness_verified"] is True
+    assert view["market"]["freshness"]["fields"]["liquidity_usd"]["freshness_verified"] is False
     assert view["tokenomics"]["mint_authority"] == {
         "value": "authority-1",
         "verified": False,
@@ -210,6 +248,11 @@ def test_product_text_renders_unknowns_and_keeps_proof_separate_from_risk() -> N
     assert "Instant X1 Scan — AGI" in rendered
     assert "Identity: verified" in rendered
     assert "Liquidity USD: unknown" in rendered
+    assert "Freshness: PARTIAL" in rendered
+    assert "Price freshness: VERIFIED" in rendered
+    assert "Liquidity freshness: NOT VERIFIED" in rendered
+    assert "24h volume freshness: NOT VERIFIED" in rendered
+    assert "24h transaction freshness: NOT VERIFIED" in rendered
     assert "Mint Authority: authority-1 (unverified)" in rendered
     assert "Holders: unknown" in rendered
     assert "Top-account concentration: unknown" in rendered
