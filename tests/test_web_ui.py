@@ -25,7 +25,9 @@ def test_web_ui_contains_current_service_surface():
     assert "Solana Risk Assessment" in ROBERTA_WEB_UI_HTML
     assert "ROBERTA_SOLANA_PROVIDER_ENABLED" not in ROBERTA_WEB_UI_HTML
     assert "CMIS 1.18" in ROBERTA_WEB_UI_HTML
-    assert "Warp / bridge-flow intelligence remains evidence-gated" in ROBERTA_WEB_UI_HTML
+    assert "Exact route/config semantics" in ROBERTA_WEB_UI_HTML
+    assert "CMIS #441 → #409 → #410 → ROBERTA #314" in ROBERTA_WEB_UI_HTML
+    assert "Route-wide 24h/7d/30d bridge-flow totals and verified bridged supply remain unavailable" in ROBERTA_WEB_UI_HTML
     assert "Website actions never call CMIS directly" in ROBERTA_WEB_UI_HTML
     assert "execution remains unauthorized" in ROBERTA_WEB_UI_HTML.lower()
 
