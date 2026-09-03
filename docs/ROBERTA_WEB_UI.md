@@ -50,7 +50,7 @@ The interface presents the accepted user-facing ROBERTA services, including:
 - natural-language ROBERTA questions;
 - configured Solana read-only Market Report, Tokenomics, and Risk for exact mints.
 
-Warp / bridge-flow intelligence is intentionally not exposed as a completed runnable service while its CMIS evidence and coverage gates remain open.
+Warp / bridge-flow intelligence is intentionally not exposed as a completed runnable service while its CMIS coverage and supply gates remain open. The website does reflect the newer accepted evidence checkpoint: exact Warp config semantics, canonical settled-event pairing, wallet-history response semantics as corroboration only, and current message-universe counter/account closure are accepted foundations. Route-wide 24h/7d/30d totals and verified bridged supply remain unavailable pending CMIS #441/#409, followed by #410 and ROBERTA #314 adoption.
 
 ## Trust and safety invariants
 
