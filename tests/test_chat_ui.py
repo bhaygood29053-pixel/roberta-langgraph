@@ -58,17 +58,21 @@ def test_status_key_keeps_risk_service_and_proof_meanings_separate() -> None:
     assert "[NOT RUN]" in STATUS_KEY
 
 
-def test_compare_request_requires_fresh_symmetric_evidence() -> None:
+def test_compare_request_routes_to_first_class_symmetric_compare() -> None:
     request = compare_request("XNT", "ANL")
 
     assert "XNT vs ANL" in request
-    assert "For EACH asset" in request
-    assert "market_report" in request
-    assert "risk_check" in request
-    assert "tokenomics" in request
-    assert "historical_compare" in request
-    assert "Do not reuse an earlier risk result" in request
-    assert "missing, unverified, or non-comparable evidence" in request
+    assert "operation='compare'" in request
+    assert "asset='XNT'" in request
+    assert "compare_asset='ANL'" in request
+    assert "include_history=false" in request
+    assert "one validated Instant X1 Scan for each asset" in request
+    assert "deterministic risk" in request
+    assert "missing, unverified, or incompatible evidence" in request
+    assert "left and right PASS/WARN/BLOCK" in request
+    assert "do not calculate a combined risk score" in request
+    assert "do not average Proof Scores" in request
+    assert "execution_authorized=false" in request
 
 
 
@@ -100,8 +104,9 @@ def test_compare_request_requires_terminal_friendly_structure() -> None:
     assert "IMPORTANT DIFFERENCES" in request
     assert "STATUS SUMMARY" in request
     assert "[VERIFIED]" in request
-    assert "Show relative ratios only when CMIS or X1 Scout" in request
     assert "Do not use Markdown table syntax" in request
+    assert "Do not create relative ratios" in request
+    assert "accepted X1 Compare product" in request
 
 
 
