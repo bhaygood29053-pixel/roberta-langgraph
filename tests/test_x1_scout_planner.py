@@ -62,48 +62,46 @@ def test_model_can_propose_multistep_read_only_investigation() -> None:
     assert report["findings"]["risk"]["outcome"] == "TEST_ONLY"
 
 
-def test_full_assessment_forces_all_five_services_and_all_available_history() -> None:
-    planner = ScriptedPlannerModel(["rank"])
+def test_full_assessment_uses_canonical_rank_burn_scan_composition() -> None:
+    planner = ScriptedPlannerModel(["market_report", "tokenomics", "risk_check"])
     cmis = MockCMISClient()
     scout = build_x1_scout_graph(cmis, planner_model=planner)
 
     result = _invoke(scout, "Full assessment of XNT", asset="XNT")
 
     assert [call["operation"] for call in cmis.calls] == [
-        "market_report",
         "rank",
-        "tokenomics",
-        "historical_compare",
-        "risk_check",
+        "burn_intelligence",
+        "instant_x1_scan",
     ]
-    historical_call = next(
-        call for call in cmis.calls if call["operation"] == "historical_compare"
-    )
-    assert historical_call["mode"] == "all_available"
 
     report = result["report"]
     assert report["plan"]["operations"] == [
-        "market_report",
         "rank",
-        "tokenomics",
-        "historical_compare",
-        "risk_check",
+        "burn_intelligence",
+        "instant_x1_scan",
     ]
-    assert report["source"]["operation"] == "risk_check"
+    assert report["source"]["operation"] == "instant_x1_scan"
     assert [item["operation"] for item in report["investigations"]] == [
-        "market_report",
         "rank",
-        "tokenomics",
-        "historical_compare",
-        "risk_check",
+        "burn_intelligence",
+        "instant_x1_scan",
     ]
+    assert report["x1_burn_intelligence"]["contract_version"] == "x1_burn_intelligence/v1"
+    assert report["instant_x1_scan_product_view"]["contract_version"] == (
+        "instant_x1_scan_product_view/v1"
+    )
 
 
 def test_full_assessment_preserves_per_investigation_asset_and_flags_wrapped_xnt() -> None:
     class WrappedXNTCMIS(MockCMISClient):
-        def market_report(self, *, chain: str, asset: str):
-            result = super().market_report(chain=chain, asset=asset)
-            result["asset"] = {"symbol": "XNT", "name": "Wrapped XNT"}
+        def instant_x1_scan(self, *, chain: str, asset: str):
+            result = super().instant_x1_scan(chain=chain, asset=asset)
+            result["asset"] = {
+                "symbol": "XNT",
+                "name": "Wrapped XNT",
+                "mint": result["asset"]["mint"],
+            }
             return result
 
     cmis = WrappedXNTCMIS()
