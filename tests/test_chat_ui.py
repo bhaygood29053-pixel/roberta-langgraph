@@ -156,11 +156,9 @@ def test_full_terminal_request_is_recognized_as_deterministic_full_assessment() 
         {"operations": ["rank"]},
     )
     assert plan["operations"] == [
-        "market_report",
         "rank",
-        "tokenomics",
-        "historical_compare",
-        "risk_check",
+        "burn_intelligence",
+        "instant_x1_scan",
     ]
     assert not any(
         warning.startswith("planner_operation_rejected_for_rank_objective")
@@ -223,11 +221,49 @@ def test_automatic_status_summary_explains_field_freshness_warnings() -> None:
     assert "provider fact-time freshness for the rolling 24-hour transaction count" in summary
 
 
+def test_current_market_menu_flows_use_scan_freshness_contract() -> None:
+    liquidity = liquidity_request("AGI")
+    activity = activity_request("AGI")
+    evidence = evidence_request("AGI")
+
+    for request in (liquidity, activity, evidence):
+        assert "operation='instant_x1_scan'" in request
+
+    assert "liquidity provider fact-time" in liquidity
+    assert "liquidity value is not automatically fresh" in liquidity
+    assert "volume freshness and transaction freshness separately" in activity
+    assert "field-scoped freshness" in evidence
+    assert "Proof Score separate from market risk" in evidence
+
+
+def test_rank_does_not_inherit_scan_freshness_without_proof() -> None:
+    request = rank_request("liquidity", 10)
+
+    assert "rank service" in request
+    assert "does not inherit Instant X1 Scan field-level freshness" in request
+    assert "do not call ranking values fresh" in request
+
+
+def test_full_assessment_uses_scan_burn_and_rank_systemwide_composition() -> None:
+    request = full_request("AGI")
+
+    assert "one Instant X1 Scan" in request
+    assert "freshness-aware risk" in request
+    assert "one first-class Burn Intelligence result" in request
+    assert "ranking context" in request
+    assert "1h/24h/7d/30d Burn Intelligence" in request
+    assert "never relabel bounded observed burn" in request
+    assert "all available history / entire history" in request
+    assert "execution_authorized=false" in request
+
+
 def test_pretrade_request_preserves_analysis_only_boundary() -> None:
     request = pretrade_request("AGI", "BUY", 2500)
 
     assert "BUY $2500.00" in request
     assert "pre_trade_check" in request
+    assert "freshness-aware CMIS risk_check" in request
+    assert "price/liquidity/24h-volume/24h-transaction freshness warnings" in request
     assert "analysis_only=true" in request
     assert "execution_authorized=false" in request
 
