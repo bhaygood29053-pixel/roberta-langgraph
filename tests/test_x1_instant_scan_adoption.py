@@ -539,6 +539,124 @@ def test_x1_scout_accepts_verified_nonnegative_holder_count() -> None:
     assert holder["holders_verified"] is True
 
 
+def test_x1_scout_accepts_verified_native_xnt_account_concentration() -> None:
+    class NativeXNTDistributionCMIS(MockCMISClient):
+        def instant_x1_scan(self, *, chain: str, asset: str):
+            result = super().instant_x1_scan(chain=chain, asset=asset)
+            identity = result["data"]["sections"]["identity"]
+            identity["identity_key"] = "native:xnt"
+            identity["symbol"] = "XNT"
+
+            holder = result["data"]["sections"]["holder_concentration"]
+            holder.update(
+                {
+                    "holders": None,
+                    "holders_verified": False,
+                    "holders_state": "not_applicable",
+                    "holders_reason": "xnt_is_native_currency_not_spl_holder_population",
+                    "holder_semantics": {
+                        "state": "not_applicable",
+                        "counted_entity": "native_xnt_account_address",
+                        "token_holder_count_applicable": False,
+                        "beneficial_owner_identity_verified": False,
+                        "person_or_wallet_group_count_verified": False,
+                    },
+                    "top_account_concentration": {
+                        "value": 22.806457320125,
+                        "verified": True,
+                        "state": "verified",
+                        "reason": "finalized_native_xnt_top20_accounts_percent_of_circulating_supply",
+                        "basis": "top_20_native_xnt_accounts_percent_of_circulating_xnt",
+                        "counted_entity": "native_xnt_account_address",
+                    },
+                    "native_account_concentration": {
+                        "verified": True,
+                        "counted_entity": "native_xnt_account_address",
+                        "holder_count_state": "not_applicable",
+                        "slot_scope_verified": True,
+                        "largest_accounts_slot": 76345004,
+                        "network_supply_slot": 76345015,
+                        "slot_span": 11,
+                        "circulating_supply_base_units": "13991098000000000",
+                        "buckets": {
+                            "top_20": {
+                                "percent_of_circulating_xnt": 22.806457320125,
+                                "available_account_count": 20,
+                            }
+                        },
+                        "beneficial_owner_identity_verified": False,
+                        "person_or_wallet_group_count_verified": False,
+                    },
+                }
+            )
+            for item in (
+                "holder_count_requires_existing_verified_holder_semantics",
+                "current_top_account_concentration_not_promoted_in_v2",
+            ):
+                if item in result["data"]["limitations"]:
+                    result["data"]["limitations"].remove(item)
+            return result
+
+    result = build_x1_scout_graph(NativeXNTDistributionCMIS()).invoke(
+        {
+            "request": {
+                "asset": "XNT",
+                "objective": "Instant X1 scan XNT",
+            },
+            "status": "running",
+        }
+    )
+
+    report = result["report"]
+    assert report["status"] == "complete"
+    holder = report["instant_x1_scan_presentation"]["sections"][
+        "holder_concentration"
+    ]
+    assert holder["holders"] is None
+    assert holder["holders_verified"] is False
+    assert holder["holders_state"] == "not_applicable"
+    assert holder["top_account_concentration"]["verified"] is True
+    assert holder["top_account_concentration"]["value"] == 22.806457320125
+    assert (
+        holder["native_account_concentration"]["counted_entity"]
+        == "native_xnt_account_address"
+    )
+    limitations = report["instant_x1_scan_presentation"]["limitations"]
+    assert "holder_count_requires_existing_verified_holder_semantics" not in limitations
+    assert "current_top_account_concentration_not_promoted_in_v2" not in limitations
+
+
+def test_x1_scout_rejects_native_distribution_without_exact_native_identity() -> None:
+    class FakeNativeDistributionCMIS(MockCMISClient):
+        def instant_x1_scan(self, *, chain: str, asset: str):
+            result = super().instant_x1_scan(chain=chain, asset=asset)
+            holder = result["data"]["sections"]["holder_concentration"]
+            holder["top_account_concentration"] = {
+                "value": 22.8,
+                "verified": True,
+                "state": "verified",
+                "basis": "top_20_native_xnt_accounts_percent_of_circulating_xnt",
+                "counted_entity": "native_xnt_account_address",
+            }
+            return result
+
+    result = build_x1_scout_graph(FakeNativeDistributionCMIS()).invoke(
+        {
+            "request": {
+                "asset": "AGI",
+                "objective": "Instant X1 scan AGI",
+            },
+            "status": "running",
+        }
+    )
+
+    assert result["report"]["status"] == "error"
+    assert (
+        result["report"]["errors"][0]["code"]
+        == "invalid_cmis_instant_x1_scan_response"
+    )
+
+
 def test_x1_scout_rejects_promoted_current_concentration_in_v2() -> None:
     class PromotedConcentrationCMIS(MockCMISClient):
         def instant_x1_scan(self, *, chain: str, asset: str):
