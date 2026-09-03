@@ -20,6 +20,13 @@ class X1ScoutRequest(TypedDict):
     fact_type: NotRequired[str]
     subject_id: NotRequired[str]
     intelligence_evidence_id: NotRequired[str]
+    intelligence_evidence_ids: NotRequired[list[str]]
+    warning_threshold_policy: NotRequired[dict[str, object]]
+    warning_threshold_unit: NotRequired[str]
+    warning_comparator: NotRequired[str]
+    warning_evaluated_at: NotRequired[str]
+    warning_max_latest_age_seconds: NotRequired[int]
+    warning_max_persistence_window_seconds: NotRequired[int]
     compare_asset: NotRequired[str]
 
 
@@ -86,6 +93,7 @@ class X1ScoutReport(TypedDict):
     instant_x1_scan_product_text: NotRequired[str]
     x1_burn_intelligence: NotRequired[dict[str, object]]
     x1_discovery_intelligence: NotRequired[dict[str, object]]
+    x1_concentration_warning_intelligence: NotRequired[dict[str, object]]
     source: dict[str, str]
     sources: list[object]
     warnings: list[object]

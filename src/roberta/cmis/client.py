@@ -88,3 +88,18 @@ class CMISClient(Protocol):
         intelligence_evidence_id: str,
     ) -> CMISEnvelope:
         ...
+
+    def concentration_warning_intelligence(
+        self,
+        *,
+        chain: str,
+        asset: str,
+        intelligence_evidence_ids: list[str],
+        threshold_policy: dict[str, object],
+        threshold_unit: str,
+        comparator: str,
+        evaluated_at: str,
+        max_latest_age_seconds: int,
+        max_persistence_window_seconds: int,
+    ) -> CMISEnvelope:
+        ...

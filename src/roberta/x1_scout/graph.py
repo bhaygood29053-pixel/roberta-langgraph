@@ -40,6 +40,10 @@ from roberta.x1_scout.discovery_intelligence import (
     X1DiscoveryIntelligenceContractError,
     build_x1_discovery_intelligence,
 )
+from roberta.x1_scout.concentration_warning_intelligence import (
+    X1ConcentrationWarningContractError,
+    build_x1_concentration_warning_intelligence,
+)
 from roberta.x1_scout.history_presentation import (
     build_historical_coverage_presentation,
 )
@@ -335,6 +339,37 @@ def _dispatch_cmis_operation(
             chain="x1",
             asset=asset,
             intelligence_evidence_id=intelligence_evidence_id,
+        )
+    if operation == "concentration_warning_intelligence":
+        required = {
+            "intelligence_evidence_ids": request.get("intelligence_evidence_ids"),
+            "warning_threshold_policy": request.get("warning_threshold_policy"),
+            "warning_threshold_unit": request.get("warning_threshold_unit"),
+            "warning_comparator": request.get("warning_comparator"),
+            "warning_evaluated_at": request.get("warning_evaluated_at"),
+            "warning_max_latest_age_seconds": request.get("warning_max_latest_age_seconds"),
+            "warning_max_persistence_window_seconds": request.get(
+                "warning_max_persistence_window_seconds"
+            ),
+        }
+        missing = [key for key, value in required.items() if value is None]
+        if missing:
+            raise ValueError(
+                "concentration_warning_intelligence missing explicit inputs: "
+                + ", ".join(sorted(missing))
+            )
+        return cmis_client.concentration_warning_intelligence(
+            chain="x1",
+            asset=asset,
+            intelligence_evidence_ids=required["intelligence_evidence_ids"],
+            threshold_policy=required["warning_threshold_policy"],
+            threshold_unit=required["warning_threshold_unit"],
+            comparator=required["warning_comparator"],
+            evaluated_at=required["warning_evaluated_at"],
+            max_latest_age_seconds=required["warning_max_latest_age_seconds"],
+            max_persistence_window_seconds=required[
+                "warning_max_persistence_window_seconds"
+            ],
         )
     if operation == "pre_trade_check":
         action = request.get("action")
@@ -685,6 +720,17 @@ def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
                 requested_asset=str(request["asset"]),
             )
         except X1DiscoveryIntelligenceContractError:
+            pass
+
+    if primary_result.get("service") == "concentration_warning_intelligence" and primary_result.get("status") == "ok":
+        try:
+            report["x1_concentration_warning_intelligence"] = (
+                build_x1_concentration_warning_intelligence(
+                    primary_result,
+                    requested_asset=str(request["asset"]),
+                )
+            )
+        except X1ConcentrationWarningContractError:
             pass
 
     compare_asset = request.get("compare_asset")
