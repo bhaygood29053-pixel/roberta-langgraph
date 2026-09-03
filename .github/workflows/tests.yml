@@ -133,3 +133,6 @@ jobs:
 
       - name: Run X1 burn intelligence product contract tests
         run: python -m pytest -q tests/test_x1_burn_intelligence.py
+
+      - name: Run X1 concentration warning adoption tests
+        run: python -m pytest -q tests/test_concentration_warning_intelligence_adoption.py
