@@ -3,6 +3,7 @@
 import json
 
 from roberta.chat_ui import (
+    HUMAN_ROBERTA_PRESENTATION_POLICY,
     SERVICE_MENU,
     STATUS_KEY,
     automatic_status_summary,
@@ -216,9 +217,12 @@ def test_automatic_status_summary_explains_field_freshness_warnings() -> None:
 
     assert summary is not None
     assert "Risk: [WARN]" in summary
-    assert "provider fact-time freshness for the current asset-wide liquidity" in summary
-    assert "provider fact-time freshness for the rolling 24-hour volume" in summary
-    assert "provider fact-time freshness for the rolling 24-hour transaction count" in summary
+    assert "Live market freshness: [NOT FULLY VERIFIED]" in summary
+    assert "Still needs provider fact-time proof for: liquidity, 24h volume, 24h transactions." in summary
+    assert "Flag:" not in summary
+    assert "liquidity_freshness_unverified" not in summary
+    assert "volume_24h_freshness_unverified" not in summary
+    assert "transactions_24h_freshness_unverified" not in summary
 
 
 def test_current_market_menu_flows_use_scan_freshness_contract() -> None:
@@ -353,6 +357,43 @@ def test_every_x1_chat_request_visibly_routes_through_x1_scout() -> None:
     for request in requests:
         assert "X1 Scout" in request
         assert "CMIS" in request
+
+
+def test_human_roberta_presentation_policy_is_systemwide() -> None:
+    assert "WHAT ROBERTA STILL NEEDS" in HUMAN_ROBERTA_PRESENTATION_POLICY
+    assert "no more than five grouped" in HUMAN_ROBERTA_PRESENTATION_POLICY
+    assert "raw snake_case limitation codes" in HUMAN_ROBERTA_PRESENTATION_POLICY
+    assert "Round DISPLAY values" in HUMAN_ROBERTA_PRESENTATION_POLICY
+
+    requests = [
+        overview_request("XNT"),
+        compare_request("XNT", "AGI"),
+        risk_request("XNT"),
+        tokenomics_request("XNT"),
+        liquidity_request("XNT"),
+        history_request("XNT"),
+        activity_request("XNT"),
+        concentration_request("XNT", "ie_test"),
+        rank_request("liquidity", 10),
+        pretrade_request("XNT", "BUY", 100),
+        evidence_request("XNT"),
+        full_request("XNT"),
+        burn_request("XNT"),
+        discovery_request("XNT"),
+        what_changed_request("XNT"),
+    ]
+
+    for request in requests:
+        assert HUMAN_ROBERTA_PRESENTATION_POLICY in request
+
+
+def test_single_asset_human_output_replaces_raw_key_limitations_heading() -> None:
+    request = overview_request("XNT")
+
+    assert "WHAT ROBERTA STILL NEEDS" in request
+    assert "KEY LIMITATIONS for missing" not in request
+    assert "Do not expose raw snake_case limitation codes" in request
+    assert "Group related freshness gaps into one LIVE MARKET FRESHNESS statement" in request
 
 
 def test_burn_request_uses_first_class_cmis_service() -> None:

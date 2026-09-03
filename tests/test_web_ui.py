@@ -30,6 +30,10 @@ def test_web_ui_contains_current_service_surface():
     assert "Route-wide 24h/7d/30d bridge-flow totals and verified bridged supply remain unavailable" in ROBERTA_WEB_UI_HTML
     assert "Website actions never call CMIS directly" in ROBERTA_WEB_UI_HTML
     assert "execution remains unauthorized" in ROBERTA_WEB_UI_HTML.lower()
+    assert "Human-first output" in ROBERTA_WEB_UI_HTML
+    assert "WHAT ROBERTA STILL NEEDS" in ROBERTA_WEB_UI_HTML
+    assert "raw snake_case limitation codes" in ROBERTA_WEB_UI_HTML
+    assert "humanServicePrompt" in ROBERTA_WEB_UI_HTML
 
 
 def test_bridge_serves_web_ui_and_keeps_roberta_api_path():
