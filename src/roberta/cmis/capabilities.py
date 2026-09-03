@@ -26,6 +26,39 @@ BURN_INTELLIGENCE_MIN_CMIS_CONTRACT_VERSION = "1.15.0"
 BURN_INTELLIGENCE_CONTRACT_VERSION = "burn_intelligence/v1"
 DISCOVERY_INTELLIGENCE_MIN_CMIS_CONTRACT_VERSION = "1.16.0"
 DISCOVERY_INTELLIGENCE_CONTRACT_VERSION = "discovery_intelligence/v1"
+CONCENTRATION_WARNING_MIN_CMIS_CONTRACT_VERSION = "1.18.0"
+CONCENTRATION_WARNING_CONTRACT_VERSION = "concentration_warning_intelligence/v1"
+CONCENTRATION_WARNING_DELIVERY_MODE = "pull_only"
+CONCENTRATION_WARNING_REQUIRED_REQUIREMENTS = (
+    "x1_only",
+    "exact_x1_asset_id",
+    "exactly_two_cmis_owned_intelligence_evidence_ids",
+    "trusted_internal_intelligence_evidence_resolver",
+    "persistent_concentration_warning_v1",
+    "strict_fact_time_order",
+    "bounded_persistence_window",
+    "verified_latest_evidence_freshness",
+    "verified_evidence_receipt_freshness",
+    "no_unresolved_evidence_fields",
+    "content_addressed_evidence_receipts",
+    "exact_recomputed_proof_scores",
+    "explicit_basis_points_threshold_policy",
+    "explicit_gt_or_gte_comparator",
+)
+CONCENTRATION_WARNING_REQUIRED_LIMITATIONS = (
+    "pull_only_request_response_service",
+    "push_delivery_not_authorized",
+    "watch_clear_are_not_risk_severity",
+    "warning_does_not_establish_behavior_or_ownership",
+    "warning_does_not_establish_manipulation_fraud_intent_or_causality",
+    "warning_does_not_predict_imminent_price_movement",
+    "token_accounts_are_not_unique_holder_identities",
+    "observed_top_account_scope_is_incomplete",
+    "proof_strength_remains_separate_from_risk",
+    "caller_supplied_trust_material_not_accepted",
+    "no_execution_authorization",
+    "x1_only_initial_scope",
+)
 DISCOVERY_INTELLIGENCE_REQUIRED_REQUIREMENTS = (
     "exact_resolved_x1_mint_identity",
     "cmis_owned_x1_discovery_ledger",
@@ -142,6 +175,8 @@ class CMISServiceCapability(TypedDict):
     service_contract_version: NotRequired[str]
     public_service_promoted: NotRequired[bool]
     scout_reliance_promoted: NotRequired[bool]
+    delivery_mode: NotRequired[str]
+    push_delivery_authorized: NotRequired[bool]
     execution_authorized: NotRequired[bool]
 
 
@@ -522,6 +557,32 @@ def validate_capability_manifest(value: Any) -> CMISCapabilities:
                     if not isinstance(raw_flag, bool):
                         raise CMISCapabilityContractError(
                             f"CMIS x1/discovery_intelligence {field} must be boolean."
+                        )
+                    normalized_capability[field] = raw_flag
+            if chain == "x1" and service == "concentration_warning_intelligence":
+                contract = capability_raw.get("service_contract_version")
+                if not isinstance(contract, str) or not contract.strip():
+                    raise CMISCapabilityContractError(
+                        "CMIS x1/concentration_warning_intelligence service_contract_version must be text."
+                    )
+                normalized_capability["service_contract_version"] = contract
+                delivery_mode = capability_raw.get("delivery_mode")
+                if not isinstance(delivery_mode, str) or not delivery_mode.strip():
+                    raise CMISCapabilityContractError(
+                        "CMIS x1/concentration_warning_intelligence delivery_mode must be text."
+                    )
+                normalized_capability["delivery_mode"] = delivery_mode
+                for field in (
+                    "read_only",
+                    "public_service_promoted",
+                    "scout_reliance_promoted",
+                    "push_delivery_authorized",
+                    "execution_authorized",
+                ):
+                    raw_flag = capability_raw.get(field)
+                    if not isinstance(raw_flag, bool):
+                        raise CMISCapabilityContractError(
+                            f"CMIS x1/concentration_warning_intelligence {field} must be boolean."
                         )
                     normalized_capability[field] = raw_flag
             if chain == "x1" and service == "asset_lookup":
@@ -910,6 +971,77 @@ def require_discovery_intelligence_capability(
     return capability
 
 
+def require_concentration_warning_capability(
+    manifest: Mapping[str, Any],
+    *,
+    chain: str = "x1",
+) -> CMISServiceCapability:
+    """Require accepted CMIS 1.18 pull-only Concentration Warning Intelligence."""
+
+    normalized_chain = str(chain or "").strip().lower()
+    if normalized_chain != "x1":
+        raise CMISCapabilityUnavailable(
+            chain=normalized_chain,
+            service="concentration_warning_intelligence",
+            state=None,
+            limitations=["concentration_warning_intelligence_x1_only"],
+        )
+    version = manifest.get("contract_version")
+    if _semver(version) < _semver(CONCENTRATION_WARNING_MIN_CMIS_CONTRACT_VERSION):
+        raise CMISCapabilityContractError(
+            "CMIS Concentration Warning Intelligence requires contract "
+            f">={CONCENTRATION_WARNING_MIN_CMIS_CONTRACT_VERSION}, got {version!r}."
+        )
+    capability = require_service_capability(
+        manifest,
+        chain=normalized_chain,
+        service="concentration_warning_intelligence",
+    )
+    if capability.get("state") != "bounded":
+        raise CMISCapabilityContractError(
+            "CMIS x1/concentration_warning_intelligence state must remain bounded."
+        )
+    if capability.get("service_contract_version") != CONCENTRATION_WARNING_CONTRACT_VERSION:
+        raise CMISCapabilityContractError(
+            "CMIS x1/concentration_warning_intelligence service contract mismatch."
+        )
+    if capability.get("delivery_mode") != CONCENTRATION_WARNING_DELIVERY_MODE:
+        raise CMISCapabilityContractError(
+            "CMIS x1/concentration_warning_intelligence delivery mode must remain pull_only."
+        )
+    expected_flags = (
+        ("read_only", True),
+        ("public_service_promoted", True),
+        ("scout_reliance_promoted", True),
+        ("push_delivery_authorized", False),
+        ("execution_authorized", False),
+    )
+    for field, expected in expected_flags:
+        if capability.get(field) is not expected:
+            raise CMISCapabilityContractError(
+                f"CMIS x1/concentration_warning_intelligence {field} must be {str(expected).lower()}."
+            )
+    missing_requirements = sorted(
+        set(CONCENTRATION_WARNING_REQUIRED_REQUIREMENTS)
+        - set(capability["requirements"])
+    )
+    if missing_requirements:
+        raise CMISCapabilityContractError(
+            "CMIS x1/concentration_warning_intelligence is missing accepted requirements: "
+            f"{missing_requirements!r}."
+        )
+    missing_limitations = sorted(
+        set(CONCENTRATION_WARNING_REQUIRED_LIMITATIONS)
+        - set(capability["limitations"])
+    )
+    if missing_limitations:
+        raise CMISCapabilityContractError(
+            "CMIS x1/concentration_warning_intelligence is missing accepted limitations: "
+            f"{missing_limitations!r}."
+        )
+    return capability
+
+
 def require_historical_all_available_capability(
     manifest: Mapping[str, Any],
     *,
@@ -964,6 +1096,11 @@ __all__ = [
     "BURN_INTELLIGENCE_REQUIRED_LIMITATIONS",
     "BURN_INTELLIGENCE_REQUIRED_REQUIREMENTS",
     "CAPABILITY_SCHEMA_VERSION",
+    "CONCENTRATION_WARNING_CONTRACT_VERSION",
+    "CONCENTRATION_WARNING_DELIVERY_MODE",
+    "CONCENTRATION_WARNING_MIN_CMIS_CONTRACT_VERSION",
+    "CONCENTRATION_WARNING_REQUIRED_LIMITATIONS",
+    "CONCENTRATION_WARNING_REQUIRED_REQUIREMENTS",
     "CMISCapabilities",
     "CMISCapabilityContractError",
     "CMISCapabilityState",
@@ -996,6 +1133,7 @@ __all__ = [
     "INTELLIGENCE_PROMOTION_RULE",
     "MIN_CMIS_CONTRACT_VERSION",
     "require_burn_intelligence_capability",
+    "require_concentration_warning_capability",
     "require_discovery_intelligence_capability",
     "require_historical_all_available_capability",
     "require_instant_x1_scan_capability",
