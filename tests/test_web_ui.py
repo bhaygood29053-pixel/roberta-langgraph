@@ -20,6 +20,10 @@ def test_web_ui_contains_current_service_surface():
     assert "Discovery Intelligence" in ROBERTA_WEB_UI_HTML
     assert "What Changed?" in ROBERTA_WEB_UI_HTML
     assert "Concentration Warning" in ROBERTA_WEB_UI_HTML
+    assert "Solana Market Report" in ROBERTA_WEB_UI_HTML
+    assert "Solana Tokenomics" in ROBERTA_WEB_UI_HTML
+    assert "Solana Risk Assessment" in ROBERTA_WEB_UI_HTML
+    assert "ROBERTA_SOLANA_PROVIDER_ENABLED" not in ROBERTA_WEB_UI_HTML
     assert "CMIS 1.18" in ROBERTA_WEB_UI_HTML
     assert "Warp / bridge-flow intelligence remains evidence-gated" in ROBERTA_WEB_UI_HTML
     assert "Website actions never call CMIS directly" in ROBERTA_WEB_UI_HTML
