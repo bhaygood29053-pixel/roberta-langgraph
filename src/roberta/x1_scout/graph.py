@@ -40,6 +40,10 @@ from roberta.x1_scout.discovery_intelligence import (
     X1DiscoveryIntelligenceContractError,
     build_x1_discovery_intelligence,
 )
+from roberta.x1_scout.concentration_warning_intelligence import (
+    X1ConcentrationWarningContractError,
+    build_x1_concentration_warning_intelligence,
+)
 from roberta.x1_scout.history_presentation import (
     build_historical_coverage_presentation,
 )
@@ -716,6 +720,17 @@ def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
                 requested_asset=str(request["asset"]),
             )
         except X1DiscoveryIntelligenceContractError:
+            pass
+
+    if primary_result.get("service") == "concentration_warning_intelligence" and primary_result.get("status") == "ok":
+        try:
+            report["x1_concentration_warning_intelligence"] = (
+                build_x1_concentration_warning_intelligence(
+                    primary_result,
+                    requested_asset=str(request["asset"]),
+                )
+            )
+        except X1ConcentrationWarningContractError:
             pass
 
     compare_asset = request.get("compare_asset")
