@@ -56,6 +56,10 @@ def test_web_ui_contains_current_service_surface():
     assert ".statusToken.block" in ROBERTA_WEB_UI_HTML
     assert ".signedPositive" in ROBERTA_WEB_UI_HTML
     assert ".signedNegative" in ROBERTA_WEB_UI_HTML
+    assert ".statusToken.strong" in ROBERTA_WEB_UI_HTML
+    assert ".statusToken.moderate" in ROBERTA_WEB_UI_HTML
+    assert ".statusToken.weak" in ROBERTA_WEB_UI_HTML
+    assert "|STRONG|MODERATE|WEAK" in ROBERTA_WEB_UI_HTML
     assert "formatAssistant" in ROBERTA_WEB_UI_HTML
 
 
