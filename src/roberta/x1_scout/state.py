@@ -20,6 +20,13 @@ class X1ScoutRequest(TypedDict):
     fact_type: NotRequired[str]
     subject_id: NotRequired[str]
     intelligence_evidence_id: NotRequired[str]
+    intelligence_evidence_ids: NotRequired[list[str]]
+    warning_threshold_policy: NotRequired[dict[str, object]]
+    warning_threshold_unit: NotRequired[str]
+    warning_comparator: NotRequired[str]
+    warning_evaluated_at: NotRequired[str]
+    warning_max_latest_age_seconds: NotRequired[int]
+    warning_max_persistence_window_seconds: NotRequired[int]
     compare_asset: NotRequired[str]
 
 
