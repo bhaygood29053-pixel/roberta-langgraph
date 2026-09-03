@@ -192,7 +192,7 @@ SINGLE_ASSET_TERMINAL_STYLE = (
     " FORMAT FOR A PLAIN TERMINAL: keep the answer compact and sectioned. "
     "Use CURRENT MARKET for the live snapshot, RISK for deterministic risk "
     "results when available, TOKENOMICS & AUTHORITIES for structural token "
-    "facts when available, HISTORY for historical evidence, EVIDENCE STATUS "
+    "facts when available, HISTORY for historical evidence, EVIDENCE QUALITY "
     "for proof/evidence quality when needed, WHAT ROBERTA STILL NEEDS for material "
     "missing or unverified evidence, and BOTTOM LINE for the final interpretation "
     "when appropriate. Do not lead with a long limitation paragraph. Put the live "
