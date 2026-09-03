@@ -13,6 +13,7 @@ from roberta.cmis.capabilities import (
     CMISCapabilityContractError,
     CMISCapabilityUnavailable,
     require_burn_intelligence_capability,
+    require_concentration_warning_capability,
     require_discovery_intelligence_capability,
     require_historical_all_available_capability,
     require_instant_x1_scan_capability,
@@ -23,6 +24,12 @@ from roberta.cmis.concentration_intelligence import (
     SERVICE as CONCENTRATION_INTELLIGENCE_SERVICE,
     normalize_intelligence_evidence_id,
     require_concentration_intelligence_promotion,
+)
+from roberta.cmis.concentration_warning import (
+    SERVICE as CONCENTRATION_WARNING_SERVICE,
+    CMISConcentrationWarningContractError,
+    normalize_warning_request,
+    validate_concentration_warning_response,
 )
 from roberta.cmis.instant_scan import (
     CMISInstantX1ScanContractError,
@@ -713,3 +720,76 @@ class CMISHTTPClient:
             asset=normalized_asset,
             params={"intelligence_evidence_id": evidence_id},
         )
+
+    def concentration_warning_intelligence(
+        self,
+        *,
+        chain: str,
+        asset: str,
+        intelligence_evidence_ids: list[str],
+        threshold_policy: dict[str, object],
+        threshold_unit: str,
+        comparator: str,
+        evaluated_at: str,
+        max_latest_age_seconds: int,
+        max_persistence_window_seconds: int,
+    ) -> CMISEnvelope:
+        normalized_chain, normalized_asset = self._identity(chain, asset)
+        try:
+            require_concentration_warning_capability(
+                self.capabilities(),
+                chain=normalized_chain,
+            )
+            params = normalize_warning_request(
+                intelligence_evidence_ids=intelligence_evidence_ids,
+                threshold_policy=threshold_policy,
+                threshold_unit=threshold_unit,
+                comparator=comparator,
+                evaluated_at=evaluated_at,
+                max_latest_age_seconds=max_latest_age_seconds,
+                max_persistence_window_seconds=max_persistence_window_seconds,
+            )
+        except CMISCapabilityUnavailable as exc:
+            return self._error_envelope(
+                service=CONCENTRATION_WARNING_SERVICE,
+                chain=normalized_chain,
+                asset=normalized_asset,
+                status="unavailable",
+                code="cmis_concentration_warning_unavailable",
+                message=str(exc),
+                warning=True,
+            )
+        except (CMISCapabilityContractError, CMISConcentrationWarningContractError) as exc:
+            return self._error_envelope(
+                service=CONCENTRATION_WARNING_SERVICE,
+                chain=normalized_chain,
+                asset=normalized_asset,
+                status="unavailable",
+                code="cmis_concentration_warning_contract_unavailable",
+                message=f"CMIS Concentration Warning contract unavailable: {exc}",
+                warning=True,
+            )
+
+        params["asset_id"] = normalized_asset
+        response = self._request(
+            service=CONCENTRATION_WARNING_SERVICE,
+            chain=normalized_chain,
+            asset=normalized_asset,
+            params=params,
+        )
+        if response.get("status") != "ok":
+            return response
+        try:
+            return validate_concentration_warning_response(
+                response,
+                requested_asset=normalized_asset,
+            )
+        except CMISConcentrationWarningContractError as exc:
+            return self._error_envelope(
+                service=CONCENTRATION_WARNING_SERVICE,
+                chain=normalized_chain,
+                asset=normalized_asset,
+                status="error",
+                code="invalid_cmis_concentration_warning_response",
+                message=str(exc),
+            )
