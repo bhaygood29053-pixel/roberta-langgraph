@@ -112,6 +112,22 @@ WARNING_CODE_MEANINGS = {
     "historical_coverage_unknown": (
         "CMIS cannot prove the completeness or depth of the historical series."
     ),
+    "price_freshness_unverified": (
+        "CMIS did not prove that the current price meets the accepted fact-time "
+        "and value-linkage freshness requirements."
+    ),
+    "liquidity_freshness_unverified": (
+        "CMIS has not yet proven provider fact-time freshness for the current "
+        "asset-wide liquidity value."
+    ),
+    "volume_24h_freshness_unverified": (
+        "CMIS has not yet proven provider fact-time freshness for the rolling "
+        "24-hour volume value."
+    ),
+    "transactions_24h_freshness_unverified": (
+        "CMIS has not yet proven provider fact-time freshness for the rolling "
+        "24-hour transaction count."
+    ),
 }
 
 
@@ -667,11 +683,19 @@ def compare_request(asset1: str, asset2: str) -> str:
 
 def risk_request(asset: str) -> str:
     return (
-        f"On X1, assess the current risk of {asset}. Use X1 Scout to run a "
-        "fresh deterministic CMIS risk_check plus market_report and tokenomics. "
-        "Explain each risk "
-        "component, returned reasons and flags, evidence quality, and anything "
-        "CMIS could not verify. Do not convert Proof Score into risk."
+        f"On X1, assess the current risk of {asset}. Use X1 Scout with "
+        "operation='risk_check' so the live CMIS risk runtime gathers its "
+        "required market, tokenomics, bounded activity, 24h historical-price, "
+        "and accepted field-scoped current-market freshness evidence in one "
+        "deterministic risk path. Show the PASS/WARN/BLOCK recommendation, each "
+        "risk component, returned reasons and flags, confidence/verification "
+        "checks, and assessment_scope. For freshness, distinguish price, "
+        "liquidity, rolling 24h volume, and rolling 24h transaction freshness; "
+        "do not describe a field as fresh unless CMIS explicitly verified it. "
+        "If liquidity/volume/transaction freshness is not verified, preserve "
+        "WARN/PARTIAL rather than upgrading the result. Keep numeric risk score "
+        "UNAVAILABLE unless CMIS later returns a calibrated verified score. "
+        "Do not convert Proof Score into risk and preserve execution_authorized=false."
     ) + SINGLE_ASSET_TERMINAL_STYLE
 
 

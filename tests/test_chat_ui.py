@@ -173,6 +173,56 @@ def test_previous_terminal_full_wording_still_maps_to_full_assessment() -> None:
     assert recommendation_intent(objective) == "full_assessment"
 
 
+def test_risk_request_routes_to_freshness_aware_runtime() -> None:
+    request = risk_request("AGI")
+
+    assert "operation='risk_check'" in request
+    assert "field-scoped current-market freshness" in request
+    assert "price, liquidity, rolling 24h volume" in request
+    assert "preserve WARN/PARTIAL" in request
+    assert "numeric risk score" in request
+    assert "UNAVAILABLE" in request
+    assert "Proof Score into risk" in request
+    assert "execution_authorized=false" in request
+
+
+def test_automatic_status_summary_explains_field_freshness_warnings() -> None:
+    report = {
+        "investigations": [
+            {
+                "operation": "risk_check",
+                "cmis_status": "partial",
+                "risk_help": {
+                    "recommendation": {
+                        "value": "WARN",
+                        "reasons": [
+                            "Liquidity freshness is not verified.",
+                            "Rolling 24h volume freshness is not verified.",
+                            "Rolling 24h transaction freshness is not verified.",
+                        ],
+                        "flags": [
+                            "liquidity_freshness_unverified",
+                            "volume_24h_freshness_unverified",
+                            "transactions_24h_freshness_unverified",
+                        ],
+                    }
+                },
+                "evidence_context": {},
+                "warnings": [],
+                "errors": [],
+            }
+        ]
+    }
+
+    summary = automatic_status_summary(report)
+
+    assert summary is not None
+    assert "Risk: [WARN]" in summary
+    assert "provider fact-time freshness for the current asset-wide liquidity" in summary
+    assert "provider fact-time freshness for the rolling 24-hour volume" in summary
+    assert "provider fact-time freshness for the rolling 24-hour transaction count" in summary
+
+
 def test_pretrade_request_preserves_analysis_only_boundary() -> None:
     request = pretrade_request("AGI", "BUY", 2500)
 
