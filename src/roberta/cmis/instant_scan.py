@@ -34,8 +34,6 @@ _FRESHNESS_FIELDS = (
 
 INSTANT_X1_SCAN_COMMON_RESPONSE_LIMITATIONS = (
     "missing_or_unverified_fields_remain_unknown",
-    "holder_count_requires_existing_verified_holder_semantics",
-    "current_top_account_concentration_not_promoted_in_v2",
     "history_may_include_bounded_verified_provider_price_backfill",
     "provider_price_backfill_is_price_only",
     "provider_source_independence_not_verified",
@@ -46,6 +44,11 @@ INSTANT_X1_SCAN_COMMON_RESPONSE_LIMITATIONS = (
     "proof_score_does_not_modify_market_facts_or_risk",
     "risk_score_remains_unavailable_until_separately_calibrated",
     "execution_authorized_false",
+)
+
+INSTANT_X1_SCAN_TOKEN_DISTRIBUTION_LIMITATIONS = (
+    "holder_count_requires_existing_verified_holder_semantics",
+    "current_top_account_concentration_not_promoted_in_v2",
 )
 
 INSTANT_X1_SCAN_LEGACY_HISTORY_LIMITATIONS = (
@@ -62,6 +65,7 @@ INSTANT_X1_SCAN_PAIR_LIFETIME_LIMITATIONS = (
 # Retained for the deterministic mock and legacy v2 fixtures.
 INSTANT_X1_SCAN_REQUIRED_RESPONSE_LIMITATIONS = (
     *INSTANT_X1_SCAN_COMMON_RESPONSE_LIMITATIONS,
+    *INSTANT_X1_SCAN_TOKEN_DISTRIBUTION_LIMITATIONS,
     *INSTANT_X1_SCAN_LEGACY_HISTORY_LIMITATIONS,
 )
 
@@ -422,14 +426,36 @@ def validate_instant_x1_scan_response(
         raise CMISInstantX1ScanContractError(
             "CMIS Instant X1 Scan limitations must be a list of non-empty strings."
         )
-    missing_limitations = sorted(
-        set(INSTANT_X1_SCAN_COMMON_RESPONSE_LIMITATIONS) - set(limitations)
+    identity = _mapping(
+        sections["identity"],
+        field="data.sections.identity",
     )
+    native_xnt = bool(
+        identity.get("identity_key") == "native:xnt"
+        and str(identity.get("symbol") or "").strip().upper() == "XNT"
+    )
+    required_limitations = set(INSTANT_X1_SCAN_COMMON_RESPONSE_LIMITATIONS)
+    if not native_xnt:
+        required_limitations.update(
+            INSTANT_X1_SCAN_TOKEN_DISTRIBUTION_LIMITATIONS
+        )
+    missing_limitations = sorted(required_limitations - set(limitations))
     if missing_limitations:
         raise CMISInstantX1ScanContractError(
             "CMIS Instant X1 Scan response is missing accepted limitations: "
             f"{missing_limitations!r}."
         )
+    if native_xnt:
+        stale_token_limitations = sorted(
+            set(INSTANT_X1_SCAN_TOKEN_DISTRIBUTION_LIMITATIONS)
+            & set(limitations)
+        )
+        if stale_token_limitations:
+            raise CMISInstantX1ScanContractError(
+                "CMIS native XNT scan must not preserve token-holder "
+                "distribution limitations after verified native distribution: "
+                f"{stale_token_limitations!r}."
+            )
 
     evidence = _mapping(sections["evidence"], field="data.sections.evidence")
     if evidence.get("proof_score_separate_from_risk") is not True:
@@ -525,14 +551,77 @@ def validate_instant_x1_scan_response(
         holder.get("top_account_concentration"),
         field="data.sections.holder_concentration.top_account_concentration",
     )
-    if (
-        current_concentration.get("verified") is not False
-        or current_concentration.get("state") != "unavailable"
-        or current_concentration.get("value") is not None
-    ):
-        raise CMISInstantX1ScanContractError(
-            "CMIS Instant X1 Scan v3 current concentration must remain explicitly unavailable."
+    if native_xnt:
+        if (
+            holders is not None
+            or holders_verified is not False
+            or holder.get("holders_state") != "not_applicable"
+        ):
+            raise CMISInstantX1ScanContractError(
+                "CMIS native XNT holder count must be explicitly not_applicable."
+            )
+        holder_semantics = _mapping(
+            holder.get("holder_semantics"),
+            field="data.sections.holder_concentration.holder_semantics",
         )
+        if (
+            holder_semantics.get("state") != "not_applicable"
+            or holder_semantics.get("counted_entity")
+            != "native_xnt_account_address"
+            or holder_semantics.get("token_holder_count_applicable") is not False
+            or holder_semantics.get("beneficial_owner_identity_verified") is not False
+            or holder_semantics.get("person_or_wallet_group_count_verified") is not False
+        ):
+            raise CMISInstantX1ScanContractError(
+                "CMIS native XNT holder semantics must preserve native-account "
+                "scope without beneficial-owner promotion."
+            )
+
+        concentration_value = current_concentration.get("value")
+        if (
+            current_concentration.get("verified") is not True
+            or current_concentration.get("state") != "verified"
+            or isinstance(concentration_value, bool)
+            or not isinstance(concentration_value, (int, float))
+            or not math.isfinite(float(concentration_value))
+            or not 0.0 <= float(concentration_value) <= 100.0
+            or current_concentration.get("basis")
+            != "top_20_native_xnt_accounts_percent_of_circulating_xnt"
+            or current_concentration.get("counted_entity")
+            != "native_xnt_account_address"
+        ):
+            raise CMISInstantX1ScanContractError(
+                "CMIS native XNT concentration must be a verified top-20 "
+                "native-account percentage of circulating XNT."
+            )
+
+        native_distribution = _mapping(
+            holder.get("native_account_concentration"),
+            field="data.sections.holder_concentration.native_account_concentration",
+        )
+        if (
+            native_distribution.get("verified") is not True
+            or native_distribution.get("counted_entity")
+            != "native_xnt_account_address"
+            or native_distribution.get("holder_count_state") != "not_applicable"
+            or native_distribution.get("slot_scope_verified") is not True
+            or native_distribution.get("beneficial_owner_identity_verified") is not False
+            or native_distribution.get("person_or_wallet_group_count_verified") is not False
+        ):
+            raise CMISInstantX1ScanContractError(
+                "CMIS native XNT distribution evidence must preserve finalized "
+                "native-account semantics and bounded slot scope."
+            )
+    else:
+        if (
+            current_concentration.get("verified") is not False
+            or current_concentration.get("state") != "unavailable"
+            or current_concentration.get("value") is not None
+        ):
+            raise CMISInstantX1ScanContractError(
+                "CMIS Instant X1 Scan v3 token concentration must remain "
+                "explicitly unavailable."
+            )
 
     history = _mapping(sections["history"], field="data.sections.history")
     provider_history_imported = history.get("provider_history_imported")
