@@ -38,6 +38,25 @@ def test_web_ui_contains_current_service_surface():
     assert "Do not repeat freshness warnings inside RISK" in ROBERTA_WEB_UI_HTML
     assert "Use EVIDENCE QUALITY instead of a raw evidence-status dump" in ROBERTA_WEB_UI_HTML
     assert "plain-English BOTTOM LINE" in ROBERTA_WEB_UI_HTML
+    assert 'id="historyBtn"' in ROBERTA_WEB_UI_HTML
+    assert 'id="clearChat"' in ROBERTA_WEB_UI_HTML
+    assert 'id="clearHistory"' in ROBERTA_WEB_UI_HTML
+    assert 'id="historyPanel"' in ROBERTA_WEB_UI_HTML
+    assert "robertaChatHistoryV1" in ROBERTA_WEB_UI_HTML
+    assert "localStorage.getItem" in ROBERTA_WEB_UI_HTML
+    assert "localStorage.setItem" in ROBERTA_WEB_UI_HTML
+    assert "recordUserMessage" in ROBERTA_WEB_UI_HTML
+    assert "restoreLatestChat" in ROBERTA_WEB_UI_HTML
+    assert ".chatTitle{" in ROBERTA_WEB_UI_HTML
+    assert "text-decoration:underline" in ROBERTA_WEB_UI_HTML
+    assert ".messages{height:650px;min-height:650px" in ROBERTA_WEB_UI_HTML
+    assert "min-height:100px;max-height:260px" in ROBERTA_WEB_UI_HTML
+    assert ".statusToken.pass" in ROBERTA_WEB_UI_HTML
+    assert ".statusToken.warn" in ROBERTA_WEB_UI_HTML
+    assert ".statusToken.block" in ROBERTA_WEB_UI_HTML
+    assert ".signedPositive" in ROBERTA_WEB_UI_HTML
+    assert ".signedNegative" in ROBERTA_WEB_UI_HTML
+    assert "formatAssistant" in ROBERTA_WEB_UI_HTML
 
 
 def test_bridge_serves_web_ui_and_keeps_roberta_api_path():
