@@ -65,6 +65,31 @@ def _verified_relation(left: object, right: object) -> dict[str, object]:
     }
 
 
+def _current_market_relation(
+    left_metric: object,
+    right_metric: object,
+    *,
+    left_freshness: object,
+    right_freshness: object,
+) -> dict[str, object]:
+    """Require both verification and accepted field freshness for comparison."""
+
+    result = _verified_relation(left_metric, right_metric)
+    left_fresh = _mapping(left_freshness)
+    right_fresh = _mapping(right_freshness)
+    freshness_comparable = (
+        left_fresh.get("freshness_verified") is True
+        and right_fresh.get("freshness_verified") is True
+    )
+    result["left_freshness"] = dict(left_fresh)
+    result["right_freshness"] = dict(right_fresh)
+    result["freshness_comparable"] = freshness_comparable
+    if not freshness_comparable:
+        result["comparable"] = False
+        result["relation"] = "not_comparable"
+    return result
+
+
 def _holder_relation(
     left_holder: Mapping[str, Any],
     right_holder: Mapping[str, Any],
@@ -396,6 +421,8 @@ def build_x1_compare_product_view(
 
     left_market = _mapping(left_scan.get("market"))
     right_market = _mapping(right_scan.get("market"))
+    left_freshness = _mapping(_mapping(left_market.get("freshness")).get("fields"))
+    right_freshness = _mapping(_mapping(right_market.get("freshness")).get("fields"))
     left_holders = _mapping(left_scan.get("holder_concentration"))
     right_holders = _mapping(right_scan.get("holder_concentration"))
 
@@ -410,21 +437,29 @@ def build_x1_compare_product_view(
         "left": dict(left_scan),
         "right": dict(right_scan),
         "comparison": {
-            "price_usd": _verified_relation(
+            "price_usd": _current_market_relation(
                 left_market.get("price_usd"),
                 right_market.get("price_usd"),
+                left_freshness=left_freshness.get("price_usd"),
+                right_freshness=right_freshness.get("price_usd"),
             ),
-            "liquidity_usd": _verified_relation(
+            "liquidity_usd": _current_market_relation(
                 left_market.get("liquidity_usd"),
                 right_market.get("liquidity_usd"),
+                left_freshness=left_freshness.get("liquidity_usd"),
+                right_freshness=right_freshness.get("liquidity_usd"),
             ),
-            "volume_24h_usd": _verified_relation(
+            "volume_24h_usd": _current_market_relation(
                 left_market.get("volume_24h_usd"),
                 right_market.get("volume_24h_usd"),
+                left_freshness=left_freshness.get("volume_24h_usd"),
+                right_freshness=right_freshness.get("volume_24h_usd"),
             ),
-            "transactions_24h": _verified_relation(
+            "transactions_24h": _current_market_relation(
                 left_market.get("transactions_24h"),
                 right_market.get("transactions_24h"),
+                left_freshness=left_freshness.get("transactions_24h"),
+                right_freshness=right_freshness.get("transactions_24h"),
             ),
             "holders": _holder_relation(left_holders, right_holders),
         },
@@ -455,6 +490,8 @@ def _relation_text(label: str, comparison: object) -> str:
     item = _mapping(comparison)
     relation = item.get("relation")
     if item.get("comparable") is not True:
+        if item.get("freshness_comparable") is False:
+            return f"{label}: not comparable from verified fresh evidence"
         return f"{label}: not comparable from verified evidence"
     if relation == "left_higher":
         return f"{label}: left higher"
