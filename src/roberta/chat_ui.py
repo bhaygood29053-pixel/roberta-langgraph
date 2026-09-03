@@ -753,12 +753,15 @@ def what_changed_request(asset: str) -> str:
 
 def liquidity_request(asset: str) -> str:
     return (
-        f"On X1, analyze liquidity for {asset}. Use X1 Scout to gather fresh "
-        "CMIS market_report and risk_check evidence. Cover verified liquidity, "
-        "pool count and "
-        "primary-pool context when available, 24-hour volume, transaction "
-        "activity, volume-to-liquidity context, evidence scope, and liquidity "
-        "risk. Do not invent route, slippage, fill, or price-impact evidence."
+        f"On X1, analyze current liquidity for {asset}. Use X1 Scout with "
+        "operation='instant_x1_scan' so the liquidity value is evaluated through "
+        "the same accepted current-market freshness contract used by Asset Overview, "
+        "Compare, and Risk. Focus on liquidity USD, pool count/context when available, "
+        "24-hour volume and activity context, and the field-level liquidity freshness "
+        "state. A verified liquidity value is not automatically fresh: if CMIS has not "
+        "verified liquidity provider fact-time, label freshness NOT VERIFIED and do not "
+        "describe the value as fresh/currently verified. Do not invent route, slippage, "
+        "fill, or price-impact evidence."
     ) + SINGLE_ASSET_TERMINAL_STYLE
 
 
@@ -782,12 +785,14 @@ def history_request(asset: str) -> str:
 
 def activity_request(asset: str) -> str:
     return (
-        f"On X1, analyze current market activity for {asset}. Use X1 Scout to "
-        "gather fresh CMIS market_report and historical_compare evidence where "
-        "supported. Cover "
-        "24-hour volume, transaction count, recent activity, available changes "
-        "over time, and evidence quality. Do not infer complete wallet history, "
-        "intent, manipulation, or ownership from bounded activity."
+        f"On X1, analyze current market activity for {asset}. Use X1 Scout with "
+        "operation='instant_x1_scan' so rolling 24-hour volume and transaction "
+        "activity use the same accepted field-scoped freshness contract as the "
+        "rest of ROBERTA. Cover 24-hour volume, transaction count, available "
+        "history/change evidence, and evidence quality. Treat volume freshness and "
+        "transaction freshness separately; if CMIS has not verified either provider "
+        "fact-time, preserve NOT VERIFIED rather than calling it fresh. Do not infer "
+        "complete wallet history, intent, manipulation, or ownership from bounded activity."
     ) + SINGLE_ASSET_TERMINAL_STYLE
 
 
@@ -807,7 +812,10 @@ def rank_request(metric: str, limit: int) -> str:
     return (
         f"On X1, use X1 Scout to rank the top {limit} XDEX assets by {metric} "
         "through the CMIS rank service. Preserve verification status and evidence "
-        "limitations. Do not silently substitute a different ranking metric."
+        "limitations. The rank service does not inherit Instant X1 Scan field-level "
+        "freshness automatically, so do not call ranking values fresh unless the "
+        "returned rank evidence explicitly proves freshness. Do not silently "
+        "substitute a different ranking metric."
     )
 
 
@@ -815,44 +823,46 @@ def pretrade_request(asset: str, action: str, amount_usd: float) -> str:
     return (
         f"On X1, run an explicit analysis-only pre-trade check for {asset}: "
         f"{action.upper()} $" + f"{amount_usd:.2f}. Use X1 Scout to call the CMIS "
-        "pre_trade_check operation and copy this exact side and USD amount. "
-        "Explain verified liquidity/notional constraints, warnings, and missing "
-        "route/slippage/fee/simulation evidence. Preserve analysis_only=true and "
-        "execution_authorized=false."
+        "pre_trade_check operation and copy this exact side and USD amount. The "
+        "production pre-trade path must consume the freshness-aware CMIS risk_check, "
+        "so surface any price/liquidity/24h-volume/24h-transaction freshness warnings "
+        "alongside the pre-trade risk gate. Explain verified liquidity/notional "
+        "constraints, warnings, and missing route/slippage/fee/simulation evidence. "
+        "Preserve analysis_only=true and execution_authorized=false."
     )
 
 
 def evidence_request(asset: str) -> str:
     return (
-        f"On X1, give me an evidence-quality report for {asset}. Use X1 Scout "
-        "to gather fresh CMIS market and risk evidence so Evidence Receipt and "
-        "Proof Score "
-        "metadata are current. Explain verification status, proof strength, "
+        f"On X1, give me an evidence-quality report for {asset}. Use X1 Scout with "
+        "operation='instant_x1_scan' so Evidence Receipt / Proof Score context, "
+        "deterministic risk, and current-market freshness all come from one validated "
+        "scan snapshot. Explain verification status, proof strength, field-scoped "
         "freshness, evidence scope, unknown categories, unresolved fields, "
-        "disagreements, source independence when proven, and limitations. "
-        "Keep proof strength separate from market risk."
+        "disagreements, source independence only when proven, and limitations. "
+        "Keep Proof Score separate from market risk and preserve execution_authorized=false."
     ) + SINGLE_ASSET_TERMINAL_STYLE
 
 
 def full_request(asset: str) -> str:
     return (
         f"On X1, produce a full assessment of {asset}. Use X1 Scout as the X1 "
-        "scanner and specialist path. Treat this explicitly as a deterministic "
-        "full assessment, not as a ranking-only or general market request. Use "
-        "multiple X1 Scout calls only if needed. Through X1 Scout, gather fresh CMIS "
-        "market_report, risk_check, tokenomics, historical_compare, ranking "
-        "context when useful, and evidence-quality metadata. For history, "
-        "treat this as an all available history / entire history request rather "
-        "than requiring a fixed comparison period; use the supported CMIS "
-        "all-available history mode and preserve CMIS coverage semantics. If "
-        "CMIS verifies the exact supported-pair lifetime, present that separately "
-        "from USD-denominated lifetime and preserve historical quote-to-USD "
-        "equivalence as unverified unless CMIS proves it. Include concentration "
-        "intelligence only if an exact eligible "
-        "CMIS-owned evidence id is already available; never invent one. Separate "
-        "verified facts, X1 Scout interpretation, and Roberta reasoning. Cover "
-        "market structure, liquidity, activity, tokenomics, risk, history, "
-        "evidence quality, strengths, weaknesses, key unknowns, and overall "
-        "assessment. Identify every important unavailable or unverified "
-        "dimension."
+        "scanner and specialist path. Treat this explicitly as the deterministic "
+        "full-assessment composition: one Instant X1 Scan for current market, "
+        "tokenomics, all-available history, freshness-aware risk, and evidence "
+        "metadata; one first-class Burn Intelligence result; and ranking context. "
+        "Do not independently re-fetch market_report, tokenomics, historical_compare, "
+        "or risk_check when the accepted Instant X1 Scan already owns those dimensions. "
+        "For history, preserve CMIS all-available coverage semantics. If CMIS verifies "
+        "the exact supported-pair lifetime, present that separately from USD-denominated "
+        "lifetime and preserve historical quote-to-USD equivalence as unverified unless "
+        "CMIS proves it. Include 1h/24h/7d/30d Burn Intelligence and period-over-period "
+        "states without ROBERTA burn arithmetic, and never relabel bounded observed burn "
+        "as verified lifetime burn. Include concentration intelligence only if an exact "
+        "eligible CMIS-owned evidence id is already available; never invent one. Separate "
+        "verified facts, X1 Scout interpretation, and Roberta reasoning. Cover market "
+        "structure, liquidity, activity, tokenomics, burn, risk, history, ranking context, "
+        "evidence quality, strengths, weaknesses, key unknowns, and overall assessment. "
+        "Identify every important unavailable or unverified dimension and preserve "
+        "execution_authorized=false."
     ) + SINGLE_ASSET_TERMINAL_STYLE
