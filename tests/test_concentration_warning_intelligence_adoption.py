@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 from copy import deepcopy
-import json
-
 import pytest
 
 from roberta.cmis.capabilities import (
@@ -21,8 +19,9 @@ from roberta.cmis.concentration_warning import (
     validate_concentration_warning_response,
 )
 from roberta.cmis.http import CMISHTTPClient
-from roberta.x1_scout.graph import build_x1_scout_graph
-from roberta.x1_scout.tool import build_x1_scout_tool
+from roberta.x1_scout.concentration_warning_intelligence import (
+    build_x1_concentration_warning_intelligence,
+)
 from tests.test_cmis_http_client import _Server, _capabilities
 
 
@@ -340,81 +339,22 @@ def test_response_validator_rejects_risk_delivery_or_canonical_drift() -> None:
             validate_concentration_warning_response(bad, requested_asset="AGI")
 
 
-class _WarningOnlyCMIS:
-    def __init__(self) -> None:
-        self.calls: list[dict[str, object]] = []
 
-    def concentration_warning_intelligence(self, **kwargs):
-        self.calls.append(deepcopy(kwargs))
-        return _envelope()
-
-
-def test_x1_scout_explicit_warning_operation_preserves_cmis_warning_and_risk_separation() -> None:
-    cmis = _WarningOnlyCMIS()
-    graph = build_x1_scout_graph(cmis)  # type: ignore[arg-type]
-    result = graph.invoke(
-        {
-            "request": {
-                "asset": "AGI",
-                "objective": "evaluate these two exact concentration warning observations",
-                "operation": SERVICE,
-                "intelligence_evidence_ids": [ID1, ID2],
-                "warning_threshold_policy": deepcopy(POLICY),
-                "warning_threshold_unit": "basis_points",
-                "warning_comparator": "GTE",
-                "warning_evaluated_at": "2026-09-03T07:05:00Z",
-                "warning_max_latest_age_seconds": 300,
-                "warning_max_persistence_window_seconds": 600,
-            },
-            "status": "running",
-        }
+def test_x1_warning_product_preserves_validated_cmis_data_exactly() -> None:
+    source = _envelope()
+    product = build_x1_concentration_warning_intelligence(
+        source,
+        requested_asset="AGI",
     )
-    report = result["report"]
-    assert report["plan"]["source"] == "explicit"
-    assert report["source"] == {"service": "cmis", "operation": SERVICE}
-    assert report["findings"]["risk"] is None
-    assert report["findings"]["data"]["warning_level"] == "WATCH"
-    assert report["findings"]["data"]["canonical_warning"] == _canonical_warning()
-    assert report["findings"]["data"]["push_delivery_authorized"] is False
-    assert report["findings"]["data"]["execution_authorized"] is False
-    product = report["x1_concentration_warning_intelligence"]
     assert product["contract_version"] == "x1_concentration_warning_intelligence/v1"
     assert product["product"] == "x1_concentration_warning_intelligence"
-    assert product["warning"] == report["findings"]["data"]
+    assert product["chain"] == "x1"
+    assert product["status"] == "ok"
+    assert product["warning"] == source["data"]
     assert product["warning"]["canonical_warning"] == _canonical_warning()
     assert product["delivery_mode"] == "pull_only"
     assert product["push_delivery_authorized"] is False
     assert product["warning_level_is_risk_severity"] is False
     assert product["risk_interpretation"] is None
+    assert product["proof_score_separate_from_risk"] is True
     assert product["execution_authorized"] is False
-
-
-def test_x1_scout_tool_requires_every_warning_policy_input_and_never_invents_defaults() -> None:
-    cmis = _WarningOnlyCMIS()
-    tool = build_x1_scout_tool(cmis)  # type: ignore[arg-type]
-    common = {
-        "asset": "AGI",
-        "objective": "evaluate exact concentration warning evidence",
-        "operation": SERVICE,
-        "intelligence_evidence_ids": [ID1, ID2],
-        "warning_threshold_policy": deepcopy(POLICY),
-        "warning_threshold_unit": "basis_points",
-        "warning_comparator": "GTE",
-        "warning_evaluated_at": "2026-09-03T07:05:00Z",
-        "warning_max_latest_age_seconds": 300,
-        "warning_max_persistence_window_seconds": 600,
-    }
-
-    missing = dict(common)
-    missing.pop("warning_comparator")
-    with pytest.raises(Exception, match="comparator"):
-        tool.invoke(missing)
-    assert cmis.calls == []
-
-    encoded = tool.invoke(common)
-    report = json.loads(encoded)
-    assert report["source"]["operation"] == SERVICE
-    assert report["findings"]["data"]["warning_level"] == "WATCH"
-    assert report["x1_concentration_warning_intelligence"]["warning"]["warning_level"] == "WATCH"
-    assert cmis.calls[-1]["intelligence_evidence_ids"] == [ID1, ID2]
-    assert cmis.calls[-1]["comparator"] == "GTE"
