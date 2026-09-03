@@ -162,14 +162,35 @@ You can also type a normal question at any time.
 """
 
 
+HUMAN_ROBERTA_PRESENTATION_POLICY = (
+    " HUMAN ROBERTA OUTPUT CONTRACT: write for a trader or operator, not for a "
+    "developer reading a debug trace. Lead with the answer and the few facts that "
+    "matter most. Preserve every CMIS verification, freshness, proof, risk, and "
+    "execution boundary internally, but translate them into plain English. "
+    "Round DISPLAY values to useful human precision without changing or "
+    "recalculating the underlying facts: use readable currency separators, compact "
+    "large numbers, and sensible price precision. Group related freshness gaps into "
+    "one LIVE MARKET FRESHNESS statement and name the affected fields instead of "
+    "repeating one warning per field. Replace KEY LIMITATIONS with WHAT ROBERTA "
+    "STILL NEEDS. Show no more than five grouped, decision-relevant items there. "
+    "Do not expose raw snake_case limitation codes, internal contract invariants, "
+    "implementation diagnostics, or duplicate caveats in the normal human answer. "
+    "Rules such as execution_authorized=false, proof-score separation, provider "
+    "fact-time semantics, collection-time semantics, and fail-closed behavior remain "
+    "enforced but should be summarized once in natural language when relevant. "
+    "Keep audit-level details available in the underlying structured result; include "
+    "them in prose only when the user explicitly asks for technical/evidence details. "
+    "Never hide a material unknown, conflict, WARN/BLOCK reason, or unavailable fact."
+)
+
 SINGLE_ASSET_TERMINAL_STYLE = (
     " FORMAT FOR A PLAIN TERMINAL: keep the answer compact and sectioned. "
     "Use CURRENT MARKET for the live snapshot, RISK for deterministic risk "
     "results when available, TOKENOMICS & AUTHORITIES for structural token "
     "facts when available, HISTORY for historical evidence, EVIDENCE STATUS "
-    "for CMIS/proof/verification state, KEY LIMITATIONS for missing or "
-    "unverified evidence, and ASSESSMENT for the final interpretation when "
-    "appropriate. Do not lead with a long limitation paragraph. Put the live "
+    "for CMIS/proof/verification state, WHAT ROBERTA STILL NEEDS for material "
+    "missing or unverified evidence, and ASSESSMENT for the final interpretation "
+    "when appropriate. Do not lead with a long limitation paragraph. Put the live "
     "market snapshot first unless the request is specifically historical. "
     "For unavailable history, use a short status block such as "
     "'Status: UNAVAILABLE' followed by 1-3 concise bullets explaining the "
@@ -179,7 +200,7 @@ SINGLE_ASSET_TERMINAL_STYLE = (
     "Do not use Markdown table syntax in the final response. Never describe "
     "missing, unavailable, or unverified evidence as zero, none, false, or 0%; "
     "use UNKNOWN, UNAVAILABLE, NOT VERIFIED, or the exact CMIS status instead."
-)
+) + HUMAN_ROBERTA_PRESENTATION_POLICY
 
 
 STATUS_KEY = """\
@@ -565,16 +586,44 @@ def automatic_status_summary(content: object) -> str | None:
                     block.append(f"    Meaning: {meaning}")
 
             reasons = _as_list(recommendation.get("reasons"))
-            for reason in reasons:
-                block.append(f"    Reason: {_warning_text(reason)}")
-
             flags = _as_list(recommendation.get("flags"))
+
+            freshness_fields: list[str] = []
+            freshness_labels = {
+                "price_freshness_unverified": "price",
+                "liquidity_freshness_unverified": "liquidity",
+                "volume_24h_freshness_unverified": "24h volume",
+                "transactions_24h_freshness_unverified": "24h transactions",
+            }
             for flag in flags:
-                flag_text = _warning_text(flag)
-                block.append(f"    Flag: {flag_text}")
+                flag_text = _warning_text(flag).strip()
+                label = freshness_labels.get(flag_text)
+                if label and label not in freshness_fields:
+                    freshness_fields.append(label)
+
+            non_freshness_reasons = [
+                _warning_text(reason)
+                for reason in reasons
+                if "freshness" not in _warning_text(reason).lower()
+            ]
+            for reason in non_freshness_reasons[:3]:
+                block.append(f"    Reason: {reason}")
+
+            if freshness_fields:
+                block.append("  Live market freshness: [NOT FULLY VERIFIED]")
+                block.append(
+                    "    Still needs provider fact-time proof for: "
+                    + ", ".join(freshness_fields)
+                    + "."
+                )
+
+            for flag in flags:
+                flag_text = _warning_text(flag).strip()
+                if flag_text in freshness_labels:
+                    continue
                 meaning = warning_meaning(flag)
                 if meaning:
-                    block.append(f"      Meaning: {meaning}")
+                    block.append(f"    Evidence need: {meaning}")
 
         evidence = _as_mapping(investigation.get("evidence_context"))
         proof_strength = (_text(evidence.get("proof_strength")) or "").upper()
@@ -618,12 +667,16 @@ def automatic_status_summary(content: object) -> str | None:
                 )
 
         warnings = _as_list(investigation.get("warnings"))
+        shown_warning_meanings: set[str] = set()
         for warning in warnings:
-            warning_text = _warning_text(warning)
-            block.append(f"  Warning: {warning_text}")
             meaning = warning_meaning(warning)
-            if meaning:
-                block.append(f"    Meaning: {meaning}")
+            if meaning and meaning not in shown_warning_meanings:
+                block.append(f"  Evidence note: {meaning}")
+                shown_warning_meanings.add(meaning)
+            elif meaning is None:
+                warning_text = _warning_text(warning)
+                if "_" not in warning_text:
+                    block.append(f"  Warning: {warning_text}")
 
         errors = _as_list(investigation.get("errors"))
         for error in errors:
@@ -678,7 +731,7 @@ def compare_request(asset1: str, asset2: str) -> str:
         "table syntax in the final response. Do not create relative ratios or other "
         "market calculations unless the accepted X1 Compare product already returned "
         "that comparative value."
-    )
+    ) + HUMAN_ROBERTA_PRESENTATION_POLICY
 
 
 def risk_request(asset: str) -> str:
@@ -805,7 +858,7 @@ def concentration_request(asset: str, evidence_id: str) -> str:
         "verified top-account concentration change and any threshold output, "
         "but do not infer unique holders, beneficial owners, whales, insiders, "
         "bots, manipulation, intent, or common ownership."
-    )
+    ) + HUMAN_ROBERTA_PRESENTATION_POLICY
 
 
 def rank_request(metric: str, limit: int) -> str:
@@ -816,7 +869,7 @@ def rank_request(metric: str, limit: int) -> str:
         "freshness automatically, so do not call ranking values fresh unless the "
         "returned rank evidence explicitly proves freshness. Do not silently "
         "substitute a different ranking metric."
-    )
+    ) + HUMAN_ROBERTA_PRESENTATION_POLICY
 
 
 def pretrade_request(asset: str, action: str, amount_usd: float) -> str:
@@ -829,7 +882,7 @@ def pretrade_request(asset: str, action: str, amount_usd: float) -> str:
         "alongside the pre-trade risk gate. Explain verified liquidity/notional "
         "constraints, warnings, and missing route/slippage/fee/simulation evidence. "
         "Preserve analysis_only=true and execution_authorized=false."
-    )
+    ) + HUMAN_ROBERTA_PRESENTATION_POLICY
 
 
 def evidence_request(asset: str) -> str:
