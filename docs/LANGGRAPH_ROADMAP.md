@@ -32,7 +32,7 @@ Accepted on `main`:
 - X1 Scout decision-production readiness under the accepted CMIS boundary;
 - Solana Scout read-only readiness for its accepted surface;
 - X1 Scout adoption of CMIS `concentration_change_intelligence/v1`;
-- X1 Scout adoption of accepted CMIS capability through `1.17.0`, including all-available history, exact-mint X1 identity, bounded verified-provider historical price backfill, Instant X1 Scan v3, Burn Intelligence, Discovery Intelligence, and field-scoped current-market freshness;
+- X1 Scout adoption of accepted CMIS capability through `1.18.0`, including all-available history, exact-mint X1 identity, bounded verified-provider historical price backfill, Instant X1 Scan v3, Burn Intelligence, Discovery Intelligence, field-scoped current-market freshness, and pull-only Concentration Warning Intelligence;
 - Learning System Phases 1-10;
 - fail-closed `verified_learned_knowledge` classification with no general operational-trust promotion wrapper;
 - source-specific Blockchain Reasoning Pyramid architecture and source-mastery ledger;
@@ -179,7 +179,7 @@ CMIS has completed its six-phase public-shell/private-core migration and histori
 
 ## CMIS synchronization
 
-Current accepted CMIS capability contract is `1.17.0`, including first-class X1 Burn Intelligence under 1.15.0, Discovery Intelligence under 1.16.0, and `instant_x1_scan/v3` field-scoped current-market freshness under 1.17.0.
+Current accepted CMIS capability contract is `1.18.0`, including first-class X1 Burn Intelligence under 1.15.0, Discovery Intelligence under 1.16.0, `instant_x1_scan/v3` field-scoped current-market freshness under 1.17.0, and pull-only `concentration_warning_intelligence/v1` under 1.18.0.
 
 The existing X1 `historical_compare` service is accepted for `window`, `all_available`, and `all_available_pair` use through X1 Scout. All-available modes require the service-specific CMIS `>=1.10.0` guard and exact limitation semantics. Pair requests preserve the second user/trusted-context asset explicitly and issue one CMIS pair-history call; Roberta does not recompute two independent histories. For CMIS `>=1.12.0`, Scout reliance additionally requires the accepted price-only provider-backfill limitations: provider source independence, archive completeness, continuous coverage, historical USD-stable peg behavior, and complete asset lifetime remain unverified. Returned lifetime/continuous-coverage limits remain authoritative.
 
