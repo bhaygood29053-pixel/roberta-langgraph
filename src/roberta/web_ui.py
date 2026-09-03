@@ -7,56 +7,183 @@ ROBERTA_WEB_UI_HTML = r'''<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="dark">
+<meta name="color-scheme" content="light">
 <title>ROBERTA — Verified On-Chain Intelligence</title>
 <style>
-:root{--bg:#07090d;--panel:#0f141b;--panel2:#151c25;--line:#26303c;--text:#f4f7fa;--muted:#98a5b5;--mint:#8af0c5;--blue:#7aabff;--amber:#ffd27a;--red:#ff9292}
-*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(circle at 15% 0,rgba(122,171,255,.11),transparent 30rem),radial-gradient(circle at 90% 0,rgba(138,240,197,.08),transparent 30rem),var(--bg);color:var(--text);font:14px/1.5 Inter,system-ui,-apple-system,Segoe UI,sans-serif}
-button,input,select,textarea{font:inherit}.app{min-height:100vh;display:grid;grid-template-columns:240px 1fr}.side{position:sticky;top:0;height:100vh;padding:24px 17px;border-right:1px solid var(--line);background:rgba(7,9,13,.88);backdrop-filter:blur(16px);display:flex;flex-direction:column}.brand{display:flex;gap:11px;align-items:center}.logo{width:42px;height:42px;border:1px solid var(--line);border-radius:13px;display:grid;place-items:center;background:linear-gradient(145deg,rgba(138,240,197,.15),rgba(122,171,255,.10));font-weight:900;color:var(--mint)}.brand b{display:block;letter-spacing:.05em}.brand small{color:var(--muted)}nav{display:grid;gap:7px;margin-top:28px}nav button{border:0;background:transparent;color:var(--muted);text-align:left;padding:10px 12px;border-radius:10px;cursor:pointer}nav button:hover{background:var(--panel2);color:var(--text)}.trust{margin-top:auto;padding:13px;border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--muted);font-size:12px}.trust b{color:#cdd6e0}
-.main{min-width:0}.top{position:sticky;top:0;z-index:10;padding:13px 22px;border-bottom:1px solid var(--line);background:rgba(7,9,13,.8);backdrop-filter:blur(16px);display:flex;justify-content:space-between;gap:10px;align-items:center}.pills{display:flex;gap:8px;flex-wrap:wrap}.pill{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:7px 10px;color:var(--muted);font-size:12px}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#777;margin-right:7px}.online .dot{background:var(--mint);box-shadow:0 0 13px rgba(138,240,197,.7)}.offline .dot{background:var(--red)}.btn{border:1px solid var(--line);background:var(--panel);color:var(--text);padding:9px 12px;border-radius:10px;cursor:pointer}.btn:hover{background:var(--panel2)}.primary{border-color:transparent;background:var(--mint);color:#06100c;font-weight:800}.wrap{max-width:1480px;margin:auto;padding:28px 27px 60px}
-.hero{display:grid;grid-template-columns:1.45fr .75fr;gap:14px}.card{border:1px solid var(--line);background:linear-gradient(145deg,rgba(21,28,37,.9),rgba(15,20,27,.95));border-radius:18px}.heroMain{padding:27px;min-height:225px}.eyebrow{color:var(--mint);font-size:11px;font-weight:900;letter-spacing:.13em;text-transform:uppercase}h1{font-size:clamp(31px,4vw,53px);line-height:1.03;letter-spacing:-.045em;margin:11px 0}.lead{color:var(--muted);max-width:760px}.heroBtns{display:flex;gap:9px;flex-wrap:wrap;margin-top:21px}.state{padding:19px}.state h3{margin:0 0 12px}.state div{color:var(--muted);font-size:12px;padding:9px 0;border-top:1px solid var(--line)}.state div:first-of-type{border-top:0}.state strong{color:var(--mint)}
-.head{display:flex;justify-content:space-between;gap:15px;align-items:end;margin:31px 0 13px}.head h2{margin:0;font-size:21px}.head p{margin:4px 0 0;color:var(--muted);font-size:12px}.search{width:min(340px,100%)}.search input{width:100%;border:1px solid var(--line);background:var(--panel);color:var(--text);padding:10px 12px;border-radius:10px;outline:none}.filters{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:13px}.filter{border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:999px;padding:6px 9px;cursor:pointer;font-size:11px}.filter.active{background:var(--mint);color:#06100c;border-color:transparent;font-weight:800}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:11px}.svc{border:1px solid var(--line);background:var(--panel);border-radius:15px;padding:15px;min-height:185px;display:flex;flex-direction:column;transition:.16s}.svc:hover{transform:translateY(-2px);background:var(--panel2)}.svcTop{display:flex;justify-content:space-between}.ico{width:37px;height:37px;border-radius:11px;background:#1c2530;display:grid;place-items:center}.tag{border:1px solid var(--line);border-radius:999px;padding:4px 7px;color:var(--mint);font-size:9px;height:max-content}.tag.advanced,.tag.configured{color:var(--amber)}.svc h3{font-size:14px;margin:13px 0 6px}.svc p{font-size:11.5px;color:var(--muted);margin:0}.svcFoot{margin-top:auto;padding-top:12px;display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:9px}.run{border:0;background:transparent;color:var(--mint);font-weight:800;cursor:pointer}
-.chatLayout{display:grid;grid-template-columns:1fr 310px;gap:12px}.chat,.info{border:1px solid var(--line);background:var(--panel);border-radius:17px;overflow:hidden}.chatHead{padding:14px 15px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between}.messages{height:480px;overflow:auto;padding:17px;display:flex;flex-direction:column;gap:11px}.msg{max-width:88%;padding:11px 13px;border-radius:13px;white-space:pre-wrap;word-break:break-word}.msg.user{align-self:flex-end;background:#eafff5;color:#06100c}.msg.assistant{align-self:flex-start;background:var(--panel2);border:1px solid var(--line);color:#d5dde6}.msg.system{align-self:center;color:var(--muted);font-size:11px;padding:3px}.composer{border-top:1px solid var(--line);padding:12px;display:grid;grid-template-columns:1fr auto;gap:8px}.composer textarea{resize:none;min-height:46px;max-height:130px;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:11px;padding:11px;outline:none}.info{padding:15px}.info h3{margin:0 0 10px}.infoBlock{border-top:1px solid var(--line);padding:11px 0}.infoBlock:first-of-type{border-top:0}.infoBlock b{display:block;color:#cdd6e0;font-size:10px;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}.infoBlock span{color:var(--muted);font-size:11px}
-.modalBg{display:none;position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.7);padding:18px;place-items:center}.modalBg.open{display:grid}.modal{width:min(610px,100%);max-height:90vh;overflow:auto;background:#0d1218;border:1px solid #34404e;border-radius:18px}.modalHead{padding:18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:12px}.modalHead h3{margin:0}.modalHead p{color:var(--muted);font-size:11px;margin:5px 0 0}.close{width:32px;height:32px;border:0;border-radius:9px;background:var(--panel2);color:var(--text);cursor:pointer}.form{padding:17px;display:grid;gap:13px}.field{display:grid;gap:6px}.field label{color:#cbd4df;font-size:11px;font-weight:700}.field input,.field select{border:1px solid var(--line);background:var(--panel);color:var(--text);padding:10px 11px;border-radius:10px;outline:none}.modalActions{padding:0 17px 17px;display:flex;justify-content:flex-end;gap:8px}.settings{display:none;position:fixed;z-index:40;right:18px;top:62px;width:min(380px,calc(100vw - 36px));background:#0d1218;border:1px solid #34404e;border-radius:15px;padding:15px}.settings.open{display:block}.settings h3{margin:0 0 11px}.settings .field+.field{margin-top:10px}.note{color:var(--muted);font-size:10px;margin-top:9px}
-@media(max-width:1160px){.grid{grid-template-columns:repeat(3,1fr)}.hero{grid-template-columns:1fr}.chatLayout{grid-template-columns:1fr}.info{display:none}}@media(max-width:820px){.app{grid-template-columns:1fr}.side{display:none}.wrap{padding:20px 15px 50px}.top{padding:11px 14px}.grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:540px){.grid{grid-template-columns:1fr}.head{align-items:stretch;flex-direction:column}.search{width:100%}.composer{grid-template-columns:1fr}.heroBtns{display:grid}.heroBtns button{width:100%}}
+:root{
+  --ink:#101326;--ink2:#242945;--muted:#69708a;--paper:#fbfbff;--white:#ffffff;
+  --line:#e5e7f0;--violet:#5a4cff;--violet2:#7468ff;--cyan:#bff6ff;--sky:#dfeeff;
+  --lav:#e6e1ff;--mint:#c9f7e5;--amber:#fff0c7;--red:#ffdddd;--shadow:0 20px 70px rgba(42,37,104,.12)
+}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.6 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,input,select,textarea{font:inherit}.page{min-height:100vh;overflow:hidden}.shell{width:min(1240px,calc(100% - 40px));margin:auto}
+.siteNav{position:sticky;top:0;z-index:30;background:rgba(251,251,255,.88);backdrop-filter:blur(20px);border-bottom:1px solid rgba(229,231,240,.85)}
+.navInner{height:78px;display:flex;align-items:center;justify-content:space-between;gap:20px}.brand{display:flex;align-items:center;gap:12px;font-weight:900;letter-spacing:-.02em}
+.brandMark{width:46px;height:46px;border-radius:16px;display:grid;place-items:center;background:var(--ink);color:#fff;font-size:18px;box-shadow:0 8px 22px rgba(16,19,38,.16)}
+.brandText b{display:block;font-size:17px;line-height:1}.brandText small{display:block;color:var(--muted);font-size:10px;margin-top:5px;font-weight:700;letter-spacing:.04em}
+.navLinks{display:flex;gap:6px;align-items:center}.navLinks button{border:0;background:transparent;color:var(--ink2);font-weight:750;padding:10px 13px;border-radius:999px;cursor:pointer}.navLinks button:hover{background:#f0f1f8}
+.navActions{display:flex;align-items:center;gap:9px}.pill{display:inline-flex;align-items:center;border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 12px;color:var(--muted);font-size:12px;white-space:nowrap}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#999;margin-right:7px}.online .dot{background:#33c783;box-shadow:0 0 0 5px rgba(51,199,131,.12)}.offline .dot{background:#e45555}
+.btn{border:1px solid var(--line);background:#fff;color:var(--ink);padding:11px 17px;border-radius:999px;cursor:pointer;font-weight:800;transition:.18s}.btn:hover{transform:translateY(-1px);box-shadow:0 10px 25px rgba(37,39,72,.08)}.primary{border-color:var(--ink);background:var(--ink);color:#fff}.soft{background:#f0efff;border-color:#dcd8ff;color:#4035c8}
+.hero{position:relative;padding:92px 0 72px}.hero:before{content:"";position:absolute;width:680px;height:680px;border-radius:50%;left:50%;top:-310px;transform:translateX(-50%);background:radial-gradient(circle,#c6f5ff 0,#ddd9ff 42%,rgba(251,251,255,0) 72%);filter:blur(10px);opacity:.95;pointer-events:none}
+.heroGrid{position:absolute;inset:0;background-image:linear-gradient(rgba(91,76,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(91,76,255,.035) 1px,transparent 1px);background-size:48px 48px;mask-image:linear-gradient(to bottom,#000,transparent 72%);pointer-events:none}
+.heroInner{position:relative;text-align:center;max-width:1040px;margin:auto}.heroBadge{display:inline-flex;align-items:center;gap:9px;padding:7px 14px;border:1px solid rgba(90,76,255,.18);background:rgba(255,255,255,.78);border-radius:999px;color:#4b42b9;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;box-shadow:0 8px 30px rgba(90,76,255,.07)}
+.heroBadge:before{content:"✦";font-size:12px}.hero h1{font-size:clamp(46px,7vw,88px);line-height:.98;letter-spacing:-.066em;margin:24px auto 22px;max-width:1000px}.hero h1 span{background:linear-gradient(90deg,#5145e6,#4d7dff,#45b9d9);-webkit-background-clip:text;background-clip:text;color:transparent}
+.heroLead{font-size:clamp(17px,2vw,21px);line-height:1.55;color:var(--muted);max-width:780px;margin:0 auto}.heroBtns{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:30px}
+.heroStage{margin:62px auto 0;max-width:1080px;position:relative}.stageGlow{position:absolute;inset:8% 5% -8%;background:linear-gradient(120deg,rgba(90,76,255,.28),rgba(191,246,255,.7),rgba(201,247,229,.55));filter:blur(55px);border-radius:50%;z-index:0}
+.stageCard{position:relative;z-index:1;border:1px solid rgba(180,183,212,.65);background:rgba(255,255,255,.88);backdrop-filter:blur(18px);border-radius:34px;padding:28px;box-shadow:var(--shadow);overflow:hidden}.stageTop{display:flex;justify-content:space-between;gap:18px;align-items:center;padding-bottom:22px;border-bottom:1px solid var(--line)}.stageTitle{display:flex;align-items:center;gap:12px}.stageOrb{width:52px;height:52px;border-radius:17px;background:linear-gradient(145deg,var(--lav),var(--cyan));display:grid;place-items:center;font-size:21px;font-weight:1000}.stageTitle b{display:block;font-size:17px}.stageTitle small{color:var(--muted)}
+.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;align-items:stretch;margin-top:24px}.flowNode{position:relative;border:1px solid var(--line);background:#fff;border-radius:22px;padding:18px 14px;text-align:left;min-height:126px}.flowNode strong{display:block;font-size:13px;margin-bottom:7px}.flowNode span{color:var(--muted);font-size:11px}.flowNode:not(:last-child):after{content:"→";position:absolute;right:-12px;top:46%;z-index:3;width:24px;height:24px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:11px}.flowNode.hot{background:linear-gradient(145deg,#f0efff,#f7feff);border-color:#d9d3ff}.microLabel{display:inline-flex;border-radius:999px;padding:4px 7px;background:#f2f3f8;color:#626a82;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px}
+.section{padding:86px 0}.section.alt{background:#fff}.sectionHead{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:end;margin-bottom:34px}.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.13em;font-weight:950;color:#5145e6}.sectionHead h2{font-size:clamp(34px,4vw,57px);line-height:1.02;letter-spacing:-.045em;margin:8px 0 0;max-width:680px}.sectionHead p{color:var(--muted);font-size:16px;max-width:540px;margin:0 0 5px auto}
+.trustStrip{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.trustCard{border:1px solid var(--line);border-radius:28px;padding:25px;background:#fff}.trustIcon{width:44px;height:44px;border-radius:15px;display:grid;place-items:center;background:var(--lav);margin-bottom:22px;font-weight:900}.trustCard:nth-child(2) .trustIcon{background:var(--cyan)}.trustCard:nth-child(3) .trustIcon{background:var(--mint)}.trustCard h3{font-size:18px;margin:0 0 8px}.trustCard p{margin:0;color:var(--muted);font-size:13px}
+.serviceTools{display:flex;gap:14px;justify-content:space-between;align-items:center;margin-bottom:22px;flex-wrap:wrap}.search{width:min(380px,100%)}.search input{width:100%;border:1px solid var(--line);background:#fff;color:var(--ink);padding:13px 16px;border-radius:999px;outline:none;box-shadow:0 6px 20px rgba(40,42,78,.04)}.filters{display:flex;gap:7px;flex-wrap:wrap}.filter{border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:999px;padding:8px 12px;cursor:pointer;font-size:11px;font-weight:800}.filter.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.svc{border:1px solid var(--line);background:#fff;border-radius:28px;padding:22px;min-height:236px;display:flex;flex-direction:column;transition:.2s;box-shadow:0 6px 24px rgba(41,44,84,.025)}.svc:hover{transform:translateY(-4px);box-shadow:0 22px 44px rgba(43,45,92,.09);border-color:#d3d2e8}.svcTop{display:flex;justify-content:space-between;gap:10px}.ico{width:48px;height:48px;border-radius:16px;background:linear-gradient(145deg,var(--lav),#f4f2ff);display:grid;place-items:center;font-weight:950;font-size:16px}.svc:nth-child(3n+2) .ico{background:linear-gradient(145deg,var(--cyan),#f4fdff)}.svc:nth-child(3n) .ico{background:linear-gradient(145deg,var(--mint),#f5fffb)}.tag{border:1px solid #d8d5ff;border-radius:999px;padding:5px 9px;color:#5448d6;background:#f3f1ff;font-size:9px;height:max-content;font-weight:900;text-transform:uppercase;letter-spacing:.06em}.tag.advanced,.tag.configured{background:#fff8e7;border-color:#f0dfab;color:#8f6817}.svc h3{font-size:18px;line-height:1.2;margin:20px 0 9px}.svc p{font-size:12.5px;color:var(--muted);margin:0}.svcFoot{margin-top:auto;padding-top:20px;display:flex;justify-content:space-between;align-items:center;color:#8a90a5;font-size:10px}.run{border:0;background:transparent;color:#5145e6;font-weight:900;cursor:pointer}
+.productBand{border-radius:36px;background:var(--ink);color:#fff;padding:52px;position:relative;overflow:hidden}.productBand:after{content:"";position:absolute;width:420px;height:420px;border-radius:50%;right:-120px;top:-180px;background:radial-gradient(circle,#6e63ff,#3e4278 45%,transparent 70%);opacity:.8}.bandGrid{position:relative;z-index:1;display:grid;grid-template-columns:1.05fr .95fr;gap:44px;align-items:center}.productBand h2{font-size:clamp(36px,5vw,64px);line-height:1;letter-spacing:-.05em;margin:10px 0 18px}.productBand p{color:#c8cbdd;max-width:590px}.stateList{display:grid;gap:9px}.stateItem{border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.055);border-radius:18px;padding:15px 16px;color:#cfd2e2;font-size:12px}.stateItem strong{color:#fff}.stateItem.ok strong{color:#a9f0ce}.stateItem.gate strong{color:#ffe0a3}
+.chatLayout{display:grid;grid-template-columns:1fr 320px;gap:18px}.chat,.info{border:1px solid var(--line);background:#fff;border-radius:30px;overflow:hidden;box-shadow:0 18px 50px rgba(41,44,84,.07)}.chatHead{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}.messages{height:500px;overflow:auto;padding:22px;display:flex;flex-direction:column;gap:12px;background:linear-gradient(180deg,#fcfcff,#f8f9ff)}.msg{max-width:86%;padding:13px 15px;border-radius:18px;white-space:pre-wrap;word-break:break-word}.msg.user{align-self:flex-end;background:var(--ink);color:#fff;border-bottom-right-radius:6px}.msg.assistant{align-self:flex-start;background:#fff;border:1px solid var(--line);color:var(--ink2);border-bottom-left-radius:6px}.msg.system{align-self:center;color:var(--muted);font-size:11px;padding:3px}.composer{border-top:1px solid var(--line);padding:14px;display:grid;grid-template-columns:1fr auto;gap:9px}.composer textarea{resize:none;min-height:50px;max-height:130px;border:1px solid var(--line);background:#f8f9fd;color:var(--ink);border-radius:18px;padding:13px 15px;outline:none}.info{padding:22px}.info h3{font-size:18px;margin:0 0 12px}.infoBlock{border-top:1px solid var(--line);padding:15px 0}.infoBlock:first-of-type{border-top:0}.infoBlock b{display:block;color:var(--ink);font-size:10px;text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px}.infoBlock span{color:var(--muted);font-size:12px}
+.settings{display:none;position:fixed;z-index:60;right:24px;top:86px;width:min(390px,calc(100vw - 48px));background:#fff;border:1px solid var(--line);border-radius:24px;padding:18px;box-shadow:var(--shadow)}.settings.open{display:block}.settings h3{margin:0 0 12px}.settings .field+.field{margin-top:10px}.note{color:var(--muted);font-size:10px;margin-top:10px}
+.modalBg{display:none;position:fixed;inset:0;z-index:70;background:rgba(16,19,38,.52);backdrop-filter:blur(8px);padding:18px;place-items:center}.modalBg.open{display:grid}.modal{width:min(640px,100%);max-height:90vh;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:30px;box-shadow:var(--shadow)}.modalHead{padding:22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:12px}.modalHead h3{margin:0;font-size:22px}.modalHead p{color:var(--muted);font-size:12px;margin:5px 0 0}.close{width:36px;height:36px;border:1px solid var(--line);border-radius:50%;background:#fff;color:var(--ink);cursor:pointer}.form{padding:20px;display:grid;gap:14px}.field{display:grid;gap:6px}.field label{color:var(--ink2);font-size:11px;font-weight:800}.field input,.field select{border:1px solid var(--line);background:#fbfbfe;color:var(--ink);padding:12px 13px;border-radius:14px;outline:none}.modalActions{padding:0 20px 20px;display:flex;justify-content:flex-end;gap:8px}
+.footer{padding:34px 0 48px;border-top:1px solid var(--line);color:var(--muted);font-size:11px}.footerInner{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+@media(max-width:1050px){.navLinks{display:none}.flow{grid-template-columns:1fr 1fr}.flowNode:not(:last-child):after{display:none}.grid{grid-template-columns:repeat(2,1fr)}.sectionHead{grid-template-columns:1fr}.sectionHead p{margin:0}.bandGrid{grid-template-columns:1fr}.chatLayout{grid-template-columns:1fr}.info{display:none}.trustStrip{grid-template-columns:1fr}}
+@media(max-width:680px){.shell{width:min(100% - 24px,1240px)}.navInner{height:68px}.brandText small,.navActions .pill{display:none}.hero{padding:64px 0 52px}.hero h1{font-size:48px}.stageCard{padding:18px;border-radius:24px}.stageTop{align-items:flex-start;flex-direction:column}.flow{grid-template-columns:1fr}.grid{grid-template-columns:1fr}.section{padding:62px 0}.sectionHead h2{font-size:39px}.serviceTools{align-items:stretch;flex-direction:column}.search{width:100%}.productBand{padding:30px 22px;border-radius:28px}.heroBtns{display:grid}.heroBtns .btn{width:100%}.composer{grid-template-columns:1fr}.navActions .btn{padding:9px 12px}.messages{height:430px}}
 </style>
 </head>
 <body>
-<div class="app">
-<aside class="side">
-  <div class="brand"><div class="logo">R</div><div><b>ROBERTA</b><small>Verified On-Chain Intelligence</small></div></div>
-  <nav><button data-go="home">Overview</button><button data-go="services">Services</button><button data-go="chat">Ask Roberta</button><button data-svc="key">Status Key</button></nav>
-  <div class="trust"><b>Authority path</b><br>User → ROBERTA → Chain Scout → CMIS → verified provider/source.<br><br>Analysis only. Execution remains unauthorized.</div>
-</aside>
-<main class="main">
-<header class="top">
-  <div class="pills"><div id="health" class="pill"><span class="dot"></span>Checking ROBERTA…</div><div class="pill">CMIS 1.18</div></div>
-  <div><button class="btn" id="settingsBtn">Connection</button></div>
-</header>
-<div id="settings" class="settings">
-  <h3>Connection</h3>
-  <div class="field"><label>ROBERTA bridge URL</label><input id="apiBase" placeholder="Same origin"></div>
-  <div class="field"><label>Bearer token (if configured)</label><input id="apiKey" type="password" autocomplete="off" placeholder="ROBERTA_API_KEY"></div>
-  <div class="note">Connection values stay in this browser tab only. Default loopback use needs no token.</div>
-</div>
-<div class="wrap">
-<section id="home" class="hero">
-  <div class="card heroMain"><div class="eyebrow">X1-first verified intelligence</div><h1>One place for every accepted ROBERTA service.</h1><div class="lead">Market, risk, tokenomics, history, burn, discovery, concentration, evidence and pre-trade analysis—through the same ROBERTA → Scout → CMIS trust path.</div><div class="heroBtns"><button class="btn primary" data-svc="full">Run Full Assessment</button><button class="btn" data-svc="scan">Instant X1 Scan</button><button class="btn" data-go="chat">Ask a Question</button></div></div>
-  <div class="card state"><h3>Current product state</h3><div><strong>Accepted:</strong> Instant X1 Scan v3, Burn, Discovery, What Changed, Compare and current-market freshness.</div><div><strong>Accepted:</strong> CMIS 1.18 pull-only Concentration Warning through ROBERTA.</div><div><strong>Not promoted:</strong> Warp / bridge-flow intelligence remains evidence-gated and is not presented as runnable.</div><div><strong>Solana:</strong> Market, tokenomics and risk are available only when the accepted Solana provider path is explicitly configured.</div><div><strong>Operator:</strong> The Learning Command Center remains a separate read-only operator surface; this market UI does not start or mutate training.</div><div><strong>Boundary:</strong> Website actions never call CMIS directly.</div></div>
-</section>
-<section id="services">
-  <div class="head"><div><h2>Services</h2><p>Available services match the accepted repository state. Advanced evidence-gated inputs are labeled.</p></div><div class="search"><input id="search" type="search" placeholder="Search services…"></div></div>
-  <div id="filters" class="filters"></div><div id="grid" class="grid"></div>
-</section>
-<section id="chat">
-  <div class="head"><div><h2>Ask ROBERTA</h2><p>Normal-language access to the same verified intelligence core.</p></div></div>
-  <div class="chatLayout"><div class="chat"><div class="chatHead"><div><b>ROBERTA</b><div style="color:var(--muted);font-size:10px">Verified On-Chain Intelligence</div></div><span class="tag">Analysis only</span></div><div id="messages" class="messages"><div class="msg assistant">I’m ready. Choose a service above or ask a normal question about X1 market conditions, risk, tokenomics, history, burns, discovery, concentration, evidence, or pre-trade analysis.</div></div><div class="composer"><textarea id="composer" rows="1" placeholder="Ask ROBERTA…"></textarea><button id="send" class="btn primary">Send</button></div></div>
-  <aside class="info"><h3>Trust model</h3><div class="infoBlock"><b>Fresh facts</b><span>Accepted CMIS/provider evidence overrides remembered or learned live values.</span></div><div class="infoBlock"><b>Unknowns</b><span>Missing evidence stays UNKNOWN / UNAVAILABLE. It is never zero-filled.</span></div><div class="infoBlock"><b>Proof vs risk</b><span>Evidence quality is separate from deterministic risk. Strong proof may support WARN or BLOCK.</span></div><div class="infoBlock"><b>Execution</b><span>No result authorizes signing, broadcast, custody, swaps, bridge transfers, or autonomous value movement.</span></div></aside>
+<div class="page">
+  <header class="siteNav">
+    <div class="shell navInner">
+      <div class="brand">
+        <div class="brandMark">R</div>
+        <div class="brandText"><b>ROBERTA</b><small>VERIFIED ON-CHAIN INTELLIGENCE</small></div>
+      </div>
+      <nav class="navLinks">
+        <button data-go="home">Overview</button>
+        <button data-go="services">Capabilities</button>
+        <button data-go="trust">Trust</button>
+        <button data-go="chat">Ask ROBERTA</button>
+      </nav>
+      <div class="navActions">
+        <div id="health" class="pill"><span class="dot"></span>Checking ROBERTA…</div>
+        <button class="btn" id="settingsBtn">Connection</button>
+      </div>
+    </div>
+  </header>
+
+  <div id="settings" class="settings">
+    <h3>Connection</h3>
+    <div class="field"><label>ROBERTA bridge URL</label><input id="apiBase" placeholder="Same origin"></div>
+    <div class="field"><label>Bearer token (if configured)</label><input id="apiKey" type="password" autocomplete="off" placeholder="ROBERTA_API_KEY"></div>
+    <div class="note">Connection values stay in this browser tab only. Default loopback use needs no token.</div>
   </div>
-</section>
+
+  <main>
+    <section id="home" class="hero">
+      <div class="heroGrid"></div>
+      <div class="shell heroInner">
+        <div class="heroBadge">ROBERTA intelligence platform</div>
+        <h1>On-chain intelligence that <span>reasons with evidence.</span></h1>
+        <p class="heroLead">Ask a question, run a verified assessment, or explore a specialist capability. ROBERTA coordinates the right Scout and CMIS evidence path while keeping unknowns, proof quality, and risk explicit.</p>
+        <div class="heroBtns">
+          <button class="btn primary" data-svc="full">Run Full Assessment</button>
+          <button class="btn soft" data-svc="scan">Instant X1 Scan</button>
+          <button class="btn" data-go="chat">Ask ROBERTA</button>
+        </div>
+
+        <div class="heroStage">
+          <div class="stageGlow"></div>
+          <div class="stageCard">
+            <div class="stageTop">
+              <div class="stageTitle"><div class="stageOrb">R</div><div><b>ROBERTA verification path</b><small>One governed path from question to evidence-backed answer</small></div></div>
+              <div class="pill">CMIS 1.18 · Read-only intelligence</div>
+            </div>
+            <div class="flow">
+              <div class="flowNode"><span class="microLabel">01</span><strong>You ask</strong><span>Natural language or a selected intelligence service.</span></div>
+              <div class="flowNode hot"><span class="microLabel">02</span><strong>ROBERTA orchestrates</strong><span>Selects the accepted specialist path without exposing provider controls.</span></div>
+              <div class="flowNode"><span class="microLabel">03</span><strong>Chain Scout</strong><span>Interprets X1 or configured Solana evidence without manufacturing facts.</span></div>
+              <div class="flowNode"><span class="microLabel">04</span><strong>CMIS verifies</strong><span>Owns deterministic facts, evidence, proof and risk contracts.</span></div>
+              <div class="flowNode"><span class="microLabel">05</span><strong>Answer</strong><span>Verified result with freshness, limitations and unknowns preserved.</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="trust" class="section alt">
+      <div class="shell">
+        <div class="sectionHead">
+          <div><div class="eyebrow">Built for trust</div><h2>Verified intelligence without hiding the uncertainty.</h2></div>
+          <p>ROBERTA is designed to distinguish what is verified, what is merely observed, and what is still unavailable—so a polished answer never outruns the evidence.</p>
+        </div>
+        <div class="trustStrip">
+          <article class="trustCard"><div class="trustIcon">✓</div><h3>Evidence before confidence</h3><p>Fresh accepted CMIS/provider evidence overrides remembered or learned live values. Missing evidence stays UNKNOWN or UNAVAILABLE.</p></article>
+          <article class="trustCard"><div class="trustIcon">◇</div><h3>Proof stays separate from risk</h3><p>Evidence quality and deterministic risk are different dimensions. Strong proof can still support a WARN or BLOCK result.</p></article>
+          <article class="trustCard"><div class="trustIcon">↗</div><h3>Analysis, not execution</h3><p>Website actions never call CMIS directly. Signing, broadcast, custody, swaps, bridge transfers and autonomous value movement remain unauthorized.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="services" class="section">
+      <div class="shell">
+        <div class="sectionHead">
+          <div><div class="eyebrow">Capabilities</div><h2>One ROBERTA. A full suite of accepted intelligence services.</h2></div>
+          <p>Choose a capability instead of memorizing commands. Each card sends a bounded request through the same ROBERTA → Scout → CMIS authority path.</p>
+        </div>
+        <div class="serviceTools">
+          <div id="filters" class="filters"></div>
+          <div class="search"><input id="search" type="search" placeholder="Search ROBERTA capabilities…"></div>
+        </div>
+        <div id="grid" class="grid"></div>
+      </div>
+    </section>
+
+    <section class="section alt">
+      <div class="shell">
+        <div class="productBand">
+          <div class="bandGrid">
+            <div>
+              <div class="eyebrow" style="color:#aeb2ff">Current product state</div>
+              <h2>X1-first today. Multi-chain by verified adoption.</h2>
+              <p>ROBERTA expands only when the evidence contract and chain-specific authority path are accepted. The interface deliberately does not imply feature parity where it does not exist.</p>
+              <div class="heroBtns" style="justify-content:flex-start"><button class="btn" data-svc="key">View status key</button><button class="btn soft" data-go="chat">Ask about availability</button></div>
+            </div>
+            <div class="stateList">
+              <div class="stateItem ok"><strong>Accepted:</strong> Instant X1 Scan v3, Burn, Discovery, What Changed, Compare and current-market freshness.</div>
+              <div class="stateItem ok"><strong>Accepted:</strong> CMIS 1.18 pull-only Concentration Warning through ROBERTA.</div>
+              <div class="stateItem ok"><strong>Solana:</strong> Market, tokenomics and risk only when the accepted provider path is explicitly configured.</div>
+              <div class="stateItem gate"><strong>Evidence-gated:</strong> Warp / bridge-flow intelligence remains evidence-gated and is not presented as runnable.</div>
+              <div class="stateItem"><strong>Learning:</strong> The Learning Command Center remains a separate read-only operator surface; this market UI does not start or mutate training.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="chat" class="section">
+      <div class="shell">
+        <div class="sectionHead">
+          <div><div class="eyebrow">Conversational intelligence</div><h2>Ask ROBERTA the way you would ask an analyst.</h2></div>
+          <p>Normal-language access reaches the same verified intelligence core as the service cards. ROBERTA chooses the appropriate specialist path.</p>
+        </div>
+        <div class="chatLayout">
+          <div class="chat">
+            <div class="chatHead"><div><b>ROBERTA</b><div style="color:var(--muted);font-size:10px">Verified On-Chain Intelligence</div></div><span class="tag">Analysis only</span></div>
+            <div id="messages" class="messages"><div class="msg assistant">I’m ready. Choose a capability above or ask a normal question about X1 market conditions, risk, tokenomics, history, burns, discovery, concentration, evidence, or pre-trade analysis.</div></div>
+            <div class="composer"><textarea id="composer" rows="1" placeholder="Ask ROBERTA anything about an accepted intelligence service…"></textarea><button id="send" class="btn primary">Send</button></div>
+          </div>
+          <aside class="info">
+            <h3>Trust model</h3>
+            <div class="infoBlock"><b>Fresh facts</b><span>Accepted CMIS/provider evidence overrides remembered or learned live values.</span></div>
+            <div class="infoBlock"><b>Unknowns</b><span>Missing evidence stays UNKNOWN / UNAVAILABLE. It is never zero-filled.</span></div>
+            <div class="infoBlock"><b>Proof vs risk</b><span>Evidence quality is separate from deterministic risk.</span></div>
+            <div class="infoBlock"><b>Execution</b><span>No result authorizes signing, broadcast, custody, swaps, bridge transfers, or autonomous value movement. Execution remains unauthorized.</span></div>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="shell footerInner"><span>ROBERTA — Verified On-Chain Intelligence</span><span>User → ROBERTA → Chain Scout → CMIS → verified provider/source</span></div>
+  </footer>
 </div>
-</main>
-</div>
+
 <div id="modalBg" class="modalBg"><div class="modal"><div class="modalHead"><div><h3 id="modalTitle"></h3><p id="modalDesc"></p></div><button id="close" class="close">×</button></div><form id="serviceForm"><div id="formFields" class="form"></div><div class="modalActions"><button id="cancel" type="button" class="btn">Cancel</button><button type="submit" class="btn primary">Send to ROBERTA</button></div></form></div></div>
 <script>
 var services=[
