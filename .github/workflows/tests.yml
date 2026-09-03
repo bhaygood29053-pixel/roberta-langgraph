@@ -133,6 +133,9 @@ jobs:
       - name: Run public bridge contract tests
         run: python -m pytest -q tests/test_bridge_http.py
 
+      - name: Run ROBERTA web UI contract tests
+        run: python -m pytest -q tests/test_web_ui.py
+
       - name: Run X1 burn intelligence product contract tests
         run: python -m pytest -q tests/test_x1_burn_intelligence.py
 
