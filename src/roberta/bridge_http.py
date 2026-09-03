@@ -18,6 +18,7 @@ from typing import Any, Optional
 from langchain_core.messages import AIMessage
 
 from roberta.private_core import build_graph
+from roberta.web_ui import web_ui_bytes
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8766
@@ -117,6 +118,14 @@ def make_handler(bridge: RobertaBridge, *, api_key: str = ""):
             self.end_headers()
             self.wfile.write(body)
 
+        def _send_html(self, status_code: int, body: bytes) -> None:
+            self.send_response(status_code)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(body)
+
         def _authorized(self) -> bool:
             if not required_key:
                 return True
@@ -144,6 +153,9 @@ def make_handler(bridge: RobertaBridge, *, api_key: str = ""):
             return False
 
         def do_GET(self):  # noqa: N802 - BaseHTTPRequestHandler API
+            if self.path in {"/", "/app", "/index.html"}:
+                self._send_html(200, web_ui_bytes())
+                return
             if self.path == "/healthz":
                 self._send_json(
                     200,
