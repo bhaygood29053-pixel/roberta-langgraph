@@ -7,6 +7,7 @@ from langchain_core.tools import BaseTool, StructuredTool
 
 from roberta.cmis.client import CMISClient
 from roberta.cmis.concentration_intelligence import normalize_intelligence_evidence_id
+from roberta.cmis.concentration_warning import normalize_warning_request
 from roberta.cmis.contracts import TradeAction
 from roberta.x1_scout.compare_workflow import run_x1_compare_workflow
 from roberta.x1_scout.graph import build_x1_scout_graph
@@ -31,10 +32,18 @@ def build_x1_scout_tool(
             "discovery_intelligence",
             "pre_trade_check",
             "concentration_change_intelligence",
+            "concentration_warning_intelligence",
         ] | None = None,
         action: TradeAction | None = None,
         amount_usd: float | None = None,
         intelligence_evidence_id: str | None = None,
+        intelligence_evidence_ids: list[str] | None = None,
+        warning_threshold_policy: dict[str, object] | None = None,
+        warning_threshold_unit: str | None = None,
+        warning_comparator: str | None = None,
+        warning_evaluated_at: str | None = None,
+        warning_max_latest_age_seconds: int | None = None,
+        warning_max_persistence_window_seconds: int | None = None,
         compare_asset: str | None = None,
         include_history: bool = False,
     ) -> str:
@@ -68,6 +77,21 @@ def build_x1_scout_tool(
             "asset": asset,
             "objective": objective,
         }
+        warning_inputs = (
+            intelligence_evidence_ids,
+            warning_threshold_policy,
+            warning_threshold_unit,
+            warning_comparator,
+            warning_evaluated_at,
+            warning_max_latest_age_seconds,
+            warning_max_persistence_window_seconds,
+        )
+        if operation != "concentration_warning_intelligence" and any(
+            value is not None for value in warning_inputs
+        ):
+            raise ValueError(
+                "warning policy inputs require operation='concentration_warning_intelligence'"
+            )
         if operation is None:
             if include_history:
                 raise ValueError(
@@ -191,6 +215,46 @@ def build_x1_scout_tool(
                     "intelligence_evidence_id": evidence_id,
                 }
             )
+        elif operation == "concentration_warning_intelligence":
+            if include_history or compare_asset is not None:
+                raise ValueError(
+                    "history/compare inputs are not accepted for concentration warning"
+                )
+            if action is not None or amount_usd is not None:
+                raise ValueError(
+                    "trade action/amount are not accepted for concentration warning"
+                )
+            if intelligence_evidence_id is not None:
+                raise ValueError(
+                    "single intelligence_evidence_id is not accepted for concentration warning"
+                )
+            normalized = normalize_warning_request(
+                intelligence_evidence_ids=intelligence_evidence_ids,
+                threshold_policy=warning_threshold_policy,
+                threshold_unit=warning_threshold_unit,
+                comparator=warning_comparator,
+                evaluated_at=warning_evaluated_at,
+                max_latest_age_seconds=warning_max_latest_age_seconds,
+                max_persistence_window_seconds=warning_max_persistence_window_seconds,
+            )
+            request.update(
+                {
+                    "operation": "concentration_warning_intelligence",
+                    "intelligence_evidence_ids": normalized[
+                        "intelligence_evidence_ids"
+                    ],
+                    "warning_threshold_policy": normalized["threshold_policy"],
+                    "warning_threshold_unit": normalized["threshold_unit"],
+                    "warning_comparator": normalized["comparator"],
+                    "warning_evaluated_at": normalized["evaluated_at"],
+                    "warning_max_latest_age_seconds": normalized[
+                        "max_latest_age_seconds"
+                    ],
+                    "warning_max_persistence_window_seconds": normalized[
+                        "max_persistence_window_seconds"
+                    ],
+                }
+            )
         else:  # pragma: no cover - StructuredTool schema is narrower than runtime input
             raise ValueError("Unsupported explicit X1 Scout operation")
 
@@ -240,6 +304,10 @@ def build_x1_scout_tool(
             "use operation='concentration_change_intelligence' only when an exact "
             "CMIS-owned ie_ content id is present in the user request or trusted current "
             "context; copy it into intelligence_evidence_id and never invent one. "
+            "For the promoted pull-only Concentration Warning Intelligence service, use "
+            "operation='concentration_warning_intelligence' only when the exact two CMIS-owned "
+            "evidence ids plus every threshold/freshness/window policy input are explicitly "
+            "present; never invent defaults, recompute WATCH/CLEAR, or treat warning state as risk. "
             "X1 Scout obtains structured facts through CMIS only and never authorizes "
             "execution or adds whale/insider/bot/intent/ownership labels."
         ),
