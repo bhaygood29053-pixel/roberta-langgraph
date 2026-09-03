@@ -536,7 +536,7 @@ The Learning Plane implementation milestone is complete enough to support the fl
 
 **Roberta may learn autonomously from accepted static evidence, but learning never self-authorizes truth or operational power. Fresh chain facts remain behind Chain Scout -> CMIS -> Provider, and operational/execution authority remains separately gated.**
 
-## Live reconciliation — 2026-09-02 America/New_York
+## Live reconciliation — 2026-09-03 America/New_York
 
 Current product order:
 
@@ -546,7 +546,7 @@ Current product order:
 4. **WHAT CHANGED? — COMPLETE.** ROBERTA public #308 and protected `roberta-core` #26 provide first-class `/changed <asset>` without local market-delta calculation or causal inference.
 5. **FIELD-SCOPED CURRENT-MARKET FRESHNESS — COMPLETE.** CMIS public #386 + protected `cmis-core` #9 establish CMIS 1.17 / `instant_x1_scan/v3`; ROBERTA public #301 + protected `roberta-core` #19 validate, preserve, and render the same per-field freshness. Price may be VERIFIED while liquidity, rolling 24h volume, and rolling transactions remain NOT VERIFIED. One fresh field never promotes global freshness.
 6. **EARLY WARNING CMIS SERVICE — COMPLETE; X1 SCOUT / ROBERTA ADOPTION — ACTIVE GATE.** CMIS Issue #399 / public #400 / protected `cmis-core` #16 now promote X1 `concentration_warning_intelligence/v1` under CMIS 1.18 as a bounded pull-only service. ROBERTA must consume it through X1 Scout, preserve WATCH/CLEAR and exact evidence lineage without recomputation, keep warning state separate from risk, and keep push delivery unauthorized.
-7. **CROSS-CHAIN PROVENANCE FOUNDATION — CMIS COMPLETE; ROBERTA ADOPTION QUEUED.** CMIS Issue #402 / PR #403 accepted the read-only `cross_chain_asset_provenance/v1` structural foundation. ROBERTA Issue #314 is queued behind the active Early Warning adoption gate and must consume provenance through X1 Scout only after a separate CMIS public-service / Scout-reliance promotion. Live Warp state, backing/custody truth, bridge flow, Bridge-to-XDEX utilization, and execution remain unverified/unauthorized.
+7. **CROSS-CHAIN PROVENANCE + WARP QUALIFICATION FOUNDATION — CMIS COMPLETE INTERNALLY; ROBERTA ADOPTION QUEUED.** CMIS Issue #402 / PR #403 accepted `cross_chain_asset_provenance/v1`; Issue #405 / PR #406 added internal `bridge_route_evidence/v1` and `warp_bridge_qualification/v1` with exact route/source/destination/source-URL/timestamp/backing/custody gates. Warp remains `blocked_endpoint_semantics` with zero accepted semantic-contract registry entries. CMIS Issue #407 is the next exact endpoint/semantic-fixture gate. ROBERTA Issue #314 remains queued behind Early Warning and may not consume or present live bridge truth before separate CMIS public-service / Scout-reliance promotion. Bridge flow, Bridge-to-XDEX utilization, and execution remain unverified/unauthorized.
 8. **Decision Object expansion:** Human and Machine ROBERTA must continue to share one canonical fact/evidence basis.
 9. **Learning operations:** supporting track only; it does not displace X1 intelligence product gates.
 10. **Telegram:** lower priority than Early Warning.
