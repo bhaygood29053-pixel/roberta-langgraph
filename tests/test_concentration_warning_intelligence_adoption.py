@@ -377,6 +377,16 @@ def test_x1_scout_explicit_warning_operation_preserves_cmis_warning_and_risk_sep
     assert report["findings"]["data"]["canonical_warning"] == _canonical_warning()
     assert report["findings"]["data"]["push_delivery_authorized"] is False
     assert report["findings"]["data"]["execution_authorized"] is False
+    product = report["x1_concentration_warning_intelligence"]
+    assert product["contract_version"] == "x1_concentration_warning_intelligence/v1"
+    assert product["product"] == "x1_concentration_warning_intelligence"
+    assert product["warning"] == report["findings"]["data"]
+    assert product["warning"]["canonical_warning"] == _canonical_warning()
+    assert product["delivery_mode"] == "pull_only"
+    assert product["push_delivery_authorized"] is False
+    assert product["warning_level_is_risk_severity"] is False
+    assert product["risk_interpretation"] is None
+    assert product["execution_authorized"] is False
 
 
 def test_x1_scout_tool_requires_every_warning_policy_input_and_never_invents_defaults() -> None:
@@ -405,5 +415,6 @@ def test_x1_scout_tool_requires_every_warning_policy_input_and_never_invents_def
     report = json.loads(encoded)
     assert report["source"]["operation"] == SERVICE
     assert report["findings"]["data"]["warning_level"] == "WATCH"
+    assert report["x1_concentration_warning_intelligence"]["warning"]["warning_level"] == "WATCH"
     assert cmis.calls[-1]["intelligence_evidence_ids"] == [ID1, ID2]
     assert cmis.calls[-1]["comparator"] == "GTE"
