@@ -36,7 +36,7 @@ AUTONOMOUS_OPERATIONS: tuple[CMISOperation, ...] = (
     "risk_check",
 )
 MAX_PLAN_OPERATIONS = 3
-FULL_ASSESSMENT_MAX_PLAN_OPERATIONS = 5
+FULL_ASSESSMENT_MAX_PLAN_OPERATIONS = 3
 MAX_RANK_LIMIT = 50
 
 _INSTANT_SCAN_TERMS = (
@@ -138,9 +138,11 @@ Rules:
 - You may use only: instant_x1_scan, market_report, rank, historical_compare, tokenomics, burn_intelligence, discovery_intelligence, risk_check.
 - Use instant_x1_scan only when the objective explicitly asks for an Instant X1 Scan or quick/instant asset scan.
 - Use the smallest useful plan, with no duplicates and at most three operations.
-- For a full/complete/comprehensive assessment or due-diligence objective, propose
-  up to five operations because deterministic policy requires market_report,
-  rank, tokenomics, historical_compare, and risk_check.
+- For a full/complete/comprehensive assessment or due-diligence objective, the
+  deterministic policy owns the final plan. The canonical full-assessment
+  composition is rank + burn_intelligence + instant_x1_scan. Instant X1 Scan
+  already carries current market, tokenomics, all-available history,
+  freshness-aware deterministic risk, and evidence metadata.
 - Never propose pre_trade_check, verification_evidence, transaction preparation,
   signing, broadcasting, wallet permissions, or any value-moving action.
 - Do not invent market facts. You are selecting investigations, not answering
@@ -318,11 +320,18 @@ def required_operations(objective: object) -> list[CMISOperation]:
     """
 
     normalized = _normalize_objective(objective)
+    intent = recommendation_intent(normalized)
+    if intent == "full_assessment":
+        # Full assessment uses the flagship scan as the single current-market,
+        # tokenomics, history, risk, freshness, and evidence authority, then
+        # adds only the two dimensions the scan intentionally does not own.
+        # Keeping the scan last makes the richest accepted product the primary
+        # report while avoiding duplicate market/risk collection paths.
+        return ["rank", "burn_intelligence", "instant_x1_scan"]
     if is_instant_x1_scan_objective(normalized):
         return ["instant_x1_scan"]
     if is_discovery_objective(normalized):
         return ["discovery_intelligence"]
-    intent = recommendation_intent(normalized)
     if is_rank_objective(normalized) and intent != "full_assessment":
         return ["rank"]
 
