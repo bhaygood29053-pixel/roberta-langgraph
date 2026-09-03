@@ -105,23 +105,18 @@ def test_compare_request_requires_terminal_friendly_structure() -> None:
 
 
 
-def test_asset_overview_routes_to_one_flagship_scan_without_presentation_cues() -> None:
+def test_asset_overview_routes_to_first_class_scan_plus_burn_workflow() -> None:
     overview = overview_request("AGI")
 
-    assert "Instant X1 Scan for AGI" in overview
-    assert "operation='instant_x1_scan'" in overview
+    assert "Asset Overview for AGI" in overview
+    assert "operation='asset_overview'" in overview
     assert "instant_x1_scan/v3" in overview
-    assert "Asset Overview" in overview
-    assert "CURRENT MARKET" not in overview
-    assert "HISTORY" not in overview
-    assert "EVIDENCE STATUS" not in overview
-    assert "[VERIFIED]" not in overview
-
-    plan = enforce_plan(
-        {"asset": "AGI", "objective": overview},
-        {"operations": ["market_report", "tokenomics", "risk_check"]},
-    )
-    assert plan["operations"] == ["instant_x1_scan"]
+    assert "burn_intelligence/v1" in overview
+    assert "same exact verified X1 mint" in overview
+    assert "1h/24h/7d/30d Burn Intelligence" in overview
+    assert "Do not claim lifetime burn" in overview
+    assert "Proof Score separate from risk" in overview
+    assert "execution_authorized=false" in overview
 
 
 def test_history_request_keeps_compact_terminal_sections() -> None:

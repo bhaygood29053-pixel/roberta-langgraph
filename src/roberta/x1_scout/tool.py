@@ -9,6 +9,7 @@ from roberta.cmis.client import CMISClient
 from roberta.cmis.concentration_intelligence import normalize_intelligence_evidence_id
 from roberta.cmis.concentration_warning import normalize_warning_request
 from roberta.cmis.contracts import TradeAction
+from roberta.x1_scout.asset_overview_workflow import run_x1_asset_overview_workflow
 from roberta.x1_scout.compare_workflow import run_x1_compare_workflow
 from roberta.x1_scout.graph import build_x1_scout_graph
 from roberta.x1_scout.what_changed_workflow import run_x1_what_changed_workflow
@@ -27,6 +28,7 @@ def build_x1_scout_tool(
         objective: str = "assess market risk",
         operation: Literal[
             "compare",
+            "asset_overview",
             "what_changed",
             "instant_x1_scan",
             "discovery_intelligence",
@@ -56,6 +58,10 @@ def build_x1_scout_tool(
         ranking with no single asset, use ``asset='XDEX'`` as the scope label.
         For a two-asset entire/full/lifetime-history comparison, copy the exact
         second user-supplied asset into ``compare_asset``.
+
+        Asset Overview is a first-class ROBERTA product that composes one validated
+        Instant X1 Scan with one validated Burn Intelligence result. It does not
+        change the accepted Instant X1 Scan contract.
 
         Natural requests for an Instant X1 Scan or quick/instant asset scan route
         to the accepted CMIS composition service through X1 Scout. Roberta may
@@ -139,6 +145,21 @@ def build_x1_scout_tool(
                 include_history=include_history,
             )
             return json.dumps(compare_report, sort_keys=True)
+        elif operation == "asset_overview":
+            if include_history:
+                raise ValueError("include_history is not accepted for asset_overview")
+            if compare_asset is not None:
+                raise ValueError("compare_asset is not accepted for asset_overview")
+            if action is not None or amount_usd is not None:
+                raise ValueError("trade action/amount are not accepted for asset_overview")
+            if intelligence_evidence_id is not None:
+                raise ValueError("intelligence_evidence_id is not accepted for asset_overview")
+            report = run_x1_asset_overview_workflow(
+                scout_graph=scout_graph,
+                asset=str(asset or "").strip(),
+                objective=objective,
+            )
+            return json.dumps(report, sort_keys=True)
         elif operation == "what_changed":
             if include_history:
                 raise ValueError("include_history is not accepted for what_changed")
@@ -276,7 +297,10 @@ def build_x1_scout_tool(
             "Delegate an X1-chain investigation to X1 Scout. Natural Instant X1 Scan or "
             "quick/instant asset-scan requests use the accepted CMIS instant_x1_scan/v3 "
             "composition through X1 Scout; operation='instant_x1_scan' is also available "
-            "for an explicit flagship scan request. For a first-class two-asset current "
+            "for an explicit flagship scan request. For Asset Overview, use "
+            "operation='asset_overview'; X1 Scout composes one validated Instant X1 Scan "
+            "and one validated Burn Intelligence product with exact-mint binding and no "
+            "local burn arithmetic. For a first-class two-asset current "
             "comparison. For Discovery Intelligence, use operation='discovery_intelligence'; "
             "it preserves verified observation bounds and never treats first observation as launch. "
             "comparison, use operation='compare' with the exact second asset in compare_asset. "

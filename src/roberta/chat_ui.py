@@ -625,12 +625,17 @@ def automatic_status_summary(content: object) -> str | None:
 
 def overview_request(asset: str) -> str:
     return (
-        f"On X1, run the flagship Instant X1 Scan for {asset}. "
-        "Use X1 Scout with operation='instant_x1_scan' and the accepted CMIS "
-        "instant_x1_scan/v3 product path. Treat this as the Asset Overview "
-        "workflow and keep the investigation scope to that scan unless the "
-        "user explicitly asks for supplemental evidence in a separate request."
-    )
+        f"On X1, run the first-class Asset Overview for {asset}. "
+        "Use X1 Scout with operation='asset_overview'. The workflow must compose "
+        "one validated CMIS instant_x1_scan/v3 product and one validated CMIS "
+        "burn_intelligence/v1 product, bound to the same exact verified X1 mint. "
+        "Preserve all scan market, tokenomics, holder, history, risk, evidence, "
+        "and freshness states exactly as returned. Add bounded 1h/24h/7d/30d Burn "
+        "Intelligence and period-over-period burn changes without recalculating "
+        "them in ROBERTA. Do not claim lifetime burn unless CMIS explicitly verifies "
+        "lifetime coverage. Keep Proof Score separate from risk and preserve "
+        "execution_authorized=false."
+    ) + SINGLE_ASSET_TERMINAL_STYLE
 
 
 def compare_request(asset1: str, asset2: str) -> str:
