@@ -214,6 +214,93 @@ def test_product_view_projects_values_without_recomputing_authority() -> None:
     assert view["execution_authorized"] is False
 
 
+def test_product_view_preserves_native_xnt_distribution_semantics() -> None:
+    report = _scan_report()
+    presentation = report["instant_x1_scan_presentation"]
+    identity = presentation["sections"]["identity"]
+    identity.update(
+        {
+            "symbol": "XNT",
+            "name": "XNT",
+            "identity_key": "native:xnt",
+        }
+    )
+    holder = presentation["sections"]["holder_concentration"]
+    holder.update(
+        {
+            "holders": None,
+            "holders_verified": False,
+            "holders_state": "not_applicable",
+            "holders_reason": "xnt_is_native_currency_not_spl_holder_population",
+            "holder_semantics": {
+                "state": "not_applicable",
+                "counted_entity": "native_xnt_account_address",
+                "token_holder_count_applicable": False,
+                "beneficial_owner_identity_verified": False,
+                "person_or_wallet_group_count_verified": False,
+            },
+            "top_account_concentration": {
+                "state": "verified",
+                "verified": True,
+                "value": 22.806457320125,
+                "reason": "finalized_native_xnt_top20_accounts_percent_of_circulating_supply",
+                "basis": "top_20_native_xnt_accounts_percent_of_circulating_xnt",
+                "counted_entity": "native_xnt_account_address",
+            },
+            "native_account_concentration": {
+                "verified": True,
+                "counted_entity": "native_xnt_account_address",
+                "holder_count_state": "not_applicable",
+                "slot_scope_verified": True,
+                "largest_accounts_slot": 76345004,
+                "network_supply_slot": 76345015,
+                "slot_span": 11,
+                "buckets": {
+                    "top_20": {
+                        "percent_of_circulating_xnt": 22.806457320125,
+                    }
+                },
+                "beneficial_owner_identity_verified": False,
+                "person_or_wallet_group_count_verified": False,
+            },
+        }
+    )
+    for item in (
+        "holder_count_requires_existing_verified_holder_semantics",
+        "current_top_account_concentration_not_promoted_in_v2",
+    ):
+        if item in presentation["limitations"]:
+            presentation["limitations"].remove(item)
+
+    view = build_instant_x1_scan_product_view(report)
+
+    assert view is not None
+    assert view["identity"]["identity_key"] == "native:xnt"
+    distribution = view["holder_concentration"]
+    assert distribution["holders"] == {"value": None, "verified": False}
+    assert distribution["holders_state"] == "not_applicable"
+    assert distribution["top_account_concentration"]["verified"] is True
+    assert (
+        distribution["top_account_concentration"]["basis"]
+        == "top_20_native_xnt_accounts_percent_of_circulating_xnt"
+    )
+    assert (
+        distribution["native_account_concentration"]["counted_entity"]
+        == "native_xnt_account_address"
+    )
+    assert (
+        distribution["native_account_concentration"][
+            "beneficial_owner_identity_verified"
+        ]
+        is False
+    )
+
+    rendered = render_instant_x1_scan_product_text(view)
+    assert "Holder count: NOT APPLICABLE" in rendered
+    assert "Top-20 native XNT account concentration: 22.806457320125%" in rendered
+    assert "Holders: unknown" not in rendered
+
+
 def test_product_view_preserves_native_authority_not_applicable_states() -> None:
     report = _scan_report()
     tokenomics = report["instant_x1_scan_presentation"]["sections"]["tokenomics"]
