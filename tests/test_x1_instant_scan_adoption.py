@@ -40,7 +40,7 @@ def test_instant_x1_scan_capability_requires_exact_accepted_contract() -> None:
 
 def test_instant_x1_scan_capability_fails_closed_on_old_or_weakened_contract() -> None:
     old = deepcopy(MockCMISClient().capabilities())
-    old["contract_version"] = "1.13.0"
+    old["contract_version"] = "1.16.0"
     with pytest.raises(CMISCapabilityContractError, match="requires contract"):
         require_instant_x1_scan_capability(
             validate_capability_manifest(old),

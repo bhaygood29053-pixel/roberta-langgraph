@@ -65,7 +65,7 @@ See [`docs/LEARNING_PLANE_ARCHITECTURE.md`](./docs/LEARNING_PLANE_ARCHITECTURE.m
 
 ### Instant X1 Scan
 
-CMIS `1.14.0` promotes bounded X1 `instant_x1_scan/v2`. The service remains read-only and composition-only, but it may deepen price history through the accepted bounded XDEX/X1.Ninja corroborated backfill before producing its history section. Roberta preserves the returned observation bounds, provider-backfill evidence, and gap diagnostics while keeping provider archive completeness, full asset lifetime, and continuity explicitly unverified. Missing/unverified holder or current-concentration facts remain explicit unknown/partial values, and Roberta does not treat composition as new underlying fact authority.
+CMIS `1.17.0` promotes bounded X1 `instant_x1_scan/v3`. v3 preserves the accepted v2 identity, market, tokenomics, history, risk, supported-pair lifetime, Burn, and Discovery boundaries while adding deterministic field-scoped current-market freshness. A timestamped provider-backed price may be freshness-verified when CMIS proves collection recency, provider fact time, and price-value linkage; liquidity, rolling 24h volume, and rolling transaction freshness remain explicitly unverified until field-specific fact-time contracts exist. Roberta copies those freshness states without recomputation and does not promote one fresh field into global freshness.
 
 ### X1 Burn Intelligence
 
@@ -76,7 +76,7 @@ Roberta's hardened `x1_burn_intelligence/v1` X1 Scout projection now requires th
 
 ### X1 identity and all-available history
 
-Roberta/X1 Scout accepts the CMIS `1.14.0` Instant X1 Scan v2 contract boundary on this branch. CMIS `1.11.0+` exact-mint normalization under `x1_asset_identity/v1` keeps the exact mint as the fungible identity root while preserving Metaplex and XDEX descriptors as separately sourced observations.
+Roberta/X1 Scout accepts the CMIS `1.17.0` Instant X1 Scan v3 contract boundary on this branch. CMIS `1.11.0+` exact-mint normalization under `x1_asset_identity/v1` keeps the exact mint as the fungible identity root while preserving Metaplex and XDEX descriptors as separately sourced observations.
 
 Roberta/X1 Scout also adopts the CMIS `1.10.0` `all_available` / `all_available_pair` historical modes. Natural full-history requests remain on the canonical path `Roberta -> X1 Scout -> CMIS`.
 

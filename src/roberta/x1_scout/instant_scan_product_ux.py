@@ -49,7 +49,7 @@ def build_instant_x1_scan_product_view(
     presentation = _mapping(report.get("instant_x1_scan_presentation"))
     if not presentation:
         return None
-    if presentation.get("contract_version") != "instant_x1_scan/v2":
+    if presentation.get("contract_version") != "instant_x1_scan/v3":
         return None
     if presentation.get("read_only") is not True:
         return None
@@ -70,6 +70,7 @@ def build_instant_x1_scan_product_view(
         return None
 
     top_concentration = _mapping(holders.get("top_account_concentration"))
+    freshness = _mapping(market.get("freshness"))
 
     return {
         "contract_version": PRODUCT_VIEW_CONTRACT,
@@ -107,6 +108,8 @@ def build_instant_x1_scan_product_view(
                 "transactions_24h",
                 "transactions_24h_verified",
             ),
+            "freshness": dict(freshness),
+            "freshness_state": freshness.get("freshness_state"),
             "#LPs": market.get("#LPs"),
         },
         "tokenomics": {
@@ -208,6 +211,8 @@ def render_instant_x1_scan_product_text(view: Mapping[str, Any]) -> str:
     history = _mapping(view.get("history"))
     risk = _mapping(view.get("risk"))
     evidence = _mapping(view.get("evidence"))
+    freshness = _mapping(market.get("freshness"))
+    freshness_fields = _mapping(freshness.get("fields"))
 
     descriptor = (
         identity.get("symbol")
@@ -241,6 +246,27 @@ def render_instant_x1_scan_product_text(view: Mapping[str, Any]) -> str:
         _render_verified("Liquidity USD", market.get("liquidity_usd")),
         _render_verified("24h Volume USD", market.get("volume_24h_usd")),
         _render_verified("24h Transactions", market.get("transactions_24h")),
+        f"Freshness: {freshness.get('freshness_state') or 'NOT_VERIFIED'}",
+        (
+            "Price freshness: VERIFIED"
+            if _mapping(freshness_fields.get("price_usd")).get("freshness_verified") is True
+            else "Price freshness: NOT VERIFIED"
+        ),
+        (
+            "Liquidity freshness: VERIFIED"
+            if _mapping(freshness_fields.get("liquidity_usd")).get("freshness_verified") is True
+            else "Liquidity freshness: NOT VERIFIED"
+        ),
+        (
+            "24h volume freshness: VERIFIED"
+            if _mapping(freshness_fields.get("volume_24h_usd")).get("freshness_verified") is True
+            else "24h volume freshness: NOT VERIFIED"
+        ),
+        (
+            "24h transaction freshness: VERIFIED"
+            if _mapping(freshness_fields.get("transactions_24h")).get("freshness_verified") is True
+            else "24h transaction freshness: NOT VERIFIED"
+        ),
         "",
         "Tokenomics",
         _render_verified(
