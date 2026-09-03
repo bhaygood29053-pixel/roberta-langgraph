@@ -110,7 +110,7 @@ def test_asset_overview_routes_to_one_flagship_scan_without_presentation_cues() 
 
     assert "Instant X1 Scan for AGI" in overview
     assert "operation='instant_x1_scan'" in overview
-    assert "instant_x1_scan/v2" in overview
+    assert "instant_x1_scan/v3" in overview
     assert "Asset Overview" in overview
     assert "CURRENT MARKET" not in overview
     assert "HISTORY" not in overview
