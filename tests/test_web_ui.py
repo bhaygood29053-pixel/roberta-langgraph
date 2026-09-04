@@ -61,6 +61,12 @@ def test_web_ui_contains_current_service_surface():
     assert ".statusToken.weak" in ROBERTA_WEB_UI_HTML
     assert "|STRONG|MODERATE|WEAK" in ROBERTA_WEB_UI_HTML
     assert "formatAssistant" in ROBERTA_WEB_UI_HTML
+    assert 'id="robertaHeroCanvas"' in ROBERTA_WEB_UI_HTML
+    assert "function profilePoint" in ROBERTA_WEB_UI_HTML
+    assert "prefers-reduced-motion" in ROBERTA_WEB_UI_HTML
+    assert "ResizeObserver" in ROBERTA_WEB_UI_HTML
+    assert "document.hidden" in ROBERTA_WEB_UI_HTML
+    assert "execution_authorized=false" in ROBERTA_WEB_UI_HTML
 
 
 def test_bridge_serves_web_ui_and_keeps_roberta_api_path():
