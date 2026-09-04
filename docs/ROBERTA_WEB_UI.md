@@ -91,3 +91,11 @@ Solana history, rank, pre-trade, concentration, burn, discovery, warning, and ot
 ## Learning Plane
 
 ROBERTA's Learning Command Center remains a separate loopback, read-only operator surface. The market/intelligence website does not start training, mutate the Pyramid ledger, approve lessons, or create a new learning-control authority path.
+
+## Animated intelligence field
+
+The public ROBERTA hero uses an original procedural rendering layer rather than a GIF, video, or copied visual asset. A responsive canvas draws the particle profile, flowing evidence strands, animated route nodes, and orbital intelligence field in real time.
+
+The renderer is deliberately bounded for the local UI: device-pixel ratio is capped, particle density scales with viewport area, animation pauses when the page is hidden, ResizeObserver rebuilds the field only when needed, pointer interaction is lightweight, and prefers-reduced-motion renders a static frame instead of continuous motion.
+
+The animation is presentation only. It does not create a browser-to-provider path, does not alter evidence state, and does not change the invariant execution_authorized=false.
