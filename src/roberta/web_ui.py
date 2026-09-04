@@ -128,7 +128,7 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;bac
           <div class="heroSignals" aria-label="ROBERTA operating principles">
             <span><b>CMIS 1.18</b> verified path</span>
             <span><b>Human + Machine</b> one truth</span>
-            <span><b>Read-only</b> execution_authorized=false</span>
+            <span><b>Read-only</b> execution remains unauthorized · execution_authorized=false</span>
           </div>
         </div>
 
