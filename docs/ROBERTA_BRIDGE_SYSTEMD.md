@@ -14,11 +14,27 @@ The managed service provides:
 
 ## Install
 
-Run the installer from the Roberta repository as the normal Roberta user:
+The managed bridge must run from an **assembled runtime** where the public shell
+and private core are installed into the same site-packages tree. Do not run the
+bridge with `PYTHONPATH=<repo>/src` after the private-core split; the public
+`roberta` package can otherwise shadow protected modules such as
+`roberta.recommendation_policy`.
+
+From the public Roberta repository:
 
 ```bash
+git pull --ff-only origin main
+cd ../roberta-core
+git pull --ff-only origin main
+cd ../roberta-langgraph
+
+bash scripts/build_roberta_runtime.sh
 bash scripts/install_roberta_bridge_systemd.sh
 ```
+
+The builder defaults to `../roberta-core`. If the private repository lives
+elsewhere, set `ROBERTA_PRIVATE_CORE_PATH=/absolute/path/to/roberta-core`.
+The assembled interpreter defaults to `.venv-runtime/bin/python`.
 
 Do not run the installer as root. It uses `sudo` only when writing and managing
 the systemd unit.
@@ -48,11 +64,16 @@ process using the port.
 
 ## Service behavior
 
-The generated unit uses the repository's existing virtual environment and runs:
+The generated unit uses the dedicated assembled runtime and runs:
 
 ```text
-python -m roberta.bridge_http --host 127.0.0.1 --port 8766
+.venv-runtime/bin/python -m roberta.bridge_http --host 127.0.0.1 --port 8766
 ```
+
+The unit deliberately does **not** set a public-source `PYTHONPATH`. Before
+writing the unit, the installer validates that the selected interpreter can
+import the public bridge plus protected `roberta.graph`,
+`roberta.recommendation_policy`, and `roberta.opinion_contract`.
 
 It is configured with:
 
@@ -104,13 +125,23 @@ sudo journalctl -u roberta-bridge.service -f
 
 ## Restart after a Roberta code update
 
-After pulling a new Roberta version, restart the service so the running Python
-process loads the updated code:
+After updating either repository, rebuild the assembled runtime before restarting
+the service:
 
 ```bash
+cd ~/roberta-dev/roberta-langgraph
 git pull --ff-only origin main
+
+cd ~/roberta-dev/roberta-core
+git pull --ff-only origin main
+
+cd ~/roberta-dev/roberta-langgraph
+bash scripts/build_roberta_runtime.sh
 sudo systemctl restart roberta-bridge.service
 ```
+
+This prevents a successful Git pull from leaving port 8766 on an older protected
+core or on a source-shadowed side-by-side layout.
 
 ## Change the model key
 
