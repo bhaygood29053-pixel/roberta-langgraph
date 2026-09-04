@@ -48,6 +48,40 @@ button,input,select,textarea{font:inherit}.page{min-height:100vh;overflow:hidden
 @media(max-width:1050px){.navLinks{display:none}.flow{grid-template-columns:1fr 1fr}.flowNode:not(:last-child):after{display:none}.crossSteps{grid-template-columns:1fr 1fr}.grid{grid-template-columns:repeat(2,1fr)}.sectionHead{grid-template-columns:1fr}.sectionHead p{margin:0}.bandGrid{grid-template-columns:1fr}.chatLayout{grid-template-columns:1fr}.info{display:none}.trustStrip{grid-template-columns:1fr}}
 @media(max-width:680px){.crossSteps{grid-template-columns:1fr}.crossChainHead{align-items:flex-start;flex-direction:column}.shell{width:min(100% - 24px,1240px)}.navInner{height:68px}.brandText small,.navActions .pill{display:none}.hero{padding:64px 0 52px}.hero h1{font-size:48px}.stageCard{padding:18px;border-radius:24px}.stageTop{align-items:flex-start;flex-direction:column}.flow{grid-template-columns:1fr}.grid{grid-template-columns:1fr}.section{padding:62px 0}.sectionHead h2{font-size:39px}.serviceTools{align-items:stretch;flex-direction:column}.search{width:100%}.productBand{padding:30px 22px;border-radius:28px}.heroBtns{display:grid}.heroBtns .btn{width:100%}.composer{grid-template-columns:1fr}.navActions .btn{padding:9px 12px}.messages{height:520px;min-height:520px}}
 </style>
+
+<style id="roberta-visual-redesign">
+:root{
+  --ink:#f4f6ff;--ink2:#d9def7;--muted:#98a1c8;--paper:#050817;--white:#0a0f24;
+  --line:rgba(126,150,255,.18);--violet:#7a5cff;--violet2:#945eff;--cyan:#4dc8ff;--sky:#0b1736;
+  --lav:#17143d;--mint:#0f2d31;--amber:#2f2611;--red:#31131a;--shadow:0 24px 80px rgba(0,0,0,.42);
+  --greenText:#7ef0bb;--greenBg:rgba(31,120,82,.16);--greenLine:rgba(91,221,158,.24);
+  --redText:#ff8b96;--redBg:rgba(150,44,58,.16);--redLine:rgba(255,117,131,.24);
+  --amberText:#ffd47f;--amberBg:rgba(145,105,23,.16);--amberLine:rgba(255,207,112,.24);
+  --grayText:#aab2d0;--grayBg:rgba(140,150,190,.10);--grayLine:rgba(164,177,222,.18)
+}
+html{background:#050817}
+body{
+  color:var(--ink);
+  background:
+    radial-gradient(circle at 22% 8%,rgba(56,82,196,.18),transparent 24%),
+    radial-gradient(circle at 78% 12%,rgba(115,58,211,.12),transparent 22%),
+    linear-gradient(180deg,#050817 0%,#070a19 45%,#050714 100%);
+  font-family:"Avenir Next","Century Gothic","Trebuchet MS",Inter,ui-sans-serif,system-ui,sans-serif
+}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;background-image:linear-gradient(rgba(92,122,255,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(92,122,255,.028) 1px,transparent 1px);background-size:72px 72px;mask-image:linear-gradient(to bottom,rgba(0,0,0,.65),transparent 82%)}
+.siteNav{background:rgba(5,8,23,.82);border-bottom:1px solid rgba(118,139,255,.14);backdrop-filter:blur(24px) saturate(140%)}
+.navInner{height:82px}.brand{letter-spacing:.22em}.brandMark{border-radius:8px;background:linear-gradient(145deg,#5aa8ff,#8e4dff);box-shadow:0 0 28px rgba(103,103,255,.28);font-weight:800}.brandText b{font-size:18px;letter-spacing:.32em;font-weight:500}.brandText small{color:#9fa9d6;letter-spacing:.16em}
+.navLinks button{color:#f7f8ff;font-weight:500;letter-spacing:.06em;text-transform:uppercase;font-size:12px}.navLinks button:hover{background:rgba(105,127,255,.08);color:#67c9ff}
+.pill{background:rgba(11,16,38,.84);border-color:rgba(139,158,255,.2);color:#aeb8dc}.btn{background:rgba(10,15,37,.72);border-color:rgba(126,150,255,.28);color:#f7f8ff}.btn:hover{box-shadow:0 12px 35px rgba(54,87,255,.16);border-color:rgba(88,194,255,.46)}.primary{background:linear-gradient(100deg,#347dff 0%,#744dff 55%,#a147ff 100%);border-color:transparent;box-shadow:0 0 30px rgba(90,89,255,.24)}.soft{background:rgba(19,28,64,.82);border-color:rgba(78,191,255,.36);color:#bcecff}
+.hero.robertaHero{padding:0;min-height:calc(100vh - 82px);display:flex;align-items:center;overflow:hidden}.robertaHero:before{display:none}.robertaHero .heroGrid{background-size:80px 80px;opacity:.65;mask-image:linear-gradient(to right,transparent 0,#000 15%,#000 82%,transparent 100%)}.heroSplit{position:relative;display:grid;grid-template-columns:minmax(390px,.82fr) minmax(560px,1.18fr);align-items:center;gap:22px;min-height:calc(100vh - 82px);padding:48px 0}.heroCopy{position:relative;z-index:4;padding:34px 0 44px}.heroCopy .heroBadge{background:transparent;border:0;padding:0;color:#66c9ff;box-shadow:none;letter-spacing:.28em;font-weight:500}.heroCopy .heroBadge:before{display:none}.heroCopy h1{font-size:clamp(72px,8vw,126px);letter-spacing:.055em;margin:14px 0 12px;max-width:none;font-weight:300}.heroCopy h1 span{background:linear-gradient(90deg,#ffffff 0%,#edf5ff 36%,#7bc9ff 82%,#936bff 100%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 45px rgba(83,159,255,.08)}.heroTagline{font-size:clamp(20px,2vw,28px);line-height:1.45;max-width:650px;margin:0 0 26px;color:#f2f5ff;font-weight:300}.heroCopy .heroLead{font-size:15px;line-height:1.8;color:#929bc0;max-width:610px;margin:0}.heroCopy .heroBtns{justify-content:flex-start;margin-top:28px}.heroSignals{display:flex;flex-wrap:wrap;gap:10px;margin-top:30px}.heroSignals span{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(101,132,255,.17);border-radius:999px;padding:8px 11px;background:rgba(8,13,31,.56);color:#8f99c1;font-size:10px;letter-spacing:.04em}.heroSignals b{color:#dce8ff;font-weight:600}
+.heroVisual{position:relative;z-index:2;height:min(720px,76vh);min-height:560px;border-left:1px solid rgba(111,139,255,.10);isolation:isolate}.heroVisual:before{content:"";position:absolute;inset:4% 0 3% 4%;border-radius:50%;background:radial-gradient(circle at 49% 50%,rgba(41,91,255,.13),transparent 32%),radial-gradient(circle at 76% 48%,rgba(120,64,255,.09),transparent 28%);filter:blur(8px);z-index:-1}.heroVisual canvas{position:absolute;inset:0;width:100%;height:100%;display:block}.heroCoreMark{position:absolute;right:14%;top:43%;width:104px;height:104px;border-radius:50%;display:grid;place-items:center;font-size:48px;font-weight:800;font-style:italic;color:#785cff;background:radial-gradient(circle at 50% 45%,rgba(43,71,178,.44),rgba(5,9,25,.93) 68%);border:1px solid rgba(101,183,255,.7);box-shadow:0 0 26px rgba(42,143,255,.34),inset 0 0 24px rgba(93,74,255,.28);text-shadow:0 0 24px rgba(125,90,255,.65);transform:translate(50%,-50%)}.heroCoreMark:after{content:"";position:absolute;inset:-28px;border-radius:50%;border:1px solid rgba(96,127,255,.20);animation:corePulse 4s ease-in-out infinite}
+.heroOrbitLabel{position:absolute;display:grid;grid-template-columns:38px auto;grid-template-rows:auto auto;column-gap:9px;align-items:center;color:#edf1ff;font-size:9px;letter-spacing:.08em;text-shadow:0 0 12px rgba(0,0,0,.8);pointer-events:none}.heroOrbitLabel small{grid-column:2;color:#8c98c1;font-size:8px;letter-spacing:.10em}.orbitIcon{grid-row:1/3;width:38px;height:38px;border:1px solid rgba(95,155,255,.55);border-radius:50%;display:grid;place-items:center;color:#b9e8ff;background:rgba(8,14,34,.78);box-shadow:0 0 18px rgba(79,100,255,.20);font-size:15px}.orbitMarket{right:7%;top:16%}.orbitRisk{right:0;top:31%}.orbitBridge{right:-1%;top:62%}.orbitProof{right:10%;bottom:11%}.orbitFresh{right:39%;bottom:7%}.orbitBurn{right:48%;top:24%}.motionStatus{position:absolute;left:4%;bottom:4%;display:flex;align-items:center;gap:8px;color:#7180b3;font-size:8px;letter-spacing:.22em}.motionStatus span{width:6px;height:6px;border-radius:50%;background:#55cfff;box-shadow:0 0 12px #55cfff;animation:statusBlink 2s ease-in-out infinite}
+@keyframes corePulse{0%,100%{transform:scale(.95);opacity:.35}50%{transform:scale(1.08);opacity:.72}}@keyframes statusBlink{0%,100%{opacity:.35}50%{opacity:1}}
+.section{position:relative}.section.alt{background:rgba(7,10,26,.64);border-top:1px solid rgba(117,139,255,.10);border-bottom:1px solid rgba(117,139,255,.10)}.sectionHead p,.trustCard p,.svc p,.infoBlock span,.note{color:#929bc0}.eyebrow{color:#66c9ff;letter-spacing:.22em;font-weight:600}.trustCard,.svc,.chat,.info,.modal,.historyItem{background:linear-gradient(180deg,rgba(13,18,43,.92),rgba(8,13,31,.92));border-color:rgba(122,145,255,.17);box-shadow:0 16px 44px rgba(0,0,0,.20)}.trustCard:hover,.svc:hover{border-color:rgba(86,192,255,.35);box-shadow:0 22px 55px rgba(18,47,123,.20)}.trustIcon,.ico{background:linear-gradient(145deg,rgba(50,89,204,.30),rgba(116,66,226,.22));color:#8ed9ff;border:1px solid rgba(105,162,255,.22)}.trustCard:nth-child(2) .trustIcon,.trustCard:nth-child(3) .trustIcon,.svc:nth-child(3n+2) .ico,.svc:nth-child(3n) .ico{background:linear-gradient(145deg,rgba(38,117,184,.22),rgba(103,58,194,.18))}.search input,.field input,.field select,.composer textarea{background:#080d21;border-color:rgba(122,145,255,.18);color:#eef2ff}.filter{background:#090f25;border-color:rgba(122,145,255,.18);color:#9da7cd}.filter.active{background:linear-gradient(100deg,#347dff,#744dff);border-color:transparent}.tag{background:rgba(82,68,220,.14);border-color:rgba(123,111,255,.28);color:#b4a8ff}.tag.advanced,.tag.configured{background:rgba(154,108,22,.12);border-color:rgba(240,194,91,.25);color:#ffd47f}.productBand{background:linear-gradient(140deg,#080d23,#101536 60%,#15113b);border:1px solid rgba(119,143,255,.18)}.messages{background:linear-gradient(180deg,#060a19,#080d20)}.msg.assistant{background:#0d132d;border-color:rgba(122,145,255,.18);color:#dce2fb}.msg.user{background:linear-gradient(100deg,#285dca,#6541cc)}.historyPanel{background:#080d20;border-color:rgba(122,145,255,.14)}.settings{background:#0a1027;border-color:rgba(122,145,255,.20)}.footer{border-color:rgba(122,145,255,.13)}
+@media(max-width:1180px){.heroSplit{grid-template-columns:1fr;gap:0;padding-top:56px}.hero.robertaHero{min-height:auto}.heroCopy{text-align:center;padding-bottom:8px}.heroCopy .heroLead,.heroTagline{margin-left:auto;margin-right:auto}.heroCopy .heroBtns,.heroSignals{justify-content:center}.heroVisual{height:600px;min-height:520px;border-left:0}.heroCoreMark{right:19%}.orbitRisk,.orbitBridge{right:3%}}
+@media(max-width:760px){.heroSplit{padding-top:32px}.heroCopy h1{font-size:clamp(56px,18vw,84px)}.heroTagline{font-size:19px}.heroVisual{height:470px;min-height:430px;margin:0 -8px}.heroCoreMark{width:78px;height:78px;font-size:36px;right:19%;top:45%}.heroOrbitLabel{transform:scale(.82);transform-origin:center}.orbitMarket{right:2%;top:10%}.orbitRisk{right:-3%;top:28%}.orbitBridge{right:-4%;top:67%}.orbitProof{right:4%;bottom:6%}.orbitFresh{right:38%;bottom:2%}.orbitBurn{right:48%;top:17%}.heroSignals{display:none}}
+@media(prefers-reduced-motion:reduce){.heroCoreMark:after,.motionStatus span{animation:none!important}}
+</style>
 </head>
 <body>
 <div class="page">
@@ -78,33 +112,36 @@ button,input,select,textarea{font:inherit}.page{min-height:100vh;overflow:hidden
   </div>
 
   <main>
-    <section id="home" class="hero">
-      <div class="heroGrid"></div>
-      <div class="shell heroInner">
-        <div class="heroBadge">ROBERTA intelligence platform</div>
-        <h1>On-chain intelligence that <span>reasons with evidence.</span></h1>
-        <p class="heroLead">Ask a question, run a verified assessment, or explore a specialist capability. ROBERTA coordinates the right Scout and CMIS evidence path while keeping unknowns, proof quality, and risk explicit.</p>
-        <div class="heroBtns">
-          <button class="btn primary" data-svc="full">Run Full Assessment</button>
-          <button class="btn soft" data-svc="scan">Instant X1 Scan</button>
-          <button class="btn" data-go="chat">Ask ROBERTA</button>
+    <section id="home" class="hero robertaHero">
+      <div class="heroGrid" aria-hidden="true"></div>
+      <div class="shell heroSplit">
+        <div class="heroCopy">
+          <div class="heroBadge">VERIFIED ON-CHAIN INTELLIGENCE</div>
+          <h1><span>ROBERTA</span></h1>
+          <p class="heroTagline">Evidence-first intelligence for X1, cross-chain routes, market structure, and risk.</p>
+          <p class="heroLead">ROBERTA coordinates the accepted Scout → CMIS evidence path, preserves exact asset identity and uncertainty, and explains what can be proven without turning analysis into execution.</p>
+          <div class="heroBtns">
+            <button class="btn primary" data-svc="full">Explore Capabilities</button>
+            <button class="btn soft" data-go="chat">Ask ROBERTA</button>
+            <button class="btn" data-svc="scan">Instant X1 Scan</button>
+          </div>
+          <div class="heroSignals" aria-label="ROBERTA operating principles">
+            <span><b>CMIS 1.18</b> verified path</span>
+            <span><b>Human + Machine</b> one truth</span>
+            <span><b>Read-only</b> execution_authorized=false</span>
+          </div>
         </div>
 
-        <div class="heroStage">
-          <div class="stageGlow"></div>
-          <div class="stageCard">
-            <div class="stageTop">
-              <div class="stageTitle"><div class="stageOrb">R</div><div><b>ROBERTA verification path</b><small>One governed path from question to evidence-backed answer</small></div></div>
-              <div class="pill">CMIS 1.18 · Read-only intelligence</div>
-            </div>
-            <div class="flow">
-              <div class="flowNode"><span class="microLabel">01</span><strong>You ask</strong><span>Natural language or a selected intelligence service.</span></div>
-              <div class="flowNode hot"><span class="microLabel">02</span><strong>ROBERTA orchestrates</strong><span>Selects the accepted specialist path without exposing provider controls.</span></div>
-              <div class="flowNode"><span class="microLabel">03</span><strong>Chain Scout</strong><span>Interprets X1 or configured Solana evidence without manufacturing facts.</span></div>
-              <div class="flowNode"><span class="microLabel">04</span><strong>CMIS verifies</strong><span>Owns deterministic facts, evidence, proof and risk contracts.</span></div>
-              <div class="flowNode"><span class="microLabel">05</span><strong>Answer</strong><span>Verified result with freshness, limitations and unknowns preserved.</span></div>
-            </div>
-          </div>
+        <div class="heroVisual" aria-label="Animated ROBERTA intelligence field">
+          <canvas id="robertaHeroCanvas" role="img" aria-label="Animated particle profile with flowing evidence paths"></canvas>
+          <div class="heroCoreMark" aria-hidden="true">R</div>
+          <div class="heroOrbitLabel orbitMarket"><span class="orbitIcon">▥</span><b>MARKET</b><small>INTELLIGENCE</small></div>
+          <div class="heroOrbitLabel orbitRisk"><span class="orbitIcon">◇</span><b>RISK</b><small>ANALYSIS</small></div>
+          <div class="heroOrbitLabel orbitBridge"><span class="orbitIcon">↔</span><b>CROSS-CHAIN</b><small>ROUTES</small></div>
+          <div class="heroOrbitLabel orbitProof"><span class="orbitIcon">✓</span><b>VERIFIED</b><small>EVIDENCE</small></div>
+          <div class="heroOrbitLabel orbitFresh"><span class="orbitIcon">◷</span><b>FRESHNESS</b><small>BY FIELD</small></div>
+          <div class="heroOrbitLabel orbitBurn"><span class="orbitIcon">△</span><b>BURN</b><small>INTELLIGENCE</small></div>
+          <div class="motionStatus"><span></span>LIVE VERIFIED NETWORK</div>
         </div>
       </div>
     </section>
@@ -281,6 +318,159 @@ el('#send').onclick=function(){send(el('#composer').value)};el('#composer').addE
 el('#historyBtn').onclick=function(){el('#historyPanel').classList.toggle('open');renderHistory()};el('#clearChat').onclick=clearCurrentChat;el('#clearHistory').onclick=clearAllHistory;el('#historyList').addEventListener('click',function(e){var item=e.target.closest('[data-chat-id]');if(item)openSavedChat(item.dataset.chatId)});
 el('#settingsBtn').onclick=function(){el('#settings').classList.toggle('open')};el('#apiBase').value=sessionStorage.getItem('robertaApiBase')||'';el('#apiKey').value=sessionStorage.getItem('robertaApiKey')||'';el('#apiBase').onchange=function(){sessionStorage.setItem('robertaApiBase',this.value.trim());health()};el('#apiKey').onchange=function(){sessionStorage.setItem('robertaApiKey',this.value);health()};
 </script>
+
+<script>
+(function(){
+  'use strict';
+  var canvas=document.getElementById('robertaHeroCanvas');
+  if(!canvas)return;
+  var ctx=canvas.getContext('2d',{alpha:true,desynchronized:true});
+  if(!ctx)return;
+
+  var reduceMotion=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var dpr=Math.min(window.devicePixelRatio||1,2);
+  var w=0,h=0,raf=0,last=0,visible=!document.hidden;
+  var particles=[],strands=[],stars=[];
+  var pointer={x:0,y:0,active:false};
+
+  function rand(a,b){return a+Math.random()*(b-a)}
+  function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+  function resize(){
+    var r=canvas.getBoundingClientRect(); w=Math.max(1,r.width); h=Math.max(1,r.height);
+    dpr=Math.min(window.devicePixelRatio||1,2);
+    canvas.width=Math.round(w*dpr); canvas.height=Math.round(h*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    build();
+    draw(performance.now(),true);
+  }
+
+  function profilePoint(t){
+    var cx=w*.46,cy=h*.51,rx=w*.21,ry=h*.31;
+    var a=t*Math.PI*2;
+    var x=cx+Math.cos(a)*rx, y=cy+Math.sin(a)*ry;
+    if(Math.cos(a)>.2){
+      var front=(Math.cos(a)-.2)/.8;
+      x+=front*w*.045;
+      if(y<cy-h*.02&&y>cy-h*.16)x+=front*w*.025;
+      if(y>cy+h*.08&&y<cy+h*.18)x-=front*w*.024;
+    }
+    return{x:x,y:y};
+  }
+
+  function insideHead(x,y){
+    var cx=w*.46,cy=h*.51,rx=w*.205,ry=h*.30;
+    var nx=(x-cx)/rx,ny=(y-cy)/ry;
+    var base=nx*nx+ny*ny<1;
+    if(!base)return false;
+    if(nx>.18){
+      var bulge=.14*Math.sin((ny+.15)*8)-.04*ny;
+      return nx<.93+bulge;
+    }
+    return true;
+  }
+
+  function build(){
+    particles=[];strands=[];stars=[];
+    var area=w*h;
+    var pc=clamp(Math.floor(area/1900),180,540);
+    var attempts=0;
+    while(particles.length<pc&&attempts<pc*12){
+      attempts++;
+      var x=rand(w*.19,w*.69), y=rand(h*.17,h*.84);
+      if(insideHead(x,y)){
+        particles.push({x:x,y:y,ox:x,oy:y,r:rand(.55,1.55),phase:rand(0,Math.PI*2),speed:rand(.25,.9)});
+      }
+    }
+    var sc=clamp(Math.floor(w/22),26,54);
+    for(var i=0;i<sc;i++){
+      var t=rand(.40,.72);
+      var p=profilePoint(t);
+      var len=rand(w*.17,w*.39);
+      strands.push({sx:p.x-w*.06,sy:p.y,cp1x:p.x-len*.24,cp1y:p.y+rand(-70,70),cp2x:p.x-len*.62,cp2y:p.y+rand(-95,95),ex:p.x-len,ey:p.y+rand(-115,115),phase:rand(0,Math.PI*2),amp:rand(5,19),speed:rand(.35,.8),alpha:rand(.16,.46)});
+    }
+    for(var j=0;j<clamp(Math.floor(area/12000),45,110);j++)stars.push({x:rand(0,w),y:rand(0,h),r:rand(.35,1.2),phase:rand(0,6.28)});
+  }
+
+  function lineGlow(x1,y1,x2,y2,a){
+    var g=ctx.createLinearGradient(x1,y1,x2,y2);
+    g.addColorStop(0,'rgba(67,196,255,'+a+')');
+    g.addColorStop(.55,'rgba(92,106,255,'+(a*.85)+')');
+    g.addColorStop(1,'rgba(166,73,255,0)');
+    ctx.strokeStyle=g;
+  }
+
+  function draw(ts,force){
+    if(!force&&!visible)return;
+    var t=ts*.001;
+    ctx.clearRect(0,0,w,h);
+
+    var bg=ctx.createRadialGradient(w*.51,h*.5,10,w*.51,h*.5,w*.42);
+    bg.addColorStop(0,'rgba(33,72,183,.13)'); bg.addColorStop(.5,'rgba(34,32,111,.055)'); bg.addColorStop(1,'rgba(5,8,23,0)');
+    ctx.fillStyle=bg;ctx.fillRect(0,0,w,h);
+
+    for(var s=0;s<stars.length;s++){
+      var st=stars[s],sa=.12+.22*(.5+.5*Math.sin(t*.65+st.phase));
+      ctx.beginPath();ctx.arc(st.x,st.y,st.r,0,Math.PI*2);ctx.fillStyle='rgba(116,184,255,'+sa+')';ctx.fill();
+    }
+
+    ctx.save();ctx.globalCompositeOperation='lighter';
+    for(var k=0;k<strands.length;k++){
+      var q=strands[k],wave=Math.sin(t*q.speed+q.phase)*q.amp;
+      ctx.beginPath();ctx.moveTo(q.sx,q.sy);
+      ctx.bezierCurveTo(q.cp1x,q.cp1y+wave,q.cp2x,q.cp2y-wave*.7,q.ex,q.ey+wave);
+      lineGlow(q.sx,q.sy,q.ex,q.ey,q.alpha);
+      ctx.lineWidth=.55+(k%4===0?.7:0);ctx.stroke();
+      if(k%5===0){
+        var tt=(t*q.speed*.13+q.phase)%1;
+        var mt=1-tt,u=tt;
+        var mx=mt*mt*mt*q.sx+3*mt*mt*u*q.cp1x+3*mt*u*u*q.cp2x+u*u*u*q.ex;
+        var my=mt*mt*mt*q.sy+3*mt*mt*u*(q.cp1y+wave)+3*mt*u*u*(q.cp2y-wave*.7)+u*u*u*(q.ey+wave);
+        ctx.beginPath();ctx.arc(mx,my,1.7,0,Math.PI*2);ctx.fillStyle='rgba(99,213,255,.85)';ctx.fill();
+      }
+    }
+
+    for(var i=0;i<particles.length;i++){
+      var p=particles[i],pulse=.65+.35*Math.sin(t*p.speed+p.phase);
+      var dx=0,dy=0;
+      if(pointer.active&&!reduceMotion){
+        var px=p.ox-pointer.x,py=p.oy-pointer.y,dist=Math.sqrt(px*px+py*py);
+        if(dist<120&&dist>1){var push=(120-dist)/120*5;dx=px/dist*push;dy=py/dist*push}
+      }
+      p.x=p.ox+dx+Math.sin(t*.35+p.phase)*.65;p.y=p.oy+dy+Math.cos(t*.29+p.phase)*.65;
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r*(.85+pulse*.35),0,Math.PI*2);
+      ctx.fillStyle='rgba('+(110+Math.floor(60*pulse))+','+(175+Math.floor(55*pulse))+',255,'+(.35+.55*pulse)+')';ctx.fill();
+      if(i%18===0){ctx.beginPath();ctx.arc(p.x,p.y,p.r*4.2,0,Math.PI*2);ctx.fillStyle='rgba(80,122,255,.035)';ctx.fill()}
+    }
+
+    var connections=particles.length>350?85:60;
+    for(var a=0;a<connections;a++){
+      var p1=particles[(a*7)%particles.length],p2=particles[(a*13+17)%particles.length];
+      var ddx=p1.x-p2.x,ddy=p1.y-p2.y,dist2=ddx*ddx+ddy*ddy;
+      if(dist2<7200){ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.strokeStyle='rgba(85,158,255,.055)';ctx.lineWidth=.5;ctx.stroke()}
+    }
+
+    var cx=w*.84,cy=h*.47,maxR=Math.min(w,h)*.24;
+    for(var r=1;r<=3;r++){ctx.beginPath();ctx.arc(cx,cy,maxR*(.40+r*.22),0,Math.PI*2);ctx.strokeStyle='rgba(104,117,255,'+(r===2?.16:.09)+')';ctx.lineWidth=.7;ctx.stroke()}
+    for(var n=0;n<16;n++){
+      var ang=n/16*Math.PI*2+t*.035*(n%2?1:-1),rr=maxR*(.52+(n%3)*.15);
+      var nx=cx+Math.cos(ang)*rr,ny=cy+Math.sin(ang)*rr;
+      ctx.beginPath();ctx.arc(nx,ny,n%5===0?2.1:1.1,0,Math.PI*2);ctx.fillStyle=n%4===0?'rgba(183,77,255,.9)':'rgba(72,201,255,.75)';ctx.fill();
+      if(n%4===0){ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(nx,ny);ctx.strokeStyle='rgba(79,142,255,.07)';ctx.lineWidth=.6;ctx.stroke()}
+    }
+    ctx.restore();
+
+    if(!reduceMotion&&visible)raf=requestAnimationFrame(draw);
+  }
+
+  function start(){if(reduceMotion){draw(performance.now(),true);return}cancelAnimationFrame(raf);raf=requestAnimationFrame(draw)}
+  document.addEventListener('visibilitychange',function(){visible=!document.hidden;if(visible)start();else cancelAnimationFrame(raf)});
+  canvas.addEventListener('pointermove',function(e){var r=canvas.getBoundingClientRect();pointer.x=e.clientX-r.left;pointer.y=e.clientY-r.top;pointer.active=true});
+  canvas.addEventListener('pointerleave',function(){pointer.active=false});
+  if('ResizeObserver'in window)new ResizeObserver(resize).observe(canvas.parentElement);else window.addEventListener('resize',resize);
+  resize();start();
+})();
+</script>
+
 </body></html>'''
 
 
