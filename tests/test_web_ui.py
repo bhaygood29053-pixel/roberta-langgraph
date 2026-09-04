@@ -67,6 +67,14 @@ def test_web_ui_contains_current_service_surface():
     assert "ResizeObserver" in ROBERTA_WEB_UI_HTML
     assert "document.hidden" in ROBERTA_WEB_UI_HTML
     assert "execution_authorized=false" in ROBERTA_WEB_UI_HTML
+    assert "ROBERTA Opinion v1" in ROBERTA_WEB_UI_HTML
+    assert "roberta_opinion/v1" in ROBERTA_WEB_UI_HTML
+    assert "My recommendation: <TOKEN>" in ROBERTA_WEB_UI_HTML
+    assert "Best evidence against my view" in ROBERTA_WEB_UI_HTML
+    assert "What would change my mind" in ROBERTA_WEB_UI_HTML
+    assert "ROBERTA may disagree with the user" in ROBERTA_WEB_UI_HTML
+    assert "id:'opinion'" in ROBERTA_WEB_UI_HTML
+    assert ".opinionLine{" in ROBERTA_WEB_UI_HTML
 
 
 def test_bridge_serves_web_ui_and_keeps_roberta_api_path():
