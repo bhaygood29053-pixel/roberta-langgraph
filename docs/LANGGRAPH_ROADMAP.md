@@ -488,7 +488,8 @@ Solana remains an accepted read-only specialist surface for maintenance, regress
 - continue evidence-aware UX work so unavailable, partial, ambiguous, stale, or unverified data remains visible to the user.
 - require exact identity binding inside the Asset Intelligence packet: unbound native/wrapped or other representation evidence remains visible but cannot be silently promoted into the canonical asset section.
 - **ROBERTA Claim Integrity Gate v1 — ACCEPTED in protected `roberta-core` PR #43:** post-specialist X1 Opinion v1 synthesis now rejects freshness-unqualified use of current-market fields when field freshness is explicitly unverified, rejects unverified numeric risk scores, and prevents identity-unbound dossier sections from being used as canonical-asset evidence without same-claim disclosure. Accepted machine opinions receive bounded `roberta_claim_integrity/v1` PASS metadata with `provider_truth_certified=false`; this is not a universal truth certificate.
-- Next Truth Gate expansion: add deterministic adapters/regression coverage across Compare, History, Burn, Discovery, and remaining specialist products so the same claim-boundary rules become system-wide without creating a second fact layer.
+- **X1 Compare Claim Integrity — ACCEPTED in protected `roberta-core` PR #45:** `roberta_claim_integrity/v1` now preserves X1 Compare comparability and directional relations, left/right field freshness, per-asset risk separation, the absence of a combined CMIS risk score/recommendation, and pair-history lifetime/continuity limits before Opinion v1 can be accepted.
+- Next Truth Gate expansion: standalone History first, then Burn, Discovery, and remaining specialist products so the same claim-boundary rules become system-wide without creating a second fact layer.
 
 ### 3. Keep the Learning Plane operationally strong as a supporting track
 
