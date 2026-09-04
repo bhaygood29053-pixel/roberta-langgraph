@@ -1,6 +1,6 @@
 # ROBERTA — Verified On-Chain Intelligence Roadmap
 
-Last reconciled: 2026-09-03 (America/New_York)
+Last reconciled: 2026-09-04 (America/New_York)
 
 Status source: accepted code and contracts on `main`. Open PRs are not current truth unless explicitly identified as pending.
 
@@ -475,7 +475,7 @@ Solana remains an accepted read-only specialist surface for maintenance, regress
 - build the user-facing X1 workflows around **Instant X1 Scan**, **Compare**, **Token Burn Intelligence (total verified-observed + 24h/7d/30d)**, **Discovery / first-observation history**, **Early Warning**, and **X1 ecosystem/network brief** outputs as their underlying CMIS contracts become accepted;
 - keep Proof Score separate from risk and never turn a risk `PASS` into execution permission;
 - prefer one coherent X1 intelligence response over disconnected specialist dumps.
-- **Scout-first Asset Intelligence Packet v1 — implementation in progress under #336:** for normal single-asset decisions, X1 Scout assembles Instant X1 Scan + Burn Intelligence + Discovery Intelligence into one `x1_asset_intelligence/v1` evidence inventory and conditionally adds pre-trade only from exact user-supplied side/notional; ROBERTA decides what to surface rather than predicting every narrow CMIS call in advance.
+- **Scout-first Asset Intelligence Packet v1 — ACCEPTED:** for normal single-asset decisions, X1 Scout assembles Instant X1 Scan + Burn Intelligence + Discovery Intelligence into one `x1_asset_intelligence/v1` evidence inventory and conditionally adds pre-trade only from exact user-supplied side/notional; ROBERTA decides what to surface rather than predicting every narrow CMIS call in advance. Live 8766 acceptance now routes the sized XNT decision through Opinion v1 rather than the legacy standalone pre-trade finalizer.
 
 ### 2. Harden Roberta ↔ X1 Scout ↔ CMIS product integration
 
@@ -487,6 +487,8 @@ Solana remains an accepted read-only specialist surface for maintenance, regress
 - consume accepted first-class CMIS Token Burn Intelligence through X1 Scout and the Canonical Decision Object without recomputation; prepare Discovery Ledger and Early Warning only after their separate contracts are accepted;
 - continue evidence-aware UX work so unavailable, partial, ambiguous, stale, or unverified data remains visible to the user.
 - require exact identity binding inside the Asset Intelligence packet: unbound native/wrapped or other representation evidence remains visible but cannot be silently promoted into the canonical asset section.
+- **ROBERTA Claim Integrity Gate v1 — ACCEPTED in protected `roberta-core` PR #43:** post-specialist X1 Opinion v1 synthesis now rejects freshness-unqualified use of current-market fields when field freshness is explicitly unverified, rejects unverified numeric risk scores, and prevents identity-unbound dossier sections from being used as canonical-asset evidence without same-claim disclosure. Accepted machine opinions receive bounded `roberta_claim_integrity/v1` PASS metadata with `provider_truth_certified=false`; this is not a universal truth certificate.
+- Next Truth Gate expansion: add deterministic adapters/regression coverage across Compare, History, Burn, Discovery, and remaining specialist products so the same claim-boundary rules become system-wide without creating a second fact layer.
 
 ### 3. Keep the Learning Plane operationally strong as a supporting track
 
