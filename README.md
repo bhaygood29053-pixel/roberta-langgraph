@@ -28,6 +28,14 @@ Core Roberta platform work is accepted through Phase 10 plus the post-Phase-10 e
 
 **Roberta Phase 11 Controlled Execution remains locked / not started.**
 
+### ROBERTA Opinion Contract
+
+ROBERTA is being expanded from evidence presentation into explicit evidence-bounded judgment. Protected `roberta-core` PR #35 (merged as `c40b04d2b8be12fcf0c95139f4d366c2ff355474`) implements `roberta_opinion/v1`: for normal opinion-bearing decision intents, Human ROBERTA states a recommendation first, separates conviction from evidence quality, gives a plain ROBERTA view, surfaces the best evidence against that view, and states what would change her mind. Machine ROBERTA receives the same conclusion structurally.
+
+This does not move factual authority out of Chain Scout -> CMIS and does not activate Controlled Execution. ROBERTA may disagree with the user and may make a strong recommendation when the evidence supports it; she may not manufacture facts or turn uncertainty into fake certainty. `execution_authorized=false` remains invariant.
+
+See [`docs/ROBERTA_OPINION_V1.md`](./docs/ROBERTA_OPINION_V1.md).
+
 ### Learning System
 
 Learning System Phases 1-10 are accepted on `main`:
