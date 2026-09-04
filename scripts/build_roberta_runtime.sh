@@ -22,7 +22,9 @@ PYTHON="$RUNTIME_VENV/bin/python"
 
 printf 'Building assembled ROBERTA runtime in %s\n' "$RUNTIME_VENV"
 "$PYTHON" -m pip install --upgrade pip
-"$PYTHON" -m pip install --upgrade --force-reinstall   "${REPO_ROOT}[deepseek]"   "$PRIVATE_CORE_PATH"
+"$PYTHON" -m pip install --upgrade --force-reinstall \
+  "${REPO_ROOT}[deepseek]" \
+  "$PRIVATE_CORE_PATH"
 
 printf '\n=== ASSEMBLED RUNTIME IMPORT VALIDATION ===\n'
 (
@@ -35,7 +37,17 @@ import roberta.bridge_http
 import roberta.graph
 import roberta.opinion_contract
 import roberta.recommendation_policy
+import roberta.private_core
 import roberta_core.api
+
+expected = roberta.private_core.EXPECTED_PRIVATE_CONTRACT
+actual = roberta_core.api.CUTOVER_CONTRACT
+if actual != expected:
+    raise RuntimeError(
+        f"private-core contract mismatch: expected {expected!r}, got {actual!r}"
+    )
+if not callable(getattr(roberta_core.api, "build_graph", None)):
+    raise RuntimeError("private-core facade does not expose callable build_graph")
 
 print("public package:", roberta.__file__)
 print("bridge:", inspect.getsourcefile(roberta.bridge_http))
@@ -43,7 +55,7 @@ print("protected graph:", inspect.getsourcefile(roberta.graph))
 print("recommendation policy:", inspect.getsourcefile(roberta.recommendation_policy))
 print("opinion contract:", inspect.getsourcefile(roberta.opinion_contract))
 print("private facade:", inspect.getsourcefile(roberta_core.api))
-print("private contract:", roberta_core.api.CUTOVER_CONTRACT)
+print("private contract:", actual)
 print("status=PASS")
 PY
 )
