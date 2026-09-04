@@ -99,3 +99,11 @@ The public ROBERTA hero uses an original procedural rendering layer rather than 
 The renderer is deliberately bounded for the local UI: device-pixel ratio is capped, particle density scales with viewport area, animation pauses when the page is hidden, ResizeObserver rebuilds the field only when needed, pointer interaction is lightweight, and prefers-reduced-motion renders a static frame instead of continuous motion.
 
 The animation is presentation only. It does not create a browser-to-provider path, does not alter evidence state, and does not change the invariant execution_authorized=false.
+
+## ROBERTA Opinion v1 on the website
+
+The existing website adopts the accepted protected `roberta_opinion/v1` behavior without creating a browser-side judgment engine. Opinion-bearing decision questions remain normal `/v1/roberta` requests and are enforced by ROBERTA's protected decision-synthesis layer.
+
+For those intents, Human ROBERTA is expected to lead with `My recommendation`, then disclose `Conviction`, `Evidence quality`, `My view`, the best material evidence against the view, and `What would change my mind`. The website exposes a dedicated **ROBERTA Opinion** capability card and formats those explicit opinion-header fields for readability.
+
+The website does not calculate a recommendation, alter CMIS facts, derive risk, or create a separate opinion authority. Facts and deterministic risk remain `Chain Scout -> CMIS`; judgment remains ROBERTA-owned. `execution_authorized=false` remains invariant.
