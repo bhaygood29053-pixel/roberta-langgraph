@@ -27,7 +27,17 @@ import roberta.bridge_http
 import roberta.graph
 import roberta.opinion_contract
 import roberta.recommendation_policy
+import roberta.private_core
 import roberta_core.api
+
+expected = roberta.private_core.EXPECTED_PRIVATE_CONTRACT
+actual = roberta_core.api.CUTOVER_CONTRACT
+if actual != expected:
+    raise RuntimeError(
+        f"private-core contract mismatch: expected {expected!r}, got {actual!r}"
+    )
+if not callable(getattr(roberta_core.api, "build_graph", None)):
+    raise RuntimeError("private-core facade does not expose callable build_graph")
 PY
 ); then
   fail "The selected runtime cannot import the public/private ROBERTA assembly. Rebuild it with: bash scripts/build_roberta_runtime.sh"
