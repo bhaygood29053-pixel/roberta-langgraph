@@ -110,3 +110,22 @@ No:
 - transaction construction, signing, broadcasting, custody, trading, bridge transfer, or Controlled Execution.
 
 `execution_authorized=false`
+
+
+## ROBERTA Opinion layer
+
+`roberta_decision/v1` remains the canonical shared fact/evidence decision basis. ROBERTA's new judgment freedom is layered above it through protected `roberta_opinion/v1`; the opinion contract does not replace the Decision Object and does not become a second CMIS.
+
+The distinction is deliberate:
+
+```text
+roberta_decision/v1
+  = accepted fact/evidence/risk projection
+
+roberta_opinion/v1
+  = ROBERTA-owned judgment over accepted evidence
+```
+
+Human ROBERTA and Machine ROBERTA must expose the same opinion conclusion. A machine opinion may not rewrite the underlying Decision Object, promote an unverified fact, or change `execution_authorized=false`.
+
+See [ROBERTA_OPINION_V1.md](./ROBERTA_OPINION_V1.md).
