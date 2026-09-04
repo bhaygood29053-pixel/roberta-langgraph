@@ -12,13 +12,26 @@ fi
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RUN_USER="$(id -un)"
-PYTHON="$REPO_ROOT/.venv/bin/python"
+PYTHON="${ROBERTA_RUNTIME_PYTHON:-$REPO_ROOT/.venv-runtime/bin/python}"
 ENV_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/roberta"
 ENV_FILE="$ENV_DIR/roberta.env"
 UNIT_FILE="/etc/systemd/system/roberta-bridge.service"
 HEALTH_URL="http://127.0.0.1:8766/healthz"
 
-[[ -x "$PYTHON" ]] || fail "Roberta virtualenv Python was not found at $PYTHON"
+[[ -x "$PYTHON" ]] || fail "Assembled Roberta runtime Python was not found at $PYTHON. Run: bash scripts/build_roberta_runtime.sh"
+
+if ! (
+  cd /
+  env -u PYTHONPATH "$PYTHON" - <<'PY' >/dev/null 2>&1
+import roberta.bridge_http
+import roberta.graph
+import roberta.opinion_contract
+import roberta.recommendation_policy
+import roberta_core.api
+PY
+); then
+  fail "The selected runtime cannot import the public/private ROBERTA assembly. Rebuild it with: bash scripts/build_roberta_runtime.sh"
+fi
 
 case "$REPO_ROOT$ENV_FILE" in
   *[[:space:]]*) fail "This installer currently requires repository and environment-file paths without whitespace." ;;
@@ -74,7 +87,6 @@ Wants=network-online.target
 Type=simple
 User=$RUN_USER
 WorkingDirectory=$REPO_ROOT
-Environment=PYTHONPATH=$REPO_ROOT/src
 EnvironmentFile=$ENV_FILE
 ExecStart=$PYTHON -m roberta.bridge_http --host 127.0.0.1 --port 8766
 Restart=always
