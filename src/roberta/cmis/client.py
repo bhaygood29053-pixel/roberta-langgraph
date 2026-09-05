@@ -89,6 +89,19 @@ class CMISClient(Protocol):
     ) -> CMISEnvelope:
         ...
 
+    def bridge_to_xdex_utilization(
+        self,
+        *,
+        chain: str,
+        evidence_sha256: str,
+        route_id: str,
+        source_mint: str,
+        destination_mint: str,
+        evaluated_at: float,
+        max_evidence_age_seconds: float,
+    ) -> CMISEnvelope:
+        ...
+
     def concentration_warning_intelligence(
         self,
         *,

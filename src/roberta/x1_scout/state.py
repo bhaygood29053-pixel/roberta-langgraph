@@ -27,6 +27,12 @@ class X1ScoutRequest(TypedDict):
     warning_evaluated_at: NotRequired[str]
     warning_max_latest_age_seconds: NotRequired[int]
     warning_max_persistence_window_seconds: NotRequired[int]
+    bridge_evidence_sha256: NotRequired[str]
+    bridge_route_id: NotRequired[str]
+    bridge_source_mint: NotRequired[str]
+    bridge_destination_mint: NotRequired[str]
+    bridge_evaluated_at: NotRequired[float]
+    bridge_max_evidence_age_seconds: NotRequired[float]
     compare_asset: NotRequired[str]
 
 
@@ -94,6 +100,7 @@ class X1ScoutReport(TypedDict):
     x1_burn_intelligence: NotRequired[dict[str, object]]
     x1_discovery_intelligence: NotRequired[dict[str, object]]
     x1_concentration_warning_intelligence: NotRequired[dict[str, object]]
+    x1_bridge_to_xdex_utilization: NotRequired[dict[str, object]]
     source: dict[str, str]
     sources: list[object]
     warnings: list[object]

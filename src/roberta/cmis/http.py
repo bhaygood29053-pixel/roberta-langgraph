@@ -12,6 +12,7 @@ from roberta.cmis.capabilities import (
     CMISCapabilities,
     CMISCapabilityContractError,
     CMISCapabilityUnavailable,
+    require_bridge_to_xdex_utilization_capability,
     require_burn_intelligence_capability,
     require_concentration_warning_capability,
     require_discovery_intelligence_capability,
@@ -19,6 +20,12 @@ from roberta.cmis.capabilities import (
     require_instant_x1_scan_capability,
     require_service_capability,
     validate_capability_manifest,
+)
+from roberta.cmis.bridge_to_xdex import (
+    SERVICE as BRIDGE_TO_XDEX_SERVICE,
+    CMISBridgeToXdexContractError,
+    normalize_bridge_to_xdex_request,
+    validate_bridge_to_xdex_response,
 )
 from roberta.cmis.concentration_intelligence import (
     SERVICE as CONCENTRATION_INTELLIGENCE_SERVICE,
@@ -791,5 +798,78 @@ class CMISHTTPClient:
                 asset=normalized_asset,
                 status="error",
                 code="invalid_cmis_concentration_warning_response",
+                message=str(exc),
+            )
+
+
+    def bridge_to_xdex_utilization(
+        self,
+        *,
+        chain: str,
+        evidence_sha256: str,
+        route_id: str,
+        source_mint: str,
+        destination_mint: str,
+        evaluated_at: float,
+        max_evidence_age_seconds: float,
+    ) -> CMISEnvelope:
+        normalized_chain, normalized_destination = self._identity(
+            chain,
+            destination_mint,
+        )
+        try:
+            require_bridge_to_xdex_utilization_capability(
+                self.capabilities(),
+                chain=normalized_chain,
+            )
+            params = normalize_bridge_to_xdex_request(
+                evidence_sha256=evidence_sha256,
+                route_id=route_id,
+                source_mint=source_mint,
+                destination_mint=normalized_destination,
+                evaluated_at=evaluated_at,
+                max_evidence_age_seconds=max_evidence_age_seconds,
+            )
+        except CMISCapabilityUnavailable as exc:
+            return self._error_envelope(
+                service=BRIDGE_TO_XDEX_SERVICE,
+                chain=normalized_chain,
+                asset=normalized_destination,
+                status="unavailable",
+                code="cmis_bridge_to_xdex_unavailable",
+                message=str(exc),
+                warning=True,
+            )
+        except (CMISCapabilityContractError, CMISBridgeToXdexContractError) as exc:
+            return self._error_envelope(
+                service=BRIDGE_TO_XDEX_SERVICE,
+                chain=normalized_chain,
+                asset=normalized_destination,
+                status="unavailable",
+                code="cmis_bridge_to_xdex_contract_unavailable",
+                message=f"CMIS Bridge-to-XDEX contract unavailable: {exc}",
+                warning=True,
+            )
+
+        response = self._request(
+            service=BRIDGE_TO_XDEX_SERVICE,
+            chain=normalized_chain,
+            asset=normalized_destination,
+            params=params,
+        )
+        if response.get("status") != "ok":
+            return response
+        try:
+            return validate_bridge_to_xdex_response(
+                response,
+                expected_request=params,
+            )
+        except CMISBridgeToXdexContractError as exc:
+            return self._error_envelope(
+                service=BRIDGE_TO_XDEX_SERVICE,
+                chain=normalized_chain,
+                asset=normalized_destination,
+                status="error",
+                code="invalid_cmis_bridge_to_xdex_response",
                 message=str(exc),
             )

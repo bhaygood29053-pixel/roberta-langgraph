@@ -15,6 +15,7 @@ from roberta.cmis.capabilities import (
     CMISCapabilityContractError,
     CMISCapabilityUnavailable,
     X1_ASSET_IDENTITY_CONTRACT_VERSION,
+    require_bridge_to_xdex_utilization_capability,
     require_burn_intelligence_capability,
     require_discovery_intelligence_capability,
     require_instant_x1_scan_capability,
@@ -32,6 +33,10 @@ from roberta.pretrade_ux import build_pretrade_presentation
 from roberta.risk_help import build_risk_help
 from roberta.status_help import build_cmis_status_help
 from roberta.time_utils import format_observed_at_utc, normalize_observed_at
+from roberta.x1_scout.bridge_to_xdex_utilization import (
+    X1BridgeToXdexContractError,
+    build_x1_bridge_to_xdex_utilization,
+)
 from roberta.x1_scout.burn_intelligence import (
     X1BurnIntelligenceContractError,
     build_x1_burn_intelligence,
@@ -370,6 +375,54 @@ def _dispatch_cmis_operation(
             max_persistence_window_seconds=required[
                 "warning_max_persistence_window_seconds"
             ],
+        )
+    if operation == "bridge_to_xdex_utilization":
+        required = {
+            "evidence_sha256": request.get("bridge_evidence_sha256"),
+            "route_id": request.get("bridge_route_id"),
+            "source_mint": request.get("bridge_source_mint"),
+            "destination_mint": request.get("bridge_destination_mint"),
+            "evaluated_at": request.get("bridge_evaluated_at"),
+            "max_evidence_age_seconds": request.get(
+                "bridge_max_evidence_age_seconds"
+            ),
+        }
+        missing = [key for key, value in required.items() if value is None]
+        if missing:
+            raise ValueError(
+                "bridge_to_xdex_utilization missing explicit inputs: "
+                + ", ".join(sorted(missing))
+            )
+        try:
+            require_bridge_to_xdex_utilization_capability(
+                cmis_client.capabilities(),
+                chain="x1",
+            )
+        except (CMISCapabilityUnavailable, CMISCapabilityContractError) as exc:
+            return {
+                "service": "bridge_to_xdex_utilization",
+                "chain": "x1",
+                "status": "unavailable",
+                "asset": {"query": asset},
+                "data": {},
+                "risk": None,
+                "confidence": {},
+                "sources": [],
+                "observed_at": None,
+                "warnings": [{
+                    "code": "cmis_bridge_to_xdex_contract_unavailable",
+                    "message": str(exc),
+                }],
+                "errors": [],
+            }
+        return cmis_client.bridge_to_xdex_utilization(
+            chain="x1",
+            evidence_sha256=required["evidence_sha256"],
+            route_id=required["route_id"],
+            source_mint=required["source_mint"],
+            destination_mint=required["destination_mint"],
+            evaluated_at=required["evaluated_at"],
+            max_evidence_age_seconds=required["max_evidence_age_seconds"],
         )
     if operation == "pre_trade_check":
         action = request.get("action")
@@ -731,6 +784,27 @@ def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
                 )
             )
         except X1ConcentrationWarningContractError:
+            pass
+
+    if primary_result.get("service") == "bridge_to_xdex_utilization" and primary_result.get("status") == "ok":
+        expected_request = {
+            "evidence_sha256": request.get("bridge_evidence_sha256"),
+            "route_id": request.get("bridge_route_id"),
+            "source_mint": request.get("bridge_source_mint"),
+            "destination_mint": request.get("bridge_destination_mint"),
+            "evaluated_at": request.get("bridge_evaluated_at"),
+            "max_evidence_age_seconds": request.get(
+                "bridge_max_evidence_age_seconds"
+            ),
+        }
+        try:
+            report["x1_bridge_to_xdex_utilization"] = (
+                build_x1_bridge_to_xdex_utilization(
+                    primary_result,
+                    expected_request=expected_request,
+                )
+            )
+        except X1BridgeToXdexContractError:
             pass
 
     compare_asset = request.get("compare_asset")
