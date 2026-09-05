@@ -37,6 +37,7 @@ def build_x1_scout_tool(
             "pre_trade_check",
             "concentration_change_intelligence",
             "concentration_warning_intelligence",
+            "bridge_to_xdex_utilization",
         ] | None = None,
         action: TradeAction | None = None,
         amount_usd: float | None = None,
@@ -48,6 +49,12 @@ def build_x1_scout_tool(
         warning_evaluated_at: str | None = None,
         warning_max_latest_age_seconds: int | None = None,
         warning_max_persistence_window_seconds: int | None = None,
+        bridge_evidence_sha256: str | None = None,
+        bridge_route_id: str | None = None,
+        bridge_source_mint: str | None = None,
+        bridge_destination_mint: str | None = None,
+        bridge_evaluated_at: float | None = None,
+        bridge_max_evidence_age_seconds: float | None = None,
         compare_asset: str | None = None,
         include_history: bool = False,
     ) -> str:
@@ -92,6 +99,21 @@ def build_x1_scout_tool(
             "asset": asset,
             "objective": objective,
         }
+        bridge_inputs = (
+            bridge_evidence_sha256,
+            bridge_route_id,
+            bridge_source_mint,
+            bridge_destination_mint,
+            bridge_evaluated_at,
+            bridge_max_evidence_age_seconds,
+        )
+        if operation != "bridge_to_xdex_utilization" and any(
+            value is not None for value in bridge_inputs
+        ):
+            raise ValueError(
+                "Bridge-to-XDEX selector/identity inputs require "
+                "operation='bridge_to_xdex_utilization'"
+            )
         warning_inputs = (
             intelligence_evidence_ids,
             warning_threshold_policy,
@@ -270,6 +292,48 @@ def build_x1_scout_tool(
                     "intelligence_evidence_id": evidence_id,
                 }
             )
+        elif operation == "bridge_to_xdex_utilization":
+            if include_history or compare_asset is not None:
+                raise ValueError(
+                    "history/compare inputs are not accepted for Bridge-to-XDEX"
+                )
+            if action is not None or amount_usd is not None:
+                raise ValueError(
+                    "trade action/amount are not accepted for Bridge-to-XDEX"
+                )
+            if intelligence_evidence_id is not None or intelligence_evidence_ids is not None:
+                raise ValueError(
+                    "concentration evidence inputs are not accepted for Bridge-to-XDEX"
+                )
+            required_bridge_inputs = {
+                "bridge_evidence_sha256": bridge_evidence_sha256,
+                "bridge_route_id": bridge_route_id,
+                "bridge_source_mint": bridge_source_mint,
+                "bridge_destination_mint": bridge_destination_mint,
+                "bridge_evaluated_at": bridge_evaluated_at,
+                "bridge_max_evidence_age_seconds": bridge_max_evidence_age_seconds,
+            }
+            missing = [
+                key for key, value in required_bridge_inputs.items()
+                if value is None
+            ]
+            if missing:
+                raise ValueError(
+                    "bridge_to_xdex_utilization requires exact CMIS selector, "
+                    "route/mint identities, evaluated_at, and freshness bound: "
+                    + ", ".join(sorted(missing))
+                )
+            normalized_asset = str(asset or "").strip()
+            if normalized_asset != str(bridge_destination_mint).strip():
+                raise ValueError(
+                    "Bridge-to-XDEX asset must equal the exact X1 destination mint"
+                )
+            request.update(
+                {
+                    "operation": "bridge_to_xdex_utilization",
+                    **required_bridge_inputs,
+                }
+            )
         elif operation == "concentration_warning_intelligence":
             if include_history or compare_asset is not None:
                 raise ValueError(
@@ -364,6 +428,13 @@ def build_x1_scout_tool(
             "use operation='concentration_change_intelligence' only when an exact "
             "CMIS-owned ie_ content id is present in the user request or trusted current "
             "context; copy it into intelligence_evidence_id and never invent one. "
+            "For promoted Bridge-to-XDEX Utilization, use "
+            "operation='bridge_to_xdex_utilization' only when the exact CMIS canonical "
+            "evidence SHA, route id, source mint, X1 destination mint, evaluation time, "
+            "and freshness bound are present in trusted current context; never invent "
+            "selectors, recalculate utilization, widen verified XDEX program-family scope "
+            "to all X1 DEXes, equate bridge activity with adoption, equate liquidity with "
+            "volume, infer causality, or infer risk. "
             "For the promoted pull-only Concentration Warning Intelligence service, use "
             "operation='concentration_warning_intelligence' only when the exact two CMIS-owned "
             "evidence ids plus every threshold/freshness/window policy input are explicitly "

@@ -29,6 +29,30 @@ DISCOVERY_INTELLIGENCE_CONTRACT_VERSION = "discovery_intelligence/v1"
 CONCENTRATION_WARNING_MIN_CMIS_CONTRACT_VERSION = "1.18.0"
 CONCENTRATION_WARNING_CONTRACT_VERSION = "concentration_warning_intelligence/v1"
 CONCENTRATION_WARNING_DELIVERY_MODE = "pull_only"
+BRIDGE_TO_XDEX_MIN_CMIS_CONTRACT_VERSION = "1.19.0"
+BRIDGE_TO_XDEX_CONTRACT_VERSION = "bridge_to_xdex_utilization/v1"
+BRIDGE_TO_XDEX_REQUIRED_REQUIREMENTS = (
+    "canonical_cmis_owned_issue_410_record",
+    "exact_route_identity",
+    "exact_source_and_destination_mints",
+    "verified_xdex_program_family_scope",
+    "verified_24h_window_coverage_and_volume_semantics",
+    "verified_comparable_usd_value_basis",
+    "explicit_fact_time_and_freshness_bound",
+)
+BRIDGE_TO_XDEX_REQUIRED_LIMITATIONS = (
+    "verified_xdex_program_family_is_not_every_x1_dex",
+    "bounded_zero_activity_is_not_global_zero_activity",
+    "bridge_activity_is_not_adoption",
+    "liquidity_is_not_volume",
+    "no_causal_inference",
+    "no_automatic_risk_conclusion",
+    "source_independence_unverified_unless_separately_proven",
+    "global_onchain_pool_discovery_unproven",
+    "recognized_program_registry_not_globally_exhaustive",
+    "no_execution_authorization",
+    "x1_only_initial_scope",
+)
 CONCENTRATION_WARNING_REQUIRED_REQUIREMENTS = (
     "x1_only",
     "exact_x1_asset_id",
@@ -585,6 +609,25 @@ def validate_capability_manifest(value: Any) -> CMISCapabilities:
                             f"CMIS x1/concentration_warning_intelligence {field} must be boolean."
                         )
                     normalized_capability[field] = raw_flag
+            if chain == "x1" and service == "bridge_to_xdex_utilization":
+                contract = capability_raw.get("service_contract_version")
+                if not isinstance(contract, str) or not contract.strip():
+                    raise CMISCapabilityContractError(
+                        "CMIS x1/bridge_to_xdex_utilization service_contract_version must be text."
+                    )
+                normalized_capability["service_contract_version"] = contract
+                for field in (
+                    "read_only",
+                    "public_service_promoted",
+                    "scout_reliance_promoted",
+                    "execution_authorized",
+                ):
+                    raw_flag = capability_raw.get(field)
+                    if not isinstance(raw_flag, bool):
+                        raise CMISCapabilityContractError(
+                            f"CMIS x1/bridge_to_xdex_utilization {field} must be boolean."
+                        )
+                    normalized_capability[field] = raw_flag
             if chain == "x1" and service == "asset_lookup":
                 identity_contract = capability_raw.get("identity_contract_version")
                 if identity_contract is not None:
@@ -1042,6 +1085,71 @@ def require_concentration_warning_capability(
     return capability
 
 
+
+
+def require_bridge_to_xdex_utilization_capability(
+    manifest: Mapping[str, Any],
+    *,
+    chain: str = "x1",
+) -> CMISServiceCapability:
+    """Require accepted CMIS 1.19 Bridge-to-XDEX Utilization promotion."""
+
+    normalized_chain = str(chain or "").strip().lower()
+    if normalized_chain != "x1":
+        raise CMISCapabilityUnavailable(
+            chain=normalized_chain,
+            service="bridge_to_xdex_utilization",
+            state=None,
+            limitations=["bridge_to_xdex_utilization_x1_only"],
+        )
+    version = manifest.get("contract_version")
+    if _semver(version) < _semver(BRIDGE_TO_XDEX_MIN_CMIS_CONTRACT_VERSION):
+        raise CMISCapabilityContractError(
+            "CMIS Bridge-to-XDEX Utilization requires contract "
+            f">={BRIDGE_TO_XDEX_MIN_CMIS_CONTRACT_VERSION}, got {version!r}."
+        )
+    capability = require_service_capability(
+        manifest,
+        chain=normalized_chain,
+        service="bridge_to_xdex_utilization",
+    )
+    if capability.get("state") != "bounded":
+        raise CMISCapabilityContractError(
+            "CMIS x1/bridge_to_xdex_utilization state must remain bounded."
+        )
+    if capability.get("service_contract_version") != BRIDGE_TO_XDEX_CONTRACT_VERSION:
+        raise CMISCapabilityContractError(
+            "CMIS x1/bridge_to_xdex_utilization service contract mismatch."
+        )
+    for field, expected in (
+        ("read_only", True),
+        ("public_service_promoted", True),
+        ("scout_reliance_promoted", True),
+        ("execution_authorized", False),
+    ):
+        if capability.get(field) is not expected:
+            raise CMISCapabilityContractError(
+                f"CMIS x1/bridge_to_xdex_utilization {field} must be "
+                f"{str(expected).lower()}."
+            )
+    missing_requirements = sorted(
+        set(BRIDGE_TO_XDEX_REQUIRED_REQUIREMENTS) - set(capability["requirements"])
+    )
+    if missing_requirements:
+        raise CMISCapabilityContractError(
+            "CMIS x1/bridge_to_xdex_utilization is missing accepted requirements: "
+            f"{missing_requirements!r}."
+        )
+    missing_limitations = sorted(
+        set(BRIDGE_TO_XDEX_REQUIRED_LIMITATIONS) - set(capability["limitations"])
+    )
+    if missing_limitations:
+        raise CMISCapabilityContractError(
+            "CMIS x1/bridge_to_xdex_utilization is missing accepted limitations: "
+            f"{missing_limitations!r}."
+        )
+    return capability
+
 def require_historical_all_available_capability(
     manifest: Mapping[str, Any],
     *,
@@ -1091,6 +1199,10 @@ def require_historical_all_available_capability(
 
 
 __all__ = [
+    "BRIDGE_TO_XDEX_CONTRACT_VERSION",
+    "BRIDGE_TO_XDEX_MIN_CMIS_CONTRACT_VERSION",
+    "BRIDGE_TO_XDEX_REQUIRED_LIMITATIONS",
+    "BRIDGE_TO_XDEX_REQUIRED_REQUIREMENTS",
     "BURN_INTELLIGENCE_CONTRACT_VERSION",
     "BURN_INTELLIGENCE_MIN_CMIS_CONTRACT_VERSION",
     "BURN_INTELLIGENCE_REQUIRED_LIMITATIONS",
@@ -1132,6 +1244,7 @@ __all__ = [
     "INTELLIGENCE_FOUNDATION_SCHEMA_VERSION",
     "INTELLIGENCE_PROMOTION_RULE",
     "MIN_CMIS_CONTRACT_VERSION",
+    "require_bridge_to_xdex_utilization_capability",
     "require_burn_intelligence_capability",
     "require_concentration_warning_capability",
     "require_discovery_intelligence_capability",

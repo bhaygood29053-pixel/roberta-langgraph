@@ -21,6 +21,7 @@ CMISService: TypeAlias = Literal[
     "verification_evidence",
     "concentration_change_intelligence",
     "concentration_warning_intelligence",
+    "bridge_to_xdex_utilization",
     "instant_x1_scan",
 ]
 CMISOperation: TypeAlias = Literal[
@@ -95,4 +96,5 @@ CMISPreTradeCheck: TypeAlias = CMISEnvelope
 CMISVerificationEvidence: TypeAlias = CMISEnvelope
 CMISConcentrationChangeIntelligence: TypeAlias = CMISEnvelope
 CMISConcentrationWarningIntelligence: TypeAlias = CMISEnvelope
+CMISBridgeToXdexUtilization: TypeAlias = CMISEnvelope
 CMISInstantX1Scan: TypeAlias = CMISEnvelope
