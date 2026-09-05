@@ -34,7 +34,7 @@ Active:
 
 ## CMIS Web Discovery
 
-v1-v4 is accepted internally. Issue #479 / PR #481 is active for XDEX structured endpoint discovery.
+v1-v5 is accepted internally through PR #481. Issue #483 is active for the XDEX network-gap registry.
 
 Discovery remains `DISCOVERED` candidate evidence and is not a provider-truth shortcut.
 
