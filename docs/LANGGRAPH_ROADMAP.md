@@ -1,6 +1,15 @@
 # ROBERTA — Verified On-Chain Intelligence Roadmap
 
-Last reconciled: 2026-09-04 (America/New_York)
+## Live checkpoint — 2026-09-05
+
+- **ROBERTA Opinion v1: ACCEPTED.**
+- **ROBERTA Claim Integrity v1: ACCEPTED** for X1 asset intelligence and X1 Compare; Compare Claim Integrity is accepted on public/protected main.
+- **Next ROBERTA Truth Gate:** standalone History, then Burn, Discovery, and remaining specialist products.
+- **CMIS #461 fact-time milestone is now accepted on CMIS main:** five same-fact X1.Ninja liquidity revaluations across five distinct pools and `liquidity_fact_time_verified=true`.
+- ROBERTA must **not** promote X1.Ninja USD-liquidity semantics yet. CMIS still has `current_usdcx_usd_equivalence_verified=false`, `x1_ninja_liquidity_usd_semantics_verified=false`, and `liquidity_freshness_verified=false`.
+- Controlled Execution remains locked: `execution_authorized=false`.
+
+Last reconciled: 2026-09-05 (America/New_York)
 
 Status source: accepted code and contracts on `main`. Open PRs are not current truth unless explicitly identified as pending.
 
