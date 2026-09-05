@@ -1,27 +1,30 @@
-# Start Here — Roberta ↔ CMIS Architecture Sync
+# Start Here — ROBERTA ↔ CMIS Architecture Sync
 
-Last reconciled: 2026-08-30 (America/New_York)
+Last reconciled: 2026-09-05 (America/New_York)
 
 For current cross-project architecture and status, read in this order:
 
 1. `ROBERTA_CMIS_SOURCE_SYNC_BASELINE.md`
-2. `docs/CMIS_CONTRACT.md`
-3. `docs/CMIS_ROADMAP_SYNC_2026-08-17.md`
-4. `docs/LANGGRAPH_ROADMAP.md`
-5. `docs/PROJECT_STATUS_2026-08-30.md`
-6. `docs/LEARNING_PLANE_ARCHITECTURE.md`
-7. `docs/learning_sources/README.md`
+2. `docs/CURRENT_PROJECT_STATUS.md`
+3. `docs/LANGGRAPH_ROADMAP.md`
+4. `docs/CMIS_CONTRACT.md`
+5. `docs/CMIS_ROADMAP_SYNC_2026-08-17.md`
+6. `docs/CHECKPOINT_2026-09-05_FOUR_REPOS.md`
+7. `docs/LEARNING_PLANE_ARCHITECTURE.md`
 
-The controlling live authority model is:
+Authority model:
 
-```text
-User -> Roberta -> Chain Scout -> CMIS -> Chain Provider / verified source
-```
+`User -> ROBERTA -> Chain Scout -> CMIS -> Chain Provider / verified source`
 
-Current live-market truth/evidence/risk comes from CMIS/provider evidence, not memory, retained lessons, source mastery, Pyramid state, autonomous-job state, or LLM inference.
+Current upstream gates:
 
-Roberta's autonomous Learning Plane is accepted for static source learning, curriculum generation, examination, verified remediation/retention/transfer, and source capstone work. That learning plane does not create a second live-fact path and cannot self-authorize operational trust, wallet permissions, or execution.
+- CMIS PR #469 — final Bridge-to-XDEX #410 evidence; exact-head live final workflow green, PR still open.
+- CMIS PR #470 — final five-pool X1.Ninja USD-liquidity semantic proof.
+- CMIS Issue #477 — internal Web Discovery browser-capture slice; discovery-only.
+- ROBERTA #314 — waits for accepted/promoted CMIS cross-chain contracts.
+
+Earlier dated status/reconciliation files are historical snapshots and must not override the living roadmap/current-status files.
 
 Controlled Execution remains locked.
 
-The dated 2026-08-25 through 2026-08-27 project/sync files remain historical snapshots and should not be used in place of the current living roadmap/baseline or the 2026-08-30 project-status snapshot.
+`execution_authorized=false`
