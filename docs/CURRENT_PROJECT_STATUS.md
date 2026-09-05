@@ -120,6 +120,15 @@ market-history delta semantics, embedded Burn/Discovery limits, exact mint/sourc
 status, partial-evidence disclosure, anti-causality constraints, and
 WHAT CHANGED?/risk separation without rerunning source products.
 
+**Planned wallet/trade attribution track:** ROBERTA #354 depends on CMIS #498.
+The planned X1 Scout adoption will preserve exact wallet/transaction/time,
+trade size, measured-window volume contribution, pre-trade spot price, average
+execution price, post-trade pool spot price, and next verified trade price. It
+may explain the deterministic price movement of the exact AMM pool when CMIS
+proves the reserve transition, but must not infer whole-market causality,
+real-world wallet identity, whale/insider/manipulator status, intent,
+coordination, automatic risk, or a trade recommendation.
+
 **Next Truth Gate: Concentration Warning / Early Warning Claim Integrity.**
 
 `execution_authorized=false`.
