@@ -66,15 +66,12 @@ Active:
 
 ## CMIS Web Discovery
 
-Accepted internal foundations:
+Accepted internal foundations through v4:
 
 - #471 / PR #472 — bounded six-source CMIS Web Discovery v1;
 - #473 / PR #474 — X1 Explorer structured discovery;
-- #475 / PR #476 — sanitized X1 Explorer network observation.
-
-Active:
-
-- Issue #477 — operator-controlled passive X1 Explorer browser capture.
+- #475 / PR #476 — sanitized X1 Explorer network observation;
+- #477 / PR #478 — operator-controlled passive one-page browser capture.
 
 All Web Discovery state remains discovery-only: no automatic CMIS truth, Proof Score, risk, public-service, Scout-reliance, or execution promotion.
 
