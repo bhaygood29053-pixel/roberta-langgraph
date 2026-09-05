@@ -604,5 +604,31 @@ widening accepted history into:
 - missing history as zero/no activity;
 - liquidity, volume, or transaction history from price-only provider backfill.
 
-The next Truth Gate is **Burn Claim Integrity**, followed by Discovery.
+The next Truth Gate is **Discovery Claim Integrity**.
+`execution_authorized=false`.
+
+### Truth Gate — Burn Claim Integrity
+
+**ACCEPTED.** Public issue #348 is implemented by protected `roberta-core` PR
+#52, merged as `e0c32cf44ce3a23521c99dc111b9f2d4b82f5197`.
+
+The adapter consumes accepted `x1_burn_intelligence/v1` directly or from the
+existing X1 Asset Intelligence packet without creating a second burn fact layer.
+It prevents ROBERTA from:
+
+- widening verified-observed cumulative burn into lifetime/complete burn;
+- converting unavailable or coverage-unverified windows into zero activity;
+- inventing numeric percentages for `NEW_BURN_ACTIVITY` or
+  `INSUFFICIENT_COVERAGE`;
+- changing accepted period-over-period percentages;
+- widening partial burn-time valuation into total/complete USD burn value;
+- substituting current/spot/nearest/interpolated price for burn-time valuation;
+- asserting unverified circulating supply;
+- turning burn evidence into a deterministic CMIS risk score/state or trade
+  recommendation.
+
+Existing identity-binding rules still apply when burn evidence is unbound inside
+Asset Intelligence.
+
+The next Truth Gate is **Discovery Claim Integrity**.
 `execution_authorized=false`.
