@@ -3,12 +3,12 @@
 ## Live checkpoint — 2026-09-05
 
 - **ROBERTA Opinion v1: ACCEPTED.**
-- **ROBERTA Claim Integrity v1: ACCEPTED** for X1 asset intelligence and X1 Compare; Compare Claim Integrity is accepted on public/protected main.
+- **ROBERTA Claim Integrity v1: ACCEPTED** for X1 asset intelligence and X1 Compare.
 - **Next ROBERTA Truth Gate:** standalone History, then Burn, Discovery, and remaining specialist products.
-- **CMIS #461 is active again for final USD-liquidity semantics.** PR #465 accepted five same-fact X1.Ninja revaluations across five pools; PR #466 accepted current Warp USDC reserve backing for USDC.X; PR #468 accepted the live current USDC.X/USD equivalence gate. **PR #470 is the remaining five-pool semantic proof.**
-- ROBERTA may now rely on accepted current USDC.X/USD equivalence where the CMIS contract exposes it, but must **not** promote X1.Ninja USD-liquidity semantics or liquidity freshness until PR #470 and the later #459 freshness gate are accepted.
-- **Cross-chain upstream:** #409 is complete and PR #467 accepted the #410 utilization foundation. **PR #469 is the final #410 evidence slice; its current exact-head 24h XDEX activity and comparable wSOL.X value-basis workflows are green, but the PR is still unmerged.** ROBERTA #314 remains queued until #469 is merged/reconciled and CMIS separately promotes the required public-service / Scout-reliance contract.
-- **CMIS Web Discovery v1-v4: ACCEPTED INTERNALLY through PR #478.** PRs #472/#474/#476/#478 provide bounded six-source discovery, X1 Explorer structured extraction, sanitized network observation, and operator-controlled passive one-page browser capture. All remain `DISCOVERED`, non-promoted, and outside ROBERTA fact authority.
+- **CMIS #410 is COMPLETE.** PR #469 merged as `3681559b728d8493fbc0c5e39227df5c34c23c69`, accepting the bounded 24h XDEX-program activity proof, comparable wSOL.X USD value basis, and final `bridge_to_xdex_utilization/v1` composition.
+- **Cross-chain release gate moved to CMIS #482.** ROBERTA #314 is now blocked only on public-service / Scout-reliance promotion of the already-accepted #410 contract. ROBERTA must not recompute bridge supply, flow, value basis, or utilization locally.
+- **CMIS #461 remains active.** PR #470 is the remaining five-pool X1.Ninja USD-liquidity semantic proof. Its current head is still running the repeated-revaluation live evidence workflow; `liquidity_freshness_verified=false` remains a later #459 gate.
+- **CMIS Web Discovery v1-v4 is accepted internally.** Web Discovery v5 is now active through Issue #479 / PR #481 for structured XDEX endpoint discovery. It remains `DISCOVERED`, non-promoted, and outside ROBERTA fact authority.
 - Controlled Execution remains locked: `execution_authorized=false`.
 
 Last reconciled: 2026-09-05 (America/New_York)
