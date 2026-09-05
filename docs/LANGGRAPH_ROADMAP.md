@@ -3,8 +3,8 @@
 ## Live checkpoint — 2026-09-05
 
 - **ROBERTA Opinion v1: ACCEPTED.**
-- **ROBERTA Claim Integrity v1: ACCEPTED** for X1 asset intelligence and X1 Compare.
-- **Next ROBERTA Truth Gate:** standalone History, then Burn, Discovery, and remaining specialist products.
+- **ROBERTA Claim Integrity v1: ACCEPTED** for X1 asset intelligence, X1 Compare, standalone History, Burn, and Discovery.
+- **Next ROBERTA Truth Gate:** WHAT CHANGED?, then remaining specialist products.
 - **CMIS #410 is COMPLETE.** PR #469 merged as `3681559b728d8493fbc0c5e39227df5c34c23c69`, accepting the bounded 24h XDEX-program activity proof, comparable wSOL.X USD value basis, and final `bridge_to_xdex_utilization/v1` composition.
 - **Cross-chain release gate moved to CMIS #482.** ROBERTA #314 is now blocked only on public-service / Scout-reliance promotion of the already-accepted #410 contract. ROBERTA must not recompute bridge supply, flow, value basis, or utilization locally.
 - **CMIS #461 remains active.** PR #470 is the remaining five-pool X1.Ninja USD-liquidity semantic proof. Its current head is still running the repeated-revaluation live evidence workflow; `liquidity_freshness_verified=false` remains a later #459 gate.
@@ -501,7 +501,9 @@ Solana remains an accepted read-only specialist surface for maintenance, regress
 - **ROBERTA Claim Integrity Gate v1 — ACCEPTED in protected `roberta-core` PR #43:** post-specialist X1 Opinion v1 synthesis now rejects freshness-unqualified use of current-market fields when field freshness is explicitly unverified, rejects unverified numeric risk scores, and prevents identity-unbound dossier sections from being used as canonical-asset evidence without same-claim disclosure. Accepted machine opinions receive bounded `roberta_claim_integrity/v1` PASS metadata with `provider_truth_certified=false`; this is not a universal truth certificate.
 - **X1 Compare Claim Integrity — ACCEPTED in protected `roberta-core` PR #45:** `roberta_claim_integrity/v1` now preserves X1 Compare comparability and directional relations, left/right field freshness, per-asset risk separation, the absence of a combined CMIS risk score/recommendation, and pair-history lifetime/continuity limits before Opinion v1 can be accepted.
 - **Standalone History Claim Integrity — ACCEPTED:** protected `roberta-core` PR #51 extends `roberta_claim_integrity/v1` to X1 Scout reports sourced from CMIS `historical_compare`, preserving lifetime/continuity/archive/source-independence limits, first-observation semantics, missing-is-unknown behavior, and price-only provider backfill boundaries without creating a second history fact layer.
-- **Next Truth Gate expansion: Burn first, then Discovery and remaining specialist products.**
+- **Burn Claim Integrity — ACCEPTED:** protected `roberta-core` PR #52 preserves verified-observed-vs-lifetime scope, window coverage, comparison-state/percentage semantics, burn-time valuation limits, circulating-supply verification, identity binding, and burn/risk separation.
+- **Discovery Claim Integrity — ACCEPTED:** protected `roberta-core` PR #53 preserves bounded observation semantics, first-observation/launch separation, observation-span/age separation, continuity/archive/currentness limits, empty-is-unknown behavior, exact count/fact-time values, identity binding, and Discovery/risk separation.
+- **Next Truth Gate expansion: WHAT CHANGED?, then remaining specialist products.**
 
 ### 3. Keep the Learning Plane operationally strong as a supporting track
 
@@ -604,7 +606,7 @@ widening accepted history into:
 - missing history as zero/no activity;
 - liquidity, volume, or transaction history from price-only provider backfill.
 
-The next Truth Gate is **Discovery Claim Integrity**.
+Burn Claim Integrity is accepted below.
 `execution_authorized=false`.
 
 ### Truth Gate — Burn Claim Integrity
@@ -630,5 +632,34 @@ It prevents ROBERTA from:
 Existing identity-binding rules still apply when burn evidence is unbound inside
 Asset Intelligence.
 
-The next Truth Gate is **Discovery Claim Integrity**.
+Discovery Claim Integrity is accepted below.
+`execution_authorized=false`.
+
+### Truth Gate — Discovery Claim Integrity
+
+**ACCEPTED.** Public issue #350 is implemented by protected `roberta-core` PR
+#53, merged as `f8c48c7258daca93ab634709baae7c3b7b43f5bf`.
+
+The adapter consumes accepted `x1_discovery_intelligence/v1` directly or from
+the existing X1 Asset Intelligence packet without creating a second Discovery
+fact layer. It prevents ROBERTA from:
+
+- promoting first verified observation into launch/creation/deployment/inception;
+- converting elapsed observed span into token age/lifetime/time-since-launch;
+- claiming continuous history or archive completeness when unverified;
+- treating the most recent verified observation as verified-current/fresh/live;
+- converting empty/unavailable Discovery into token nonexistence or zero activity;
+- reinterpreting verified observation count as transactions, holders, wallets,
+  burns, trades, pools, or blocks;
+- changing accepted observation counts, first/most-recent fact times, or elapsed
+  observed seconds;
+- inferring causality, manipulation, ownership, creator/deployer identity,
+  bridge origin, or launch mechanics from bounded observation timing;
+- turning Discovery evidence into deterministic CMIS risk or a CMIS trade
+  recommendation.
+
+Existing identity-binding rules still apply when Discovery is unbound inside
+Asset Intelligence.
+
+The next Truth Gate is **WHAT CHANGED? Claim Integrity**.
 `execution_authorized=false`.

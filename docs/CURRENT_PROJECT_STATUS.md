@@ -19,10 +19,11 @@ Accepted on public/protected main:
 - X1 Compare Claim Integrity;
 - standalone X1 History Claim Integrity;
 - X1 Burn Claim Integrity;
+- X1 Discovery Claim Integrity;
 - Human ROBERTA canonical evidence/recommendation presentation;
 - accepted X1 Scan, Burn, Discovery, WHAT CHANGED?, field-scoped freshness, and pull-only Concentration Warning consumption through X1 Scout.
 
-**Next ROBERTA Truth Gate:** Discovery, followed by remaining specialist products.
+**Next ROBERTA Truth Gate:** WHAT CHANGED?, followed by remaining specialist products.
 
 ## Cross-chain dependency
 
@@ -102,6 +103,14 @@ verified-observed-vs-lifetime burn scope, window coverage, period comparison
 states/percentages, burn-time valuation completeness/method, circulating-supply
 verification, identity binding, and burn/risk separation.
 
-**Next Truth Gate: Discovery Claim Integrity.**
+**Discovery Claim Integrity: ACCEPTED.**
+
+Protected `roberta-core` PR #53 merged as
+`f8c48c7258daca93ab634709baae7c3b7b43f5bf`. The gate preserves bounded
+observation semantics, first-observation/launch separation, observed-span/token-age
+separation, continuity/archive/currentness limits, empty-is-unknown behavior,
+exact count/fact-time values, identity binding, and Discovery/risk separation.
+
+**Next Truth Gate: WHAT CHANGED? Claim Integrity.**
 
 `execution_authorized=false`.
