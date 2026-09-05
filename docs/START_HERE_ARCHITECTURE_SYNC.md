@@ -20,7 +20,7 @@ Current upstream gates:
 
 - CMIS PR #469 — final Bridge-to-XDEX #410 evidence; exact-head live final workflow green, PR still open.
 - CMIS PR #470 — final five-pool X1.Ninja USD-liquidity semantic proof.
-- CMIS Issue #477 — internal Web Discovery browser-capture slice; discovery-only.
+- CMIS Web Discovery v1-v4 — complete internally through PR #478; discovery-only.
 - ROBERTA #314 — waits for accepted/promoted CMIS cross-chain contracts.
 
 Earlier dated status/reconciliation files are historical snapshots and must not override the living roadmap/current-status files.
