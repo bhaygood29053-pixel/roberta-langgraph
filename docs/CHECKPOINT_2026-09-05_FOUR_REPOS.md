@@ -1,26 +1,73 @@
 # Four-Repository GitHub Checkpoint — 2026-09-05
 
-## Accepted implementation heads at checkpoint start
+## Repository heads at reconciliation start
 
-| Repository | Visibility | Accepted implementation head |
+| Repository | Visibility | Head |
 | --- | --- | --- |
-| `cmis` | public | `e3fcaa28c32143de03a88bebe1f3626e22a46573` |
-| `cmis-core` | private | `e84a352f12fa2b5291a98de61603f8dece577d44` |
-| `roberta-langgraph` | public | `548bf70360ecb928002b8d9fce6cc8a673b1919e` |
-| `roberta-core` | private | `6627e756427f6270a7f32a243e40ad4db4df3c71` |
+| `roberta-langgraph` | public | `e1ab51fc5a004652274597de297cc96e85132f08` |
+| `roberta-core` | private | `267aa3b1adb1c49ec11ab88ab53c8d2a83515251` |
+| `cmis` | public | `9eea8a13f4d19b3c18021c44b62367a3c1bf425b` |
+| `cmis-core` | private | `e34353c4a4ce90d1f9da7ffb8f62bee4d03d1456` |
 
-## ROBERTA checkpoint
+Documentation reconciliation commits after this checkpoint advance repository heads.
 
-Opinion v1, Asset Intelligence, Claim Integrity v1, and Compare Claim Integrity are accepted. Standalone History is the next Truth Gate.
+## ROBERTA
 
-## CMIS dependency checkpoint
+Accepted:
 
-CMIS PR #465 is merged with five same-fact revaluation events across five pools and `liquidity_fact_time_verified=true`.
+- Opinion v1;
+- X1 Asset Intelligence Claim Integrity;
+- X1 Compare Claim Integrity;
+- current Human/Machine decision presentation boundary.
 
-The remaining USD-equivalence and liquidity-freshness claims are not accepted. CMIS PR #466 is the active bridge-parity follow-up, so ROBERTA must preserve the unverified boundary rather than recompute or upgrade the claim.
+Next Truth Gate: **standalone History**, then Burn, Discovery, and remaining specialists.
+
+## CMIS liquidity checkpoint
+
+Accepted:
+
+- #465 five-pool same-fact revaluation / fact-time milestone;
+- #466 current Warp USDC reserve backing for USDC.X;
+- #468 current USDC.X/USD live equivalence.
+
+Active:
+
+- #461 reopened;
+- PR #470 is the final five-pool X1.Ninja USD-liquidity semantic proof;
+- liquidity freshness remains separate under #459.
+
+## CMIS cross-chain checkpoint
+
+Accepted:
+
+- #409 Bridge Supply + Flow Intelligence;
+- PR #467 #410 utilization foundation and verified wSOL.X XDEX program-family pool-universe state.
+
+Active:
+
+- #410 reopened;
+- PR #469 final 24h XDEX activity-window + comparable wSOL.X value-basis evidence;
+- current exact-head final workflows are green, but PR #469 remains unmerged;
+- ROBERTA #314 waits for #469 merge/reconciliation plus explicit CMIS public-service / Scout-reliance promotion.
+
+## CMIS Web Discovery checkpoint
+
+Merged internal foundations:
+
+- PR #472 — six-source Web Discovery;
+- PR #474 — structured X1 Explorer discovery;
+- PR #476 — sanitized X1 Explorer network observation.
+
+Active next slice: **Issue #477**, operator-controlled passive browser capture.
+
+Discovery remains `DISCOVERED` candidate evidence only.
+
+## Protected cores
+
+Protected cores remain mandatory fail-closed runtime boundaries. Public roadmap/evidence changes do not silently promote protected runtime behavior. Any required protected implementation change remains separately reviewed and merged.
 
 ## Safety boundary
 
-```text
-execution_authorized=false
-```
+No roadmap item here authorizes transaction construction, signing, broadcasting, custody, trading, bridge movement, or autonomous value movement.
+
+`execution_authorized=false`
