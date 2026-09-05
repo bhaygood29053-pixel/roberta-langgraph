@@ -2,67 +2,41 @@
 
 This document is ROBERTA's current CMIS integration snapshot. The authoritative CMIS roadmap remains `bhaygood29053-pixel/cmis/docs/CMIS_PRODUCT_ROADMAP.md`.
 
-## Canonical hierarchy
-
-`User / transport -> ROBERTA -> Chain Scout -> CMIS -> Chain Provider / verified source`
-
-CMIS remains the deterministic authority for freshness-sensitive facts, evidence, Proof Score, risk, historical intelligence, bridge evidence, and provider semantics. ROBERTA does not recreate those facts.
-
 ## Accepted CMIS surface relevant to ROBERTA
 
-CMIS capability contract remains `1.18.0`, including:
+CMIS capability contract remains `1.18.0`, with accepted X1 history, exact-mint identity, Instant X1 Scan v3, Burn Intelligence, Discovery Intelligence, field-scoped freshness, and pull-only Concentration Warning Intelligence.
 
-- accepted X1 all-available history and exact-mint identity;
-- bounded verified-provider price backfill limitations;
-- Instant X1 Scan v3;
-- Burn Intelligence;
-- Discovery Intelligence;
-- field-scoped current-market freshness;
-- pull-only Concentration Warning Intelligence;
-- accepted #409 Warp bridge supply/flow evidence foundation.
+Cross-chain evidence has now advanced through **completed #410**:
+
+- #409 bridge supply + current/prior 24h/7d/30d flow intelligence;
+- verified XDEX program-family wSOL.X pool state;
+- bounded 24h XDEX activity-window proof;
+- comparable wSOL.X USD value basis;
+- final `bridge_to_xdex_utilization/v1` acceptance.
+
+## Current cross-chain release gate
+
+CMIS Issue **#482** is now the only cross-chain release gate before ROBERTA #314.
+
+#482 must expose the already-accepted #410 contract through the public CMIS capability/service boundary and authorize X1 Scout reliance without widening scope or recomputing facts.
+
+ROBERTA #314 may proceed only after #482 is accepted.
 
 ## Current X1.Ninja liquidity state
 
-Accepted:
+Accepted prerequisites: PRs #465, #466, and #468.
 
-- PR #465: five same-fact revaluation events across five pools;
-- PR #466: current Warp USDC reserve backing for USDC.X;
-- PR #468: current USDC.X/USD equivalence live gate.
+Active:
 
-Open:
-
-- PR #470: final five-pool X1.Ninja USD-liquidity semantics;
-- Issue #459: later liquidity and rolling-24h freshness promotion.
-
-ROBERTA must not infer X1.Ninja USD-liquidity semantics or liquidity freshness from the accepted prerequisite evidence alone.
-
-## Current cross-chain state
-
-Accepted:
-
-- #407 exact Warp config semantics;
-- #441 bounded 60-day lifecycle retention;
-- #409 Bridge Supply + 24h/7d/30d Flow Intelligence;
-- PR #467 Bridge-to-XDEX utilization foundation and verified wSOL.X XDEX program-family pool universe.
-
-Open:
-
-- PR #469: final #410 24h XDEX activity-window + comparable wSOL.X value basis;
-- current exact-head dedicated final workflow is green;
-- public-service / Scout-reliance promotion remains separate.
-
-ROBERTA #314 remains queued until those CMIS acceptance/promotion gates are complete.
+- PR #470 final five-pool USD-liquidity semantic proof;
+- its current repeated-revaluation evidence workflow is still running;
+- #459 remains the later liquidity/rolling-24h freshness promotion gate.
 
 ## CMIS Web Discovery
 
-Accepted internally through v4:
+v1-v4 is accepted internally. Issue #479 / PR #481 is active for XDEX structured endpoint discovery.
 
-- PR #472 — six-source bounded Web Discovery;
-- PR #474 — X1 Explorer structured discovery;
-- PR #476 — sanitized X1 Explorer network observation;
-- PR #478 — operator-controlled passive one-page browser capture.
-
-Web Discovery remains `DISCOVERED` candidate evidence. It is not a provider-truth shortcut and is not public-service / Scout-reliance promoted.
+Discovery remains `DISCOVERED` candidate evidence and is not a provider-truth shortcut.
 
 ## Safety
 
