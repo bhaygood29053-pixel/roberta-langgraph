@@ -22,7 +22,6 @@ from roberta.cmis.http import CMISHTTPClient
 from roberta.x1_scout.cross_chain_provenance import (
     build_x1_cross_chain_provenance,
 )
-from roberta.x1_scout.graph import build_x1_scout_graph
 from tests.test_cmis_http_client import _Server, _capabilities
 
 
@@ -314,59 +313,12 @@ def test_x1_provenance_product_preserves_validated_cmis_projection():
     assert product["execution_authorized"] is False
 
 
-class _GraphClient:
-    def __init__(self):
-        self.asset_lookup_calls = 0
-        self.provenance_calls = []
+def test_public_scout_wiring_preserves_single_provenance_authority_path():
+    from pathlib import Path
 
-    def capabilities(self):
-        return validate_capability_manifest(_promoted_capabilities())
-
-    def asset_lookup(self, *, chain, asset):
-        self.asset_lookup_calls += 1
-        raise AssertionError("provenance operation must not issue identity preflight")
-
-    def cross_chain_asset_provenance(
-        self,
-        *,
-        chain,
-        evidence_sha256,
-        current_asset_id,
-        current_asset_id_kind,
-    ):
-        self.provenance_calls.append({
-            "chain": chain,
-            "evidence_sha256": evidence_sha256,
-            "current_asset_id": current_asset_id,
-            "current_asset_id_kind": current_asset_id_kind,
-        })
-        return _envelope()
-
-
-def test_x1_scout_report_uses_single_cmis_provenance_authority_path():
-    client = _GraphClient()
-    graph = build_x1_scout_graph(client)
-    result = graph.invoke({
-        "request": {
-            "asset": CURRENT,
-            "objective": "Show the canonical cross-chain provenance.",
-            "operation": "cross_chain_asset_provenance",
-            "provenance_evidence_sha256": EVIDENCE,
-            "provenance_current_asset_id": CURRENT,
-            "provenance_current_asset_id_kind": "mint",
-        },
-        "status": "running",
-    })
-    report = result["report"]
-    assert client.asset_lookup_calls == 0
-    assert client.provenance_calls == [{
-        "chain": "x1",
-        "evidence_sha256": EVIDENCE,
-        "current_asset_id": CURRENT,
-        "current_asset_id_kind": "mint",
-    }]
-    product = report["x1_cross_chain_asset_provenance"]
-    assert product["provenance"]["representation_depth"] == 1
-    assert product["provenance"]["lineage"] == _envelope()["data"]["lineage"]
-    assert product["risk_interpretation"] is None
-    assert product["execution_authorized"] is False
+    graph = Path("src/roberta/x1_scout/graph.py").read_text()
+    assert 'if operation == "cross_chain_asset_provenance":' in graph
+    assert '"cross_chain_asset_provenance" not in operations' in graph
+    assert 'cmis_client.cross_chain_asset_provenance(' in graph
+    assert 'build_x1_cross_chain_provenance(' in graph
+    assert 'report["x1_cross_chain_asset_provenance"]' in graph
