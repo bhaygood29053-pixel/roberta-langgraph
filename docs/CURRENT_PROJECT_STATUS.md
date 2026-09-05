@@ -1,15 +1,15 @@
 # Current ROBERTA Project Status
 
-Current reconciliation: **2026-09-05**.
+Current reconciliation: **2026-09-05 19:35 America/New_York**.
 
 Read in this order:
 
 1. `../ROBERTA_CMIS_SOURCE_SYNC_BASELINE.md` — synchronized ROBERTA ↔ CMIS authority/status checkpoint.
 2. `LANGGRAPH_ROADMAP.md` — authoritative living ROBERTA roadmap.
-3. `CHECKPOINT_2026-09-05_FOUR_REPOS.md` — four-repository checkpoint.
+3. `CHECKPOINT_2026-09-05_FOUR_REPOS.md` — earlier September 5 checkpoint.
 4. Earlier dated reconciliation/status files — historical snapshots only.
 
-## Current ROBERTA state
+## Accepted ROBERTA state
 
 Accepted on public/protected main:
 
@@ -22,113 +22,57 @@ Accepted on public/protected main:
 - X1 Discovery Claim Integrity;
 - X1 WHAT CHANGED? Claim Integrity;
 - Human ROBERTA canonical evidence/recommendation presentation;
-- accepted X1 Scan, Burn, Discovery, WHAT CHANGED?, field-scoped freshness, and pull-only Concentration Warning consumption through X1 Scout.
+- accepted X1 Scan, Burn, Discovery, WHAT CHANGED?, field-scoped freshness v1, pull-only Concentration Warning, Bridge-to-XDEX utilization, and canonical cross-chain provenance consumption through X1 Scout;
+- the public/protected cross-chain path through ROBERTA #314 is complete.
 
-**Next ROBERTA Truth Gate:** Concentration Warning / Early Warning, followed by remaining specialist products.
+## Current Truth Gate
 
-## Cross-chain dependency
+**Next ROBERTA Truth Gate: Concentration Warning / Early Warning Claim Integrity.**
 
-CMIS #410 is now **complete** through merged PR #469.
+The previous specialist Truth Gates through WHAT CHANGED? are accepted and must remain single-authority adapters over existing Scout/CMIS evidence, not new fact engines.
 
-Accepted upstream now includes:
+## Cross-chain state
 
-- exact Warp route/config semantics;
-- bounded 60-day lifecycle retention;
-- #409 bridged supply + current/prior 24h/7d/30d bridge flow;
-- #410 verified wSOL.X XDEX program-family pool state;
-- exact 24h XDEX activity-window semantics;
-- comparable wSOL.X USD value basis;
-- final `bridge_to_xdex_utilization/v1` acceptance.
+ROBERTA #314 is **COMPLETE**.
 
-ROBERTA #314 is **complete**. CMIS #482 and #491 are accepted, Bridge-to-XDEX adoption is merged through ROBERTA PR #344, and canonical cross-chain provenance is merged through ROBERTA PR #345 plus protected `roberta-core` PR #50.
+Accepted lineage now includes:
 
-ROBERTA continues to preserve the bounded XDEX program-family scope and must not infer global X1 DEX absence, adoption, causality, or risk.
+- CMIS #410 / PR #469 — Bridge-to-XDEX utilization acceptance;
+- CMIS #482 / PR #487 + protected `cmis-core` PR #23 — public service and X1 Scout reliance for `bridge_to_xdex_utilization/v1`;
+- CMIS #491 / PR #493 + protected `cmis-core` PR #24 — public service and X1 Scout reliance for `cross_chain_asset_provenance/v1`;
+- ROBERTA PR #344 — Bridge-to-XDEX adoption;
+- ROBERTA PR #345 + protected `roberta-core` PR #50 — canonical provenance preserved for Human and Machine ROBERTA.
 
-## X1.Ninja liquidity semantics
+The accepted scope is still bounded. ROBERTA must not infer global X1 DEX absence, bridge adoption, backing/solvency, causality, or risk from those facts alone.
 
-Accepted upstream:
+## X1.Ninja liquidity / freshness
 
-- PR #465 — five-pool same-fact revaluation/fact-time evidence;
-- PR #466 — current Warp USDC reserve backing for USDC.X;
-- PR #468 — current USDC.X/USD equivalence.
+CMIS #461 is **COMPLETE** through merged PR #470.
 
-Active:
+That closes the USD-liquidity semantic proof. It does **not** close current freshness.
 
-- PR #470 — final five-pool X1.Ninja USD-liquidity semantic proof. Its current repeated-revaluation workflow is still in progress.
-- Issue #459 — later liquidity and rolling-24h freshness promotion.
+CMIS #459 remains active through PR #500. At the current PR #500 head `af1478fd1ab9e8e8f02671debae235dff0d27078`, both the dedicated liquidity-freshness workflow and the standard public-shell suite are failing deterministic aggregate-liquidity-freshness coverage.
 
-ROBERTA must not promote `x1_ninja_liquidity_usd_semantics_verified` or `liquidity_freshness_verified` before those exact CMIS gates pass.
+Therefore ROBERTA must continue to preserve `liquidity_freshness_verified=false` unless and until CMIS accepts a new freshness composition. Rolling 24h volume and rolling transaction freshness also remain unverified.
 
 ## Web Discovery
 
-CMIS Web Discovery v1-v5 is accepted internally through PR #481. **Issue #483 is now the active v6 slice**, building a deterministic XDEX network-gap registry and explicitly deciding that browser capture is not currently required because the uncovered useful surfaces are direct read-only machine endpoints.
+CMIS Web Discovery v1-v11 is complete internally through PR #497.
 
-Discovery remains candidate evidence only. It does not create ROBERTA market/blockchain truth.
+X1 Explorer, XDEX, and X1.Ninja discovery/reconciliation results remain below CMIS verification. ROBERTA does not call those sources directly and does not convert `DISCOVERED` material into verified market truth.
 
-Canonical authority remains `User / transport -> ROBERTA -> Chain Scout -> CMIS -> Chain Provider / verified source`.
+## Next product-facing intelligence
+
+### ROBERTA #354 — wallet trade + pool price-impact intelligence
+
+Issue #354 is open and depends on CMIS #498.
+
+When upstream `trade_price_impact_intelligence/v1` is accepted, X1 Scout/ROBERTA may preserve exact wallet/transaction/time, trade size, measured-window volume contribution, pre-trade spot price, average execution price, post-trade pool spot price, and next verified trade price.
+
+ROBERTA may explain the deterministic price movement of the **exact AMM pool** when CMIS proves the reserve transition. It must not widen that into whole-market causality, real-world wallet identity, whale/insider/manipulator labels, intent, coordination, automatic risk, or a recommendation without separate accepted evidence.
+
+## Learning / maintenance
+
+Learning System and Learning Plane work remain supporting tracks and do not displace the current X1 intelligence roadmap. Historical/open maintenance issues remain separate from accepted product capability.
 
 `execution_authorized=false`
-
-
-## Cross-chain provenance adoption — 2026-09-05
-
-CMIS #491 is accepted through CMIS PR #493 and cmis-core PR #24. CMIS 1.20
-promotes `cross_chain_asset_provenance/v1` for X1 Scout reliance.
-
-ROBERTA #314 now has an explicit-request-only X1 Scout adoption path. The path
-accepts only the exact CMIS canonical evidence SHA and exact current X1 asset
-id/kind, preserves ordered provenance hops and representation depth exactly, and
-does not issue a separate provider or Scout-side identity reconstruction.
-
-Symbol/name equality remains invalid identity proof. Bridge/custody dependency
-does not become risk. Provenance does not establish backing, solvency, safety,
-adoption, causality, current bridge state, or execution authority.
-
-
-## Standalone History Claim Integrity — 2026-09-05
-
-Public issue #346 is accepted through protected `roberta-core` PR #51, merged
-as `53b40689a3861ef5bf07eff82e14ecc0596b84ff`.
-
-`roberta_claim_integrity/v1` now recognizes standalone X1 Scout
-`historical_compare` reports and protects lifetime, continuity, archive
-completeness, source independence, first-observation, missing-as-zero, and
-price-only provider-backfill boundaries. It does not reconstruct or recalculate
-history.
-
-**Burn Claim Integrity: ACCEPTED.**
-
-Protected `roberta-core` PR #52 merged as
-`e0c32cf44ce3a23521c99dc111b9f2d4b82f5197`. The gate preserves
-verified-observed-vs-lifetime burn scope, window coverage, period comparison
-states/percentages, burn-time valuation completeness/method, circulating-supply
-verification, identity binding, and burn/risk separation.
-
-**Discovery Claim Integrity: ACCEPTED.**
-
-Protected `roberta-core` PR #53 merged as
-`f8c48c7258daca93ab634709baae7c3b7b43f5bf`. The gate preserves bounded
-observation semantics, first-observation/launch separation, observed-span/token-age
-separation, continuity/archive/currentness limits, empty-is-unknown behavior,
-exact count/fact-time values, identity binding, and Discovery/risk separation.
-
-**WHAT CHANGED? Claim Integrity: ACCEPTED.**
-
-Protected `roberta-core` PR #54 merged as
-`37adfa76b4eda84af1f067a7a27e137d99bef10b`. The gate preserves accepted
-market-history delta semantics, embedded Burn/Discovery limits, exact mint/source
-status, partial-evidence disclosure, anti-causality constraints, and
-WHAT CHANGED?/risk separation without rerunning source products.
-
-**Planned wallet/trade attribution track:** ROBERTA #354 depends on CMIS #498.
-The planned X1 Scout adoption will preserve exact wallet/transaction/time,
-trade size, measured-window volume contribution, pre-trade spot price, average
-execution price, post-trade pool spot price, and next verified trade price. It
-may explain the deterministic price movement of the exact AMM pool when CMIS
-proves the reserve transition, but must not infer whole-market causality,
-real-world wallet identity, whale/insider/manipulator status, intent,
-coordination, automatic risk, or a trade recommendation.
-
-**Next Truth Gate: Concentration Warning / Early Warning Claim Integrity.**
-
-`execution_authorized=false`.
