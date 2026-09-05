@@ -1,192 +1,72 @@
-# CMIS Roadmap Sync — refreshed 2026-09-01
+# CMIS Roadmap Sync — refreshed 2026-09-05
 
-This document is Roberta's current CMIS integration snapshot. It is a consumption guide, not a second CMIS roadmap. The authoritative CMIS living roadmap remains in the CMIS repository.
+This document is ROBERTA's current CMIS integration snapshot. The authoritative CMIS roadmap remains `bhaygood29053-pixel/cmis/docs/CMIS_PRODUCT_ROADMAP.md`.
 
 ## Canonical hierarchy
 
-```text
-User / transport
-  -> Roberta
-    -> Chain Scout
-      -> CMIS
-        -> Chain Provider / verified source
-```
+`User / transport -> ROBERTA -> Chain Scout -> CMIS -> Chain Provider / verified source`
 
-Roberta owns orchestration, user policy, specialist selection, cross-chain synthesis, learning-workflow coordination, approval boundaries, and the final user-facing answer.
+CMIS remains the deterministic authority for freshness-sensitive facts, evidence, Proof Score, risk, historical intelligence, bridge evidence, and provider semantics. ROBERTA does not recreate those facts.
 
-Chain Scouts own chain-specific planning and interpretation.
+## Accepted CMIS surface relevant to ROBERTA
 
-CMIS owns deterministic freshness-sensitive facts, evidence, Evidence Receipts, Proof Scores, risk, capability state, historical intelligence, and bounded analysis-only pre-trade calculations.
+CMIS capability contract remains `1.18.0`, including:
 
-Fresh accepted CMIS/provider evidence overrides remembered values and static-learning state when freshness matters. Missing evidence remains unknown/unavailable. Proof Score remains separate from risk.
+- accepted X1 all-available history and exact-mint identity;
+- bounded verified-provider price backfill limitations;
+- Instant X1 Scan v3;
+- Burn Intelligence;
+- Discovery Intelligence;
+- field-scoped current-market freshness;
+- pull-only Concentration Warning Intelligence;
+- accepted #409 Warp bridge supply/flow evidence foundation.
 
-## Current synchronized CMIS state
+## Current X1.Ninja liquidity state
 
-Accepted CMIS state consumed by Roberta includes:
+Accepted:
 
-- CMIS capability contract `1.13.0`;
-- Solana read-only provider foundation complete;
-- Evidence Receipts + Proof Score complete;
-- deterministic pre-trade trade-size analysis complete;
-- Phase 11 Verified Intelligence foundation complete, read-only/non-promoted as a group;
-- first narrow X1 promoted intelligence service complete: `concentration_change_intelligence/v1`;
-- X1 all-available historical comparison complete from CMIS `1.10.0`;
-- exact-mint normalized X1 identity complete under `x1_asset_identity/v1` from CMIS `1.11.0`;
-- bounded verified-provider historical price backfill semantics complete under CMIS `1.12.0`;
-- bounded X1 `instant_x1_scan/v1` composition complete under CMIS `1.13.0`;
-- deterministic X1 burn metrics, scanner fact-time coverage, deterministic circulating-supply evidence, and exact historical burn-time valuation accepted upstream;
-- merged Roberta/X1 Scout `x1_burn_intelligence/v1` tracer preserves CMIS burn evidence without recomputation; PR #295 is the immediate hardening gate before BURN Decision Object integration;
-- Oracle V2 structural/timestamp/freshness governance complete for the accepted evidence policy, with current-price use still unauthorized because the latest accepted live relay slots were stale;
-- CMIS public-shell/private-core migration and historical Git cleanup complete.
+- PR #465: five same-fact revaluation events across five pools;
+- PR #466: current Warp USDC reserve backing for USDC.X;
+- PR #468: current USDC.X/USD equivalence live gate.
 
-Controlled Execution remains locked/not started.
+Open:
 
-## Service-specific compatibility
+- PR #470: final five-pool X1.Ninja USD-liquidity semantics;
+- Issue #459: later liquidity and rolling-24h freshness promotion.
 
-```text
-global existing-service minimum = 1.8.0
-concentration_change_intelligence minimum = 1.9.0
-all_available history minimum = 1.10.0
-x1_asset_identity/v1 minimum = 1.11.0
-verified provider-price backfill semantics = 1.12.0
-instant_x1_scan/v1 minimum = 1.13.0
-```
+ROBERTA must not infer X1.Ninja USD-liquidity semantics or liquidity freshness from the accepted prerequisite evidence alone.
 
-Roberta/Scouts must use the live capability manifest and fail closed on incompatible or weakened service-specific contracts.
+## Current cross-chain state
 
-## Promoted X1 concentration intelligence
+Accepted:
 
-The accepted promoted service remains exactly bounded:
+- #407 exact Warp config semantics;
+- #441 bounded 60-day lifecycle retention;
+- #409 Bridge Supply + 24h/7d/30d Flow Intelligence;
+- PR #467 Bridge-to-XDEX utilization foundation and verified wSOL.X XDEX program-family pool universe.
 
-```text
-service = concentration_change_intelligence
-service_contract = concentration_change_intelligence/v1
-chain = x1
-read_only = true
-public_service_promoted = true
-scout_reliance_promoted = true
-accepted_conclusion_type = top_account_concentration_change
-promotion_scope = cmis_owned_top_account_concentration_change_evidence_by_id
-execution_authorized = false
-```
+Open:
 
-It does not establish beneficial ownership, behavioral labels, intent, fraud/manipulation, or risk by implication.
+- PR #469: final #410 24h XDEX activity-window + comparable wSOL.X value basis;
+- current exact-head dedicated final workflow is green;
+- public-service / Scout-reliance promotion remains separate.
 
-Solana remains unavailable/non-promoted for this service.
+ROBERTA #314 remains queued until those CMIS acceptance/promotion gates are complete.
 
-## Instant X1 Scan
+## CMIS Web Discovery
 
-CMIS `1.13.0` adds:
+Accepted internally:
 
-```text
-service = instant_x1_scan
-service_contract = instant_x1_scan/v1
-chain = x1
-read_only = true
-composition_only = true
-execution_authorized = false
-```
+- PR #472 — six-source bounded Web Discovery;
+- PR #474 — X1 Explorer structured discovery;
+- PR #476 — sanitized X1 Explorer network observation.
 
-The service composes already accepted identity, market, tokenomics, CMIS-stored verified history, deterministic risk, and runtime evidence-quality metadata.
+Issue #477 is active for operator-controlled passive browser capture.
 
-It does not create new underlying fact authority. Missing/unverified holder or current-concentration fields remain explicit unknown/partial values.
+Web Discovery remains `DISCOVERED` candidate evidence. It is not a provider-truth shortcut and is not public-service / Scout-reliance promoted.
 
-Roberta should consume it only through the accepted X1 Scout -> CMIS path.
+## Safety
 
-## X1 burn-intelligence consumption
+Controlled Execution remains locked.
 
-CMIS owns the accepted burn arithmetic, period-over-period comparison states, scanner coverage, circulating-supply evidence, and exact historical burn-time valuation. CMIS 1.15.0 promotes those accepted facts through first-class X1 `burn_intelligence/v1`; the service reuses the existing tokenomics/burn-scanner foundation rather than creating a second parser or arithmetic path. Roberta-side `x1_burn_intelligence/v1` is the X1 Scout projection of that dedicated CMIS service and does not recalculate burn or historical price facts.
-
-ROBERTA PR #295 and protected `roberta-core` #23 are accepted. BURN uses the Canonical ROBERTA Decision Object and preserves exact mint, coverage/completeness, valuation state, evidence lineage, limitations, unknowns, and `execution_authorized=false` for both Human and Machine ROBERTA. The current integration gate is the X1 Scout switch to first-class CMIS `burn_intelligence/v1`.
-
-
-## X1 history and identity
-
-### Historical compare
-
-Accepted X1 modes:
-
-- `window`;
-- `all_available`;
-- `all_available_pair`.
-
-“All available” means every verified observation currently available to CMIS, not automatically complete token lifetime.
-
-For CMIS `>=1.12.0`, bounded provider backfill may extend price only. Provider source independence, archive completeness, continuous coverage, historical USD-stable behavior, and complete asset lifetime remain unverified unless separately proven.
-
-### Exact-mint identity
-
-For address-shaped X1 requests, exact mint remains the fungible identity root. Metaplex and XDEX descriptors remain separately sourced observations. Descriptor agreement does not establish legitimacy or safety, and provider unavailability is not token absence.
-
-## Oracle V2 provider-gap state
-
-Accepted read-only Oracle V2 evidence establishes:
-
-- verified X1 program/state ownership and structure;
-- six assets × five relay slots;
-- verified decimals and stored Oracle key;
-- Unix-millisecond timestamp semantics;
-- explicit freshness policy:
-
-```text
-max_age_ms = 60000
-max_future_skew_ms = 5000
-minimum_eligible_slots = 3
-```
-
-The latest accepted live run classified all 30 observed relay slots stale. Therefore:
-
-```text
-current_price_use_authorized = false
-price_correctness_verified = false
-source_independence_verified = false
-cmis_provider_promoted = false
-public_service_promoted = false
-scout_reliance_promoted = false
-execution_authorized = false
-```
-
-Do not weaken freshness policy to manufacture eligibility. Relay count is not independent-source count.
-
-## Roberta Learning Plane dependency
-
-Roberta Learning System Phases 1-10 and the autonomous source-grounded Learning Plane controller are accepted.
-
-MB4E operator-local source mastery is complete:
-
-```text
-required stages passed = 14 / 14
-final source capstone = passed
-```
-
-Repository-accepted prebuilt banks remain through Stage 8 / Market Structure. Runtime-generated Stages 9-14 are valid mastery evidence under the accepted controller but are not thereby promoted into separately accepted prebuilt repository banks.
-
-Authoritative read-only autonomous-training telemetry is accepted under `roberta-autonomous-training-telemetry/v1` and preserves `execution_authorized=false`.
-
-Learning remains a separate authority plane. It cannot self-authorize CMIS contracts, provider trust, Scout promotion, fresh chain truth, wallet permissions, or execution.
-
-## Public/private CMIS runtime boundary
-
-The six-phase CMIS public-shell/private-core migration is complete.
-
-The public package fails closed when protected private-core implementation is unavailable. No public reconstruction fallback is accepted.
-
-This source/deployment boundary does not change the authority hierarchy or service semantics.
-
-## Internal non-promoted CMIS foundations
-
-Accepted internal/read-only foundations include:
-
-- deterministic descriptive concentration-direction classification;
-- direct wallet-relationship evidence with explicit non-ownership/non-beneficial-owner semantics;
-- concentration-threshold alert evidence.
-
-These do not become Scout-callable or public services by implication.
-
-## Execution boundary
-
-No Learning Plane result, source material, retained lesson, learned concept, CMIS result, Scout report, Evidence Receipt, Proof Score, risk result, alert, pre-trade `PASS`, policy decision, or human approval authorizes transaction construction, signing, broadcasting, custody, trading, bridge transfer, or autonomous value movement.
-
-## Core sync rule
-
-**Roberta may learn from static evidence and CMIS may verify changing chain facts, but neither learning nor analysis self-promotes into a new authority boundary. Fresh accepted CMIS/provider evidence wins for freshness-sensitive state, and every public-service, operational-trust, wallet, or execution promotion remains separately gated.**
+`execution_authorized=false`
