@@ -17,10 +17,11 @@ Accepted on public/protected main:
 - Scout-first X1 Asset Intelligence;
 - ROBERTA Claim Integrity v1 for X1 asset intelligence;
 - X1 Compare Claim Integrity;
+- standalone X1 History Claim Integrity;
 - Human ROBERTA canonical evidence/recommendation presentation;
 - accepted X1 Scan, Burn, Discovery, WHAT CHANGED?, field-scoped freshness, and pull-only Concentration Warning consumption through X1 Scout.
 
-**Next ROBERTA Truth Gate:** standalone History, followed by Burn, Discovery, and remaining specialist products.
+**Next ROBERTA Truth Gate:** Burn, followed by Discovery and remaining specialist products.
 
 ## Cross-chain dependency
 
@@ -36,9 +37,9 @@ Accepted upstream now includes:
 - comparable wSOL.X USD value basis;
 - final `bridge_to_xdex_utilization/v1` acceptance.
 
-The only remaining release dependency for ROBERTA #314 is **CMIS Issue #482**, which must promote the accepted #410 contract for public service and X1 Scout reliance.
+ROBERTA #314 is **complete**. CMIS #482 and #491 are accepted, Bridge-to-XDEX adoption is merged through ROBERTA PR #344, and canonical cross-chain provenance is merged through ROBERTA PR #345 plus protected `roberta-core` PR #50.
 
-ROBERTA must continue to preserve the bounded XDEX program-family scope and must not infer global X1 DEX absence, adoption, causality, or risk.
+ROBERTA continues to preserve the bounded XDEX program-family scope and must not infer global X1 DEX absence, adoption, causality, or risk.
 
 ## X1.Ninja liquidity semantics
 
@@ -79,3 +80,19 @@ does not issue a separate provider or Scout-side identity reconstruction.
 Symbol/name equality remains invalid identity proof. Bridge/custody dependency
 does not become risk. Provenance does not establish backing, solvency, safety,
 adoption, causality, current bridge state, or execution authority.
+
+
+## Standalone History Claim Integrity — 2026-09-05
+
+Public issue #346 is accepted through protected `roberta-core` PR #51, merged
+as `53b40689a3861ef5bf07eff82e14ecc0596b84ff`.
+
+`roberta_claim_integrity/v1` now recognizes standalone X1 Scout
+`historical_compare` reports and protects lifetime, continuity, archive
+completeness, source independence, first-observation, missing-as-zero, and
+price-only provider-backfill boundaries. It does not reconstruct or recalculate
+history.
+
+**Next Truth Gate: Burn Claim Integrity.**
+
+`execution_authorized=false`.

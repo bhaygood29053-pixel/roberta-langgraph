@@ -500,7 +500,8 @@ Solana remains an accepted read-only specialist surface for maintenance, regress
 - require exact identity binding inside the Asset Intelligence packet: unbound native/wrapped or other representation evidence remains visible but cannot be silently promoted into the canonical asset section.
 - **ROBERTA Claim Integrity Gate v1 — ACCEPTED in protected `roberta-core` PR #43:** post-specialist X1 Opinion v1 synthesis now rejects freshness-unqualified use of current-market fields when field freshness is explicitly unverified, rejects unverified numeric risk scores, and prevents identity-unbound dossier sections from being used as canonical-asset evidence without same-claim disclosure. Accepted machine opinions receive bounded `roberta_claim_integrity/v1` PASS metadata with `provider_truth_certified=false`; this is not a universal truth certificate.
 - **X1 Compare Claim Integrity — ACCEPTED in protected `roberta-core` PR #45:** `roberta_claim_integrity/v1` now preserves X1 Compare comparability and directional relations, left/right field freshness, per-asset risk separation, the absence of a combined CMIS risk score/recommendation, and pair-history lifetime/continuity limits before Opinion v1 can be accepted.
-- Next Truth Gate expansion: standalone History first, then Burn, Discovery, and remaining specialist products so the same claim-boundary rules become system-wide without creating a second fact layer.
+- **Standalone History Claim Integrity — ACCEPTED:** protected `roberta-core` PR #51 extends `roberta_claim_integrity/v1` to X1 Scout reports sourced from CMIS `historical_compare`, preserving lifetime/continuity/archive/source-independence limits, first-observation semantics, missing-is-unknown behavior, and price-only provider backfill boundaries without creating a second history fact layer.
+- **Next Truth Gate expansion: Burn first, then Discovery and remaining specialist products.**
 
 ### 3. Keep the Learning Plane operationally strong as a supporting track
 
@@ -562,7 +563,7 @@ Current product order:
 4. **WHAT CHANGED? — COMPLETE.** ROBERTA public #308 and protected `roberta-core` #26 provide first-class `/changed <asset>` without local market-delta calculation or causal inference.
 5. **FIELD-SCOPED CURRENT-MARKET FRESHNESS — COMPLETE.** CMIS public #386 + protected `cmis-core` #9 establish CMIS 1.17 / `instant_x1_scan/v3`; ROBERTA public #301 + protected `roberta-core` #19 validate, preserve, and render the same per-field freshness. Price may be VERIFIED while liquidity, rolling 24h volume, and rolling transactions remain NOT VERIFIED. One fresh field never promotes global freshness.
 6. **EARLY WARNING — COMPLETE THROUGH PULL-ONLY ROBERTA ADOPTION.** CMIS Issue #399 / public #400 / protected `cmis-core` #16 promote X1 `concentration_warning_intelligence/v1` under CMIS 1.18. ROBERTA public #318 / protected `roberta-core` #28 / Issue #317 require the exact 1.18 capability, preserve WATCH/CLEAR plus exact evidence lineage through X1 Scout and the Canonical Human/Machine Decision Object, add no hidden policy defaults, keep warning state separate from risk, and keep push delivery unauthorized.
-7. **CROSS-CHAIN / WARP — #409 COMPLETE; #410 FINAL EVIDENCE IN PR #469.** CMIS #407 / PR #429 accepted exact Warp config semantics; PR #432 added `bridge_flow_intelligence/v1`; PR #436 accepted canonical settled events; PR #453 completed bounded 60-day lifecycle retention; PR #452 accepted exact bridged-supply closure; PR #455 completed #409 flow integration; and PR #467 accepted the `bridge_to_xdex_utilization/v1` foundation plus the verified wSOL.X XDEX program-family pool universe. PR #469 now carries the remaining bounded 24h XDEX activity-window and comparable wSOL.X value-basis evidence. Its current exact-head dedicated final workflow is green, but open-PR evidence is not accepted ROBERTA truth until merge/reconciliation. ROBERTA #314 remains queued behind that merge plus a separately accepted CMIS public-service / Scout-reliance promotion.
+7. **CROSS-CHAIN / WARP — COMPLETE THROUGH ROBERTA #314.** CMIS #409 and #410 are accepted; CMIS #482 promoted `bridge_to_xdex_utilization/v1`; CMIS #491 promoted `cross_chain_asset_provenance/v1` under CMIS 1.20; ROBERTA PR #344 adopted Bridge-to-XDEX; ROBERTA PR #345 plus protected `roberta-core` PR #50 completed canonical cross-chain provenance adoption for both Human and Machine ROBERTA.
 8. **ROBERTA OPINION / DECISION FREEDOM v1 — COMPLETE.** Protected `roberta-core` PR #35 merged as `c40b04d2b8be12fcf0c95139f4d366c2ff355474` and implements `roberta_opinion/v1`: decisive recommendation-first Human output, separate conviction/evidence quality, explicit ROBERTA view, counterevidence, view invalidators, and a matching Machine ROBERTA opinion envelope. ROBERTA may disagree with the user and need not manufacture artificial neutrality, but Chain Scout -> CMIS remains fact/risk authority and `execution_authorized=false` remains invariant. Public contract: [ROBERTA_OPINION_V1.md](./ROBERTA_OPINION_V1.md).
 9. **Learning operations:** supporting track only; it does not displace X1 intelligence product gates.
 10. **Telegram:** lower priority than Early Warning.
@@ -584,3 +585,24 @@ The operation is explicit-request-only and cannot invent selectors, infer
 identity from symbols/names, reconstruct lineage, convert bridge/custody
 dependency into risk, or infer backing, solvency, safety, adoption, causality,
 or current bridge state. `execution_authorized=false`.
+
+
+### Truth Gate — standalone History Claim Integrity
+
+**ACCEPTED.** Public issue #346 is implemented by protected `roberta-core` PR
+#51, merged as `53b40689a3861ef5bf07eff82e14ecc0596b84ff`.
+
+The adapter consumes the existing X1 Scout `historical_compare` report rather
+than creating a second History product or fact layer. It prevents ROBERTA from
+widening accepted history into:
+
+- complete/lifetime coverage when lifetime completeness is not verified;
+- continuous/unbroken coverage when continuity is not verified;
+- complete archival coverage without archive-completeness proof;
+- source independence without explicit verification;
+- first verified observation as token launch/creation time;
+- missing history as zero/no activity;
+- liquidity, volume, or transaction history from price-only provider backfill.
+
+The next Truth Gate is **Burn Claim Integrity**, followed by Discovery.
+`execution_authorized=false`.
