@@ -2,82 +2,86 @@
 
 Last reconciled: 2026-09-05 (America/New_York)
 
-This file is the mirrored cross-project checkpoint for accepted public and protected repository state. Implementation contracts, capability manifests, issue acceptance criteria, and protected-core documents remain authoritative for their own scopes.
+This is the mirrored cross-project checkpoint for accepted public/protected state. Open PRs remain evidence candidates until merged and reconciled.
 
 ## Authority invariant
 
-- Public product: **ROBERTA — Verified On-Chain Intelligence**.
-- Canonical path: `User / transport -> ROBERTA -> Chain Scout -> CMIS -> Chain Provider / verified source`.
+`User / transport -> ROBERTA -> Chain Scout -> CMIS -> Chain Provider / verified source`
+
 - ROBERTA owns orchestration and final synthesis.
-- Chain Scouts consume and interpret accepted CMIS contracts; they do not manufacture chain facts.
-- CMIS owns deterministic facts, freshness, evidence, Evidence Receipts, Proof Scores, risk, historical intelligence, burn arithmetic, warning evidence, bridge qualification, bridge-flow evidence, and provider semantic verification.
+- Chain Scouts interpret accepted CMIS contracts; they do not manufacture chain facts.
+- CMIS owns deterministic facts, freshness, evidence, Proof Score, risk, history, burn arithmetic, warning evidence, bridge evidence, and provider semantic verification.
 - Missing evidence remains unknown/unavailable.
-- Proof Score, warning state, bridge qualification, liquidity fact-time, USD equivalence, and risk remain separate claims.
-- Controlled Execution remains locked. `execution_authorized=false`.
+- Proof Score, warning state, bridge qualification, liquidity fact-time, value equivalence, semantic verification, freshness, and risk remain separate claims.
+- `execution_authorized=false`.
 
-## Accepted implementation heads checkpointed
-
-```text
-CMIS public implementation
-e3fcaa28c32143de03a88bebe1f3626e22a46573
-
-CMIS protected core implementation
-e84a352f12fa2b5291a98de61603f8dece577d44
-
-ROBERTA public implementation
-548bf70360ecb928002b8d9fce6cc8a673b1919e
-
-ROBERTA protected core implementation
-6627e756427f6270a7f32a243e40ad4db4df3c71
-```
-
-The documentation checkpoint commits intentionally advance the repositories beyond these implementation SHAs. The SHAs above identify the accepted runtime/evidence implementation state being synchronized.
-
-## CMIS #461 / liquidity evidence state
-
-CMIS PR #465 is merged and establishes the stable fact-time milestone:
+## Repository heads at reconciliation start
 
 ```text
-verified_revaluation_event_count=5
-verified_revaluation_pool_count=5
-same_fact_reference_event_count=5
-same_fact_reference_pool_count=5
-liquidity_fact_time_verified=true
+ROBERTA public      e1ab51fc5a004652274597de297cc96e85132f08
+ROBERTA protected   267aa3b1adb1c49ec11ab88ab53c8d2a83515251
+CMIS public         9eea8a13f4d19b3c18021c44b62367a3c1bf425b
+CMIS protected      e34353c4a4ce90d1f9da7ffb8f62bee4d03d1456
 ```
 
-That milestone does **not** yet establish final USD-liquidity semantics:
+Roadmap/documentation reconciliation commits intentionally advance repository heads beyond these checkpoint SHAs.
 
-```text
-current_usdcx_usd_equivalence_verified=false
-x1_ninja_liquidity_usd_semantics_verified=false
-liquidity_freshness_verified=false
-source_independence_verified=false
-cmis_promotable=false
-execution_authorized=false
-```
+## ROBERTA accepted state
 
-CMIS PR #466 is the active bridge/value-equivalence follow-up. Exact Solana USDC Warp-vault identity, exact X1 USDC.X mint and Warp authority, equal six-decimal units, and current reserve sufficiency have been observed. Historical retained Warp message accounts are not accepted as current in-flight liabilities merely because they remain enumerable.
+- Opinion v1: accepted.
+- Claim Integrity v1: accepted for X1 asset intelligence and Compare.
+- Next ROBERTA Truth Gate: standalone History, then Burn, Discovery, and remaining specialist products.
+- Controlled Execution remains locked.
 
-The next accepted USDC.X proof must establish current value equivalence without using retained historical message state as a shortcut, then compose that result with a fresh exact-mint USDC/USD observation under the accepted policy.
+## CMIS #461 / X1.Ninja liquidity state
 
-## ROBERTA synchronized state
+Accepted on CMIS main:
 
-- ROBERTA Opinion v1 remains accepted.
-- ROBERTA Claim Integrity v1 is accepted for X1 asset intelligence and X1 Compare.
-- Compare Claim Integrity is accepted on public/protected main.
-- The next ROBERTA Truth Gate is standalone History, followed by Burn, Discovery, and remaining specialist products.
-- ROBERTA does not promote the #461 X1.Ninja USD-liquidity claim until CMIS completes the remaining USD-equivalence and freshness gates.
-- ROBERTA must preserve CMIS unavailable/unverified states rather than recompute or upgrade them.
+- PR #465: five same-fact X1.Ninja revaluations across five distinct pools; `liquidity_fact_time_verified=true`.
+- PR #466: current exact Warp Solana USDC reserve backing for X1 USDC.X; retained historical message accounts are not treated as current liabilities.
+- PR #468: current `x1_current_usdcx_usd_equivalence/v1` live composition; dedicated USDC.X/USD equivalence workflow passed.
 
-## Protected-core state
+Active:
 
-- `cmis-core` remains the protected deterministic runtime beneath the public CMIS shell. Its accepted implementation includes X1 RPC market corroboration across protected scan/risk freshness routes.
-- `roberta-core` remains the protected orchestration/synthesis runtime beneath the public ROBERTA shell. Its accepted implementation includes Claim Integrity and repaired Compare claim-boundary handling.
-- No protected source is moved back into the public repositories for convenience.
-- Public evidence-contract progress does not automatically imply a protected-runtime promotion.
+- Issue #461 is reopened until PR #470 completes the five-pool USD-liquidity semantic proof.
+- PR #470 may promote `x1_ninja_liquidity_usd_semantics_verified=true` only when fresh current USDC.X/USD equivalence and all five same-fact pool samples pass together.
+- `liquidity_freshness_verified=false` remains separate under Issue #459.
 
-## Core sync rule
+## Cross-chain / Warp state
 
-**CMIS verifies the evidence. X1 Scout composes only accepted CMIS contracts. ROBERTA explains the same canonical evidence. No upper layer may silently recompute or upgrade facts, freshness, USD equivalence, warnings, bridge truth, risk, coverage, or execution authority.**
+Accepted:
+
+- #407 exact Warp config semantics;
+- #441 bounded 60-day message lifecycle retention;
+- #409 Bridge Supply + current/prior 24h/7d/30d Flow Intelligence;
+- PR #467 `bridge_to_xdex_utilization/v1` foundation and verified wSOL.X XDEX program-family pool-universe state.
+
+Active:
+
+- Issue #410 is reopened because PR #467 explicitly left `issue_410_acceptance_verified=false`.
+- PR #469 is the final #410 evidence slice.
+- On PR #469's current exact head, the 24h XDEX-program activity-window proof, comparable wSOL.X USD value-basis proof, and dedicated Bridge-to-XDEX Final workflow are green.
+- Open PR evidence remains unaccepted until merge/reconciliation.
+- ROBERTA #314 remains blocked until PR #469 is merged/reconciled and CMIS separately accepts public-service / Scout-reliance promotion.
+
+## CMIS Web Discovery
+
+Accepted internal foundations:
+
+- #471 / PR #472 — bounded six-source CMIS Web Discovery v1;
+- #473 / PR #474 — X1 Explorer structured discovery;
+- #475 / PR #476 — sanitized X1 Explorer network observation.
+
+Active:
+
+- Issue #477 — operator-controlled passive X1 Explorer browser capture.
+
+All Web Discovery state remains discovery-only: no automatic CMIS truth, Proof Score, risk, public-service, Scout-reliance, or execution promotion.
+
+## Parallel evidence work
+
+- Issue #444 — complete remaining Instant X1 Scan evidence gaps.
+- Issue #459 — promote eligible X1.Ninja + X1 RPC field-scoped freshness.
+- Issue #363 — delayed-vault/X1.Ninja research remains parallel and is not the flagship blocker.
 
 `execution_authorized=false`
