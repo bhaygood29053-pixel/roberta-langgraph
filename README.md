@@ -22,11 +22,15 @@ Current chain specialists include X1 Scout and Solana Scout. Roberta owns orches
 
 Roberta does not call market providers as a trust shortcut and does not reproduce CMIS calculations to manufacture a second market fact.
 
-## Current accepted status — reconciled 2026-09-02
+## Current accepted status — reconciled 2026-09-05
 
-Core Roberta platform work is accepted through Phase 10 plus the post-Phase-10 evidence-aware user experience. X1 decision-production readiness, Solana read-only readiness for the accepted Scout surface, CMIS `concentration_change_intelligence/v1`, Instant X1 Scan, first-class X1 Compare, and the Canonical ROBERTA Decision Object v1 foundation are accepted. X1 Burn Intelligence is accepted through hardened Scout projection PR #295 and protected `roberta-core` #23; this branch moves the Scout source to the first-class CMIS 1.15.0 `burn_intelligence/v1` service.
+ROBERTA Opinion v1, X1 Asset Intelligence Claim Integrity, and X1 Compare Claim Integrity are accepted across the public/protected runtime split. The next ROBERTA Truth Gate is standalone History, followed by Burn, Discovery, and remaining specialist products.
 
-**Roberta Phase 11 Controlled Execution remains locked / not started.**
+CMIS upstream has accepted #465 fact-time evidence, #466 current USDC.X reserve backing, #468 current USDC.X/USD equivalence, #409 bridge supply/flow, and the #410 utilization foundation from PR #467. PR #469 remains the final unmerged #410 evidence slice even though its current exact-head final live workflow is green. PR #470 remains the final X1.Ninja USD-liquidity semantic proof. ROBERTA #314 stays behind accepted CMIS public-service / Scout-reliance promotion.
+
+CMIS Web Discovery PRs #472/#474/#476 are accepted internally as DISCOVERED-only evidence foundations; Issue #477 is the active passive browser-capture slice.
+
+**ROBERTA Phase 11 Controlled Execution remains locked / not started.**
 
 ### ROBERTA Opinion Contract
 
@@ -158,7 +162,7 @@ Static sources never override fresh Scout -> CMIS -> Provider evidence for price
 
 - [`docs/PRODUCT_IDENTITY.md`](./docs/PRODUCT_IDENTITY.md) — repository-authoritative product naming and branding boundary.
 - [`docs/LANGGRAPH_ROADMAP.md`](./docs/LANGGRAPH_ROADMAP.md) — authoritative Roberta roadmap/status.
-- [`docs/PROJECT_STATUS_2026-09-01.md`](./docs/PROJECT_STATUS_2026-09-01.md) — current dated status snapshot.
+- [`docs/CURRENT_PROJECT_STATUS.md`](./docs/CURRENT_PROJECT_STATUS.md) — current status snapshot.
 - [`docs/LEARNING_SYSTEM.md`](./docs/LEARNING_SYSTEM.md) — Learning System phase/authority map.
 - [`docs/LEARNING_SYSTEM_RETENTION.md`](./docs/LEARNING_SYSTEM_RETENTION.md) — accepted Phase 10 retention contract.
 - [`docs/LEARNING_PLANE_ARCHITECTURE.md`](./docs/LEARNING_PLANE_ARCHITECTURE.md) — Learning Plane architecture and promotion boundary.
