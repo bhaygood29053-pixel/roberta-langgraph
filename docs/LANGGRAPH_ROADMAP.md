@@ -3,8 +3,8 @@
 ## Live checkpoint — 2026-09-05
 
 - **ROBERTA Opinion v1: ACCEPTED.**
-- **ROBERTA Claim Integrity v1: ACCEPTED** for X1 asset intelligence, X1 Compare, standalone History, Burn, and Discovery.
-- **Next ROBERTA Truth Gate:** WHAT CHANGED?, then remaining specialist products.
+- **ROBERTA Claim Integrity v1: ACCEPTED** for X1 asset intelligence, X1 Compare, standalone History, Burn, Discovery, and WHAT CHANGED?.
+- **Next ROBERTA Truth Gate:** Concentration Warning / Early Warning, then remaining specialist products.
 - **CMIS #410 is COMPLETE.** PR #469 merged as `3681559b728d8493fbc0c5e39227df5c34c23c69`, accepting the bounded 24h XDEX-program activity proof, comparable wSOL.X USD value basis, and final `bridge_to_xdex_utilization/v1` composition.
 - **Cross-chain release gate moved to CMIS #482.** ROBERTA #314 is now blocked only on public-service / Scout-reliance promotion of the already-accepted #410 contract. ROBERTA must not recompute bridge supply, flow, value basis, or utilization locally.
 - **CMIS #461 remains active.** PR #470 is the remaining five-pool X1.Ninja USD-liquidity semantic proof. Its current head is still running the repeated-revaluation live evidence workflow; `liquidity_freshness_verified=false` remains a later #459 gate.
@@ -503,7 +503,8 @@ Solana remains an accepted read-only specialist surface for maintenance, regress
 - **Standalone History Claim Integrity — ACCEPTED:** protected `roberta-core` PR #51 extends `roberta_claim_integrity/v1` to X1 Scout reports sourced from CMIS `historical_compare`, preserving lifetime/continuity/archive/source-independence limits, first-observation semantics, missing-is-unknown behavior, and price-only provider backfill boundaries without creating a second history fact layer.
 - **Burn Claim Integrity — ACCEPTED:** protected `roberta-core` PR #52 preserves verified-observed-vs-lifetime scope, window coverage, comparison-state/percentage semantics, burn-time valuation limits, circulating-supply verification, identity binding, and burn/risk separation.
 - **Discovery Claim Integrity — ACCEPTED:** protected `roberta-core` PR #53 preserves bounded observation semantics, first-observation/launch separation, observation-span/age separation, continuity/archive/currentness limits, empty-is-unknown behavior, exact count/fact-time values, identity binding, and Discovery/risk separation.
-- **Next Truth Gate expansion: WHAT CHANGED?, then remaining specialist products.**
+- **WHAT CHANGED? Claim Integrity — ACCEPTED:** protected `roberta-core` PR #54 preserves market-history delta semantics, embedded Burn/Discovery boundaries, exact mint/source status, partial-evidence disclosure, anti-causality constraints, and WHAT CHANGED?/risk separation.
+- **Next Truth Gate expansion: Concentration Warning / Early Warning, then remaining specialist products.**
 
 ### 3. Keep the Learning Plane operationally strong as a supporting track
 
@@ -661,5 +662,28 @@ fact layer. It prevents ROBERTA from:
 Existing identity-binding rules still apply when Discovery is unbound inside
 Asset Intelligence.
 
-The next Truth Gate is **WHAT CHANGED? Claim Integrity**.
+WHAT CHANGED? Claim Integrity is accepted below.
+`execution_authorized=false`.
+
+### Truth Gate — WHAT CHANGED? Claim Integrity
+
+**ACCEPTED.** Public issue #352 is implemented by protected `roberta-core` PR
+#54, merged as `37adfa76b4eda84af1f067a7a27e137d99bef10b`.
+
+The adapter consumes the existing `x1_what_changed/v1` composite and does not
+rerun Scan, Burn, or Discovery. It prevents ROBERTA from:
+
+- calculating or substituting a market-history delta locally;
+- turning null/unknown market change into a numeric percentage or direction;
+- changing accepted market-history percentages or directions;
+- weakening embedded Burn Claim Integrity boundaries;
+- weakening embedded Discovery Claim Integrity boundaries;
+- changing exact mint or source status when stated;
+- describing partial composite evidence as complete;
+- inferring causality, manipulation, ownership, whale intent, creator/deployer
+  behavior, bridge cause, or another explanation from co-occurring changes;
+- turning WHAT CHANGED? into deterministic CMIS risk or a CMIS trade
+  recommendation.
+
+The next Truth Gate is **Concentration Warning / Early Warning Claim Integrity**.
 `execution_authorized=false`.
