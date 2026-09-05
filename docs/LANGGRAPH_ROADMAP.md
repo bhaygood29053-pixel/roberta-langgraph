@@ -571,3 +571,16 @@ Current product order:
 ### Cross-project status note
 
 CMIS PR #363 remains parallel delayed-vault/X1.Ninja evidence research and is not a blocker for the flagship roadmap. Historical Coverage Proof, Burn Intelligence, Discovery Intelligence, WHAT CHANGED?, and Field-Scoped Freshness are complete.
+
+
+### Cross-chain provenance — ROBERTA #314
+
+CMIS 1.20 `cross_chain_asset_provenance/v1` is accepted for X1 Scout reliance
+after CMIS #491. ROBERTA adoption preserves the canonical CMIS projection:
+exact chain-scoped origin/current identifiers, ordered hops, dependencies,
+representation depth, verification state, and evidence identity.
+
+The operation is explicit-request-only and cannot invent selectors, infer
+identity from symbols/names, reconstruct lineage, convert bridge/custody
+dependency into risk, or infer backing, solvency, safety, adoption, causality,
+or current bridge state. `execution_authorized=false`.

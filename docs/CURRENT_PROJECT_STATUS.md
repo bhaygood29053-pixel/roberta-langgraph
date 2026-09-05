@@ -64,3 +64,18 @@ Discovery remains candidate evidence only. It does not create ROBERTA market/blo
 Canonical authority remains `User / transport -> ROBERTA -> Chain Scout -> CMIS -> Chain Provider / verified source`.
 
 `execution_authorized=false`
+
+
+## Cross-chain provenance adoption — 2026-09-05
+
+CMIS #491 is accepted through CMIS PR #493 and cmis-core PR #24. CMIS 1.20
+promotes `cross_chain_asset_provenance/v1` for X1 Scout reliance.
+
+ROBERTA #314 now has an explicit-request-only X1 Scout adoption path. The path
+accepts only the exact CMIS canonical evidence SHA and exact current X1 asset
+id/kind, preserves ordered provenance hops and representation depth exactly, and
+does not issue a separate provider or Scout-side identity reconstruction.
+
+Symbol/name equality remains invalid identity proof. Bridge/custody dependency
+does not become risk. Provenance does not establish backing, solvency, safety,
+adoption, causality, current bridge state, or execution authority.

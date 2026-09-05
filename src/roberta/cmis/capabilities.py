@@ -40,6 +40,30 @@ BRIDGE_TO_XDEX_REQUIRED_REQUIREMENTS = (
     "verified_comparable_usd_value_basis",
     "explicit_fact_time_and_freshness_bound",
 )
+CROSS_CHAIN_PROVENANCE_MIN_CMIS_CONTRACT_VERSION = "1.20.0"
+CROSS_CHAIN_PROVENANCE_CONTRACT_VERSION = "cross_chain_asset_provenance/v1"
+CROSS_CHAIN_PROVENANCE_REQUIRED_REQUIREMENTS = (
+    "canonical_cmis_owned_cross_chain_provenance_record",
+    "content_addressed_provenance_evidence",
+    "exact_current_x1_chain_scoped_asset_id",
+    "exact_asset_id_kind",
+    "ordered_provenance_hop_continuity",
+    "exact_representation_depth",
+    "symbol_and_name_identity_shortcuts_rejected",
+)
+CROSS_CHAIN_PROVENANCE_REQUIRED_LIMITATIONS = (
+    "symbol_or_name_equality_is_not_identity_proof",
+    "bridge_dependency_is_not_risk",
+    "custody_dependency_is_not_risk",
+    "provenance_does_not_verify_live_bridge_state",
+    "provenance_does_not_verify_backing",
+    "provenance_does_not_verify_solvency_or_safety",
+    "provenance_does_not_establish_adoption_or_causality",
+    "source_independence_unverified_unless_separately_proven",
+    "missing_provenance_is_unknown_not_fabricated",
+    "no_execution_authorization",
+    "x1_current_representation_scope_only",
+)
 BRIDGE_TO_XDEX_REQUIRED_LIMITATIONS = (
     "verified_xdex_program_family_is_not_every_x1_dex",
     "bounded_zero_activity_is_not_global_zero_activity",
@@ -628,6 +652,25 @@ def validate_capability_manifest(value: Any) -> CMISCapabilities:
                             f"CMIS x1/bridge_to_xdex_utilization {field} must be boolean."
                         )
                     normalized_capability[field] = raw_flag
+            if chain == "x1" and service == "cross_chain_asset_provenance":
+                contract = capability_raw.get("service_contract_version")
+                if not isinstance(contract, str) or not contract.strip():
+                    raise CMISCapabilityContractError(
+                        "CMIS x1/cross_chain_asset_provenance service_contract_version must be text."
+                    )
+                normalized_capability["service_contract_version"] = contract
+                for field in (
+                    "read_only",
+                    "public_service_promoted",
+                    "scout_reliance_promoted",
+                    "execution_authorized",
+                ):
+                    raw_flag = capability_raw.get(field)
+                    if not isinstance(raw_flag, bool):
+                        raise CMISCapabilityContractError(
+                            f"CMIS x1/cross_chain_asset_provenance {field} must be boolean."
+                        )
+                    normalized_capability[field] = raw_flag
             if chain == "x1" and service == "asset_lookup":
                 identity_contract = capability_raw.get("identity_contract_version")
                 if identity_contract is not None:
@@ -1150,6 +1193,78 @@ def require_bridge_to_xdex_utilization_capability(
         )
     return capability
 
+
+
+def require_cross_chain_provenance_capability(
+    manifest: Mapping[str, Any],
+    *,
+    chain: str = "x1",
+) -> CMISServiceCapability:
+    """Require accepted CMIS 1.20 cross-chain provenance promotion."""
+
+    normalized_chain = str(chain or "").strip().lower()
+    if normalized_chain != "x1":
+        raise CMISCapabilityUnavailable(
+            chain=normalized_chain,
+            service="cross_chain_asset_provenance",
+            state=None,
+            limitations=["cross_chain_asset_provenance_x1_only"],
+        )
+    version = manifest.get("contract_version")
+    if _semver(version) < _semver(
+        CROSS_CHAIN_PROVENANCE_MIN_CMIS_CONTRACT_VERSION
+    ):
+        raise CMISCapabilityContractError(
+            "CMIS cross-chain provenance requires contract "
+            f">={CROSS_CHAIN_PROVENANCE_MIN_CMIS_CONTRACT_VERSION}, "
+            f"got {version!r}."
+        )
+    capability = require_service_capability(
+        manifest,
+        chain=normalized_chain,
+        service="cross_chain_asset_provenance",
+    )
+    if capability.get("state") != "bounded":
+        raise CMISCapabilityContractError(
+            "CMIS x1/cross_chain_asset_provenance state must remain bounded."
+        )
+    if capability.get(
+        "service_contract_version"
+    ) != CROSS_CHAIN_PROVENANCE_CONTRACT_VERSION:
+        raise CMISCapabilityContractError(
+            "CMIS x1/cross_chain_asset_provenance service contract mismatch."
+        )
+    for field, expected in (
+        ("read_only", True),
+        ("public_service_promoted", True),
+        ("scout_reliance_promoted", True),
+        ("execution_authorized", False),
+    ):
+        if capability.get(field) is not expected:
+            raise CMISCapabilityContractError(
+                f"CMIS x1/cross_chain_asset_provenance {field} must be "
+                f"{str(expected).lower()}."
+            )
+    missing_requirements = sorted(
+        set(CROSS_CHAIN_PROVENANCE_REQUIRED_REQUIREMENTS)
+        - set(capability["requirements"])
+    )
+    if missing_requirements:
+        raise CMISCapabilityContractError(
+            "CMIS x1/cross_chain_asset_provenance is missing accepted "
+            f"requirements: {missing_requirements!r}."
+        )
+    missing_limitations = sorted(
+        set(CROSS_CHAIN_PROVENANCE_REQUIRED_LIMITATIONS)
+        - set(capability["limitations"])
+    )
+    if missing_limitations:
+        raise CMISCapabilityContractError(
+            "CMIS x1/cross_chain_asset_provenance is missing accepted "
+            f"limitations: {missing_limitations!r}."
+        )
+    return capability
+
 def require_historical_all_available_capability(
     manifest: Mapping[str, Any],
     *,
@@ -1209,6 +1324,10 @@ __all__ = [
     "BURN_INTELLIGENCE_REQUIRED_REQUIREMENTS",
     "CAPABILITY_SCHEMA_VERSION",
     "CONCENTRATION_WARNING_CONTRACT_VERSION",
+    "CROSS_CHAIN_PROVENANCE_CONTRACT_VERSION",
+    "CROSS_CHAIN_PROVENANCE_MIN_CMIS_CONTRACT_VERSION",
+    "CROSS_CHAIN_PROVENANCE_REQUIRED_LIMITATIONS",
+    "CROSS_CHAIN_PROVENANCE_REQUIRED_REQUIREMENTS",
     "CONCENTRATION_WARNING_DELIVERY_MODE",
     "CONCENTRATION_WARNING_MIN_CMIS_CONTRACT_VERSION",
     "CONCENTRATION_WARNING_REQUIRED_LIMITATIONS",
@@ -1247,6 +1366,7 @@ __all__ = [
     "require_bridge_to_xdex_utilization_capability",
     "require_burn_intelligence_capability",
     "require_concentration_warning_capability",
+    "require_cross_chain_provenance_capability",
     "require_discovery_intelligence_capability",
     "require_historical_all_available_capability",
     "require_instant_x1_scan_capability",

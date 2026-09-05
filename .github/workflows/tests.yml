@@ -144,3 +144,6 @@ jobs:
 
       - name: Run X1 Bridge-to-XDEX adoption tests
         run: python -m pytest -q tests/test_bridge_to_xdex_utilization_adoption.py
+
+      - name: Run X1 cross-chain provenance adoption tests
+        run: python -m pytest -q tests/test_cross_chain_provenance_adoption.py

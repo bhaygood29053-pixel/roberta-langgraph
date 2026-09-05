@@ -17,6 +17,7 @@ from roberta.cmis.capabilities import (
     X1_ASSET_IDENTITY_CONTRACT_VERSION,
     require_bridge_to_xdex_utilization_capability,
     require_burn_intelligence_capability,
+    require_cross_chain_provenance_capability,
     require_discovery_intelligence_capability,
     require_instant_x1_scan_capability,
     require_x1_normalized_asset_identity_capability,
@@ -36,6 +37,10 @@ from roberta.time_utils import format_observed_at_utc, normalize_observed_at
 from roberta.x1_scout.bridge_to_xdex_utilization import (
     X1BridgeToXdexContractError,
     build_x1_bridge_to_xdex_utilization,
+)
+from roberta.x1_scout.cross_chain_provenance import (
+    X1CrossChainProvenanceContractError,
+    build_x1_cross_chain_provenance,
 )
 from roberta.x1_scout.burn_intelligence import (
     X1BurnIntelligenceContractError,
@@ -424,6 +429,48 @@ def _dispatch_cmis_operation(
             evaluated_at=required["evaluated_at"],
             max_evidence_age_seconds=required["max_evidence_age_seconds"],
         )
+    if operation == "cross_chain_asset_provenance":
+        required = {
+            "evidence_sha256": request.get("provenance_evidence_sha256"),
+            "current_asset_id": request.get("provenance_current_asset_id"),
+            "current_asset_id_kind": request.get(
+                "provenance_current_asset_id_kind"
+            ),
+        }
+        missing = [key for key, value in required.items() if value is None]
+        if missing:
+            raise ValueError(
+                "cross_chain_asset_provenance missing explicit inputs: "
+                + ", ".join(sorted(missing))
+            )
+        try:
+            require_cross_chain_provenance_capability(
+                cmis_client.capabilities(),
+                chain="x1",
+            )
+        except (CMISCapabilityUnavailable, CMISCapabilityContractError) as exc:
+            return {
+                "service": "cross_chain_asset_provenance",
+                "chain": "x1",
+                "status": "unavailable",
+                "asset": {"query": asset},
+                "data": {},
+                "risk": None,
+                "confidence": {},
+                "sources": [],
+                "observed_at": None,
+                "warnings": [{
+                    "code": "cmis_cross_chain_provenance_contract_unavailable",
+                    "message": str(exc),
+                }],
+                "errors": [],
+            }
+        return cmis_client.cross_chain_asset_provenance(
+            chain="x1",
+            evidence_sha256=required["evidence_sha256"],
+            current_asset_id=required["current_asset_id"],
+            current_asset_id_kind=required["current_asset_id_kind"],
+        )
     if operation == "pre_trade_check":
         action = request.get("action")
         amount_usd = request.get("amount_usd")
@@ -806,6 +853,27 @@ def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
                 )
             )
         except X1BridgeToXdexContractError:
+            pass
+
+    if (
+        primary_result.get("service") == "cross_chain_asset_provenance"
+        and primary_result.get("status") == "ok"
+    ):
+        expected_request = {
+            "evidence_sha256": request.get("provenance_evidence_sha256"),
+            "current_asset_id": request.get("provenance_current_asset_id"),
+            "current_asset_id_kind": request.get(
+                "provenance_current_asset_id_kind"
+            ),
+        }
+        try:
+            report["x1_cross_chain_asset_provenance"] = (
+                build_x1_cross_chain_provenance(
+                    primary_result,
+                    expected_request=expected_request,
+                )
+            )
+        except X1CrossChainProvenanceContractError:
             pass
 
     compare_asset = request.get("compare_asset")
