@@ -15,6 +15,7 @@ from roberta.cmis.capabilities import (
     require_bridge_to_xdex_utilization_capability,
     require_burn_intelligence_capability,
     require_concentration_warning_capability,
+    require_cross_chain_provenance_capability,
     require_discovery_intelligence_capability,
     require_historical_all_available_capability,
     require_instant_x1_scan_capability,
@@ -26,6 +27,12 @@ from roberta.cmis.bridge_to_xdex import (
     CMISBridgeToXdexContractError,
     normalize_bridge_to_xdex_request,
     validate_bridge_to_xdex_response,
+)
+from roberta.cmis.cross_chain_provenance import (
+    SERVICE as CROSS_CHAIN_PROVENANCE_SERVICE,
+    CMISCrossChainProvenanceContractError,
+    normalize_cross_chain_provenance_request,
+    validate_cross_chain_provenance_response,
 )
 from roberta.cmis.concentration_intelligence import (
     SERVICE as CONCENTRATION_INTELLIGENCE_SERVICE,
@@ -801,6 +808,77 @@ class CMISHTTPClient:
                 message=str(exc),
             )
 
+
+
+
+    def cross_chain_asset_provenance(
+        self,
+        *,
+        chain: str,
+        evidence_sha256: str,
+        current_asset_id: str,
+        current_asset_id_kind: str,
+    ) -> CMISEnvelope:
+        normalized_chain, normalized_asset = self._identity(
+            chain,
+            current_asset_id,
+        )
+        try:
+            require_cross_chain_provenance_capability(
+                self.capabilities(),
+                chain=normalized_chain,
+            )
+            params = normalize_cross_chain_provenance_request(
+                evidence_sha256=evidence_sha256,
+                current_asset_id=normalized_asset,
+                current_asset_id_kind=current_asset_id_kind,
+            )
+        except CMISCapabilityUnavailable as exc:
+            return self._error_envelope(
+                service=CROSS_CHAIN_PROVENANCE_SERVICE,
+                chain=normalized_chain,
+                asset=normalized_asset,
+                status="unavailable",
+                code="cmis_cross_chain_provenance_unavailable",
+                message=str(exc),
+                warning=True,
+            )
+        except (
+            CMISCapabilityContractError,
+            CMISCrossChainProvenanceContractError,
+        ) as exc:
+            return self._error_envelope(
+                service=CROSS_CHAIN_PROVENANCE_SERVICE,
+                chain=normalized_chain,
+                asset=normalized_asset,
+                status="unavailable",
+                code="cmis_cross_chain_provenance_contract_unavailable",
+                message=f"CMIS cross-chain provenance contract unavailable: {exc}",
+                warning=True,
+            )
+
+        response = self._request(
+            service=CROSS_CHAIN_PROVENANCE_SERVICE,
+            chain=normalized_chain,
+            asset=normalized_asset,
+            params=params,
+        )
+        if response.get("status") != "ok":
+            return response
+        try:
+            return validate_cross_chain_provenance_response(
+                response,
+                expected_request=params,
+            )
+        except CMISCrossChainProvenanceContractError as exc:
+            return self._error_envelope(
+                service=CROSS_CHAIN_PROVENANCE_SERVICE,
+                chain=normalized_chain,
+                asset=normalized_asset,
+                status="error",
+                code="invalid_cmis_cross_chain_provenance_response",
+                message=str(exc),
+            )
 
     def bridge_to_xdex_utilization(
         self,

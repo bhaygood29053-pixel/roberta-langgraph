@@ -102,6 +102,16 @@ class CMISClient(Protocol):
     ) -> CMISEnvelope:
         ...
 
+    def cross_chain_asset_provenance(
+        self,
+        *,
+        chain: str,
+        evidence_sha256: str,
+        current_asset_id: str,
+        current_asset_id_kind: str,
+    ) -> CMISEnvelope:
+        ...
+
     def concentration_warning_intelligence(
         self,
         *,

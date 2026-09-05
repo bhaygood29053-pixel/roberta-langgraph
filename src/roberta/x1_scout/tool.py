@@ -38,6 +38,7 @@ def build_x1_scout_tool(
             "concentration_change_intelligence",
             "concentration_warning_intelligence",
             "bridge_to_xdex_utilization",
+            "cross_chain_asset_provenance",
         ] | None = None,
         action: TradeAction | None = None,
         amount_usd: float | None = None,
@@ -55,6 +56,9 @@ def build_x1_scout_tool(
         bridge_destination_mint: str | None = None,
         bridge_evaluated_at: float | None = None,
         bridge_max_evidence_age_seconds: float | None = None,
+        provenance_evidence_sha256: str | None = None,
+        provenance_current_asset_id: str | None = None,
+        provenance_current_asset_id_kind: str | None = None,
         compare_asset: str | None = None,
         include_history: bool = False,
     ) -> str:
@@ -113,6 +117,18 @@ def build_x1_scout_tool(
             raise ValueError(
                 "Bridge-to-XDEX selector/identity inputs require "
                 "operation='bridge_to_xdex_utilization'"
+            )
+        provenance_inputs = (
+            provenance_evidence_sha256,
+            provenance_current_asset_id,
+            provenance_current_asset_id_kind,
+        )
+        if operation != "cross_chain_asset_provenance" and any(
+            value is not None for value in provenance_inputs
+        ):
+            raise ValueError(
+                "Cross-chain provenance selector/identity inputs require "
+                "operation='cross_chain_asset_provenance'"
             )
         warning_inputs = (
             intelligence_evidence_ids,
@@ -334,6 +350,61 @@ def build_x1_scout_tool(
                     **required_bridge_inputs,
                 }
             )
+        elif operation == "cross_chain_asset_provenance":
+            if include_history or compare_asset is not None:
+                raise ValueError(
+                    "history/compare inputs are not accepted for cross-chain provenance"
+                )
+            if action is not None or amount_usd is not None:
+                raise ValueError(
+                    "trade action/amount are not accepted for cross-chain provenance"
+                )
+            if (
+                intelligence_evidence_id is not None
+                or intelligence_evidence_ids is not None
+            ):
+                raise ValueError(
+                    "concentration evidence inputs are not accepted for cross-chain provenance"
+                )
+            required_provenance_inputs = {
+                "provenance_evidence_sha256": provenance_evidence_sha256,
+                "provenance_current_asset_id": provenance_current_asset_id,
+                "provenance_current_asset_id_kind": provenance_current_asset_id_kind,
+            }
+            missing = [
+                key
+                for key, value in required_provenance_inputs.items()
+                if value is None
+            ]
+            if missing:
+                raise ValueError(
+                    "cross_chain_asset_provenance requires exact CMIS evidence "
+                    "selector and current X1 asset identity: "
+                    + ", ".join(sorted(missing))
+                )
+            normalized_asset = str(asset or "").strip()
+            normalized_current = str(provenance_current_asset_id or "").strip()
+            if normalized_asset != normalized_current:
+                raise ValueError(
+                    "Cross-chain provenance asset must equal the exact current "
+                    "X1 asset id"
+                )
+            normalized_kind = str(
+                provenance_current_asset_id_kind or ""
+            ).strip().casefold()
+            if normalized_kind in {"symbol", "ticker", "name", "label"}:
+                raise ValueError(
+                    "Cross-chain provenance identity kind cannot use "
+                    "symbol/name labels"
+                )
+            request.update(
+                {
+                    "operation": "cross_chain_asset_provenance",
+                    "provenance_evidence_sha256": provenance_evidence_sha256,
+                    "provenance_current_asset_id": normalized_current,
+                    "provenance_current_asset_id_kind": normalized_kind,
+                }
+            )
         elif operation == "concentration_warning_intelligence":
             if include_history or compare_asset is not None:
                 raise ValueError(
@@ -435,6 +506,13 @@ def build_x1_scout_tool(
             "selectors, recalculate utilization, widen verified XDEX program-family scope "
             "to all X1 DEXes, equate bridge activity with adoption, equate liquidity with "
             "volume, infer causality, or infer risk. "
+            "For promoted Cross-Chain Asset Provenance, use "
+            "operation='cross_chain_asset_provenance' only when the exact CMIS "
+            "canonical evidence SHA and exact current X1 asset id/kind are present "
+            "in trusted current context; never invent a selector, infer identity "
+            "from symbol/name equality, reconstruct hops, recalculate representation "
+            "depth, convert bridge/custody dependency into risk, or infer backing, "
+            "solvency, safety, adoption, causality, or current bridge state. "
             "For the promoted pull-only Concentration Warning Intelligence service, use "
             "operation='concentration_warning_intelligence' only when the exact two CMIS-owned "
             "evidence ids plus every threshold/freshness/window policy input are explicitly "
