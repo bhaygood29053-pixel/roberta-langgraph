@@ -28,7 +28,7 @@ ROBERTA Opinion v1, X1 Asset Intelligence Claim Integrity, and X1 Compare Claim 
 
 CMIS upstream has accepted #465 fact-time evidence, #466 current USDC.X reserve backing, #468 current USDC.X/USD equivalence, #409 bridge supply/flow, and the #410 utilization foundation from PR #467. PR #469 remains the final unmerged #410 evidence slice even though its current exact-head final live workflow is green. PR #470 remains the final X1.Ninja USD-liquidity semantic proof. ROBERTA #314 stays behind accepted CMIS public-service / Scout-reliance promotion.
 
-CMIS Web Discovery PRs #472/#474/#476 are accepted internally as DISCOVERED-only evidence foundations; Issue #477 is the active passive browser-capture slice.
+CMIS Web Discovery v1-v4 is accepted internally through PR #478 and remains DISCOVERED-only evidence.
 
 **ROBERTA Phase 11 Controlled Execution remains locked / not started.**
 
