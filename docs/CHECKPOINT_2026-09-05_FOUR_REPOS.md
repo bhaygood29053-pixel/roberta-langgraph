@@ -52,15 +52,14 @@ Active:
 
 ## CMIS Web Discovery checkpoint
 
-Merged internal foundations:
+Merged internal Web Discovery v1-v4:
 
 - PR #472 — six-source Web Discovery;
 - PR #474 — structured X1 Explorer discovery;
-- PR #476 — sanitized X1 Explorer network observation.
+- PR #476 — sanitized X1 Explorer network observation;
+- PR #478 — operator-controlled passive one-page browser capture.
 
-Active next slice: **Issue #477**, operator-controlled passive browser capture.
-
-Discovery remains `DISCOVERED` candidate evidence only.
+Discovery remains `DISCOVERED` candidate evidence only and is not public-service / Scout-reliance promoted.
 
 ## Protected cores
 
