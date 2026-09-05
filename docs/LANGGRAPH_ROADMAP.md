@@ -8,7 +8,7 @@
 - **CMIS #410 is COMPLETE.** PR #469 merged as `3681559b728d8493fbc0c5e39227df5c34c23c69`, accepting the bounded 24h XDEX-program activity proof, comparable wSOL.X USD value basis, and final `bridge_to_xdex_utilization/v1` composition.
 - **Cross-chain release gate moved to CMIS #482.** ROBERTA #314 is now blocked only on public-service / Scout-reliance promotion of the already-accepted #410 contract. ROBERTA must not recompute bridge supply, flow, value basis, or utilization locally.
 - **CMIS #461 remains active.** PR #470 is the remaining five-pool X1.Ninja USD-liquidity semantic proof. Its current head is still running the repeated-revaluation live evidence workflow; `liquidity_freshness_verified=false` remains a later #459 gate.
-- **CMIS Web Discovery v1-v4 is accepted internally.** Web Discovery v5 is now active through Issue #479 / PR #481 for structured XDEX endpoint discovery. It remains `DISCOVERED`, non-promoted, and outside ROBERTA fact authority.
+- **CMIS Web Discovery v1-v5 is accepted internally through PR #481.** Issue #483 is the active v6 XDEX network-gap registry. It classifies covered APIs, direct read-only gaps, execution-adjacent exclusions, and UI-only candidates while keeping browser capture unnecessary for the currently known gap set. Discovery remains `DISCOVERED`, non-promoted, and outside ROBERTA fact authority.
 - Controlled Execution remains locked: `execution_authorized=false`.
 
 Last reconciled: 2026-09-05 (America/New_York)
