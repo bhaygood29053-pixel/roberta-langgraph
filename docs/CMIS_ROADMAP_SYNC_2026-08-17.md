@@ -55,13 +55,12 @@ ROBERTA #314 remains queued until those CMIS acceptance/promotion gates are comp
 
 ## CMIS Web Discovery
 
-Accepted internally:
+Accepted internally through v4:
 
 - PR #472 — six-source bounded Web Discovery;
 - PR #474 — X1 Explorer structured discovery;
-- PR #476 — sanitized X1 Explorer network observation.
-
-Issue #477 is active for operator-controlled passive browser capture.
+- PR #476 — sanitized X1 Explorer network observation;
+- PR #478 — operator-controlled passive one-page browser capture.
 
 Web Discovery remains `DISCOVERED` candidate evidence. It is not a provider-truth shortcut and is not public-service / Scout-reliance promoted.
 
