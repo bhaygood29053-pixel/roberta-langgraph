@@ -2,83 +2,86 @@
 
 Last reconciled: 2026-09-05 (America/New_York)
 
-This is the mirrored cross-project checkpoint for accepted public/protected state. Open PRs remain evidence candidates until merged and reconciled.
+This is the mirrored cross-project checkpoint for accepted public/protected state.
 
 ## Authority invariant
 
 `User / transport -> ROBERTA -> Chain Scout -> CMIS -> Chain Provider / verified source`
 
 - ROBERTA owns orchestration and final synthesis.
-- Chain Scouts interpret accepted CMIS contracts; they do not manufacture chain facts.
-- CMIS owns deterministic facts, freshness, evidence, Proof Score, risk, history, burn arithmetic, warning evidence, bridge evidence, and provider semantic verification.
+- Chain Scouts consume and interpret accepted CMIS contracts.
+- CMIS owns deterministic facts, freshness, evidence, Proof Score, risk, history, bridge evidence, and provider semantic verification.
+- Open PR evidence is not accepted truth.
 - Missing evidence remains unknown/unavailable.
-- Proof Score, warning state, bridge qualification, liquidity fact-time, value equivalence, semantic verification, freshness, and risk remain separate claims.
 - `execution_authorized=false`.
 
-## Repository heads at reconciliation start
+## Repository heads at this reconciliation
 
 ```text
-ROBERTA public      e1ab51fc5a004652274597de297cc96e85132f08
-ROBERTA protected   267aa3b1adb1c49ec11ab88ab53c8d2a83515251
-CMIS public         9eea8a13f4d19b3c18021c44b62367a3c1bf425b
-CMIS protected      e34353c4a4ce90d1f9da7ffb8f62bee4d03d1456
+ROBERTA public      917b5459a6d59f6dfab5e708eec235acee48cfc1
+ROBERTA protected   84d1ace9a0ca7a9fc7c36c46e9bd1f2846ad5802
+CMIS public         3681559b728d8493fbc0c5e39227df5c34c23c69
+CMIS protected      98b96c8a73524d2b5c524f536cdd6e4cd2f69437
 ```
 
-Roadmap/documentation reconciliation commits intentionally advance repository heads beyond these checkpoint SHAs.
+Documentation reconciliation commits may advance these heads after this checkpoint.
 
-## ROBERTA accepted state
+## ROBERTA
 
 - Opinion v1: accepted.
 - Claim Integrity v1: accepted for X1 asset intelligence and Compare.
-- Next ROBERTA Truth Gate: standalone History, then Burn, Discovery, and remaining specialist products.
-- Controlled Execution remains locked.
+- Next Truth Gate: standalone History, then Burn, Discovery, and remaining specialist products.
+- ROBERTA #314 is now blocked only on CMIS #482 public-service / Scout-reliance promotion.
 
-## CMIS #461 / X1.Ninja liquidity state
-
-Accepted on CMIS main:
-
-- PR #465: five same-fact X1.Ninja revaluations across five distinct pools; `liquidity_fact_time_verified=true`.
-- PR #466: current exact Warp Solana USDC reserve backing for X1 USDC.X; retained historical message accounts are not treated as current liabilities.
-- PR #468: current `x1_current_usdcx_usd_equivalence/v1` live composition; dedicated USDC.X/USD equivalence workflow passed.
-
-Active:
-
-- Issue #461 is reopened until PR #470 completes the five-pool USD-liquidity semantic proof.
-- PR #470 may promote `x1_ninja_liquidity_usd_semantics_verified=true` only when fresh current USDC.X/USD equivalence and all five same-fact pool samples pass together.
-- `liquidity_freshness_verified=false` remains separate under Issue #459.
-
-## Cross-chain / Warp state
+## CMIS cross-chain state
 
 Accepted:
 
-- #407 exact Warp config semantics;
-- #441 bounded 60-day message lifecycle retention;
-- #409 Bridge Supply + current/prior 24h/7d/30d Flow Intelligence;
-- PR #467 `bridge_to_xdex_utilization/v1` foundation and verified wSOL.X XDEX program-family pool-universe state.
+- #407 exact Warp route/config semantics;
+- #441 bounded lifecycle retention;
+- #409 bridged supply and current/prior 24h/7d/30d flow intelligence;
+- #410 complete through merged PR #469;
+- exact 24h XDEX activity-window semantics and comparable wSOL.X USD value basis;
+- final `bridge_to_xdex_utilization/v1` acceptance inside the verified XDEX program-family scope.
 
 Active:
 
-- Issue #410 is reopened because PR #467 explicitly left `issue_410_acceptance_verified=false`.
-- PR #469 is the final #410 evidence slice.
-- On PR #469's current exact head, the 24h XDEX-program activity-window proof, comparable wSOL.X USD value-basis proof, and dedicated Bridge-to-XDEX Final workflow are green.
-- Open PR evidence remains unaccepted until merge/reconciliation.
-- ROBERTA #314 remains blocked until PR #469 is merged/reconciled and CMIS separately accepts public-service / Scout-reliance promotion.
+- Issue #482 — promote the already-accepted #410 contract to public CMIS service and X1 Scout reliance.
+- ROBERTA #314 follows #482.
+
+## CMIS #461 / liquidity state
+
+Accepted prerequisites:
+
+- PR #465 fact-time evidence;
+- PR #466 current USDC.X reserve backing;
+- PR #468 current USDC.X/USD equivalence.
+
+Active:
+
+- PR #470 — final five-pool X1.Ninja USD-liquidity semantic proof; current repeated-revaluation workflow remains in progress.
+- Issue #459 — later liquidity/rolling-24h freshness promotion.
 
 ## CMIS Web Discovery
 
-Accepted internal foundations through v4:
+Accepted internally through v4:
 
-- #471 / PR #472 — bounded six-source CMIS Web Discovery v1;
-- #473 / PR #474 — X1 Explorer structured discovery;
-- #475 / PR #476 — sanitized X1 Explorer network observation;
-- #477 / PR #478 — operator-controlled passive one-page browser capture.
+- #472 six-source bounded discovery;
+- #474 X1 Explorer structured discovery;
+- #476 sanitized X1 Explorer network observation;
+- #478 operator-controlled passive X1 Explorer browser capture.
 
-All Web Discovery state remains discovery-only: no automatic CMIS truth, Proof Score, risk, public-service, Scout-reliance, or execution promotion.
+Active:
 
-## Parallel evidence work
+- Issue #479 / PR #481 — Web Discovery v5 structured XDEX endpoint discovery.
 
-- Issue #444 — complete remaining Instant X1 Scan evidence gaps.
-- Issue #459 — promote eligible X1.Ninja + X1 RPC field-scoped freshness.
-- Issue #363 — delayed-vault/X1.Ninja research remains parallel and is not the flagship blocker.
+All Web Discovery state remains `DISCOVERED`, non-promoted, and non-authorizing.
+
+## Parallel work
+
+- #444 Instant X1 Scan evidence completion.
+- #459 field-scoped freshness expansion.
+- #363 delayed-vault/X1.Ninja research.
+- ROBERTA Core PR #39 / Issue #38 remain protected-runtime maintenance, not product capability gates.
 
 `execution_authorized=false`
