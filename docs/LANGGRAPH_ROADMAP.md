@@ -4,11 +4,13 @@
 
 - **ROBERTA Opinion v1: ACCEPTED.**
 - **ROBERTA Claim Integrity v1: ACCEPTED** for X1 asset intelligence, X1 Compare, standalone History, Burn, Discovery, and WHAT CHANGED?.
-- **Next ROBERTA Truth Gate:** Concentration Warning / Early Warning, then remaining specialist products.
-- **CMIS #410 is COMPLETE.** PR #469 merged as `3681559b728d8493fbc0c5e39227df5c34c23c69`, accepting the bounded 24h XDEX-program activity proof, comparable wSOL.X USD value basis, and final `bridge_to_xdex_utilization/v1` composition.
-- **Cross-chain release gate moved to CMIS #482.** ROBERTA #314 is now blocked only on public-service / Scout-reliance promotion of the already-accepted #410 contract. ROBERTA must not recompute bridge supply, flow, value basis, or utilization locally.
-- **CMIS #461 remains active.** PR #470 is the remaining five-pool X1.Ninja USD-liquidity semantic proof. Its current head is still running the repeated-revaluation live evidence workflow; `liquidity_freshness_verified=false` remains a later #459 gate.
-- **CMIS Web Discovery v1-v5 is accepted internally through PR #481.** Issue #483 is the active v6 XDEX network-gap registry. It classifies covered APIs, direct read-only gaps, execution-adjacent exclusions, and UI-only candidates while keeping browser capture unnecessary for the currently known gap set. Discovery remains `DISCOVERED`, non-promoted, and outside ROBERTA fact authority.
+- **Cross-chain / ROBERTA #314: COMPLETE.** CMIS #482 and #491 are closed; public CMIS PRs #487/#493, protected `cmis-core` PRs #23/#24, ROBERTA PRs #344/#345, and protected `roberta-core` PR #50 complete the bounded Bridge-to-XDEX + canonical provenance adoption path.
+- **Current CMIS contract consumed by the roadmap: `1.20.0`.** Provenance and Bridge-to-XDEX facts remain scope-bounded and do not become backing, solvency, safety, adoption, causality, or automatic risk.
+- **CMIS #461: COMPLETE.** PR #470 is merged; bounded X1.Ninja USD-liquidity semantics are accepted upstream. Current liquidity freshness is still a separate #459 gate.
+- **CMIS #459: ACTIVE.** PR #500 is the current liquidity-freshness candidate, but its first dedicated deterministic liquidity-freshness gate and the standard public-shell suite are failing. ROBERTA must continue to treat liquidity freshness as unverified until CMIS accepts the new composition and any required protected/runtime promotion.
+- **CMIS Web Discovery v1-v11: COMPLETE internally through PR #497.** Discovery remains candidate evidence below CMIS verification and never becomes ROBERTA fact authority by itself.
+- **Next ROBERTA Truth Gate:** Concentration Warning / Early Warning Claim Integrity.
+- **Next product-facing dependency:** ROBERTA #354 waits on CMIS #498 `trade_price_impact_intelligence/v1`.
 - Controlled Execution remains locked: `execution_authorized=false`.
 
 Last reconciled: 2026-09-05 (America/New_York)
@@ -43,7 +45,7 @@ Accepted on `main`:
 - X1 Scout decision-production readiness under the accepted CMIS boundary;
 - Solana Scout read-only readiness for its accepted surface;
 - X1 Scout adoption of CMIS `concentration_change_intelligence/v1`;
-- X1 Scout adoption of accepted CMIS capability through `1.18.0`, including all-available history, exact-mint X1 identity, bounded verified-provider historical price backfill, Instant X1 Scan v3, Burn Intelligence, Discovery Intelligence, field-scoped current-market freshness, and pull-only Concentration Warning Intelligence;
+- X1 Scout adoption of accepted CMIS capability through `1.20.0`, including all-available history, exact-mint X1 identity, bounded verified-provider historical price backfill, Instant X1 Scan v3, Burn Intelligence, Discovery Intelligence, field-scoped current-market freshness v1, pull-only Concentration Warning Intelligence, promoted Bridge-to-XDEX utilization, and promoted cross-chain asset provenance;
 - Learning System Phases 1-10;
 - fail-closed `verified_learned_knowledge` classification with no general operational-trust promotion wrapper;
 - source-specific Blockchain Reasoning Pyramid architecture and source-mastery ledger;
