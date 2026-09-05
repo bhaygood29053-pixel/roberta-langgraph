@@ -71,9 +71,11 @@ Accepted internally through v4:
 - #476 sanitized X1 Explorer network observation;
 - #478 operator-controlled passive X1 Explorer browser capture.
 
+Accepted internally through v5, including PR #481 structured XDEX endpoint discovery.
+
 Active:
 
-- Issue #479 / PR #481 — Web Discovery v5 structured XDEX endpoint discovery.
+- Issue #483 — Web Discovery v6 XDEX network-gap registry; current design conclusion is `browser_capture_required_now=false` for known XDEX gaps.
 
 All Web Discovery state remains `DISCOVERED`, non-promoted, and non-authorizing.
 
