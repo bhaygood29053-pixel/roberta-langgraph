@@ -57,7 +57,7 @@ ROBERTA must not promote `x1_ninja_liquidity_usd_semantics_verified` or `liquidi
 
 ## Web Discovery
 
-CMIS Web Discovery v1-v4 is accepted internally. Issue #479 / PR #481 is the active v5 slice for structured XDEX endpoint discovery.
+CMIS Web Discovery v1-v5 is accepted internally through PR #481. **Issue #483 is now the active v6 slice**, building a deterministic XDEX network-gap registry and explicitly deciding that browser capture is not currently required because the uncovered useful surfaces are direct read-only machine endpoints.
 
 Discovery remains candidate evidence only. It does not create ROBERTA market/blockchain truth.
 
