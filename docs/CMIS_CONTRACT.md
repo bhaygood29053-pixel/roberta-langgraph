@@ -1,6 +1,6 @@
 # CMIS Contract Boundary
 
-Last refreshed: 2026-09-03
+Last refreshed: 2026-09-05
 
 CMIS is Roberta's deterministic cross-chain market-intelligence service layer. Roberta does not own provider collection, fact verification, Evidence Receipt generation, Proof Score calculation, deterministic market risk, or bounded pre-trade calculations. Chain Scouts select and interpret allowed CMIS operations; CMIS and its providers remain authoritative for freshness-sensitive market facts.
 
@@ -40,43 +40,29 @@ Roberta Phase 11 — Controlled Execution remains **locked / not started**.
 
 CMIS currently advertises capability contract **1.18.0**. Roberta keeps a global existing-service minimum of **1.8.0**; the promoted concentration intelligence operation keeps its service-specific minimum of **1.9.0**, legacy X1 all-available historical modes remain compatible from **1.10.0**, normalized exact-mint X1 identity requires **1.11.0**, verified provider-price backfill semantics require the **1.12.0** historical limitation contract, Burn Intelligence is accepted from **1.15.0**, Discovery Intelligence from **1.16.0**, field-scoped current-market freshness from **1.17.0**, and pull-only Concentration Warning Intelligence from **1.18.0**.
 
-## September 3 Warp / bridge checkpoint
-
-The old boundary that treated Warp as blocked on exact endpoint semantics is
-superseded.
+## September 5 Warp / bridge checkpoint
 
 Accepted CMIS cross-chain evidence now includes:
 
-- exact Warp config semantics under `warp_config/exact-mint-pair/v1`;
-- deterministic `bridge_flow_intelligence/v1` calculation;
-- canonical settled transfer events through
-  `warp_onchain_transfer_history/v1` exact OutgoingMsg/IncomingMsg pairing;
-- connected wallet-history endpoint/response semantics as corroboration only;
-- current message-universe counter/account closure under
-  `warp_message_retention_coverage/v1`.
+- exact Warp route/config semantics;
+- canonical settled OutgoingMsg/IncomingMsg transfer evidence;
+- bounded 60-day lifecycle retention;
+- exact bridged-supply closure;
+- #409 current/prior 24h/7d/30d bridge-flow integration;
+- PR #467 `bridge_to_xdex_utilization/v1` deterministic foundation and verified wSOL.X XDEX program-family pool-universe state.
 
-The active CMIS gate is **#441**, which must prove the required 60-day
-message-account lifecycle retention before #409 may claim complete current/prior
-30-day coverage.
+The remaining final #410 evidence lives in PR #469. Its current exact-head 24h XDEX activity-window and comparable wSOL.X value-basis workflows are green, but it remains an open PR and therefore is not accepted ROBERTA truth yet.
 
 ROBERTA must preserve:
 
-```text
-historical_retention_complete_verified = false
-requested_60d_window_coverage_verified = false
-coverage_complete_verified = false
-missing_history_zero_authorized = false
-verified_bridged_supply = false
-public_service_promoted = false
-scout_reliance_promoted = false
-execution_authorized = false
-```
+- CMIS-returned route, coverage, supply, flow, value-basis, and utilization scope;
+- unavailable/unknown states outside accepted coverage;
+- separation between bridge activity, liquidity, volume, adoption, and risk;
+- `execution_authorized=false`.
 
-until the corresponding CMIS gates pass.
+The downstream sequence is now:
 
-The downstream sequence is:
-
-`CMIS #441 -> finish #409 -> #410 -> ROBERTA #314`.
+`merge/reconcile CMIS PR #469 -> accept CMIS public-service / Scout-reliance promotion -> ROBERTA #314`.
 
 ## Shared public service surface
 
@@ -231,7 +217,7 @@ Recent read-only provider-gap observations remain non-promotional:
 
 - the current repository X1.Ninja credential received HTTP `403` / `access_denied` on the bounded SSE handshake probe; no event body or stream semantics were consumed/inferred;
 - the same-run XENCAT holder-looking probe observed provider candidate `116`, RPC token-account candidate `180`, and unique token-account-authority candidate `174`; holder semantics, coverage, wallet identity, and beneficial ownership remain unverified;
-- Warp Bridge operational state remains unavailable until an exact provenance-approved machine-readable read URL and response contract are accepted.
+- Warp route/config, bounded retention, bridged supply, and #409 bridge-flow evidence are accepted; #410 final utilization evidence remains gated by PR #469 and later public-service / Scout-reliance promotion.
 
 Roberta must preserve CMIS classifications such as verified, bounded, partial, unavailable, conflict, or insufficient evidence.
 
