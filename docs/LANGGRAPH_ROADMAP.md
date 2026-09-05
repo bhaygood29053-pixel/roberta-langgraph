@@ -685,5 +685,24 @@ rerun Scan, Burn, or Discovery. It prevents ROBERTA from:
 - turning WHAT CHANGED? into deterministic CMIS risk or a CMIS trade
   recommendation.
 
+### Planned product — Verified Wallet Trade + Pool Price Impact
+
+**QUEUED.** Public ROBERTA issue #354 depends on CMIS #498 and will adopt a
+read-only `trade_price_impact_intelligence/v1` capability through X1 Scout.
+
+The intended Human ROBERTA answer may identify the exact public wallet,
+transaction signature, transaction time, trade size, verified measured-window
+volume contribution, pre-trade pool spot price, average execution price,
+post-trade pool spot price, and next verified trade execution price.
+
+When CMIS proves the exact AMM reserve/state transition, ROBERTA may say that the
+swap moved **that identified pool's** spot price from X to Y. She must not widen
+that into whole-market causality, wallet ownership/identity, whale/insider/
+manipulator labels, intent, coordination, automatic risk, or a trade
+recommendation without separately accepted evidence.
+
+ROBERTA will not recompute reserves, deltas, price impact, or volume contribution
+locally and will not call providers directly. `execution_authorized=false`.
+
 The next Truth Gate is **Concentration Warning / Early Warning Claim Integrity**.
 `execution_authorized=false`.
