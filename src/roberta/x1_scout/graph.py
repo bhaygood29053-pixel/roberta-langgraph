@@ -526,6 +526,7 @@ def make_cmis_calls_node(cmis_client: CMISClient) -> Callable[[X1ScoutState], di
         # request; preserve the single service result and its own identity section.
         if (
             "instant_x1_scan" not in operations
+            and "bridge_to_xdex_utilization" not in operations
             and _looks_like_exact_x1_mint(request.get("asset"))
         ):
             try:
