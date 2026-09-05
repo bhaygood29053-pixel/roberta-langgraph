@@ -57,7 +57,7 @@ ROBERTA #314 remains blocked until PR #469 is merged/reconciled **and** CMIS sep
 
 ### Web discovery
 
-CMIS PRs #472, #474, and #476 are accepted internal discovery foundations. Issue #477 is active for bounded operator-controlled passive X1 Explorer browser capture. Discovery output remains `DISCOVERED`, not verified ROBERTA market/blockchain truth.
+CMIS Web Discovery v1-v4 is accepted internally through PR #478. Bounded six-source discovery, X1 Explorer structured extraction, sanitized network observation, and operator-controlled passive one-page browser capture all remain `DISCOVERED`, not verified ROBERTA market/blockchain truth.
 
 Canonical authority remains `User / transport -> ROBERTA -> Chain Scout -> CMIS -> Chain Provider / verified source`.
 
