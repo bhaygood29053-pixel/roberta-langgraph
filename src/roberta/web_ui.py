@@ -7,7 +7,7 @@ ROBERTA_WEB_UI_HTML = r'''<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="light">
+<meta name="color-scheme" content="dark">
 <title>ROBERTA — Verified On-Chain Intelligence</title>
 <style>
 :root{
@@ -82,6 +82,41 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;bac
 @media(max-width:760px){.heroSplit{padding-top:32px}.heroCopy h1{font-size:clamp(56px,18vw,84px)}.heroTagline{font-size:19px}.heroVisual{height:470px;min-height:430px;margin:0 -8px}.heroCoreMark{width:78px;height:78px;font-size:36px;right:19%;top:45%}.heroOrbitLabel{transform:scale(.82);transform-origin:center}.orbitMarket{right:2%;top:10%}.orbitRisk{right:-3%;top:28%}.orbitBridge{right:-4%;top:67%}.orbitProof{right:4%;bottom:6%}.orbitFresh{right:38%;bottom:2%}.orbitBurn{right:48%;top:17%}.heroSignals{display:none}}
 @media(prefers-reduced-motion:reduce){.heroCoreMark:after,.motionStatus span{animation:none!important}}
 </style>
+<style id="human-workspace-ui">
+body:not(.workspaceMode) #chat{display:none}
+.workspaceMode .siteNav,.workspaceMode #home,.workspaceMode #trust,.workspaceMode #services,.workspaceMode .footer{display:none!important}
+.workspaceMode .page{min-height:100vh;overflow:visible}
+.humanServiceGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.humanSvc{border:1px solid rgba(126,150,255,.2);background:linear-gradient(180deg,rgba(12,18,43,.92),rgba(8,12,29,.94));border-radius:28px;padding:24px;min-height:360px;box-shadow:0 18px 45px rgba(0,0,0,.18);display:flex;flex-direction:column}
+.humanSvc.featured{border-color:rgba(88,194,255,.42);box-shadow:0 20px 55px rgba(59,86,255,.14)}
+.humanSvcIcon{width:48px;height:48px;border-radius:15px;display:grid;place-items:center;background:linear-gradient(145deg,rgba(71,136,255,.24),rgba(144,66,255,.22));border:1px solid rgba(115,154,255,.22);font-size:18px}
+.humanSvc h3{font-size:20px;margin:18px 0 8px}.humanSvc p{color:var(--muted);font-size:13px;margin:0 0 20px}
+.exampleLabel{margin-top:auto;color:#7883ae;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px}
+.exampleChip{display:block;width:100%;text-align:left;border:1px solid rgba(126,150,255,.16);background:rgba(10,15,37,.7);color:#cbd4f7;border-radius:13px;padding:9px 11px;margin-top:7px;cursor:pointer;font-size:11px}
+.exampleChip:hover{border-color:rgba(78,191,255,.42);background:rgba(20,30,67,.86);color:#fff}
+.workspaceSection{padding:0;min-height:100vh;background:#050817}
+.workspaceShell{min-height:100vh;display:grid;grid-template-columns:310px minmax(0,1fr)}
+.workspaceSidebar{position:sticky;top:0;height:100vh;overflow:auto;border-right:1px solid rgba(126,150,255,.14);background:rgba(6,10,26,.97);padding:22px 18px;display:flex;flex-direction:column;gap:10px}
+.workspaceBrand{display:flex;align-items:center;gap:11px;padding:3px 2px 16px}.workspaceBrandMark{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(145deg,#5aa8ff,#8e4dff);font-weight:900}.workspaceBrand b{display:block;letter-spacing:.18em}.workspaceBrand small{display:block;color:var(--muted);font-size:9px;margin-top:2px}
+.workspaceWide{width:100%;margin-bottom:6px}.workspaceGroupTitle{color:#7480aa;font-size:9px;font-weight:950;text-transform:uppercase;letter-spacing:.14em;margin:10px 2px 3px}.serviceTitle{margin-top:18px}
+.workspaceHistory{max-height:28vh;overflow:auto;display:grid;gap:6px}.workspaceHistory .historyItem{background:rgba(12,17,39,.74);border-color:rgba(126,150,255,.13);color:var(--ink)}.workspaceHistory .historyItemTitle{text-decoration:none}.historyGroupTitle{color:#6e7aa7;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;padding:7px 3px 2px}
+.sidebarTextButton{border:0;background:transparent;color:#8e99c1;text-align:left;padding:5px 2px;cursor:pointer;font-size:10px}.sidebarTextButton:hover{color:#fff}
+.workspaceServices{display:grid;gap:7px}.workspaceServices button{border:1px solid rgba(126,150,255,.13);background:rgba(10,15,35,.7);color:var(--ink);border-radius:14px;padding:10px 11px;text-align:left;cursor:pointer}.workspaceServices button:hover{border-color:rgba(78,191,255,.38);background:rgba(18,27,60,.82)}.workspaceServices b{display:block;font-size:11px}.workspaceServices span{display:block;color:#7f8bb5;font-size:9px;margin-top:2px}
+.workspaceLabelKey{margin-top:10px}.workspaceLabelKey>span{display:inline-flex;border:1px solid rgba(126,150,255,.15);border-radius:999px;color:#909bc3;padding:4px 7px;margin:4px 3px 0 0;font-size:8px}.backHome{margin-top:auto;padding-top:14px}
+.workspaceMain{min-width:0;height:100vh;display:flex;flex-direction:column;background:radial-gradient(circle at 70% 0,rgba(73,74,190,.11),transparent 30%),#060918}
+.workspaceTopbar{min-height:76px;border-bottom:1px solid rgba(126,150,255,.14);display:flex;justify-content:space-between;align-items:center;gap:16px;padding:14px 22px;background:rgba(6,9,24,.84);backdrop-filter:blur(18px)}
+.workspaceTopTitle b{display:block;font-size:16px;letter-spacing:.12em}.workspaceTopTitle span{display:block;color:var(--muted);font-size:10px;margin-top:2px}.workspaceTopActions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.workspaceRouteLabel{display:inline-flex;border:1px solid rgba(126,150,255,.15);border-radius:999px;padding:6px 9px;color:#9da8cf;font-size:9px;white-space:nowrap}
+.workspaceChat{min-height:0;flex:1;display:flex;flex-direction:column;max-width:1100px;width:100%;margin:0 auto;padding:20px 26px 14px}
+.workspaceChat .messages{height:auto;min-height:0;flex:1;border:1px solid rgba(126,150,255,.12);border-bottom:0;border-radius:24px 24px 0 0;background:linear-gradient(180deg,rgba(8,12,30,.74),rgba(6,9,23,.9));padding:24px}
+.workspaceChat .composer{border:1px solid rgba(126,150,255,.12);border-top:1px solid rgba(126,150,255,.16);background:rgba(8,12,30,.92);border-radius:0 0 24px 24px;padding:14px}
+.workspaceChat .composer textarea{min-height:76px;max-height:180px;background:rgba(4,7,19,.86);border-color:rgba(126,150,255,.18)}
+.workspaceBoundary{text-align:center;color:#66729b;font-size:9px;padding-top:8px}
+.workspaceMode .settings{top:18px}
+@media(max-width:1050px){.humanServiceGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.workspaceShell{grid-template-columns:260px minmax(0,1fr)}.workspaceRouteLabel{display:none}}
+@media(max-width:760px){.humanServiceGrid{grid-template-columns:1fr}.workspaceShell{display:block}.workspaceSidebar{position:relative;width:100%;height:auto;max-height:none;border-right:0;border-bottom:1px solid rgba(126,150,255,.14)}.workspaceHistory{max-height:180px}.workspaceServices{grid-template-columns:repeat(2,minmax(0,1fr))}.workspaceMain{height:auto;min-height:100vh}.workspaceTopbar{align-items:flex-start;flex-direction:column}.workspaceTopActions{justify-content:flex-start}.workspaceChat{min-height:75vh;padding:12px}.workspaceChat .messages{min-height:55vh}.backHome{margin-top:12px}}
+@media(max-width:520px){.workspaceServices{grid-template-columns:1fr}.workspaceTopActions .pill{display:inline-flex}}
+</style>
 </head>
 <body>
 <div class="page">
@@ -92,14 +127,12 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;bac
         <div class="brandText"><b>ROBERTA</b><small>VERIFIED ON-CHAIN INTELLIGENCE</small></div>
       </div>
       <nav class="navLinks">
-        <button data-go="home">Overview</button>
-        <button data-go="services">Capabilities</button>
-        <button data-go="trust">Trust</button>
-        <button data-go="chat">Ask ROBERTA</button>
+        <button data-go="home">About</button>
+        <button data-go="services">Services</button>
+        <button data-go="trust">Why ROBERTA</button>
       </nav>
       <div class="navActions">
-        <div id="health" class="pill"><span class="dot"></span>Checking ROBERTA…</div>
-        <button class="btn" id="settingsBtn">Connection</button>
+        <button class="btn primary" id="connectNav">Open ROBERTA</button>
       </div>
     </div>
   </header>
@@ -118,17 +151,16 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;bac
         <div class="heroCopy">
           <div class="heroBadge">VERIFIED ON-CHAIN INTELLIGENCE</div>
           <h1><span>ROBERTA</span></h1>
-          <p class="heroTagline">Evidence-first intelligence for X1, cross-chain routes, market structure, and risk.</p>
-          <p class="heroLead">ROBERTA coordinates the accepted Scout → CMIS evidence path, preserves exact asset identity and uncertainty, and explains what can be proven without turning analysis into execution.</p>
+          <p class="heroTagline">Your on-chain research assistant for tokens, trades, wallets, market moves, and risk.</p>
+          <p class="heroLead">Ask ROBERTA a normal question. She checks the available blockchain evidence, explains what matters in plain English, and gives you a clear assessment without executing a trade for you.</p>
           <div class="heroBtns">
-            <button class="btn primary" data-svc="full">Explore Capabilities</button>
-            <button class="btn soft" data-go="chat">Ask ROBERTA</button>
-            <button class="btn" data-svc="scan">Instant X1 Scan</button>
+            <button class="btn primary" id="connectHuman">Enter Human Chat</button>
+            <button class="btn soft" id="connectAgent">Agent / API Access</button>
           </div>
           <div class="heroSignals" aria-label="ROBERTA operating principles">
-            <span><b>CMIS 1.18</b> verified path</span>
-            <span><b>Human + Machine</b> one truth</span>
-            <span><b>Read-only</b> execution remains unauthorized · execution_authorized=false</span>
+            <span><b>Ask naturally</b> no commands required</span>
+            <span><b>Evidence-aware</b> unknowns stay visible</span>
+            <span><b>Read-only</b> you remain in control</span>
           </div>
         </div>
 
@@ -137,11 +169,11 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;bac
           <div class="heroCoreMark" aria-hidden="true">R</div>
           <div class="heroOrbitLabel orbitMarket"><span class="orbitIcon">▥</span><b>MARKET</b><small>INTELLIGENCE</small></div>
           <div class="heroOrbitLabel orbitRisk"><span class="orbitIcon">◇</span><b>RISK</b><small>ANALYSIS</small></div>
-          <div class="heroOrbitLabel orbitBridge"><span class="orbitIcon">↔</span><b>CROSS-CHAIN</b><small>ROUTES</small></div>
+          <div class="heroOrbitLabel orbitBridge"><span class="orbitIcon">↔</span><b>WALLETS</b><small>& TRADES</small></div>
           <div class="heroOrbitLabel orbitProof"><span class="orbitIcon">✓</span><b>VERIFIED</b><small>EVIDENCE</small></div>
           <div class="heroOrbitLabel orbitFresh"><span class="orbitIcon">◷</span><b>FRESHNESS</b><small>BY FIELD</small></div>
-          <div class="heroOrbitLabel orbitBurn"><span class="orbitIcon">△</span><b>BURN</b><small>INTELLIGENCE</small></div>
-          <div class="motionStatus"><span></span>LIVE VERIFIED NETWORK</div>
+          <div class="heroOrbitLabel orbitBurn"><span class="orbitIcon">△</span><b>BURNS</b><small>& HISTORY</small></div>
+          <div class="motionStatus"><span></span>ROBERTA INTELLIGENCE NETWORK</div>
         </div>
       </div>
     </section>
@@ -149,13 +181,13 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;bac
     <section id="trust" class="section alt">
       <div class="shell">
         <div class="sectionHead">
-          <div><div class="eyebrow">Built for trust</div><h2>Verified intelligence without hiding the uncertainty.</h2></div>
-          <p>ROBERTA is designed to distinguish what is verified, what is merely observed, and what is still unavailable—so a polished answer never outruns the evidence.</p>
+          <div><div class="eyebrow">Why ROBERTA</div><h2>Clear answers without hiding what the evidence cannot prove.</h2></div>
+          <p>ROBERTA is designed for people who want the useful conclusion first, with the evidence and important limitations underneath.</p>
         </div>
         <div class="trustStrip">
-          <article class="trustCard"><div class="trustIcon">✓</div><h3>Evidence before confidence</h3><p>Fresh accepted CMIS/provider evidence overrides remembered or learned live values. Missing evidence stays UNKNOWN or UNAVAILABLE.</p></article>
-          <article class="trustCard"><div class="trustIcon">◇</div><h3>Proof stays separate from risk</h3><p>Evidence quality and deterministic risk are different dimensions. Strong proof can still support a WARN or BLOCK result.</p></article>
-          <article class="trustCard"><div class="trustIcon">↗</div><h3>Analysis, not execution</h3><p>Website actions never call CMIS directly. Signing, broadcast, custody, swaps, bridge transfers and autonomous value movement remain unauthorized.</p></article>
+          <article class="trustCard"><div class="trustIcon">✓</div><h3>Checks the evidence</h3><p>ROBERTA uses accepted on-chain intelligence and keeps missing, stale, or conflicting information visible instead of filling the gaps with guesses.</p></article>
+          <article class="trustCard"><div class="trustIcon">◎</div><h3>Gives you a clear view</h3><p>For decision questions, ROBERTA can tell you what she thinks, explain why, show the strongest evidence against her view, and say what would change her mind.</p></article>
+          <article class="trustCard"><div class="trustIcon">↗</div><h3>You stay in control</h3><p>ROBERTA analyzes and recommends. She does not sign transactions, move funds, or execute trades from this website.</p></article>
         </div>
       </div>
     </section>
@@ -163,79 +195,118 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;bac
     <section id="services" class="section">
       <div class="shell">
         <div class="sectionHead">
-          <div><div class="eyebrow">Capabilities</div><h2>One ROBERTA. A full suite of accepted intelligence services.</h2></div>
-          <p>Choose a capability instead of memorizing commands. Each card sends a bounded request through the same ROBERTA → Scout → CMIS authority path.</p>
+          <div><div class="eyebrow">What you can ask</div><h2>Six simple ways to use ROBERTA.</h2></div>
+          <p>You never have to choose a technical blockchain tool. Pick a service for ideas, or just ask ROBERTA normally and she will select the right intelligence path.</p>
         </div>
-        <div class="serviceTools">
-          <div id="filters" class="filters"></div>
-          <div class="search"><input id="search" type="search" placeholder="Search ROBERTA capabilities…"></div>
+        <div class="humanServiceGrid">
+          <article class="humanSvc">
+            <div class="humanSvcIcon">◈</div>
+            <h3>Check a Token</h3>
+            <p>Get a quick health check covering the market, liquidity, activity, token details, recent changes, and available evidence.</p>
+            <div class="exampleLabel">Try asking</div>
+            <button class="exampleChip" data-example="Check AGI.">“Check AGI.”</button>
+            <button class="exampleChip" data-example="How is XNT doing right now?">“How is XNT doing?”</button>
+            <button class="exampleChip" data-example="What should I know about this token?">“What should I know about this token?”</button>
+          </article>
+          <article class="humanSvc">
+            <div class="humanSvcIcon">⇄</div>
+            <h3>Compare Tokens</h3>
+            <p>Compare two tokens side by side on liquidity, risk, market activity, history, structure, and other verified differences.</p>
+            <div class="exampleLabel">Try asking</div>
+            <button class="exampleChip" data-example="Which looks better right now, XNT or AGI?">“Which looks better, XNT or AGI?”</button>
+            <button class="exampleChip" data-example="Which token has stronger liquidity, XNT or AGI?">“Which has stronger liquidity?”</button>
+            <button class="exampleChip" data-example="Which is safer right now, XNT or AGI?">“Which is safer right now?”</button>
+          </article>
+          <article class="humanSvc">
+            <div class="humanSvcIcon">↗</div>
+            <h3>Should I Buy or Sell?</h3>
+            <p>Tell ROBERTA the trade you are considering. She checks the evidence and explains whether she thinks you should proceed, wait, reduce the size, or avoid it.</p>
+            <div class="exampleLabel">Try asking</div>
+            <button class="exampleChip" data-example="Should I buy $500 of AGI right now?">“Should I buy $500 of AGI?”</button>
+            <button class="exampleChip" data-example="Should I sell 100,000 XNT right now?">“Should I sell 100,000 XNT?”</button>
+            <button class="exampleChip" data-example="Would you make this trade?">“Would you make this trade?”</button>
+          </article>
+          <article class="humanSvc">
+            <div class="humanSvcIcon">◇</div>
+            <h3>Check Risk</h3>
+            <p>Look for thin liquidity, concentration, token controls, unusual activity, stale data, missing evidence, and trade-size problems.</p>
+            <div class="exampleLabel">Try asking</div>
+            <button class="exampleChip" data-example="Is AGI risky right now?">“Is this token risky?”</button>
+            <button class="exampleChip" data-example="Could I get stuck trying to sell AGI?">“Could I get stuck selling?”</button>
+            <button class="exampleChip" data-example="What worries you about AGI?">“What worries you about AGI?”</button>
+          </article>
+          <article class="humanSvc">
+            <div class="humanSvcIcon">◎</div>
+            <h3>Track Wallets &amp; Big Trades</h3>
+            <p>Understand verified public-wallet activity, important buys and sells, transaction timing, volume contribution, and pool-level price impact when the evidence supports it.</p>
+            <div class="exampleLabel">Try asking</div>
+            <button class="exampleChip" data-example="Did a big wallet just buy AGI?">“Did a big wallet just buy AGI?”</button>
+            <button class="exampleChip" data-example="Did this transaction move the pool price?">“Did this trade move the pool price?”</button>
+            <button class="exampleChip" data-example="Where did these tokens go?">“Where did these tokens go?”</button>
+          </article>
+          <article class="humanSvc featured">
+            <div class="humanSvcIcon">✦</div>
+            <h3>Ask ROBERTA</h3>
+            <p>Ask your question normally. ROBERTA chooses the appropriate token, market, wallet, burn, history, bridge, risk, or evidence intelligence automatically.</p>
+            <div class="exampleLabel">Try asking</div>
+            <button class="exampleChip" data-example="What happened to AGI today?">“What happened to AGI today?”</button>
+            <button class="exampleChip" data-example="Why did the price jump?">“Why did the price jump?”</button>
+            <button class="exampleChip" data-example="How much XNT was burned this week?">“How much XNT was burned this week?”</button>
+          </article>
         </div>
-        <div id="grid" class="grid"></div>
       </div>
     </section>
 
-    <section class="section alt">
-      <div class="shell">
-        <div class="productBand">
-          <div class="bandGrid">
-            <div>
-              <div class="eyebrow" style="color:#aeb2ff">Current product state</div>
-              <h2>X1-first today. Multi-chain by verified adoption.</h2>
-              <p>ROBERTA expands only when the evidence contract and chain-specific authority path are accepted. The interface deliberately does not imply feature parity where it does not exist.</p>
-              <div class="heroBtns" style="justify-content:flex-start"><button class="btn" data-svc="key">View status key</button><button class="btn soft" data-go="chat">Ask about availability</button></div>
-            </div>
-            <div class="stateList">
-              <div class="stateItem ok"><strong>Accepted X1:</strong> Instant X1 Scan v3, Burn, Discovery, What Changed, Compare and current-market freshness.</div>
-              <div class="stateItem ok"><strong>Accepted warning:</strong> CMIS 1.18 pull-only Concentration Warning through ROBERTA.</div>
-              <div class="stateItem ok"><strong>Opinion v1:</strong> Decision questions use ROBERTA-owned judgment with recommendation first, separate conviction and evidence quality, explicit counterevidence, and what would change her mind.</div>
-              <div class="stateItem ok"><strong>Warp evidence:</strong> Exact route/config semantics, real settled-transfer pairing, wallet-history corroboration, and current message-universe closure are accepted foundations.</div>
-              <div class="stateItem gate"><strong>Still gated:</strong> Route-wide 24h/7d/30d bridge-flow totals and verified bridged supply remain unavailable. Active sequence: CMIS #441 → #409 → #410 → ROBERTA #314.</div>
-              <div class="stateItem ok"><strong>Solana:</strong> Market, tokenomics and risk only when the accepted provider path is explicitly configured.</div>
-              <div class="stateItem"><strong>Learning:</strong> The Learning Command Center remains a separate read-only operator surface; this market UI does not start or mutate training.</div>
-            </div>
-          </div>
-          <div class="crossChain">
-            <div class="crossChainHead"><div><b>Warp / cross-chain evidence progress</b><br><span>Accepted CMIS foundations are visible here, but they are not yet a runnable ROBERTA bridge-flow service.</span></div><span>CMIS 1.18 · September 3 checkpoint</span></div>
-            <div class="crossSteps">
-              <div class="crossStep"><strong>Accepted</strong><span>Exact official Warp config semantics for provenance-qualified mint pairs.</span></div>
-              <div class="crossStep"><strong>Accepted</strong><span>Canonical settled events from exact on-chain OutgoingMsg / IncomingMsg pairing.</span></div>
-              <div class="crossStep"><strong>Accepted</strong><span>Wallet-history response semantics as corroboration only, not settlement authority.</span></div>
-              <div class="crossStep"><strong>Accepted</strong><span>Current Warp message-universe counter/account closure.</span></div>
-              <div class="crossStep pending"><strong>Active gate</strong><span>#441 retention proof → finish #409 flow + supply → #410 utilization → ROBERTA #314 adoption.</span></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
+    
 
-    <section id="chat" class="section">
-      <div class="shell">
-        <div class="sectionHead">
-          <div><div class="eyebrow">Conversational intelligence</div><h2>Ask ROBERTA the way you would ask an analyst.</h2></div>
-          <p>Normal-language access reaches the same verified intelligence core as the service cards. ROBERTA chooses the appropriate specialist path.</p>
-        </div>
-        <div class="chatLayout">
-          <div class="chat">
-            <div class="chatHead">
-              <div><div class="chatTitle">ROBERTA</div><div style="color:var(--muted);font-size:10px">Verified On-Chain Intelligence</div></div>
-              <div class="chatHeadActions"><button id="historyBtn" class="btn small">Previous chats</button><button id="clearChat" class="btn small">Clear chat</button><span class="tag">Analysis only</span></div>
+    <section id="chat" class="workspaceSection" aria-label="ROBERTA chat workspace">
+      <div class="workspaceShell">
+        <aside class="workspaceSidebar">
+          <div class="workspaceBrand"><span class="workspaceBrandMark">R</span><div><b>ROBERTA</b><small>Verified On-Chain Intelligence</small></div></div>
+          <button id="newChat" class="btn primary workspaceWide">+ New Chat</button>
+
+          <div class="workspaceGroupTitle">Chat history</div>
+          <div id="historyList" class="historyList workspaceHistory"></div>
+          <button id="clearHistory" class="sidebarTextButton">Clear chat history</button>
+
+          <div class="workspaceGroupTitle serviceTitle">Services</div>
+          <div class="workspaceServices">
+            <button data-example="Check AGI."><b>Check a Token</b><span>Quick token health check</span></button>
+            <button data-example="Which looks better right now, XNT or AGI?"><b>Compare Tokens</b><span>Compare two assets</span></button>
+            <button data-example="Should I buy $500 of AGI right now?"><b>Should I Buy or Sell?</b><span>Opinion before a trade</span></button>
+            <button data-example="Is AGI risky right now?"><b>Check Risk</b><span>Find important problems</span></button>
+            <button data-example="Did a big wallet just buy AGI?"><b>Track Wallets &amp; Big Trades</b><span>Wallet and transaction activity</span></button>
+            <button data-example="What happened to AGI today?"><b>Ask ROBERTA</b><span>Ask anything normally</span></button>
+          </div>
+
+          <div class="workspaceLabelKey">
+            <div class="workspaceGroupTitle">Answer labels</div>
+            <span>Evidence</span><span>Risk</span><span>Freshness</span><span>Opinion</span>
+          </div>
+          <button id="backHome" class="sidebarTextButton backHome">← About ROBERTA</button>
+        </aside>
+
+        <div class="workspaceMain">
+          <header class="workspaceTopbar">
+            <div class="workspaceTopTitle"><b>ROBERTA</b><span>Ask about a token, trade, wallet, or market move.</span></div>
+            <div class="workspaceTopActions">
+              <div id="health" class="pill"><span class="dot"></span>Checking ROBERTA…</div>
+              <span class="workspaceRouteLabel">X1</span>
+              <span class="workspaceRouteLabel">Scout → CMIS</span>
+              <span class="workspaceRouteLabel">Read-only</span>
+              <button class="btn small" id="settingsBtn">Connection</button>
+              <button id="clearChat" class="btn small">Clear chat</button>
             </div>
-            <div id="historyPanel" class="historyPanel">
-              <div class="historyTop"><b>Previous chats</b><button id="clearHistory" class="btn small">Clear history</button></div>
-              <div id="historyList" class="historyList"></div>
-            </div>
+          </header>
+
+          <div class="workspaceChat">
             <div id="messages" class="messages"></div>
-            <div class="composer"><textarea id="composer" rows="4" placeholder="Ask ROBERTA anything about an accepted intelligence service…"></textarea><button id="send" class="btn primary">Send</button></div>
+            <div class="composer">
+              <textarea id="composer" rows="4" placeholder="Ask ROBERTA anything… e.g. “Should I buy $500 of AGI?”"></textarea>
+              <button id="send" class="btn primary">Send</button>
+            </div>
+            <div class="workspaceBoundary">Analysis and recommendations only. ROBERTA does not execute transactions from this website.</div>
           </div>
-          <aside class="info">
-            <h3>Trust model</h3>
-            <div class="infoBlock"><b>Fresh facts</b><span>Accepted CMIS/provider evidence overrides remembered or learned live values.</span></div>
-            <div class="infoBlock"><b>Unknowns</b><span>Missing evidence stays UNKNOWN / UNAVAILABLE. It is never zero-filled.</span></div>
-            <div class="infoBlock"><b>Human-first output</b><span>Normal answers group related evidence gaps, hide internal diagnostic codes, and show only the three highest-priority missing items that materially affect the conclusion. Full audit detail remains in the underlying evidence.</span></div>
-            <div class="infoBlock"><b>ROBERTA Opinion v1</b><span>For opinion-bearing decision questions, ROBERTA leads with My recommendation, then Conviction, Evidence quality, My view, the best evidence against that view, and what would change her mind. Judgment remains ROBERTA-owned; facts and deterministic risk remain Scout → CMIS owned.</span></div>
-            <div class="infoBlock"><b>Proof vs risk</b><span>Evidence quality is separate from deterministic risk.</span></div>
-            <div class="infoBlock"><b>Execution</b><span>No result authorizes signing, broadcast, custody, swaps, bridge transfers, or autonomous value movement. Execution remains unauthorized.</span></div>
-          </aside>
         </div>
       </div>
     </section>
@@ -276,8 +347,8 @@ var services=[
 var HUMAN_SERVICE_POLICY=' Present this in Human ROBERTA mode. Lead with the answer and the few facts that matter most. Round display values to useful human precision without changing the underlying facts. Group related freshness gaps into one LIVE MARKET FRESHNESS statement. Use WHAT ROBERTA STILL NEEDS for no more than three prioritized, decision-relevant missing items. Do not expose raw snake_case limitation codes, internal contract invariants, implementation diagnostics, or duplicate caveats in the normal answer. Do not repeat freshness warnings inside RISK after LIVE MARKET FRESHNESS. Hide an unavailable numeric risk score unless I explicitly ask about risk scoring or technical details. Use EVIDENCE QUALITY instead of a raw evidence-status dump and end with a plain-English BOTTOM LINE. For opinion-bearing decision intents, apply the accepted roberta_opinion/v1 presentation contract: the first non-empty line is My recommendation: <TOKEN>, followed by Conviction, Evidence quality, My view, substantive Best evidence against my view, and What would change my mind. ROBERTA may disagree with the user and must not manufacture artificial neutrality. Recommendation strength is separate from evidence quality. Preserve every material unknown, conflict, WARN/BLOCK reason, and execution boundary; keep audit-level detail in the underlying structured evidence unless I explicitly ask for technical details.';
 var cats=['All','Core','Market','Risk','Asset','History','Intelligence','Solana','Evidence'],activeCat='All',activeService=null,sending=false;
 function el(s){return document.querySelector(s)}function base(){return(el('#apiBase').value||'').trim().replace(/\/$/,'')}function url(p){return base()?base()+p:p}function headers(){var h={'Content-Type':'application/json'},k=el('#apiKey').value.trim();if(k)h.Authorization='Bearer '+k;return h}
-function renderFilters(){el('#filters').innerHTML=cats.map(function(c){return '<button class="filter '+(c===activeCat?'active':'')+'" data-cat="'+c+'">'+c+'</button>'}).join('')}
-function render(){var q=el('#search').value.trim().toLowerCase(),list=services.filter(function(s){return(activeCat==='All'||s.cat===activeCat)&&(!q||(s.name+' '+s.desc+' '+s.cat).toLowerCase().indexOf(q)>=0)});el('#grid').innerHTML=list.map(function(s){return '<article class="svc"><div class="svcTop"><div class="ico">'+s.icon+'</div><span class="tag '+((s.status==='Advanced'||s.status==='Configured')?'configured':'')+'">'+s.status+'</span></div><h3>'+s.name+'</h3><p>'+s.desc+'</p><div class="svcFoot"><span>'+(s.chain||'X1')+' · Read-only</span><button class="run" data-svc="'+s.id+'">Run →</button></div></article>'}).join('')||'<div style="color:var(--muted)">No matching services.</div>'}
+function renderFilters(){var f=el('#filters');if(!f)return;f.innerHTML=cats.map(function(c){return '<button class="filter '+(c===activeCat?'active':'')+'" data-cat="'+c+'">'+c+'</button>'}).join('')}
+function render(){var search=el('#search'),grid=el('#grid');if(!search||!grid)return;var q=search.value.trim().toLowerCase(),list=services.filter(function(s){return(activeCat==='All'||s.cat===activeCat)&&(!q||(s.name+' '+s.desc+' '+s.cat).toLowerCase().indexOf(q)>=0)});grid.innerHTML=list.map(function(s){return '<article class="svc"><div class="svcTop"><div class="ico">'+s.icon+'</div><span class="tag '+((s.status==='Advanced'||s.status==='Configured')?'configured':'')+'">'+s.status+'</span></div><h3>'+s.name+'</h3><p>'+s.desc+'</p><div class="svcFoot"><span>'+(s.chain||'X1')+' · Read-only</span><button class="run" data-svc="'+s.id+'">Run →</button></div></article>'}).join('')||'<div style="color:var(--muted)">No matching services.</div>'}
 function field(f){var n=f[0],l=f[1],t=f[2],p=f[3];if(t==='select'){return '<div class="field"><label>'+l+'</label><select name="'+n+'" required>'+p.split('|').map(function(x){return '<option value="'+x+'">'+x+'</option>'}).join('')+'</select></div>'}return '<div class="field"><label>'+l+'</label><input name="'+n+'" type="'+t+'" placeholder="'+p+'" required '+(t==='number'?'min="0" step="any"':'')+'></div>'}
 function openSvc(id){activeService=services.find(function(s){return s.id===id});if(!activeService)return;el('#modalTitle').textContent=activeService.name;el('#modalDesc').textContent=activeService.desc;el('#formFields').innerHTML=activeService.fields.length?activeService.fields.map(field).join(''):'<div style="color:var(--muted)">No additional input is required.</div>';el('#modalBg').classList.add('open')}
 function closeSvc(){el('#modalBg').classList.remove('open');activeService=null}
@@ -299,27 +370,30 @@ function formatAssistant(text){
   return out.join('\n')
 }
 function msg(role,text){var d=document.createElement('div');d.className='msg '+role;if(role==='assistant')d.innerHTML=formatAssistant(text);else d.textContent=text;el('#messages').appendChild(d);el('#messages').scrollTop=el('#messages').scrollHeight;return d}
-function starter(){return'I’m ready. Choose a capability above or ask a normal question about X1 market conditions, risk, tokenomics, history, burns, discovery, concentration, evidence, pre-trade analysis, or ask what ROBERTA thinks about a decision.'}
+function starter(){return'I’m ready. Ask me about a token, trade, wallet, market move, risk, burn, history, bridge activity, or anything else you want me to investigate. You can also choose one of the simple services on the left for examples.'}
 function loadHistory(){try{var raw=localStorage.getItem(CHAT_HISTORY_KEY);var parsed=raw?JSON.parse(raw):[];return Array.isArray(parsed)?parsed:[]}catch(e){return[]}}
 function saveHistory(items){try{localStorage.setItem(CHAT_HISTORY_KEY,JSON.stringify(items.slice(0,CHAT_HISTORY_LIMIT)))}catch(e){}}
 function chatTitle(text){var t=String(text||'').replace(/\s+/g,' ').trim();return t.length>58?t.slice(0,55)+'…':t||'Untitled chat'}
-function renderHistory(){var list=el('#historyList'),items=loadHistory();if(!items.length){list.innerHTML='<div class="historyEmpty">No saved chats yet.</div>';return}list.innerHTML=items.map(function(item){var when=item.createdAt?new Date(item.createdAt).toLocaleString():'';return'<button class="historyItem" data-chat-id="'+escapeHtml(item.id)+'"><span class="historyItemTitle">'+escapeHtml(item.title)+'</span><span class="historyItemTime">'+escapeHtml(when)+'</span></button>'}).join('')}
+function renderHistory(){var list=el('#historyList'),items=loadHistory();if(!items.length){list.innerHTML='<div class="historyEmpty">No saved chats yet.</div>';return}var today=new Date().toDateString(),groups={Today:[],Previous:[]};items.forEach(function(item){var d=item.createdAt?new Date(item.createdAt):null;groups[d&&d.toDateString()===today?'Today':'Previous'].push(item)});list.innerHTML=['Today','Previous'].map(function(label){var group=groups[label];if(!group.length)return'';return'<div class="historyGroupTitle">'+label+'</div>'+group.map(function(item){var when=item.createdAt?new Date(item.createdAt).toLocaleString():'';return'<button class="historyItem" data-chat-id="'+escapeHtml(item.id)+'"><span class="historyItemTitle">'+escapeHtml(item.title)+'</span><span class="historyItemTime">'+escapeHtml(when)+'</span></button>'}).join('')}).join('')}
 function renderChat(messages){el('#messages').innerHTML='';if(!Array.isArray(messages)||!messages.length){msg('assistant',starter());return}messages.forEach(function(item){if(item&&item.role&&typeof item.text==='string')msg(item.role,item.text)})}
 function recordUserMessage(userText){var items=loadHistory(),item=currentChatId?items.find(function(x){return x.id===currentChatId}):null;if(!item){currentChatId='chat-'+Date.now()+'-'+Math.random().toString(36).slice(2,8);item={id:currentChatId,title:chatTitle(userText),createdAt:new Date().toISOString(),messages:[]};items.unshift(item)}item.messages.push({role:'user',text:userText});saveHistory(items);renderHistory();return currentChatId}
 function appendSavedChat(id,role,text){var items=loadHistory(),item=items.find(function(x){return x.id===id});if(!item)return;item.messages.push({role:role,text:text});saveHistory(items);renderHistory()}
-function openSavedChat(id){var item=loadHistory().find(function(x){return x.id===id});if(!item)return;currentChatId=id;renderChat(item.messages);el('#historyPanel').classList.remove('open')}
+function openSavedChat(id){var item=loadHistory().find(function(x){return x.id===id});if(!item)return;currentChatId=id;renderChat(item.messages)}
 function restoreLatestChat(){var items=loadHistory();if(items.length){currentChatId=items[0].id;renderChat(items[0].messages)}else renderChat([])}
 function clearCurrentChat(){currentChatId=null;renderChat([]);el('#composer').value=''}
 function clearAllHistory(){saveHistory([]);currentChatId=null;renderHistory();renderChat([])}
+function enterWorkspace(mode,focusComposer){document.body.classList.add('workspaceMode');sessionStorage.setItem('robertaWorkspaceMode',mode||'human');if(mode==='agent')el('#settings').classList.add('open');if(focusComposer!==false)setTimeout(function(){el('#composer').focus()},30)}
+function leaveWorkspace(){document.body.classList.remove('workspaceMode');sessionStorage.removeItem('robertaWorkspaceMode');el('#settings').classList.remove('open');window.scrollTo({top:0,behavior:'smooth'})}
+function useExample(text){enterWorkspace('human',false);el('#composer').value=text;setTimeout(function(){el('#composer').focus()},30)}
 function busy(v){sending=v;el('#send').disabled=v;el('#send').textContent=v?'Working…':'Send'}
 async function health(){var h=el('#health');try{var r=await fetch(url('/healthz'));var d=await r.json();if(r.ok&&d.status==='ok'){h.className='pill online';h.innerHTML='<span class="dot"></span>ROBERTA online';return}throw 0}catch(e){h.className='pill offline';h.innerHTML='<span class="dot"></span>ROBERTA offline'}}
 async function send(text){text=(text||'').trim();if(!text||sending)return;var chatId=recordUserMessage(text);msg('user',text);el('#composer').value='';busy(true);var wait=msg('system','ROBERTA is checking accepted evidence…');try{var r=await fetch(url('/v1/roberta'),{method:'POST',headers:headers(),body:JSON.stringify({message:text})}),d=await r.json().catch(function(){return{}});wait.remove();var reply=!r.ok?((d.error&&d.error.message)||('Request failed ('+r.status+')')):(d.reply||'ROBERTA returned no reply.');msg('assistant',reply);appendSavedChat(chatId,'assistant',reply)}catch(e){wait.remove();var reply='I could not reach the ROBERTA bridge. Verify that it is running and check Connection settings.';msg('assistant',reply);appendSavedChat(chatId,'assistant',reply)}finally{busy(false);health()}}
-renderFilters();render();renderHistory();restoreLatestChat();health();setInterval(health,30000);
-document.addEventListener('click',function(e){var s=e.target.closest('[data-svc]');if(s)openSvc(s.dataset.svc);var g=e.target.closest('[data-go]');if(g)document.getElementById(g.dataset.go).scrollIntoView({behavior:'smooth'});var c=e.target.closest('[data-cat]');if(c){activeCat=c.dataset.cat;renderFilters();render()}});
-el('#search').addEventListener('input',render);el('#close').onclick=closeSvc;el('#cancel').onclick=closeSvc;el('#modalBg').addEventListener('click',function(e){if(e.target===el('#modalBg'))closeSvc()});
+renderFilters();render();renderHistory();restoreLatestChat();var savedWorkspaceMode=sessionStorage.getItem('robertaWorkspaceMode');if(savedWorkspaceMode)enterWorkspace(savedWorkspaceMode,false);health();setInterval(health,30000);
+document.addEventListener('click',function(e){var s=e.target.closest('[data-svc]');if(s)openSvc(s.dataset.svc);var g=e.target.closest('[data-go]');if(g)document.getElementById(g.dataset.go).scrollIntoView({behavior:'smooth'});var c=e.target.closest('[data-cat]');if(c){activeCat=c.dataset.cat;renderFilters();render()}var x=e.target.closest('[data-example]');if(x)useExample(x.dataset.example)});
+var searchBox=el('#search');if(searchBox)searchBox.addEventListener('input',render);el('#close').onclick=closeSvc;el('#cancel').onclick=closeSvc;el('#modalBg').addEventListener('click',function(e){if(e.target===el('#modalBg'))closeSvc()});
 el('#serviceForm').addEventListener('submit',function(e){e.preventDefault();if(!activeService)return;var data=Object.fromEntries(new FormData(e.currentTarget).entries()),p=humanServicePrompt(activeService.prompt(data),activeService.id);closeSvc();document.getElementById('chat').scrollIntoView({behavior:'smooth'});send(p)});
 el('#send').onclick=function(){send(el('#composer').value)};el('#composer').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send(el('#composer').value)}});
-el('#historyBtn').onclick=function(){el('#historyPanel').classList.toggle('open');renderHistory()};el('#clearChat').onclick=clearCurrentChat;el('#clearHistory').onclick=clearAllHistory;el('#historyList').addEventListener('click',function(e){var item=e.target.closest('[data-chat-id]');if(item)openSavedChat(item.dataset.chatId)});
+el('#newChat').onclick=clearCurrentChat;el('#clearChat').onclick=clearCurrentChat;el('#clearHistory').onclick=clearAllHistory;el('#historyList').addEventListener('click',function(e){var item=e.target.closest('[data-chat-id]');if(item)openSavedChat(item.dataset.chatId)});el('#backHome').onclick=leaveWorkspace;el('#connectHuman').onclick=function(){enterWorkspace('human')};el('#connectAgent').onclick=function(){enterWorkspace('agent')};el('#connectNav').onclick=function(){enterWorkspace('human')};
 el('#settingsBtn').onclick=function(){el('#settings').classList.toggle('open')};el('#apiBase').value=sessionStorage.getItem('robertaApiBase')||'';el('#apiKey').value=sessionStorage.getItem('robertaApiKey')||'';el('#apiBase').onchange=function(){sessionStorage.setItem('robertaApiBase',this.value.trim());health()};el('#apiKey').onchange=function(){sessionStorage.setItem('robertaApiKey',this.value);health()};
 </script>
 

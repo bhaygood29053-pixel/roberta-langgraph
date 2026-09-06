@@ -15,7 +15,54 @@ class FakeGraph:
 
 
 def test_web_ui_contains_current_service_surface():
+    # Public landing: six human-friendly services, not a technical tool catalog.
+    assert "Check a Token" in ROBERTA_WEB_UI_HTML
+    assert "Compare Tokens" in ROBERTA_WEB_UI_HTML
+    assert "Should I Buy or Sell?" in ROBERTA_WEB_UI_HTML
+    assert "Check Risk" in ROBERTA_WEB_UI_HTML
+    assert "Track Wallets &amp; Big Trades" in ROBERTA_WEB_UI_HTML
+    assert "Ask ROBERTA" in ROBERTA_WEB_UI_HTML
+    assert "Get a quick health check" in ROBERTA_WEB_UI_HTML
+    assert "Did this transaction move the pool price?" in ROBERTA_WEB_UI_HTML
+    assert "How much XNT was burned this week?" in ROBERTA_WEB_UI_HTML
+
+    # Landing -> workspace transition for both human and agent/API access.
+    assert 'id="connectHuman"' in ROBERTA_WEB_UI_HTML
+    assert 'id="connectAgent"' in ROBERTA_WEB_UI_HTML
+    assert 'id="connectNav"' in ROBERTA_WEB_UI_HTML
+    assert "workspaceMode" in ROBERTA_WEB_UI_HTML
+    assert "robertaWorkspaceMode" in ROBERTA_WEB_UI_HTML
+    assert "function enterWorkspace" in ROBERTA_WEB_UI_HTML
+    assert "function leaveWorkspace" in ROBERTA_WEB_UI_HTML
+    assert "function useExample" in ROBERTA_WEB_UI_HTML
+
+    # Chat workspace essentials.
+    assert 'id="newChat"' in ROBERTA_WEB_UI_HTML
+    assert 'id="clearChat"' in ROBERTA_WEB_UI_HTML
+    assert 'id="clearHistory"' in ROBERTA_WEB_UI_HTML
+    assert 'id="historyList"' in ROBERTA_WEB_UI_HTML
+    assert 'id="backHome"' in ROBERTA_WEB_UI_HTML
+    assert "Chat history" in ROBERTA_WEB_UI_HTML
+    assert "Answer labels" in ROBERTA_WEB_UI_HTML
+    assert "Evidence" in ROBERTA_WEB_UI_HTML
+    assert "Freshness" in ROBERTA_WEB_UI_HTML
+    assert "Opinion" in ROBERTA_WEB_UI_HTML
+    assert "Analysis and recommendations only." in ROBERTA_WEB_UI_HTML
+    assert "ROBERTA does not execute transactions from this website." in ROBERTA_WEB_UI_HTML
+    assert "Scout → CMIS" in ROBERTA_WEB_UI_HTML
+
+    # Chat history remains local and persistent, with simple Today / Previous grouping.
+    assert "robertaChatHistoryV1" in ROBERTA_WEB_UI_HTML
+    assert "localStorage.getItem" in ROBERTA_WEB_UI_HTML
+    assert "localStorage.setItem" in ROBERTA_WEB_UI_HTML
+    assert "recordUserMessage" in ROBERTA_WEB_UI_HTML
+    assert "restoreLatestChat" in ROBERTA_WEB_UI_HTML
+    assert "Today" in ROBERTA_WEB_UI_HTML
+    assert "Previous" in ROBERTA_WEB_UI_HTML
+
+    # Underlying specialist routes remain available behind the human-facing surface.
     assert "Instant X1 Scan" in ROBERTA_WEB_UI_HTML
+    assert "instant_x1_scan/v6" in ROBERTA_WEB_UI_HTML
     assert "Burn Intelligence" in ROBERTA_WEB_UI_HTML
     assert "Discovery Intelligence" in ROBERTA_WEB_UI_HTML
     assert "What Changed?" in ROBERTA_WEB_UI_HTML
@@ -23,34 +70,17 @@ def test_web_ui_contains_current_service_surface():
     assert "Solana Market Report" in ROBERTA_WEB_UI_HTML
     assert "Solana Tokenomics" in ROBERTA_WEB_UI_HTML
     assert "Solana Risk Assessment" in ROBERTA_WEB_UI_HTML
-    assert "ROBERTA_SOLANA_PROVIDER_ENABLED" not in ROBERTA_WEB_UI_HTML
-    assert "CMIS 1.18" in ROBERTA_WEB_UI_HTML
-    assert "Exact route/config semantics" in ROBERTA_WEB_UI_HTML
-    assert "CMIS #441 → #409 → #410 → ROBERTA #314" in ROBERTA_WEB_UI_HTML
-    assert "Route-wide 24h/7d/30d bridge-flow totals and verified bridged supply remain unavailable" in ROBERTA_WEB_UI_HTML
-    assert "Website actions never call CMIS directly" in ROBERTA_WEB_UI_HTML
-    assert "execution remains unauthorized" in ROBERTA_WEB_UI_HTML.lower()
-    assert "Human-first output" in ROBERTA_WEB_UI_HTML
+    assert "Website actions never call CMIS directly" not in ROBERTA_WEB_UI_HTML
+
+    # Existing Human ROBERTA answer formatting and Opinion v1 remain intact.
+    assert "Present this in Human ROBERTA mode." in ROBERTA_WEB_UI_HTML
     assert "WHAT ROBERTA STILL NEEDS" in ROBERTA_WEB_UI_HTML
     assert "raw snake_case limitation codes" in ROBERTA_WEB_UI_HTML
     assert "humanServicePrompt" in ROBERTA_WEB_UI_HTML
-    assert "three highest-priority missing items" in ROBERTA_WEB_UI_HTML
+    assert "no more than three prioritized, decision-relevant missing items" in ROBERTA_WEB_UI_HTML
     assert "Do not repeat freshness warnings inside RISK" in ROBERTA_WEB_UI_HTML
     assert "Use EVIDENCE QUALITY instead of a raw evidence-status dump" in ROBERTA_WEB_UI_HTML
     assert "plain-English BOTTOM LINE" in ROBERTA_WEB_UI_HTML
-    assert 'id="historyBtn"' in ROBERTA_WEB_UI_HTML
-    assert 'id="clearChat"' in ROBERTA_WEB_UI_HTML
-    assert 'id="clearHistory"' in ROBERTA_WEB_UI_HTML
-    assert 'id="historyPanel"' in ROBERTA_WEB_UI_HTML
-    assert "robertaChatHistoryV1" in ROBERTA_WEB_UI_HTML
-    assert "localStorage.getItem" in ROBERTA_WEB_UI_HTML
-    assert "localStorage.setItem" in ROBERTA_WEB_UI_HTML
-    assert "recordUserMessage" in ROBERTA_WEB_UI_HTML
-    assert "restoreLatestChat" in ROBERTA_WEB_UI_HTML
-    assert ".chatTitle{" in ROBERTA_WEB_UI_HTML
-    assert "text-decoration:underline" in ROBERTA_WEB_UI_HTML
-    assert ".messages{height:650px;min-height:650px" in ROBERTA_WEB_UI_HTML
-    assert "min-height:100px;max-height:260px" in ROBERTA_WEB_UI_HTML
     assert ".statusToken.pass" in ROBERTA_WEB_UI_HTML
     assert ".statusToken.warn" in ROBERTA_WEB_UI_HTML
     assert ".statusToken.block" in ROBERTA_WEB_UI_HTML
@@ -66,8 +96,7 @@ def test_web_ui_contains_current_service_surface():
     assert "prefers-reduced-motion" in ROBERTA_WEB_UI_HTML
     assert "ResizeObserver" in ROBERTA_WEB_UI_HTML
     assert "document.hidden" in ROBERTA_WEB_UI_HTML
-    assert "execution_authorized=false" in ROBERTA_WEB_UI_HTML
-    assert "ROBERTA Opinion v1" in ROBERTA_WEB_UI_HTML
+    assert "accepted roberta_opinion/v1 presentation contract" in ROBERTA_WEB_UI_HTML
     assert "roberta_opinion/v1" in ROBERTA_WEB_UI_HTML
     assert "My recommendation: <TOKEN>" in ROBERTA_WEB_UI_HTML
     assert "Best evidence against my view" in ROBERTA_WEB_UI_HTML
