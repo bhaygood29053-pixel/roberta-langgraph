@@ -22,6 +22,8 @@ from roberta.cmis.capabilities import (
     INTELLIGENCE_FOUNDATION_PHASE,
     INTELLIGENCE_PROMOTION_RULE,
     MIN_CMIS_CONTRACT_VERSION,
+    RESPONSE_FRESHNESS_CONTRACT_VERSION,
+    RESPONSE_FRESHNESS_MIN_CMIS_CONTRACT_VERSION,
     X1_ASSET_IDENTITY_CONTRACT_VERSION,
     X1_ASSET_IDENTITY_MIN_CMIS_CONTRACT_VERSION,
     X1_ASSET_IDENTITY_REQUIRED_LIMITATIONS,
@@ -144,6 +146,41 @@ def _capabilities() -> dict[str, object]:
                 ],
             },
         },
+    }
+
+
+def _cmis_1_27_freshness_capabilities() -> dict[str, object]:
+    capabilities = deepcopy(_capabilities())
+    capabilities["contract_version"] = RESPONSE_FRESHNESS_MIN_CMIS_CONTRACT_VERSION
+    capabilities["response_freshness"] = {
+        "contract_version": RESPONSE_FRESHNESS_CONTRACT_VERSION,
+        "required_on_every_public_response": True,
+        "observation_time_alone_never_proves_provider_fact_freshness": True,
+        "missing_service_specific_freshness_fails_closed": True,
+    }
+    return capabilities
+
+
+def _response_freshness(
+    service: str,
+    *,
+    observed_at: object = "2026-08-15T22:00:00Z",
+    state: str = "UNKNOWN",
+    verified: bool | None = None,
+    details: dict[str, object] | None = None,
+) -> dict[str, object]:
+    return {
+        "contract_version": RESPONSE_FRESHNESS_CONTRACT_VERSION,
+        "scope": f"{service}.response",
+        "state": state,
+        "freshness_verified": verified,
+        "observed_at": observed_at,
+        "details": dict(details or {}),
+        **(
+            {"reason": "service_specific_freshness_not_supplied"}
+            if not details and state == "UNKNOWN"
+            else {}
+        ),
     }
 
 
@@ -583,6 +620,79 @@ def test_http_client_never_falls_back_instant_scan_to_solana() -> None:
     assert result["warnings"][0]["code"] == "cmis_instant_x1_scan_unavailable"
     assert running.get_paths == ["/v1/cmis/capabilities"]
     assert running.requests == []
+
+
+def test_http_client_preserves_cmis_127_universal_response_freshness() -> None:
+    expected = _envelope("market_report")
+    expected["freshness"] = _response_freshness(
+        "market_report",
+        state="NOT_VERIFIED",
+        verified=False,
+        details={
+            "classification": "fresh",
+            "observation_freshness_verified": True,
+            "provider_fact_time_verified": False,
+        },
+    )
+    with _Server(
+        expected,
+        capabilities=_cmis_1_27_freshness_capabilities(),
+    ) as running:
+        result = CMISHTTPClient(
+            base_url=running.base_url,
+            timeout_seconds=2,
+        ).market_report(chain="x1", asset="AGI")
+
+    assert result == expected
+    assert result["freshness"]["state"] == "NOT_VERIFIED"
+    assert result["freshness"]["freshness_verified"] is False
+    assert result["freshness"]["details"]["provider_fact_time_verified"] is False
+
+
+def test_http_client_rejects_missing_freshness_when_cmis_127_advertises_it() -> None:
+    expected = _envelope("market_report")
+    with _Server(
+        expected,
+        capabilities=_cmis_1_27_freshness_capabilities(),
+    ) as running:
+        result = CMISHTTPClient(
+            base_url=running.base_url,
+            timeout_seconds=2,
+        ).market_report(chain="x1", asset="AGI")
+
+    assert result["status"] == "error"
+    assert result["errors"][0]["code"] == "cmis_response_freshness_missing"
+    assert result["freshness"]["state"] == "UNKNOWN"
+
+
+def test_http_client_rejects_malformed_cmis_127_response_freshness() -> None:
+    expected = _envelope("market_report")
+    expected["freshness"] = _response_freshness("market_report")
+    expected["freshness"]["scope"] = "wrong.response"
+    with _Server(
+        expected,
+        capabilities=_cmis_1_27_freshness_capabilities(),
+    ) as running:
+        result = CMISHTTPClient(
+            base_url=running.base_url,
+            timeout_seconds=2,
+        ).market_report(chain="x1", asset="AGI")
+
+    assert result["status"] == "error"
+    assert result["errors"][0]["code"] == "invalid_cmis_response_freshness"
+    assert "scope" in result["errors"][0]["message"].lower()
+
+
+def test_http_client_keeps_pre_127_response_without_top_level_freshness_compatible() -> None:
+    expected = _envelope("market_report")
+    with _Server(expected, capabilities=_capabilities()) as running:
+        result = CMISHTTPClient(
+            base_url=running.base_url,
+            timeout_seconds=2,
+        ).market_report(chain="x1", asset="AGI")
+
+    assert result == expected
+    assert "freshness" not in result
 
 
 def test_http_client_posts_asset_lookup_under_cmis_1_11_identity_contract() -> None:
