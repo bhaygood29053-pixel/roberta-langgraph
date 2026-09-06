@@ -301,9 +301,9 @@ The exact wording is not contractual, but the product target is:
 ## 16. Implementation order
 
 ### Phase A — Contract
-#377
+#377 — **IMPLEMENTATION ACTIVE**
 
-Define exact public response semantics and tests.
+Define exact public response semantics and tests through [ROBERTA_HUMAN_RESPONSE_CONTRACT_V1.md](./ROBERTA_HUMAN_RESPONSE_CONTRACT_V1.md) and the public `roberta_human_response/v1` validator. This layer consumes accepted `roberta_opinion/v1`; it does not create a second recommendation system.
 
 ### Phase B — Protected decision object
 `roberta-core#72`
