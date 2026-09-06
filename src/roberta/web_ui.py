@@ -195,7 +195,7 @@ body:not(.workspaceMode) #chat{display:none}
     <section id="services" class="section">
       <div class="shell">
         <div class="sectionHead">
-          <div><div class="eyebrow">What you can ask</div><h2>Six simple ways to use ROBERTA.</h2></div>
+          <div><div class="eyebrow">What you can ask</div><h2>Seven simple ways to use ROBERTA.</h2></div>
           <p>You never have to choose a technical blockchain tool. Pick a service for ideas, or just ask ROBERTA normally and she will select the right intelligence path.</p>
         </div>
         <div class="humanServiceGrid">
@@ -276,7 +276,7 @@ body:not(.workspaceMode) #chat{display:none}
             <button data-example="Should I buy $500 of AGI right now?"><b>Should I Buy or Sell?</b><span>Opinion before a trade</span></button>
             <button data-example="Is AGI risky right now?"><b>Check Risk</b><span>Find important problems</span></button>
             <button data-example="Did a big wallet just buy AGI?"><b>Track Wallets &amp; Big Trades</b><span>Wallet and transaction activity</span></button>
-            <button data-example="What happened to AGI today?"><b>Ask ROBERTA</b><span>Ask anything normally</span></button>
+            <button data-example="What does the GENIUS Act mean for USDC.X?"><b>Understand Regulations</b><span>Verified regulatory context</span></button>\n            <button data-example="What happened to AGI today?"><b>Ask ROBERTA</b><span>Ask anything normally</span></button>
           </div>
 
           <div class="workspaceLabelKey">
@@ -288,7 +288,7 @@ body:not(.workspaceMode) #chat{display:none}
 
         <div class="workspaceMain">
           <header class="workspaceTopbar">
-            <div class="workspaceTopTitle"><b>ROBERTA</b><span>Ask about a token, trade, wallet, or market move.</span></div>
+            <div class="workspaceTopTitle"><b>ROBERTA</b><span>Ask about a token, trade, wallet, market move, or regulation.</span></div>
             <div class="workspaceTopActions">
               <div id="health" class="pill"><span class="dot"></span>Checking ROBERTA…</div>
               <span class="workspaceRouteLabel">X1</span>
@@ -339,7 +339,7 @@ var services=[
 {id:'burn',name:'Burn Intelligence',icon:'△',cat:'Intelligence',status:'Available',desc:'Verified observed cumulative burn plus 1h / 24h / 7d / 30d windows and supported comparisons.',fields:[['asset','Asset / mint','text','e.g. AGI']],prompt:function(v){return 'Run ROBERTA Burn Intelligence for '+v.asset+'. Show verified observed cumulative burn, 1h/24h/7d/30d windows, event counts and supported period-over-period changes. Distinguish observed coverage from complete lifetime burn.'}},
 {id:'discovery',name:'Discovery Intelligence',icon:'⌖',cat:'Intelligence',status:'Available',desc:'First and latest verified observations, counts, coverage bounds and elapsed observed history.',fields:[['asset','Asset / mint','text','e.g. AGI']],prompt:function(v){return 'Run ROBERTA Discovery Intelligence for '+v.asset+'. Show first and latest verified observations, observation count, coverage bounds and elapsed observed history. Do not relabel first observation as token launch or inception.'}},
 {id:'changed',name:'What Changed?',icon:'Δ',cat:'History',status:'Available',desc:'Change summary from accepted current/history evidence without invented deltas or causal claims.',fields:[['asset','Asset / mint','text','e.g. AGI']],prompt:function(v){return 'Tell me what changed for '+v.asset+' using ROBERTA\'s accepted What Changed workflow. Use verified current and historical evidence only and do not invent causes.'}},
-{id:'full',name:'Full Assessment',icon:'▣',cat:'Core',status:'Available',desc:'Broad assessment combining relevant accepted market, risk, tokenomics, history and evidence services.',fields:[['asset','Asset / mint','text','e.g. AGI']],prompt:function(v){return 'Run a full ROBERTA assessment for '+v.asset+'. Use relevant accepted Scout -> CMIS services, preserve unknowns and limitations, and give the answer first with evidence underneath.'}},
+{id:'regulatory',name:'Regulatory Intelligence',icon:'§',cat:'Intelligence',status:'Available',desc:'Verified regulatory-framework evidence and bounded applicability for supported X1 assets. No legal advice or compliance label.',fields:[['asset','Asset / exact mint','text','e.g. USDC.X'],['framework','Framework','text','GENIUS Act']],prompt:function(v){return 'Run ROBERTA Regulatory Intelligence for '+v.asset+' under '+v.framework+'. Use X1 Scout operation=\'regulatory_evidence\' and accepted x1_regulatory_intelligence/v1. Preserve exact mint, jurisdiction/framework, rulemaking state, freshness, source provenance, applicability and representation dependencies. Do not give legal advice, do not label the asset COMPLIANT or NON_COMPLIANT, do not create an automatic risk conclusion, and keep execution unauthorized.'}},\n{id:'full',name:'Full Assessment',icon:'▣',cat:'Core',status:'Available',desc:'Broad assessment combining relevant accepted market, risk, tokenomics, history and evidence services.',fields:[['asset','Asset / mint','text','e.g. AGI']],prompt:function(v){return 'Run a full ROBERTA assessment for '+v.asset+'. Use relevant accepted Scout -> CMIS services, preserve unknowns and limitations, and give the answer first with evidence underneath.'}},
 {id:'key',name:'Alert & Status Key',icon:'?',cat:'Evidence',status:'Available',desc:'Explains risk, CMIS status, verification, proof strength, freshness and execution labels.',fields:[],prompt:function(){return 'Show me ROBERTA\'s alert and status key, including risk, CMIS status, verification, proof strength, freshness, common warnings and execution meaning.'}},
 {id:'opinion',name:'ROBERTA Opinion',icon:'◎',cat:'Core',status:'Available',desc:'Evidence-bounded judgment for decision questions using the accepted roberta_opinion/v1 contract.',fields:[['question','Decision question','text','e.g. Should I buy AGI?']],prompt:function(v){return 'Answer this decision question using the accepted ROBERTA Opinion Contract v1: '+v.question+' Lead with My recommendation, then Conviction, Evidence quality, My view, Best evidence against my view, and What would change my mind. Preserve Scout -> CMIS fact/risk authority and keep execution unauthorized.'}},
 {id:'chat',name:'Ask Anything',icon:'✦',cat:'Core',status:'Available',desc:'Normal question; ROBERTA selects the appropriate specialist and verified-data path.',fields:[['question','Question','text','e.g. Is AGI getting stronger?']],prompt:function(v){return v.question}}
@@ -370,7 +370,7 @@ function formatAssistant(text){
   return out.join('\n')
 }
 function msg(role,text){var d=document.createElement('div');d.className='msg '+role;if(role==='assistant')d.innerHTML=formatAssistant(text);else d.textContent=text;el('#messages').appendChild(d);el('#messages').scrollTop=el('#messages').scrollHeight;return d}
-function starter(){return'I’m ready. Ask me about a token, trade, wallet, market move, risk, burn, history, bridge activity, or anything else you want me to investigate. You can also choose one of the simple services on the left for examples.'}
+function starter(){return'I’m ready. Ask me about a token, trade, wallet, market move, risk, burn, history, bridge activity, regulation, or anything else you want me to investigate. You can also choose one of the simple services on the left for examples.'}
 function loadHistory(){try{var raw=localStorage.getItem(CHAT_HISTORY_KEY);var parsed=raw?JSON.parse(raw):[];return Array.isArray(parsed)?parsed:[]}catch(e){return[]}}
 function saveHistory(items){try{localStorage.setItem(CHAT_HISTORY_KEY,JSON.stringify(items.slice(0,CHAT_HISTORY_LIMIT)))}catch(e){}}
 function chatTitle(text){var t=String(text||'').replace(/\s+/g,' ').trim();return t.length>58?t.slice(0,55)+'…':t||'Untitled chat'}
