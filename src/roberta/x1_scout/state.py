@@ -105,6 +105,7 @@ class X1ScoutReport(TypedDict):
     x1_concentration_warning_intelligence: NotRequired[dict[str, object]]
     x1_bridge_to_xdex_utilization: NotRequired[dict[str, object]]
     x1_cross_chain_asset_provenance: NotRequired[dict[str, object]]
+    x1_trade_price_impact_intelligence: NotRequired[dict[str, object]]
     source: dict[str, str]
     sources: list[object]
     warnings: list[object]
