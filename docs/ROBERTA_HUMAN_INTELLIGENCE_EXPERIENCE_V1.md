@@ -311,9 +311,9 @@ The public [ROBERTA Human Response Contract v1](./ROBERTA_HUMAN_RESPONSE_CONTRAC
 The protected `roberta_human_response_decision/v1` object now carries source-bound primary driver, supporting evidence, counterevidence, important unknowns, conviction, evidence profile, evidence-bound change-my-mind conditions, recommendation family, technical-detail availability, and response-depth eligibility without recomputing CMIS facts.
 
 ### Phase C — Human renderer
-#378 — **NEXT EXACT GATE**
+#378 — **IMPLEMENTATION ACTIVE**
 
-Implement Quick / Normal / Deep Dive human prose over the accepted public `roberta_human_response/v1` contract and protected `roberta_human_response_decision/v1` object.
+Implement Quick / Normal / Deep Dive human prose over the accepted public `roberta_human_response/v1` contract and protected `roberta_human_response_decision/v1` object. The public deterministic renderer is documented in [ROBERTA_HUMAN_LANGUAGE_RENDERER_V1.md](./ROBERTA_HUMAN_LANGUAGE_RENDERER_V1.md).
 
 
 
