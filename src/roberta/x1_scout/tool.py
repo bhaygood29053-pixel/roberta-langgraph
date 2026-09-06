@@ -469,7 +469,7 @@ def build_x1_scout_tool(
             "attach pre_trade_check only when exact BUY/SELL + USD amount are supplied. "
             "ROBERTA decides which packet evidence matters to the answer. Natural Instant X1 "
             "Scan or quick/instant asset-scan requests still use the accepted CMIS "
-            "instant_x1_scan/v3 composition; operation='instant_x1_scan' remains available "
+            "instant_x1_scan/v6 composition; operation='instant_x1_scan' remains available "
             "for explicit flagship scans. For Asset Overview, use operation='asset_overview'; "
             "X1 Scout composes one validated Instant X1 Scan and one validated Burn Intelligence "
             "product. For Discovery Intelligence, use operation='discovery_intelligence'; it preserves "
