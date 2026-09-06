@@ -28,7 +28,7 @@ execution_authorized = false
 
 The public shell stores only this source manifest. The actual Learning Plane source binding and ingestible source bytes belong in the protected `roberta-core` repository under the Phase 6 ownership boundary.
 
-The protected implementation must bind an exact GovInfo artifact before source ingestion. A summary or public-shell Markdown capsule is not allowed to masquerade as the primary-law artifact.
+Protected `roberta-core` v1 packages a digest-bound ROBERTA-authored regulatory primer classified as `secondary`; it does not masquerade as the primary statute. A future exact-primary-artifact gate may separately bind the full GovInfo artifact through the existing immutable source machinery.
 
 ## Freshness boundary
 
