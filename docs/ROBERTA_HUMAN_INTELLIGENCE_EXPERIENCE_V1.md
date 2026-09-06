@@ -310,11 +310,6 @@ The public [ROBERTA Human Response Contract v1](./ROBERTA_HUMAN_RESPONSE_CONTRAC
 
 Populate the canonical Human Response Decision Object fields from accepted Decision Object + Opinion evidence without recomputing CMIS facts.
 
-### Phase B — Protected decision object
-`roberta-core#72`
-
-Add canonical prioritization/judgment fields without changing CMIS facts.
-
 ### Phase C — Human renderer
 #378
 
