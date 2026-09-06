@@ -42,7 +42,7 @@ Before entering the workspace, the homepage explains who ROBERTA is and presents
 
 Each service includes plain-English examples. Selecting an example opens the chat workspace and places that example in the composer so the user can edit or send it.
 
-The public page intentionally does **not** expose the full internal specialist catalog. Technical services remain implementation details behind ROBERTA.
+The public page intentionally does **not** expose the full internal specialist catalog. Technical services remain implementation details behind ROBERTA. The generic **Ask ROBERTA** examples also include a bounded GENIUS Act / USDC.X regulatory-context question from the accepted learning layer; this does not advertise live compliance determination.
 
 ### 2. Connected chat workspace
 
@@ -74,7 +74,7 @@ The website does not grant an agent new wallet, policy, transaction, or executio
 
 ROBERTA may use accepted specialist capabilities behind a human request, including the current Instant X1 Scan v6 path, comparison, risk, liquidity, history, burn, discovery, WHAT CHANGED?, concentration intelligence, pre-trade analysis, cross-chain intelligence, and accepted wallet/trade price-impact intelligence.
 
-These contract names are intentionally hidden from ordinary website navigation. The user asks for an outcome; ROBERTA selects the specialist path.
+These contract names are intentionally hidden from ordinary website navigation. The user asks for an outcome; ROBERTA selects the specialist path. CMIS 1.26 live regulatory evidence is intentionally **not** advertised as an accepted website service until public ROBERTA #368 and the paired protected `roberta-core` #68 decision-object/rendering gate are accepted.
 
 ## Trust boundary
 
