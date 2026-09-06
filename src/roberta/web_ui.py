@@ -251,7 +251,7 @@ body:not(.workspaceMode) #chat{display:none}
             <div class="exampleLabel">Try asking</div>
             <button class="exampleChip" data-example="What happened to AGI today?">“What happened to AGI today?”</button>
             <button class="exampleChip" data-example="Why did the price jump?">“Why did the price jump?”</button>
-            <button class="exampleChip" data-example="How much XNT was burned this week?">“How much XNT was burned this week?”</button>
+            <button class="exampleChip" data-example="How much XNT was burned this week?">“How much XNT was burned this week?”</button>\n            <button class="exampleChip" data-example="What does the GENIUS Act mean for USDC.X?">“What does the GENIUS Act mean for USDC.X?”</button>
           </article>
         </div>
       </div>
@@ -288,7 +288,7 @@ body:not(.workspaceMode) #chat{display:none}
 
         <div class="workspaceMain">
           <header class="workspaceTopbar">
-            <div class="workspaceTopTitle"><b>ROBERTA</b><span>Ask about a token, trade, wallet, or market move.</span></div>
+            <div class="workspaceTopTitle"><b>ROBERTA</b><span>Ask about a token, trade, wallet, market move, or regulatory context.</span></div>
             <div class="workspaceTopActions">
               <div id="health" class="pill"><span class="dot"></span>Checking ROBERTA…</div>
               <span class="workspaceRouteLabel">X1</span>
@@ -370,7 +370,7 @@ function formatAssistant(text){
   return out.join('\n')
 }
 function msg(role,text){var d=document.createElement('div');d.className='msg '+role;if(role==='assistant')d.innerHTML=formatAssistant(text);else d.textContent=text;el('#messages').appendChild(d);el('#messages').scrollTop=el('#messages').scrollHeight;return d}
-function starter(){return'I’m ready. Ask me about a token, trade, wallet, market move, risk, burn, history, bridge activity, or anything else you want me to investigate. You can also choose one of the simple services on the left for examples.'}
+function starter(){return'I’m ready. Ask me about a token, trade, wallet, market move, risk, burn, history, bridge activity, regulatory context, or anything else you want me to investigate. You can also choose one of the simple services on the left for examples.'}
 function loadHistory(){try{var raw=localStorage.getItem(CHAT_HISTORY_KEY);var parsed=raw?JSON.parse(raw):[];return Array.isArray(parsed)?parsed:[]}catch(e){return[]}}
 function saveHistory(items){try{localStorage.setItem(CHAT_HISTORY_KEY,JSON.stringify(items.slice(0,CHAT_HISTORY_LIMIT)))}catch(e){}}
 function chatTitle(text){var t=String(text||'').replace(/\s+/g,' ').trim();return t.length>58?t.slice(0,55)+'…':t||'Untitled chat'}
