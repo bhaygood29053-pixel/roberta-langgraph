@@ -11,10 +11,25 @@
 - **GENIUS Act learning layer: ACCEPTED.** Public PR #364 plus protected `roberta-core` PR #65 add the bounded regulatory learning source/reasoning foundation.
 - **Live Regulatory Intelligence: ACCEPTED end to end.** Public PR #368 adopts CMIS 1.26 `regulatory_evidence/v1` through X1 Scout; protected `roberta-core` PR #69 adds the canonical Human/Machine Decision Object and rendering boundary; public PR #369 reconciles the completed adoption. No legal advice, COMPLIANT/NON_COMPLIANT label, automatic risk conclusion, or execution authority is granted.
 - **Upstream live Large-Trade → #498 handoff: ACCEPTED.** `cmis-core` PR #41 passed exact live run #7 at head `9ff63bcac15d9bd7f46868489f444508ed126c06`, merged as `f659f53f3d565bd5886dfae3e1a12370100cddc9`, and closed Issue #40 completed. ROBERTA may surface the verified public-wallet/pool-local handoff only within the accepted provider-scoped, non-causal, read-only boundaries.
+- **ROBERTA Human Intelligence Experience v1: ACTIVE.** Parent #376 coordinates Human Response Contract #377, protected `roberta-core#72`, human renderer #378, conversational continuity #379, learning/evaluation corpus #380, and website progressive disclosure #381. This builds on accepted #33/#45/#51 rather than replacing them. First exact task: **#377 Human Response Contract v1**.
 - Controlled Execution remains locked: `execution_authorized=false`.
 Last reconciled: 2026-09-06 (America/New_York)
 
 Status source: accepted code and contracts on `main`. Open PRs are not current truth unless explicitly identified as pending.
+
+## Active product initiative — ROBERTA Human Intelligence Experience v1
+
+The next Human-facing initiative is **#376 ROBERTA Human Intelligence Experience v1**.
+
+Goal: make ROBERTA sound like an experienced analyst while preserving CMIS/Scout evidence authority.
+
+Dependency order:
+
+`#377 -> roberta-core#72 -> #378 -> #379 -> #380 -> #381`
+
+The key new behaviors are judgment-first responses, primary-decision-driver ranking, counterevidence, natural uncertainty, "what would change my mind", evidence-safe conversational continuity, response-depth modes, a 75+ scenario learning/evaluation corpus, and progressive website evidence disclosure.
+
+See [ROBERTA_HUMAN_INTELLIGENCE_EXPERIENCE_V1.md](./ROBERTA_HUMAN_INTELLIGENCE_EXPERIENCE_V1.md).
 
 ## Product identity
 
