@@ -500,13 +500,11 @@ async function send(text){
   text=(text||'').trim();if(!text||sending)return;
   enterWorkspace('human');
   var chatId=beginRecord(text);
-  var context=recentContext(chatId);
   addMessage('user',text,chatId);
   $('#composer').value='';$('#commandInput').value='';busy(true);
   var progress=startInvestigation();
-  var requestText=context?('Continue this conversation using the recent context below. Do not repeat it unless useful.\n\n'+context+'\n\nUser follow-up: '+text):text;
   try{
-    var r=await fetch(apiUrl('/v1/roberta'),{method:'POST',headers:apiHeaders(),body:JSON.stringify({message:requestText})});
+    var r=await fetch(apiUrl('/v1/roberta'),{method:'POST',headers:apiHeaders(),body:JSON.stringify({message:text,thread_id:chatId})});
     var d=await r.json().catch(function(){return{}});
     stopInvestigation(progress);
     var reply=!r.ok?((d.error&&d.error.message)||('Request failed ('+r.status+')')):(d.reply||'ROBERTA returned no reply.');
