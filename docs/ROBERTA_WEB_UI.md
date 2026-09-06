@@ -31,14 +31,15 @@ The website now has two modes.
 
 ### 1. Public introduction
 
-Before entering the workspace, the homepage explains who ROBERTA is and presents six human-friendly services:
+Before entering the workspace, the homepage explains who ROBERTA is and presents seven human-friendly services:
 
 1. **Check a Token** — quick token health and context.
 2. **Compare Tokens** — side-by-side comparison of two assets.
 3. **Should I Buy or Sell?** — ROBERTA's evidence-bounded opinion before a proposed trade.
 4. **Check Risk** — important liquidity, concentration, authority, freshness, and evidence problems.
 5. **Track Wallets & Big Trades** — verified public-wallet activity, important transactions, volume contribution, and pool-level price impact when supported.
-6. **Ask ROBERTA** — normal-language access where ROBERTA selects the appropriate intelligence path automatically.
+6. **Understand Regulations** — verified regulatory-framework context and bounded applicability for supported assets, with no legal advice or compliance label.
+7. **Ask ROBERTA** — normal-language access where ROBERTA selects the appropriate intelligence path automatically.
 
 Each service includes plain-English examples. Selecting an example opens the chat workspace and places that example in the composer so the user can edit or send it.
 
@@ -54,7 +55,7 @@ The workspace includes:
 - persistent **Chat History**, grouped into **Today** and **Previous**;
 - **Clear chat history**;
 - **Clear chat** for the current conversation;
-- the six human-friendly services with one-click example prompts;
+- the seven human-friendly services with one-click example prompts;
 - a free-form ROBERTA composer that is always available;
 - connection health and simple route labels;
 - answer-label reminders for **Evidence**, **Risk**, **Freshness**, and **Opinion**;
@@ -72,7 +73,7 @@ The website does not grant an agent new wallet, policy, transaction, or executio
 
 ## Specialist services behind the simple interface
 
-ROBERTA may use accepted specialist capabilities behind a human request, including the current Instant X1 Scan v6 path, comparison, risk, liquidity, history, burn, discovery, WHAT CHANGED?, concentration intelligence, pre-trade analysis, cross-chain intelligence, and accepted wallet/trade price-impact intelligence.
+ROBERTA may use accepted specialist capabilities behind a human request, including the current Instant X1 Scan v6 path, comparison, risk, liquidity, history, burn, discovery, WHAT CHANGED?, concentration intelligence, pre-trade analysis, cross-chain intelligence, accepted wallet/trade price-impact intelligence, Large-Trade Discovery, and accepted CMIS 1.26 regulatory intelligence.
 
 These contract names are intentionally hidden from ordinary website navigation. The user asks for an outcome; ROBERTA selects the specialist path.
 
@@ -111,3 +112,11 @@ Opinion-bearing questions continue through the accepted protected `roberta_opini
 Human ROBERTA is expected to lead with **My recommendation**, followed by **Conviction**, **Evidence quality**, **My view**, the strongest material evidence against that view, and **What would change my mind**.
 
 Facts and deterministic risk remain Scout -> CMIS owned. Judgment remains ROBERTA-owned. The website does not calculate a recommendation itself.
+
+## Regulatory Intelligence boundary — 2026-09-06
+
+The website may now offer **Understand Regulations** because public ROBERTA #368, protected `roberta-core` #69, and reconciliation #369 completed the end-to-end CMIS 1.26 regulatory-evidence adoption.
+
+The browser still sends only a normal message to `/v1/roberta`. It does not call CMIS directly and does not calculate legal applicability or compliance itself.
+
+The accepted service preserves `legal_compliance=null`, `legal_advice=false`, no automatic risk conclusion, and `execution_authorized=false`.
