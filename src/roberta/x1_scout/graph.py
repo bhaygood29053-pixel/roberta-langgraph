@@ -20,6 +20,7 @@ from roberta.cmis.capabilities import (
     require_cross_chain_provenance_capability,
     require_discovery_intelligence_capability,
     require_instant_x1_scan_capability,
+    require_trade_price_impact_capability,
     require_x1_normalized_asset_identity_capability,
 )
 from roberta.cmis.client import CMISClient
@@ -41,6 +42,10 @@ from roberta.x1_scout.bridge_to_xdex_utilization import (
 from roberta.x1_scout.cross_chain_provenance import (
     X1CrossChainProvenanceContractError,
     build_x1_cross_chain_provenance,
+)
+from roberta.x1_scout.trade_price_impact import (
+    X1TradePriceImpactContractError,
+    build_x1_trade_price_impact_intelligence,
 )
 from roberta.x1_scout.burn_intelligence import (
     X1BurnIntelligenceContractError,
@@ -381,6 +386,45 @@ def _dispatch_cmis_operation(
                 "warning_max_persistence_window_seconds"
             ],
         )
+    if operation == "trade_price_impact_intelligence":
+        evidence_id = request.get("trade_price_impact_evidence_id")
+        asset_mint = request.get("trade_price_impact_asset_mint")
+        if evidence_id is None or asset_mint is None:
+            raise ValueError(
+                "trade_price_impact_intelligence requires exact evidence id "
+                "and exact X1 asset mint"
+            )
+        if str(asset or "").strip() != str(asset_mint).strip():
+            raise ValueError(
+                "trade price-impact asset must equal the exact X1 asset mint"
+            )
+        try:
+            require_trade_price_impact_capability(
+                cmis_client.capabilities(),
+                chain="x1",
+            )
+        except (CMISCapabilityUnavailable, CMISCapabilityContractError) as exc:
+            return {
+                "service": "trade_price_impact_intelligence",
+                "chain": "x1",
+                "status": "unavailable",
+                "asset": {"query": asset},
+                "data": {},
+                "risk": None,
+                "confidence": {},
+                "sources": [],
+                "observed_at": None,
+                "warnings": [{
+                    "code": "cmis_trade_price_impact_contract_unavailable",
+                    "message": str(exc),
+                }],
+                "errors": [],
+            }
+        return cmis_client.trade_price_impact_intelligence(
+            chain="x1",
+            evidence_id=str(evidence_id),
+            asset_mint=str(asset_mint),
+        )
     if operation == "bridge_to_xdex_utilization":
         required = {
             "evidence_sha256": request.get("bridge_evidence_sha256"),
@@ -575,6 +619,7 @@ def make_cmis_calls_node(cmis_client: CMISClient) -> Callable[[X1ScoutState], di
             "instant_x1_scan" not in operations
             and "bridge_to_xdex_utilization" not in operations
             and "cross_chain_asset_provenance" not in operations
+            and "trade_price_impact_intelligence" not in operations
             and _looks_like_exact_x1_mint(request.get("asset"))
         ):
             try:
@@ -875,6 +920,24 @@ def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
                 )
             )
         except X1CrossChainProvenanceContractError:
+            pass
+
+    if (
+        primary_result.get("service") == "trade_price_impact_intelligence"
+        and primary_result.get("status") == "ok"
+    ):
+        expected_request = {
+            "evidence_id": request.get("trade_price_impact_evidence_id"),
+            "asset_mint": request.get("trade_price_impact_asset_mint"),
+        }
+        try:
+            report["x1_trade_price_impact_intelligence"] = (
+                build_x1_trade_price_impact_intelligence(
+                    primary_result,
+                    expected_request=expected_request,
+                )
+            )
+        except X1TradePriceImpactContractError:
             pass
 
     compare_asset = request.get("compare_asset")
