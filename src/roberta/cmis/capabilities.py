@@ -710,6 +710,25 @@ def validate_capability_manifest(value: Any) -> CMISCapabilities:
                             f"CMIS x1/cross_chain_asset_provenance {field} must be boolean."
                         )
                     normalized_capability[field] = raw_flag
+            if chain == "x1" and service == "trade_price_impact_intelligence":
+                contract = capability_raw.get("service_contract_version")
+                if not isinstance(contract, str) or not contract.strip():
+                    raise CMISCapabilityContractError(
+                        "CMIS x1/trade_price_impact_intelligence service_contract_version must be text."
+                    )
+                normalized_capability["service_contract_version"] = contract
+                for field in (
+                    "read_only",
+                    "public_service_promoted",
+                    "scout_reliance_promoted",
+                    "execution_authorized",
+                ):
+                    raw_flag = capability_raw.get(field)
+                    if not isinstance(raw_flag, bool):
+                        raise CMISCapabilityContractError(
+                            f"CMIS x1/trade_price_impact_intelligence {field} must be boolean."
+                        )
+                    normalized_capability[field] = raw_flag
             if chain == "x1" and service == "asset_lookup":
                 identity_contract = capability_raw.get("identity_contract_version")
                 if identity_contract is not None:
