@@ -112,6 +112,15 @@ class CMISClient(Protocol):
     ) -> CMISEnvelope:
         ...
 
+    def trade_price_impact_intelligence(
+        self,
+        *,
+        chain: str,
+        evidence_id: str,
+        asset_mint: str,
+    ) -> CMISEnvelope:
+        ...
+
     def concentration_warning_intelligence(
         self,
         *,
