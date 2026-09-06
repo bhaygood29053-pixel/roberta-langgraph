@@ -10,7 +10,7 @@
 - **Website: CURRENT.** PR #362 merged the human landing page + connected chat workspace with chat history, clear-chat controls, simple services/examples, and read-only Scout → CMIS labels.
 - **GENIUS Act learning layer: ACCEPTED.** Public PR #364 plus protected `roberta-core` PR #65 add the bounded regulatory learning source/reasoning foundation.
 - **Live Regulatory Intelligence: ACCEPTED end to end.** Public PR #368 adopts CMIS 1.26 `regulatory_evidence/v1` through X1 Scout; protected `roberta-core` PR #69 adds the canonical Human/Machine Decision Object and rendering boundary; public PR #369 reconciles the completed adoption. No legal advice, COMPLIANT/NON_COMPLIANT label, automatic risk conclusion, or execution authority is granted.
-- **Upstream live Large-Trade → #498 handoff remains separately gated.** `cmis-core` PR #41 has green deterministic CI, but its dedicated live workflow remains the exact acceptance condition and must pass before that live handoff is called proven.
+- **Upstream live Large-Trade → #498 handoff: ACCEPTED.** `cmis-core` PR #41 passed exact live run #7 at head `9ff63bcac15d9bd7f46868489f444508ed126c06`, merged as `f659f53f3d565bd5886dfae3e1a12370100cddc9`, and closed Issue #40 completed. ROBERTA may surface the verified public-wallet/pool-local handoff only within the accepted provider-scoped, non-causal, read-only boundaries.
 - Controlled Execution remains locked: `execution_authorized=false`.
 Last reconciled: 2026-09-06 (America/New_York)
 
@@ -696,7 +696,7 @@ Human and Machine ROBERTA may preserve exact public wallet/transaction/time, tra
 
 **ACCEPTED.** Public ROBERTA PR #361 and protected `roberta-core` PR #63 adopt CMIS 1.25 `large_trade_discovery/v1` as a provider-scoped read-only ranking/discovery surface. Scope and source limitations remain explicit.
 
-The separate protected CMIS live handoff proof under `cmis-core` PR #41 remains pending and must not be represented as accepted until its exact live workflow passes.
+The separate protected CMIS live handoff proof under `cmis-core` PR #41 is now accepted: exact live run #7 passed, PR #41 merged, and Issue #40 closed completed. This acceptance does not widen provider scope, wallet identity, causality, risk, recommendation, or execution authority.
 
 ### Regulatory Intelligence
 
