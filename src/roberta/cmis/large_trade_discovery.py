@@ -401,18 +401,16 @@ def validate_large_trade_discovery_response(
             raise CMISLargeTradeDiscoveryContractError(
                 "trade price-impact handoff readiness must remain explicit"
             )
-        if handoff_ready:
-            if not wallet_verified:
-                raise CMISLargeTradeDiscoveryContractError(
-                    "trade price-impact handoff requires verified wallet attribution"
-                )
+        has_handoff_id = handoff_id is not None
+        if has_handoff_id:
             _text(
                 handoff_id,
                 f"results[{index - 1}].trade_price_impact_evidence_id",
             )
-        elif handoff_id is not None:
+        expected_handoff_ready = bool(wallet_verified and has_handoff_id)
+        if handoff_ready is not expected_handoff_ready:
             raise CMISLargeTradeDiscoveryContractError(
-                "non-ready trade price-impact handoff must not expose an evidence id"
+                "trade price-impact handoff readiness must match verified wallet plus trusted evidence id"
             )
 
         normalized_rows.append(
