@@ -721,4 +721,23 @@ The public branch adds `roberta_regulatory_intelligence/v1`, a primary-law sourc
 
 USDC.X is explicitly treated as a bridged representation whose underlying USDC evidence does not erase bridge/custody/liquidity/redemption risk. `legal_compliance=null`, `legal_advice=false`, and `execution_authorized=false` remain invariant.
 
-CMIS #536 / PR #537 is accepted as a non-promoted foundation. Live use remains blocked until `regulatory_evidence/v1` receives a separate runtime freshness, capability-manifest, and Scout-reliance promotion gate.
+CMIS #536 / PR #537 established the foundation; CMIS #539 / PR #540 plus protected `cmis-core` #42 / PR #43 completed the CMIS 1.26 runtime freshness/capability/Scout-reliance promotion. ROBERTA Issue #367 is the active downstream X1 Scout adoption gate.
+
+## Regulatory Intelligence Runtime Adoption — Issue #367
+
+**ACTIVE.** ROBERTA is adopting the accepted CMIS 1.26 `regulatory_evidence/v1`
+service through X1 Scout.
+
+Initial scope is explicit-request-only and X1-only:
+
+- U.S. GENIUS Act;
+- exact X1 mint identity;
+- first proof case: USDC.X mint `B69chRzqzDCmdB5WYB8NRu5Yv5ZA95ABiZcdzCgGm9Tq`;
+- primary-law and primary-regulator provenance preserved;
+- current proposed/final/effective state preserved exactly;
+- current-state freshness preserved from CMIS;
+- existing `roberta_regulatory_intelligence/v1` reasoning consumes the validated projection.
+
+Paired protected `roberta-core` Issue #68 owns Canonical Human/Machine
+Decision Object adoption. Compliance conclusions, legal advice, automatic risk,
+and execution remain unauthorized.
