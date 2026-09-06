@@ -53,8 +53,8 @@ Implementation sequence:
 1. #377 Human Response Contract v1 — **ACCEPTED** via PR #384 / merge `8ec6fbf1274543e54c2c04508fe968044c72d989`;
 2. protected `roberta-core#72` canonical Human Response Decision Object — **ACCEPTED** via PR #74 / merge `cff1be5bf95c29ac163dc9228bfdf4c1056762dd`;
 3. #378 human renderer and Quick / Normal / Deep Dive modes — **ACCEPTED** via public PR #388 / merge `ee52d60079571d349a45299fc524d0ea972412f3` + protected PR #76 / merge `971c49b675b5dee43d5b6d002a86b61a1a951811`;
-4. #379 evidence-safe conversational continuity — **NEXT EXACT GATE**;
-5. #380 75+ scenario learning corpus and response-quality evaluator;
+4. #379 evidence-safe conversational continuity — **ACCEPTED** via public PR #390 / merge `e2045d3243afd2e2b810cb560530bc44f0b6396b` + protected PR #78 / merge `5842e359cb671358638373199a442d800046cc80`;
+5. #380 75+ scenario learning corpus and response-quality evaluator — **NEXT EXACT GATE**;
 6. #381 website progressive evidence disclosure.
 
 This program builds on the already-accepted answer-first/evidence-aware milestones #33, #45, and #51.
