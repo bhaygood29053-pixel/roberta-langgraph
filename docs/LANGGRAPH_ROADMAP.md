@@ -706,3 +706,19 @@ locally and will not call providers directly. `execution_authorized=false`.
 
 The next Truth Gate is **Concentration Warning / Early Warning Claim Integrity**.
 `execution_authorized=false`.
+
+## Regulatory Intelligence Learning Layer — Issue #363
+
+**ACTIVE FOUNDATION / NOT YET ACCEPTED ON MAIN.** ROBERTA #363 adds a bounded regulatory learning and reasoning layer beginning with the U.S. GENIUS Act.
+
+The design preserves three distinct layers:
+
+1. static primary-source knowledge;
+2. current CMIS `regulatory_evidence/v1`;
+3. ROBERTA judgment.
+
+The public branch adds `roberta_regulatory_intelligence/v1`, a primary-law source manifest, CMIS-boundary validation, and fail-closed tests. Protected `roberta-core` owns the actual Learning Plane source: v1 uses a digest-bound secondary regulatory primer, while exact full-statute ingestion remains a separate future source-integrity gate. Missing CMIS evidence produces `INSUFFICIENT_EVIDENCE`; it does not permit ROBERTA to guess current issuer, licensing, bridge, custody, or compliance state.
+
+USDC.X is explicitly treated as a bridged representation whose underlying USDC evidence does not erase bridge/custody/liquidity/redemption risk. `legal_compliance=null`, `legal_advice=false`, and `execution_authorized=false` remain invariant.
+
+Live use remains blocked until CMIS #536 is accepted and separately promoted for Scout reliance.
