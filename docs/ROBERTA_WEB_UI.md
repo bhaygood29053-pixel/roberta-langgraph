@@ -1,122 +1,108 @@
-# ROBERTA Local Web UI
+# ROBERTA Website v2
 
-The ROBERTA bridge serves a local browser interface from the same process that owns `/v1/roberta`.
+ROBERTA now uses a human-first website rather than a technical capability dashboard.
 
-## Start
-
-Use the existing ROBERTA bridge command or systemd unit. With the default local configuration:
+The website is served by the existing ROBERTA bridge process and keeps the existing public API boundary:
 
 ```text
-http://127.0.0.1:8766/
-```
-
-Health remains available at:
-
-```text
-http://127.0.0.1:8766/healthz
-```
-
-The browser sends normal user requests only to:
-
-```text
+GET  /
+GET  /healthz
 POST /v1/roberta
 {"message":"..."}
 ```
 
-The website does not create a browser -> CMIS or browser -> provider authority path.
+No browser -> CMIS or browser -> provider authority path is introduced.
 
-## Product experience
+## Public website
 
-The website now has two modes.
+The first page explains ROBERTA in plain English:
 
-### 1. Public introduction
+> Ask about a token, trade, wallet, or market move.
 
-Before entering the workspace, the homepage explains who ROBERTA is and presents seven human-friendly services:
+It presents six condensed services that match what ordinary users are most likely to request:
 
-1. **Check a Token** — quick token health and context.
+1. **Check a Token** — current token health, market context, liquidity, activity, structure, recent changes, and available evidence.
 2. **Compare Tokens** — side-by-side comparison of two assets.
-3. **Should I Buy or Sell?** — ROBERTA's evidence-bounded opinion before a proposed trade.
-4. **Check Risk** — important liquidity, concentration, authority, freshness, and evidence problems.
-5. **Track Wallets & Big Trades** — verified public-wallet activity, important transactions, volume contribution, and pool-level price impact when supported.
-6. **Understand Regulations** — verified regulatory-framework context and bounded applicability for supported assets, with no legal advice or compliance label.
-7. **Ask ROBERTA** — normal-language access where ROBERTA selects the appropriate intelligence path automatically.
+3. **Should I Buy or Sell?** — evidence-bounded ROBERTA opinion before a proposed trade.
+4. **Check Risk** — liquidity, concentration, authority, unusual-activity, freshness, evidence, and trade-size concerns.
+5. **Track Wallets & Big Trades** — verified public-wallet activity, important transactions, volume contribution, and pool-level price impact where supported.
+6. **Ask ROBERTA** — free-form natural-language access. ROBERTA selects the appropriate specialist path automatically.
 
-Each service includes plain-English examples. Selecting an example opens the chat workspace and places that example in the composer so the user can edit or send it.
+Every service includes human-readable example questions. Selecting an example opens the chat workspace and pre-fills the composer.
 
-The public page intentionally does **not** expose the full internal specialist catalog. Technical services remain implementation details behind ROBERTA.
+The old technical service catalog, roadmap/status band, filter UI, and public contract-name navigation have been removed from the website rather than merely hidden.
 
-### 2. Connected chat workspace
+## Human and agent entry
 
-Choosing **Enter Human Chat**, **Agent / API Access**, or **Open ROBERTA** switches the page into a dedicated chat workspace.
+The public page provides:
 
-The workspace includes:
+- **Enter Human Chat / Open ROBERTA**
+- **Agent / API Access**
 
-- **New Chat**;
-- persistent **Chat History**, grouped into **Today** and **Previous**;
-- **Clear chat history**;
-- **Clear chat** for the current conversation;
-- the seven human-friendly services with one-click example prompts;
-- a free-form ROBERTA composer that is always available;
-- connection health and simple route labels;
-- answer-label reminders for **Evidence**, **Risk**, **Freshness**, and **Opinion**;
-- an **About ROBERTA** control to return to the public introduction.
+Both lead to the same ROBERTA truth and evidence boundary.
 
-The selected workspace mode is kept in browser session storage, while chat history is kept in browser local storage.
+Human entry opens the chat workspace directly.
 
-## Human and agent access
+Agent entry opens the chat workspace and the Connection panel, which shows the existing `POST /v1/roberta` endpoint and optional bearer-token configuration.
 
-**Human Chat** opens the conversational workspace directly.
+Agent access does not create wallet, transaction, policy, CMIS, provider, or execution authority.
 
-**Agent / API Access** opens the same workspace and exposes the existing Connection panel. Agents still use the same ROBERTA public HTTP boundary rather than calling CMIS/provider services directly.
+## Chat workspace
 
-The website does not grant an agent new wallet, policy, transaction, or execution authority.
+After entry, the public marketing page is replaced by a dedicated ROBERTA workspace containing:
 
-## Specialist services behind the simple interface
+- **New Chat**
+- **Clear Chat**
+- persistent **Chat History**
+- history grouped into **Today** and **Previous**
+- **Clear Chat History**
+- the six human service shortcuts
+- example prompts
+- always-available free-form chat
+- connection health
+- simple **X1**, **Scout -> CMIS**, and **Read-only** labels
+- answer-label reminders for **Evidence**, **Risk**, **Freshness**, and **Opinion**
+- a return control for **About ROBERTA**
 
-ROBERTA may use accepted specialist capabilities behind a human request, including the current Instant X1 Scan v6 path, comparison, risk, liquidity, history, burn, discovery, WHAT CHANGED?, concentration intelligence, pre-trade analysis, cross-chain intelligence, accepted wallet/trade price-impact intelligence, Large-Trade Discovery, and accepted CMIS 1.26 regulatory intelligence.
+Chat history is stored only in browser local storage. Connection settings and the selected workspace mode are stored in browser session storage.
 
-These contract names are intentionally hidden from ordinary website navigation. The user asks for an outcome; ROBERTA selects the specialist path.
+## Response presentation
 
-## Trust boundary
+The website preserves human-readable formatting for ROBERTA responses, including:
+
+- recommendation / conviction / evidence-quality lines;
+- section headings;
+- PASS / WARN / BLOCK and related evidence states;
+- signed positive and negative values.
+
+Opinion-bearing questions continue to be decided by ROBERTA's accepted opinion layer. The browser does not calculate recommendations or deterministic risk.
+
+## Architecture
 
 The authority path remains:
 
 ```text
-User / agent
+User / Agent
   -> ROBERTA
     -> Chain Scout
       -> CMIS
         -> verified provider/source
 ```
 
-Missing evidence remains unknown/unavailable. Evidence quality remains separate from deterministic risk. Public wallet addresses do not establish real-world identity. Pool-local price impact does not establish whole-market causality.
+The website is a presentation and transport surface only.
 
 ROBERTA may analyze and recommend, but the website does not sign transactions, broadcast transactions, move funds, execute swaps, or authorize autonomous value movement.
 
-## Authentication
+## Keeping the website current
 
-Default loopback use requires no bearer token. If `ROBERTA_API_KEY` is configured, the Connection panel accepts the token. Connection values are stored only in browser session storage and are sent to `/v1/roberta`.
+Merged repository capability is the source of truth.
 
-Do not expose the loopback bridge to an untrusted network merely to make the UI externally reachable.
+When ROBERTA gains a new accepted backend capability, the preferred website policy is:
 
-## Animated ROBERTA field
+1. determine whether it strengthens one of the six existing human services;
+2. update that service's description or examples only when users gain a meaningful new question they can reliably ask;
+3. avoid adding a new public service merely because a new internal contract exists;
+4. keep incomplete, experimental, failing-gate, or unaccepted functionality off the public website;
+5. update this document and the website contract tests with any material product-surface change.
 
-The public introduction keeps the procedural ROBERTA intelligence animation. It is presentation only and does not change evidence, routing, risk, policy, wallet, or execution authority.
-
-The renderer remains responsive, pauses when the page is hidden, respects `prefers-reduced-motion`, and caps device-pixel ratio and particle density.
-
-## ROBERTA Opinion v1
-
-Opinion-bearing questions continue through the accepted protected `roberta_opinion/v1` behavior.
-
-Human ROBERTA is expected to lead with **My recommendation**, followed by **Conviction**, **Evidence quality**, **My view**, the strongest material evidence against that view, and **What would change my mind**.
-
-Facts and deterministic risk remain Scout -> CMIS owned. Judgment remains ROBERTA-owned. The website does not calculate a recommendation itself.
-
-## Regulatory Intelligence boundary — 2026-09-06
-
-The website may now offer **Understand Regulations** because public ROBERTA #368, protected `roberta-core` #69, and reconciliation #369 completed the end-to-end CMIS 1.26 regulatory-evidence adoption.
-
-The browser still sends only a normal message to `/v1/roberta`. It does not call CMIS directly and does not calculate legal applicability or compliance itself.
-
-The accepted service preserves `legal_compliance=null`, `legal_advice=false`, no automatic risk conclusion, and `execution_authorized=false`.
+This keeps the website simple while allowing ROBERTA's internal intelligence surface to continue expanding.

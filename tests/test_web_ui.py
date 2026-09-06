@@ -14,102 +14,77 @@ class FakeGraph:
         return {"messages": [AIMessage(content="ok")], "status": "complete"}
 
 
-def test_web_ui_contains_current_service_surface():
-    # Public landing: six human-friendly services, not a technical tool catalog.
+def test_web_ui_is_human_first_v2_experience():
+    # Public identity and plain-English positioning.
+    assert "ROBERTA — Verified On-Chain Intelligence" in ROBERTA_WEB_UI_HTML
+    assert "Ask about a token, trade, wallet, or market move." in ROBERTA_WEB_UI_HTML
+    assert "You do not need to know which blockchain tool to use." in ROBERTA_WEB_UI_HTML
+    assert "Enter Human Chat" in ROBERTA_WEB_UI_HTML
+    assert "Agent / API Access" in ROBERTA_WEB_UI_HTML
+
+    # Six condensed human-facing services.
     assert "Check a Token" in ROBERTA_WEB_UI_HTML
     assert "Compare Tokens" in ROBERTA_WEB_UI_HTML
     assert "Should I Buy or Sell?" in ROBERTA_WEB_UI_HTML
     assert "Check Risk" in ROBERTA_WEB_UI_HTML
     assert "Track Wallets &amp; Big Trades" in ROBERTA_WEB_UI_HTML
-    assert "Understand Regulations" in ROBERTA_WEB_UI_HTML
     assert "Ask ROBERTA" in ROBERTA_WEB_UI_HTML
-    assert "Get a quick health check" in ROBERTA_WEB_UI_HTML
+
+    # Human-friendly examples are actionable.
+    assert 'data-example="Check AGI."' in ROBERTA_WEB_UI_HTML
+    assert "Which looks better right now, XNT or AGI?" in ROBERTA_WEB_UI_HTML
+    assert "Should I buy $500 of AGI right now?" in ROBERTA_WEB_UI_HTML
+    assert "Could I get stuck trying to sell AGI?" in ROBERTA_WEB_UI_HTML
     assert "Did this transaction move the pool price?" in ROBERTA_WEB_UI_HTML
     assert "How much XNT was burned this week?" in ROBERTA_WEB_UI_HTML
-    assert "What does the GENIUS Act mean for USDC.X?" in ROBERTA_WEB_UI_HTML
-    assert "No legal advice or compliance label" in ROBERTA_WEB_UI_HTML
 
-    # Landing -> workspace transition for both human and agent/API access.
-    assert 'id="connectHuman"' in ROBERTA_WEB_UI_HTML
-    assert 'id="connectAgent"' in ROBERTA_WEB_UI_HTML
-    assert 'id="connectNav"' in ROBERTA_WEB_UI_HTML
+    # The landing page transforms into a dedicated chat workspace.
+    assert 'id="workspace"' in ROBERTA_WEB_UI_HTML
     assert "workspaceMode" in ROBERTA_WEB_UI_HTML
-    assert "robertaWorkspaceMode" in ROBERTA_WEB_UI_HTML
     assert "function enterWorkspace" in ROBERTA_WEB_UI_HTML
     assert "function leaveWorkspace" in ROBERTA_WEB_UI_HTML
-    assert "function useExample" in ROBERTA_WEB_UI_HTML
-
-    # Chat workspace essentials.
+    assert "robertaWorkspaceMode" in ROBERTA_WEB_UI_HTML
     assert 'id="newChat"' in ROBERTA_WEB_UI_HTML
     assert 'id="clearChat"' in ROBERTA_WEB_UI_HTML
     assert 'id="clearHistory"' in ROBERTA_WEB_UI_HTML
     assert 'id="historyList"' in ROBERTA_WEB_UI_HTML
-    assert 'id="backHome"' in ROBERTA_WEB_UI_HTML
-    assert "Chat history" in ROBERTA_WEB_UI_HTML
-    assert "Answer labels" in ROBERTA_WEB_UI_HTML
-    assert "Evidence" in ROBERTA_WEB_UI_HTML
-    assert "Freshness" in ROBERTA_WEB_UI_HTML
-    assert "Opinion" in ROBERTA_WEB_UI_HTML
-    assert "Analysis and recommendations only." in ROBERTA_WEB_UI_HTML
-    assert "ROBERTA does not execute transactions from this website." in ROBERTA_WEB_UI_HTML
-    assert "Scout → CMIS" in ROBERTA_WEB_UI_HTML
+    assert 'id="backAbout"' in ROBERTA_WEB_UI_HTML
 
-    # Chat history remains local and persistent, with simple Today / Previous grouping.
-    assert "robertaChatHistoryV1" in ROBERTA_WEB_UI_HTML
+    # Chat history is local to the browser and grouped for humans.
+    assert "robertaChatHistoryV2" in ROBERTA_WEB_UI_HTML
     assert "localStorage.getItem" in ROBERTA_WEB_UI_HTML
     assert "localStorage.setItem" in ROBERTA_WEB_UI_HTML
-    assert "recordUserMessage" in ROBERTA_WEB_UI_HTML
-    assert "restoreLatestChat" in ROBERTA_WEB_UI_HTML
     assert "Today" in ROBERTA_WEB_UI_HTML
     assert "Previous" in ROBERTA_WEB_UI_HTML
 
-    # Underlying specialist routes remain available behind the human-facing surface.
-    assert "Instant X1 Scan" in ROBERTA_WEB_UI_HTML
-    assert "instant_x1_scan/v6" in ROBERTA_WEB_UI_HTML
-    assert "Burn Intelligence" in ROBERTA_WEB_UI_HTML
-    assert "Discovery Intelligence" in ROBERTA_WEB_UI_HTML
-    assert "What Changed?" in ROBERTA_WEB_UI_HTML
-    assert "Concentration Warning" in ROBERTA_WEB_UI_HTML
-    assert "Regulatory Intelligence" in ROBERTA_WEB_UI_HTML
-    assert "x1_regulatory_intelligence/v1" in ROBERTA_WEB_UI_HTML
-    assert "id:'regulatory'" in ROBERTA_WEB_UI_HTML
-    assert "Solana Market Report" in ROBERTA_WEB_UI_HTML
-    assert "Solana Tokenomics" in ROBERTA_WEB_UI_HTML
-    assert "Solana Risk Assessment" in ROBERTA_WEB_UI_HTML
-    assert "Website actions never call CMIS directly" not in ROBERTA_WEB_UI_HTML
-
-    # Existing Human ROBERTA answer formatting and Opinion v1 remain intact.
-    assert "Present this in Human ROBERTA mode." in ROBERTA_WEB_UI_HTML
-    assert "WHAT ROBERTA STILL NEEDS" in ROBERTA_WEB_UI_HTML
-    assert "raw snake_case limitation codes" in ROBERTA_WEB_UI_HTML
-    assert "humanServicePrompt" in ROBERTA_WEB_UI_HTML
-    assert "no more than three prioritized, decision-relevant missing items" in ROBERTA_WEB_UI_HTML
-    assert "Do not repeat freshness warnings inside RISK" in ROBERTA_WEB_UI_HTML
-    assert "Use EVIDENCE QUALITY instead of a raw evidence-status dump" in ROBERTA_WEB_UI_HTML
-    assert "plain-English BOTTOM LINE" in ROBERTA_WEB_UI_HTML
-    assert ".statusToken.pass" in ROBERTA_WEB_UI_HTML
-    assert ".statusToken.warn" in ROBERTA_WEB_UI_HTML
-    assert ".statusToken.block" in ROBERTA_WEB_UI_HTML
-    assert ".signedPositive" in ROBERTA_WEB_UI_HTML
-    assert ".signedNegative" in ROBERTA_WEB_UI_HTML
-    assert ".statusToken.strong" in ROBERTA_WEB_UI_HTML
-    assert ".statusToken.moderate" in ROBERTA_WEB_UI_HTML
-    assert ".statusToken.weak" in ROBERTA_WEB_UI_HTML
-    assert "|STRONG|MODERATE|WEAK" in ROBERTA_WEB_UI_HTML
-    assert "formatAssistant" in ROBERTA_WEB_UI_HTML
-    assert 'id="robertaHeroCanvas"' in ROBERTA_WEB_UI_HTML
-    assert "function profilePoint" in ROBERTA_WEB_UI_HTML
-    assert "prefers-reduced-motion" in ROBERTA_WEB_UI_HTML
-    assert "ResizeObserver" in ROBERTA_WEB_UI_HTML
-    assert "document.hidden" in ROBERTA_WEB_UI_HTML
-    assert "accepted roberta_opinion/v1 presentation contract" in ROBERTA_WEB_UI_HTML
-    assert "roberta_opinion/v1" in ROBERTA_WEB_UI_HTML
-    assert "My recommendation: <TOKEN>" in ROBERTA_WEB_UI_HTML
+    # Answer labels and opinion formatting remain readable.
+    assert "Answer labels" in ROBERTA_WEB_UI_HTML
+    assert "Evidence" in ROBERTA_WEB_UI_HTML
+    assert "Risk" in ROBERTA_WEB_UI_HTML
+    assert "Freshness" in ROBERTA_WEB_UI_HTML
+    assert "Opinion" in ROBERTA_WEB_UI_HTML
+    assert "My recommendation" in ROBERTA_WEB_UI_HTML
     assert "Best evidence against my view" in ROBERTA_WEB_UI_HTML
     assert "What would change my mind" in ROBERTA_WEB_UI_HTML
-    assert "ROBERTA may disagree with the user" in ROBERTA_WEB_UI_HTML
-    assert "id:'opinion'" in ROBERTA_WEB_UI_HTML
-    assert ".opinionLine{" in ROBERTA_WEB_UI_HTML
+    assert "formatAssistant" in ROBERTA_WEB_UI_HTML
+    assert "statusToken" in ROBERTA_WEB_UI_HTML
+
+    # Architecture and execution boundaries remain intact.
+    assert "Scout → CMIS" in ROBERTA_WEB_UI_HTML
+    assert "User / Agent → ROBERTA → Chain Scout → CMIS" in ROBERTA_WEB_UI_HTML
+    assert "ROBERTA does not execute transactions from this website." in ROBERTA_WEB_UI_HTML
+    assert "POST /v1/roberta" in ROBERTA_WEB_UI_HTML
+    assert 'fetch(apiUrl("/v1/roberta")' not in ROBERTA_WEB_UI_HTML
+    assert "fetch(apiUrl('/v1/roberta')" in ROBERTA_WEB_UI_HTML
+    assert "fetch(apiUrl('/healthz')" in ROBERTA_WEB_UI_HTML
+
+    # Legacy technical-dashboard UI is removed rather than hidden.
+    assert "Instant X1 Scan" not in ROBERTA_WEB_UI_HTML
+    assert "Concentration Warning" not in ROBERTA_WEB_UI_HTML
+    assert "Rank X1 Assets" not in ROBERTA_WEB_UI_HTML
+    assert "serviceTools" not in ROBERTA_WEB_UI_HTML
+    assert "productBand" not in ROBERTA_WEB_UI_HTML
+    assert "Current product state" not in ROBERTA_WEB_UI_HTML
 
 
 def test_bridge_serves_web_ui_and_keeps_roberta_api_path():
@@ -129,6 +104,8 @@ def test_bridge_serves_web_ui_and_keeps_roberta_api_path():
             assert response.headers["Content-Type"] == "text/html; charset=utf-8"
             assert "ROBERTA — Verified On-Chain Intelligence" in html
             assert "/v1/roberta" in html
+            assert "Check a Token" in html
+            assert 'id="workspace"' in html
 
         with urllib.request.urlopen(base + "/healthz", timeout=2) as response:
             assert response.status == 200
