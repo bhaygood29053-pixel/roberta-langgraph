@@ -40,6 +40,8 @@ INSTANT_X1_SCAN_COMMON_RESPONSE_LIMITATIONS = (
     "provider_price_backfill_is_price_only",
     "provider_source_independence_not_verified",
     "current_market_freshness_is_field_scoped",
+    "price_freshness_uses_timestamped_provider_backfill",
+    "rolling_freshness_requires_exact_chain_window_evidence",
     "provider_fact_time_not_promoted_by_chain_reconstruction",
     "source_independence_separate_from_freshness",
     "collection_time_is_not_provider_fact_time",
