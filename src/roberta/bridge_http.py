@@ -19,7 +19,6 @@ from langchain_core.messages import AIMessage
 from langgraph.checkpoint.memory import InMemorySaver
 
 from roberta.private_core import build_graph
-from roberta.runtime import invoke_thread
 from roberta.web_ui import web_ui_bytes
 
 DEFAULT_HOST = "127.0.0.1"
@@ -106,10 +105,9 @@ class RobertaBridge:
             "status": "running",
         }
         result = (
-            invoke_thread(
-                self._graph,
+            self._graph.invoke(
                 inputs,
-                thread_id=normalized_thread_id,
+                config={"configurable": {"thread_id": normalized_thread_id}},
             )
             if normalized_thread_id is not None
             else self._graph.invoke(inputs)
