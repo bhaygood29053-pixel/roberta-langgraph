@@ -110,6 +110,8 @@ TRADE_PRICE_IMPACT_REQUIRED_LIMITATIONS = (
 LARGE_TRADE_DISCOVERY_MIN_CMIS_CONTRACT_VERSION = "1.25.0"
 LARGE_TRADE_DISCOVERY_CONTRACT_VERSION = "large_trade_discovery/v1"
 REGULATORY_EVIDENCE_MIN_CMIS_CONTRACT_VERSION = "1.26.0"
+RESPONSE_FRESHNESS_MIN_CMIS_CONTRACT_VERSION = "1.27.0"
+RESPONSE_FRESHNESS_CONTRACT_VERSION = "cmis_response_freshness/v1"
 REGULATORY_EVIDENCE_CONTRACT_VERSION = "regulatory_evidence/v1"
 REGULATORY_EVIDENCE_REQUIRED_REQUIREMENTS = (
     "canonical_cmis_owned_regulatory_record",
@@ -356,12 +358,20 @@ class CMISIntelligenceFoundation(TypedDict):
     capabilities: dict[str, CMISIntelligenceCapability]
 
 
+class CMISResponseFreshnessCapability(TypedDict):
+    contract_version: str
+    required_on_every_public_response: bool
+    observation_time_alone_never_proves_provider_fact_freshness: bool
+    missing_service_specific_freshness_fails_closed: bool
+
+
 class CMISCapabilities(TypedDict):
     service: str
     version: int
     schema_version: int
     contract_version: str
     request_path: str
+    response_freshness: NotRequired[CMISResponseFreshnessCapability]
     evidence_quality: CMISEvidenceQualityCapabilities
     intelligence_foundation: CMISIntelligenceFoundation
     supported_services: list[str]
@@ -558,6 +568,58 @@ def _validate_intelligence_foundation(
     }
 
 
+def _validate_response_freshness_capability(
+    value: object,
+    *,
+    contract_version: object,
+) -> CMISResponseFreshnessCapability | None:
+    required = _semver(contract_version) >= _semver(
+        RESPONSE_FRESHNESS_MIN_CMIS_CONTRACT_VERSION
+    )
+    if value is None and not required:
+        return None
+    if not isinstance(value, Mapping):
+        raise CMISCapabilityContractError(
+            "CMIS >=1.27 response_freshness capability is required."
+        )
+    if value.get("contract_version") != RESPONSE_FRESHNESS_CONTRACT_VERSION:
+        raise CMISCapabilityContractError(
+            "CMIS response_freshness contract version mismatch."
+        )
+    for field in (
+        "required_on_every_public_response",
+        "observation_time_alone_never_proves_provider_fact_freshness",
+        "missing_service_specific_freshness_fails_closed",
+    ):
+        if value.get(field) is not True:
+            raise CMISCapabilityContractError(
+                f"CMIS response_freshness.{field} must remain true."
+            )
+    return {
+        "contract_version": RESPONSE_FRESHNESS_CONTRACT_VERSION,
+        "required_on_every_public_response": True,
+        "observation_time_alone_never_proves_provider_fact_freshness": True,
+        "missing_service_specific_freshness_fails_closed": True,
+    }
+
+
+def response_freshness_required(manifest: Mapping[str, Any]) -> bool:
+    """Return whether the validated CMIS contract requires top-level freshness."""
+    version = manifest.get("contract_version")
+    if _semver(version) < _semver(RESPONSE_FRESHNESS_MIN_CMIS_CONTRACT_VERSION):
+        return False
+    freshness = manifest.get("response_freshness")
+    if not isinstance(freshness, Mapping):
+        raise CMISCapabilityContractError(
+            "CMIS >=1.27 is missing the response_freshness capability."
+        )
+    if freshness.get("contract_version") != RESPONSE_FRESHNESS_CONTRACT_VERSION:
+        raise CMISCapabilityContractError(
+            "CMIS >=1.27 response_freshness capability is incompatible."
+        )
+    return True
+
+
 def validate_capability_manifest(value: Any) -> CMISCapabilities:
     """Validate a CMIS capability response without inventing missing defaults."""
 
@@ -585,6 +647,10 @@ def validate_capability_manifest(value: Any) -> CMISCapabilities:
         )
     if value.get("request_path") != "/v1/cmis":
         raise CMISCapabilityContractError("CMIS request_path must be /v1/cmis.")
+    response_freshness = _validate_response_freshness_capability(
+        value.get("response_freshness"),
+        contract_version=contract_version,
+    )
     evidence_quality = _validate_evidence_quality(value.get("evidence_quality"))
 
     supported_services = _string_list(value.get("supported_services"), field="supported_services")
@@ -880,7 +946,7 @@ def validate_capability_manifest(value: Any) -> CMISCapabilities:
             f"CMIS capabilities contain unclassified chains: {extra_chains!r}."
         )
 
-    return {
+    normalized_manifest: dict[str, Any] = {
         "service": "cmis_gateway",
         "version": CAPABILITY_SCHEMA_VERSION,
         "schema_version": CAPABILITY_SCHEMA_VERSION,
@@ -893,6 +959,9 @@ def validate_capability_manifest(value: Any) -> CMISCapabilities:
         "known_chains": known_chains,
         "chains": normalized_chains,
     }
+    if response_freshness is not None:
+        normalized_manifest["response_freshness"] = response_freshness
+    return cast(CMISCapabilities, normalized_manifest)
 
 
 def service_capability(
@@ -1700,6 +1769,7 @@ __all__ = [
     "CMISEvidenceQualityCapabilities",
     "CMISIntelligenceCapability",
     "CMISIntelligenceFoundation",
+    "CMISResponseFreshnessCapability",
     "CMISServiceCapability",
     "HISTORICAL_ALL_AVAILABLE_MIN_CMIS_CONTRACT_VERSION",
     "HISTORICAL_ALL_AVAILABLE_REQUIRED_LIMITATIONS",
@@ -1735,10 +1805,13 @@ __all__ = [
     "REGULATORY_EVIDENCE_MIN_CMIS_CONTRACT_VERSION",
     "REGULATORY_EVIDENCE_REQUIRED_LIMITATIONS",
     "REGULATORY_EVIDENCE_REQUIRED_REQUIREMENTS",
+    "RESPONSE_FRESHNESS_CONTRACT_VERSION",
+    "RESPONSE_FRESHNESS_MIN_CMIS_CONTRACT_VERSION",
     "require_bridge_to_xdex_utilization_capability",
     "require_trade_price_impact_capability",
     "require_large_trade_discovery_capability",
     "require_regulatory_evidence_capability",
+    "response_freshness_required",
     "require_burn_intelligence_capability",
     "require_concentration_warning_capability",
     "require_cross_chain_provenance_capability",
