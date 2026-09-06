@@ -20,6 +20,7 @@ from roberta.cmis.capabilities import (
     require_historical_all_available_capability,
     require_instant_x1_scan_capability,
     require_large_trade_discovery_capability,
+    require_regulatory_evidence_capability,
     require_service_capability,
     require_trade_price_impact_capability,
     validate_capability_manifest,
@@ -62,6 +63,12 @@ from roberta.cmis.large_trade_discovery import (
     CMISLargeTradeDiscoveryContractError,
     normalize_large_trade_discovery_request,
     validate_large_trade_discovery_response,
+)
+from roberta.cmis.regulatory_evidence import (
+    SERVICE as REGULATORY_EVIDENCE_SERVICE,
+    CMISRegulatoryEvidenceContractError,
+    normalize_regulatory_evidence_request,
+    validate_regulatory_evidence_response,
 )
 from roberta.cmis.contracts import (
     CMISEnvelope,
@@ -960,6 +967,78 @@ class CMISHTTPClient:
                 asset=normalized_asset,
                 status="error",
                 code="invalid_cmis_large_trade_discovery_response",
+                message=str(exc),
+            )
+
+    def regulatory_evidence(
+        self,
+        *,
+        chain: str,
+        asset: str,
+        jurisdiction: str,
+        framework: str,
+        asset_id: str,
+        evaluated_at: str,
+        max_evidence_age_seconds: float,
+    ) -> CMISEnvelope:
+        normalized_chain, normalized_asset = self._identity(chain, asset)
+        try:
+            require_regulatory_evidence_capability(
+                self.capabilities(),
+                chain=normalized_chain,
+            )
+            params = normalize_regulatory_evidence_request(
+                jurisdiction=jurisdiction,
+                framework=framework,
+                asset_id=asset_id,
+                asset_mint=normalized_asset,
+                evaluated_at=evaluated_at,
+                max_evidence_age_seconds=max_evidence_age_seconds,
+            )
+        except CMISCapabilityUnavailable as exc:
+            return self._error_envelope(
+                service=REGULATORY_EVIDENCE_SERVICE,
+                chain=normalized_chain,
+                asset=normalized_asset,
+                status="unavailable",
+                code="cmis_regulatory_evidence_unavailable",
+                message=str(exc),
+                warning=True,
+            )
+        except (
+            CMISCapabilityContractError,
+            CMISRegulatoryEvidenceContractError,
+        ) as exc:
+            return self._error_envelope(
+                service=REGULATORY_EVIDENCE_SERVICE,
+                chain=normalized_chain,
+                asset=normalized_asset,
+                status="unavailable",
+                code="cmis_regulatory_evidence_contract_unavailable",
+                message=f"CMIS Regulatory Evidence contract unavailable: {exc}",
+                warning=True,
+            )
+
+        response = self._request(
+            service=REGULATORY_EVIDENCE_SERVICE,
+            chain=normalized_chain,
+            asset=normalized_asset,
+            params=params,
+        )
+        if response.get("status") != "ok":
+            return response
+        try:
+            return validate_regulatory_evidence_response(
+                response,
+                expected_request=params,
+            )
+        except CMISRegulatoryEvidenceContractError as exc:
+            return self._error_envelope(
+                service=REGULATORY_EVIDENCE_SERVICE,
+                chain=normalized_chain,
+                asset=normalized_asset,
+                status="error",
+                code="invalid_cmis_regulatory_evidence_response",
                 message=str(exc),
             )
 
