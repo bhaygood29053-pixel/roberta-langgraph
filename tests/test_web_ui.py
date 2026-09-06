@@ -21,10 +21,13 @@ def test_web_ui_contains_current_service_surface():
     assert "Should I Buy or Sell?" in ROBERTA_WEB_UI_HTML
     assert "Check Risk" in ROBERTA_WEB_UI_HTML
     assert "Track Wallets &amp; Big Trades" in ROBERTA_WEB_UI_HTML
+    assert "Understand Regulations" in ROBERTA_WEB_UI_HTML
     assert "Ask ROBERTA" in ROBERTA_WEB_UI_HTML
     assert "Get a quick health check" in ROBERTA_WEB_UI_HTML
     assert "Did this transaction move the pool price?" in ROBERTA_WEB_UI_HTML
     assert "How much XNT was burned this week?" in ROBERTA_WEB_UI_HTML
+    assert "What does the GENIUS Act mean for USDC.X?" in ROBERTA_WEB_UI_HTML
+    assert "No legal advice or compliance label" in ROBERTA_WEB_UI_HTML
 
     # Landing -> workspace transition for both human and agent/API access.
     assert 'id="connectHuman"' in ROBERTA_WEB_UI_HTML
@@ -67,6 +70,9 @@ def test_web_ui_contains_current_service_surface():
     assert "Discovery Intelligence" in ROBERTA_WEB_UI_HTML
     assert "What Changed?" in ROBERTA_WEB_UI_HTML
     assert "Concentration Warning" in ROBERTA_WEB_UI_HTML
+    assert "Regulatory Intelligence" in ROBERTA_WEB_UI_HTML
+    assert "x1_regulatory_intelligence/v1" in ROBERTA_WEB_UI_HTML
+    assert "id:'regulatory'" in ROBERTA_WEB_UI_HTML
     assert "Solana Market Report" in ROBERTA_WEB_UI_HTML
     assert "Solana Tokenomics" in ROBERTA_WEB_UI_HTML
     assert "Solana Risk Assessment" in ROBERTA_WEB_UI_HTML
