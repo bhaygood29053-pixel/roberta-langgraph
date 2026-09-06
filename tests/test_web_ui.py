@@ -73,7 +73,7 @@ def test_web_ui_contains_current_service_surface():
     assert "Website actions never call CMIS directly" not in ROBERTA_WEB_UI_HTML
 
     # Existing Human ROBERTA answer formatting and Opinion v1 remain intact.
-    assert "Human-first output" in ROBERTA_WEB_UI_HTML
+    assert "Present this in Human ROBERTA mode." in ROBERTA_WEB_UI_HTML
     assert "WHAT ROBERTA STILL NEEDS" in ROBERTA_WEB_UI_HTML
     assert "raw snake_case limitation codes" in ROBERTA_WEB_UI_HTML
     assert "humanServicePrompt" in ROBERTA_WEB_UI_HTML
