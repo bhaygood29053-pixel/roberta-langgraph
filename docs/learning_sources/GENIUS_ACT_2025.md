@@ -26,12 +26,9 @@ compliance_conclusion_authorized = false
 execution_authorized = false
 ```
 
-The packaged learning capsule is
-`src/roberta/learning/sources/genius_act_2025.md`.
+The public shell stores only this source manifest. The actual Learning Plane source binding and ingestible source bytes belong in the protected `roberta-core` repository under the Phase 6 ownership boundary.
 
-It is deliberately a bounded source capsule rather than a replacement copy of
-the full statute. Exact full-statute mastery may later use ROBERTA's accepted
-immutable local-source ingestion against an exact GovInfo artifact.
+The protected implementation must bind an exact GovInfo artifact before source ingestion. A summary or public-shell Markdown capsule is not allowed to masquerade as the primary-law artifact.
 
 ## Freshness boundary
 
