@@ -77,7 +77,7 @@ def test_web_ui_contains_current_service_surface():
     assert "WHAT ROBERTA STILL NEEDS" in ROBERTA_WEB_UI_HTML
     assert "raw snake_case limitation codes" in ROBERTA_WEB_UI_HTML
     assert "humanServicePrompt" in ROBERTA_WEB_UI_HTML
-    assert "three highest-priority missing items" in ROBERTA_WEB_UI_HTML
+    assert "no more than three prioritized, decision-relevant missing items" in ROBERTA_WEB_UI_HTML
     assert "Do not repeat freshness warnings inside RISK" in ROBERTA_WEB_UI_HTML
     assert "Use EVIDENCE QUALITY instead of a raw evidence-status dump" in ROBERTA_WEB_UI_HTML
     assert "plain-English BOTTOM LINE" in ROBERTA_WEB_UI_HTML
@@ -96,7 +96,7 @@ def test_web_ui_contains_current_service_surface():
     assert "prefers-reduced-motion" in ROBERTA_WEB_UI_HTML
     assert "ResizeObserver" in ROBERTA_WEB_UI_HTML
     assert "document.hidden" in ROBERTA_WEB_UI_HTML
-    assert "ROBERTA Opinion v1" in ROBERTA_WEB_UI_HTML
+    assert "accepted roberta_opinion/v1 presentation contract" in ROBERTA_WEB_UI_HTML
     assert "roberta_opinion/v1" in ROBERTA_WEB_UI_HTML
     assert "My recommendation: <TOKEN>" in ROBERTA_WEB_UI_HTML
     assert "Best evidence against my view" in ROBERTA_WEB_UI_HTML
