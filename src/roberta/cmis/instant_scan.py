@@ -390,6 +390,133 @@ def _validate_current_market_freshness(
 
     return freshness
 
+_HISTORY_COMPLETION_CHECKS = (
+    "native_xnt_identity_verified",
+    "all_available_history_mode",
+    "verified_price_history_available",
+    "exact_xnt_usdcx_pair_identity_bound",
+    "full_supported_pair_lifetime_verified",
+    "continuous_pair_price_coverage_verified",
+    "provider_supported_range_complete_verified",
+)
+
+
+def _validate_history_scan_completion(
+    history: Mapping[str, Any],
+    *,
+    native_xnt: bool,
+) -> Mapping[str, Any]:
+    completion = _mapping(
+        history.get("scan_completion"),
+        field="data.sections.history.scan_completion",
+    )
+    if completion.get("contract_version") != "instant_x1_scan_history_adequacy/v1":
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan v6 history adequacy contract mismatch."
+        )
+    if completion.get("required_history_scope") != "supported_pair_price_lifetime":
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan v6 required history scope mismatch."
+        )
+    if completion.get("execution_authorized") is not False:
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan v6 history adequacy must preserve execution_authorized=false."
+        )
+
+    checks = _mapping(
+        completion.get("checks"),
+        field="data.sections.history.scan_completion.checks",
+    )
+    if set(checks) != set(_HISTORY_COMPLETION_CHECKS):
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan v6 history adequacy checks do not match the accepted set."
+        )
+    if any(not isinstance(checks.get(name), bool) for name in _HISTORY_COMPLETION_CHECKS):
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan v6 history adequacy checks must be boolean."
+        )
+
+    verified = completion.get("history_completion_verified")
+    if not isinstance(verified, bool):
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan v6 history_completion_verified must be boolean."
+        )
+    expected_verified = all(checks.get(name) is True for name in _HISTORY_COMPLETION_CHECKS)
+    if verified is not expected_verified:
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan v6 history completion does not match its checks."
+        )
+    expected_status = "VERIFIED" if verified else "NOT_VERIFIED"
+    if completion.get("status") != expected_status:
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan v6 history completion status mismatch."
+        )
+    if checks.get("native_xnt_identity_verified") is not native_xnt:
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan v6 history adequacy native-XNT identity check mismatch."
+        )
+
+    corroboration = _mapping(
+        completion.get("same_fact_corroboration"),
+        field="data.sections.history.scan_completion.same_fact_corroboration",
+    )
+    if corroboration.get("state") not in {
+        "BOUNDED_PROVIDER_CLOSE_CORROBORATION",
+        "NOT_VERIFIED",
+    }:
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan v6 same-fact corroboration state is invalid."
+        )
+    expected_scope = (
+        "accepted_provider_price_backfill_only"
+        if corroboration.get("state") == "BOUNDED_PROVIDER_CLOSE_CORROBORATION"
+        else None
+    )
+    if corroboration.get("scope") != expected_scope:
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan v6 same-fact corroboration scope mismatch."
+        )
+    if corroboration.get("source_independence_implied") is not False:
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan v6 same-fact corroboration may not imply source independence."
+        )
+
+    for field in (
+        "source_independence_verified",
+        "source_independence_required_for_scan_completion",
+        "full_usd_lifetime_required_for_scan_completion",
+        "global_provider_archive_complete_verified",
+        "global_archive_completeness_required_for_scan_completion",
+        "non_price_metric_lifetimes_verified",
+        "non_price_metric_lifetimes_required_for_scan_completion",
+    ):
+        if completion.get(field) is not False:
+            raise CMISInstantX1ScanContractError(
+                f"CMIS Instant X1 Scan v6 history adequacy {field} must remain false."
+            )
+    if completion.get("stronger_corroboration_still_available") is not True:
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan v6 must preserve stronger corroboration as available."
+        )
+
+    quote_usd = completion.get("historical_quote_usd_equivalence_verified")
+    full_usd = completion.get("full_usd_lifetime_verified")
+    if not isinstance(quote_usd, bool) or not isinstance(full_usd, bool):
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan v6 USD history flags must be boolean."
+        )
+    if quote_usd is not (history.get("historical_quote_usd_equivalence_verified") is True):
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan v6 quote-to-USD history projection mismatch."
+        )
+    if full_usd is not (history.get("full_usd_lifetime_verified") is True):
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan v6 full-USD history projection mismatch."
+        )
+
+    return completion
+
+
 def validate_instant_x1_scan_response(
     envelope: CMISEnvelope,
 ) -> CMISEnvelope:
@@ -753,6 +880,21 @@ def validate_instant_x1_scan_response(
             "CMIS Instant X1 Scan response is missing accepted history limitations: "
             f"{missing_history_limitations!r}."
         )
+
+    scan_completion = _validate_history_scan_completion(
+        history,
+        native_xnt=native_xnt,
+    )
+    if scan_completion.get("history_completion_verified") is True:
+        if (
+            native_xnt is not True
+            or pair_lifetime is not True
+            or pair_continuity is not True
+            or provider_range_complete is not True
+        ):
+            raise CMISInstantX1ScanContractError(
+                "CMIS Instant X1 Scan v6 verified scan history requires accepted native-XNT pair-lifetime evidence."
+            )
 
     return envelope
 
