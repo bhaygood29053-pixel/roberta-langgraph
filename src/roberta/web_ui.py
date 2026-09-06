@@ -417,11 +417,6 @@ function appendRecord(id,role,text){
   var items=loadHistory(),item=items.find(function(x){return x.id===id});if(!item)return;
   item.messages.push({role:role,text:text});saveHistory(items);renderHistory();
 }
-function recentContext(chatId){
-  var item=loadHistory().find(function(x){return x.id===chatId});if(!item||!item.messages||item.messages.length<2)return'';
-  var prior=item.messages.slice(0,-1).slice(-4).map(function(m){return (m.role==='assistant'?'ROBERTA':'User')+': '+String(m.text||'').slice(0,1800)}).join('\n');
-  return prior;
-}
 function openSaved(id){
   var item=loadHistory().find(function(x){return x.id===id});if(!item)return;
   currentChatId=id;renderChat(item.messages,id);enterWorkspace('human');
