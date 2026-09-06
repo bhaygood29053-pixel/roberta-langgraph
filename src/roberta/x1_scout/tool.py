@@ -11,6 +11,9 @@ from roberta.cmis.concentration_warning import normalize_warning_request
 from roberta.cmis.large_trade_discovery import (
     normalize_large_trade_discovery_request,
 )
+from roberta.cmis.regulatory_evidence import (
+    normalize_regulatory_evidence_request,
+)
 from roberta.cmis.contracts import TradeAction
 from roberta.x1_scout.asset_intelligence_workflow import run_x1_asset_intelligence_workflow
 from roberta.x1_scout.asset_overview_workflow import run_x1_asset_overview_workflow
@@ -44,6 +47,7 @@ def build_x1_scout_tool(
             "cross_chain_asset_provenance",
             "trade_price_impact_intelligence",
             "large_trade_discovery",
+            "regulatory_evidence",
         ] | None = None,
         action: TradeAction | None = None,
         amount_usd: float | None = None,
@@ -69,6 +73,11 @@ def build_x1_scout_tool(
         large_trade_asset_mint: str | None = None,
         large_trade_direction: str | None = None,
         large_trade_limit: int | None = None,
+        regulatory_jurisdiction: str | None = None,
+        regulatory_framework: str | None = None,
+        regulatory_asset_id: str | None = None,
+        regulatory_evaluated_at: str | None = None,
+        regulatory_max_evidence_age_seconds: float | None = None,
         compare_asset: str | None = None,
         include_history: bool = False,
     ) -> str:
@@ -162,6 +171,20 @@ def build_x1_scout_tool(
             raise ValueError(
                 "large-trade discovery inputs require "
                 "operation='large_trade_discovery'"
+            )
+        regulatory_inputs = (
+            regulatory_jurisdiction,
+            regulatory_framework,
+            regulatory_asset_id,
+            regulatory_evaluated_at,
+            regulatory_max_evidence_age_seconds,
+        )
+        if operation != "regulatory_evidence" and any(
+            value is not None for value in regulatory_inputs
+        ):
+            raise ValueError(
+                "regulatory selectors/freshness inputs require "
+                "operation='regulatory_evidence'"
             )
         warning_inputs = (
             intelligence_evidence_ids,
@@ -339,6 +362,59 @@ def build_x1_scout_tool(
                 {
                     "operation": "concentration_change_intelligence",
                     "intelligence_evidence_id": evidence_id,
+                }
+            )
+        elif operation == "regulatory_evidence":
+            if include_history or compare_asset is not None:
+                raise ValueError(
+                    "history/compare inputs are not accepted for regulatory evidence"
+                )
+            if action is not None or amount_usd is not None:
+                raise ValueError(
+                    "trade action/amount are not accepted for regulatory evidence"
+                )
+            if (
+                intelligence_evidence_id is not None
+                or intelligence_evidence_ids is not None
+            ):
+                raise ValueError(
+                    "concentration evidence inputs are not accepted for regulatory evidence"
+                )
+            required_regulatory = {
+                "jurisdiction": regulatory_jurisdiction,
+                "framework": regulatory_framework,
+                "asset_id": regulatory_asset_id,
+                "evaluated_at": regulatory_evaluated_at,
+                "max_evidence_age_seconds": regulatory_max_evidence_age_seconds,
+            }
+            missing = [
+                key for key, value in required_regulatory.items()
+                if value is None
+            ]
+            if missing:
+                raise ValueError(
+                    "regulatory_evidence requires explicit jurisdiction, framework, "
+                    "asset id, evaluated_at, and freshness bound: "
+                    + ", ".join(sorted(missing))
+                )
+            normalized = normalize_regulatory_evidence_request(
+                jurisdiction=regulatory_jurisdiction,
+                framework=regulatory_framework,
+                asset_id=regulatory_asset_id,
+                asset_mint=asset,
+                evaluated_at=regulatory_evaluated_at,
+                max_evidence_age_seconds=regulatory_max_evidence_age_seconds,
+            )
+            request.update(
+                {
+                    "operation": "regulatory_evidence",
+                    "regulatory_jurisdiction": normalized["jurisdiction"],
+                    "regulatory_framework": normalized["framework"],
+                    "regulatory_asset_id": normalized["asset_id"],
+                    "regulatory_evaluated_at": normalized["evaluated_at"],
+                    "regulatory_max_evidence_age_seconds": normalized[
+                        "max_evidence_age_seconds"
+                    ],
                 }
             )
         elif operation == "large_trade_discovery":
@@ -620,6 +696,13 @@ def build_x1_scout_tool(
             "use operation='concentration_change_intelligence' only when an exact "
             "CMIS-owned ie_ content id is present in the user request or trusted current "
             "context; copy it into intelligence_evidence_id and never invent one. "
+            "For promoted Regulatory Evidence, use operation='regulatory_evidence' only "
+            "with the exact X1 mint plus explicit jurisdiction, framework, asset id, "
+            "evaluation time, and freshness bound. Preserve primary-law and primary-regulator "
+            "provenance and proposed/final/effective distinctions exactly. Never emit a "
+            "COMPLIANT/NON_COMPLIANT conclusion, legal advice, automatic risk conclusion, "
+            "or execution authority; underlying USDC evidence never erases USDC.X bridge, "
+            "custody, liquidity, or redemption dependencies. "
             "For promoted Large-Trade Discovery, use "
             "operation='large_trade_discovery' when the user asks for the biggest "
             "or top verified buys/sells and the exact X1 asset mint is available. "
