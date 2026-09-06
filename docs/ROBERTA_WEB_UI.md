@@ -1,8 +1,10 @@
-# ROBERTA Website v2
+# ROBERTA Website — Conversation-First UX
 
-ROBERTA now uses a human-first website rather than a technical capability dashboard.
+ROBERTA's website is designed around one idea:
 
-The website is served by the existing ROBERTA bridge process and keeps the existing public API boundary:
+> Ask ROBERTA anything about X1. She will investigate it, explain what she found, and tell you what she thinks.
+
+The website remains a presentation and transport surface for the existing ROBERTA bridge:
 
 ```text
 GET  /
@@ -13,96 +15,185 @@ POST /v1/roberta
 
 No browser -> CMIS or browser -> provider authority path is introduced.
 
-## Public website
+## Homepage
 
-The first page explains ROBERTA in plain English:
+The homepage is intentionally simple.
 
-> Ask about a token, trade, wallet, or market move.
+The first screen contains:
 
-It presents six condensed services that match what ordinary users are most likely to request:
+- ROBERTA's name and **Verified On-Chain Intelligence** identity;
+- a short explanation of what users can ask;
+- one large **Ask ROBERTA anything…** question box;
+- six clickable example questions.
 
-1. **Check a Token** — current token health, market context, liquidity, activity, structure, recent changes, and available evidence.
-2. **Compare Tokens** — side-by-side comparison of two assets.
-3. **Should I Buy or Sell?** — evidence-bounded ROBERTA opinion before a proposed trade.
-4. **Check Risk** — liquidity, concentration, authority, unusual-activity, freshness, evidence, and trade-size concerns.
-5. **Track Wallets & Big Trades** — verified public-wallet activity, important transactions, volume contribution, and pool-level price impact where supported.
-6. **Ask ROBERTA** — free-form natural-language access. ROBERTA selects the appropriate specialist path automatically.
+The examples include token, wallet, comparison, price-move, transaction-trace, and market-discovery questions.
 
-Every service includes human-readable example questions. Selecting an example opens the chat workspace and pre-fills the composer.
+Submitting the first question immediately enters the ROBERTA workspace and sends that question. The user does not have to select a service before asking.
 
-The old technical service catalog, roadmap/status band, filter UI, and public contract-name navigation have been removed from the website rather than merely hidden.
+## What ROBERTA can help with
 
-## Human and agent entry
+A compact explanatory section uses outcome-oriented categories:
 
-The public page provides:
+- **Tokens**
+- **Trades**
+- **Wallets**
+- **Compare**
+- **Market**
+- **Investigations**
 
-- **Enter Human Chat / Open ROBERTA**
-- **Agent / API Access**
+These categories are examples and shortcuts, not routing requirements.
 
-Both lead to the same ROBERTA truth and evidence boundary.
+Technical implementation terms such as CMIS contract names, provider names, raw service names, and internal verification contract identifiers are intentionally absent from normal website navigation.
 
-Human entry opens the chat workspace directly.
+## Workspace
 
-Agent entry opens the chat workspace and the Connection panel, which shows the existing `POST /v1/roberta` endpoint and optional bearer-token configuration.
+After the first question, the public page is replaced by the ROBERTA workspace.
 
-Agent access does not create wallet, transaction, policy, CMIS, provider, or execution authority.
+### Left side
 
-## Chat workspace
-
-After entry, the public marketing page is replaced by a dedicated ROBERTA workspace containing:
+The left sidebar contains:
 
 - **New Chat**
-- **Clear Chat**
-- persistent **Chat History**
-- history grouped into **Today** and **Previous**
-- **Clear Chat History**
-- the six human service shortcuts
-- example prompts
-- always-available free-form chat
-- connection health
-- simple **X1**, **Scout -> CMIS**, and **Read-only** labels
-- answer-label reminders for **Evidence**, **Risk**, **Freshness**, and **Opinion**
-- a return control for **About ROBERTA**
+- **Chat History**, grouped into **Today** and **Previous**
+- **Saved investigations**
+- a collapsible **Services** drawer
+- an **About ROBERTA** return control
 
-Chat history is stored only in browser local storage. Connection settings and the selected workspace mode are stored in browser session storage.
+Chat history is stored in browser local storage under `robertaChatHistoryV3`.
 
-## Response presentation
+Saved investigations are stored separately under `robertaSavedInvestigationsV1`.
 
-The website preserves human-readable formatting for ROBERTA responses, including:
+A saved investigation can be reopened or rechecked with current data. Rechecking asks ROBERTA to compare the current verified result with the earlier conversation and call out meaningful changes.
 
-- recommendation / conviction / evidence-quality lines;
-- section headings;
-- PASS / WARN / BLOCK and related evidence states;
-- signed positive and negative values.
+### Center
 
-Opinion-bearing questions continue to be decided by ROBERTA's accepted opinion layer. The browser does not calculate recommendations or deterministic risk.
+The center always remains the conversation.
 
-## Architecture
+It includes:
 
-The authority path remains:
+- a universal **Ask ROBERTA…** command bar in the workspace header;
+- the conversation;
+- a strong empty state with common investigation starters;
+- the normal follow-up composer.
 
-```text
-User / Agent
-  -> ROBERTA
-    -> Chain Scout
-      -> CMIS
-        -> verified provider/source
-```
+The empty state offers:
 
-The website is a presentation and transport surface only.
+- Analyze a token
+- Check a trade
+- Investigate a wallet
+- Compare two assets
+- Trace a transaction
+- Find unusual activity
 
-ROBERTA may analyze and recommend, but the website does not sign transactions, broadcast transactions, move funds, execute swaps, or authorize autonomous value movement.
+Normal typed follow-ups carry a small amount of recent browser-local conversation context into the next `/v1/roberta` request. The visible user message remains unchanged.
+
+### Right side
+
+The right panel is optional and collapsible.
+
+It contains:
+
+- current-answer summary;
+- evidence / risk / freshness / opinion / confidence labels when those fields can be read from the answer;
+- selected on-chain identifier detail;
+- evidence and explanation follow-up actions;
+- source/chart guidance.
+
+The conversation remains primary. On smaller screens, the evidence panel is hidden rather than squeezing the chat.
+
+## Answer hierarchy
+
+The website recognizes and visually distinguishes human-facing answer fields such as:
+
+- **ROBERTA'S ANSWER**
+- **Why**
+- **What I found**
+- **Verified fact**
+- **ROBERTA's assessment**
+- **Uncertain / Unknown**
+- **Confidence / Conviction**
+- **Evidence quality**
+- **My recommendation**
+- **What would change my mind**
+
+The browser does not calculate any of these conclusions. It only formats text returned by ROBERTA.
+
+## Follow-up investigation actions
+
+Each ROBERTA answer provides lightweight follow-up controls:
+
+- **Evidence**
+- **Explain Simply**
+- **Technical Detail**
+- **Chart**
+- **Compare Token**
+- **Check Wallet**
+- **Save Investigation**
+
+These buttons send a new normal-language request back through ROBERTA.
+
+The **Chart** action explicitly asks for a chart only when verified ordered/time-series data supports one. The website does not invent chart data or fabricate missing sources.
+
+## Clickable on-chain identifiers
+
+Long base58-like on-chain identifiers in ROBERTA answers are rendered as clickable investigation targets.
+
+The website deliberately labels them generically as **on-chain identifiers** rather than guessing whether a particular value is a wallet, transaction, token mint, pool, bridge, or program.
+
+Clicking one opens the detail panel with follow-up options such as:
+
+- investigate this identifier;
+- trace related activity;
+- show recent verified transactions/activity.
+
+ROBERTA remains responsible for determining what the identifier actually represents from evidence.
+
+## Investigation progress
+
+While a request is running, the website shows a high-level progress card:
+
+- Routing your question
+- Checking available verified evidence
+- Reviewing relevant activity and history
+- Preparing a clear answer
+
+These are presentation-level phases only. The UI intentionally does not expose individual RPC calls, providers, internal services, or implementation diagnostics.
+
+## Facts, judgment, uncertainty, and confidence
+
+The website reinforces ROBERTA's evidence model by visually separating:
+
+- verified facts;
+- ROBERTA's assessment;
+- uncertainty;
+- confidence / conviction;
+- evidence quality.
+
+Risk and evidence quality remain different dimensions.
+
+The browser never turns a PASS, high confidence, or strong evidence label into trade permission.
+
+## Execution boundary
+
+ROBERTA may analyze, investigate, compare, and recommend.
+
+The website does not:
+
+- sign transactions;
+- broadcast transactions;
+- move funds;
+- execute swaps;
+- execute bridge transfers;
+- grant autonomous value-movement authority.
 
 ## Keeping the website current
 
-Merged repository capability is the source of truth.
+Merged repository capability remains the website source of truth.
 
-When ROBERTA gains a new accepted backend capability, the preferred website policy is:
+When ROBERTA gains a new accepted backend capability:
 
-1. determine whether it strengthens one of the six existing human services;
-2. update that service's description or examples only when users gain a meaningful new question they can reliably ask;
-3. avoid adding a new public service merely because a new internal contract exists;
-4. keep incomplete, experimental, failing-gate, or unaccepted functionality off the public website;
-5. update this document and the website contract tests with any material product-surface change.
-
-This keeps the website simple while allowing ROBERTA's internal intelligence surface to continue expanding.
+1. prefer strengthening an existing human outcome rather than exposing a new technical service name;
+2. add or change examples only when the new question can be answered reliably;
+3. keep incomplete, experimental, failing-gate, or unaccepted functionality off the public website;
+4. preserve the conversation-first UX even as internal intelligence becomes more sophisticated;
+5. update this document and the website contract tests with any material public-surface change.
