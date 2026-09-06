@@ -417,11 +417,6 @@ function appendRecord(id,role,text){
   var items=loadHistory(),item=items.find(function(x){return x.id===id});if(!item)return;
   item.messages.push({role:role,text:text});saveHistory(items);renderHistory();
 }
-function recentContext(chatId){
-  var item=loadHistory().find(function(x){return x.id===chatId});if(!item||!item.messages||item.messages.length<2)return'';
-  var prior=item.messages.slice(0,-1).slice(-4).map(function(m){return (m.role==='assistant'?'ROBERTA':'User')+': '+String(m.text||'').slice(0,1800)}).join('\n');
-  return prior;
-}
 function openSaved(id){
   var item=loadHistory().find(function(x){return x.id===id});if(!item)return;
   currentChatId=id;renderChat(item.messages,id);enterWorkspace('human');
@@ -500,13 +495,11 @@ async function send(text){
   text=(text||'').trim();if(!text||sending)return;
   enterWorkspace('human');
   var chatId=beginRecord(text);
-  var context=recentContext(chatId);
   addMessage('user',text,chatId);
   $('#composer').value='';$('#commandInput').value='';busy(true);
   var progress=startInvestigation();
-  var requestText=context?('Continue this conversation using the recent context below. Do not repeat it unless useful.\n\n'+context+'\n\nUser follow-up: '+text):text;
   try{
-    var r=await fetch(apiUrl('/v1/roberta'),{method:'POST',headers:apiHeaders(),body:JSON.stringify({message:requestText})});
+    var r=await fetch(apiUrl('/v1/roberta'),{method:'POST',headers:apiHeaders(),body:JSON.stringify({message:text,thread_id:chatId})});
     var d=await r.json().catch(function(){return{}});
     stopInvestigation(progress);
     var reply=!r.ok?((d.error&&d.error.message)||('Request failed ('+r.status+')')):(d.reply||'ROBERTA returned no reply.');

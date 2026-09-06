@@ -79,10 +79,12 @@ def test_web_ui_is_conversation_first_investigation_experience():
     assert "Trace a transaction" in ROBERTA_WEB_UI_HTML
     assert "Find unusual activity" in ROBERTA_WEB_UI_HTML
 
-    # Conversation context is carried into follow-ups without changing the visible user text.
-    assert "function recentContext" in ROBERTA_WEB_UI_HTML
-    assert "Continue this conversation using the recent context below." in ROBERTA_WEB_UI_HTML
-    assert "User follow-up:" in ROBERTA_WEB_UI_HTML
+    # Conversation continuity uses an explicit bridge thread id. The browser does
+    # not paste prior assistant prose or historical market snapshots into a new
+    # user message.
+    assert "thread_id:chatId" in ROBERTA_WEB_UI_HTML
+    assert "Continue this conversation using the recent context below." not in ROBERTA_WEB_UI_HTML
+    assert "User follow-up:" not in ROBERTA_WEB_UI_HTML
 
     # Right side is optional / collapsible and evidence never becomes the primary interface.
     assert 'id="inspector"' in ROBERTA_WEB_UI_HTML

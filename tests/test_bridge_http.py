@@ -16,8 +16,8 @@ class FakeGraph:
         self.messages = messages
         self.calls = []
 
-    def invoke(self, payload):
-        self.calls.append(payload)
+    def invoke(self, payload, config=None):
+        self.calls.append({"payload": payload, "config": config})
         return {"messages": list(self.messages), "status": "complete"}
 
 
@@ -54,9 +54,10 @@ def test_bridge_returns_final_non_tool_ai_message():
     reply = bridge.ask("Is it ok to purchase $500 of AGI?")
 
     assert reply == "I would be cautious about buying $500 of AGI."
-    assert graph.calls[0]["messages"] == [
+    assert graph.calls[0]["payload"]["messages"] == [
         {"role": "user", "content": "Is it ok to purchase $500 of AGI?"}
     ]
+    assert graph.calls[0]["config"] is None
 
 
 def test_bridge_rejects_empty_message():
@@ -130,3 +131,61 @@ def test_http_bridge_honors_bearer_auth_when_configured():
 def test_non_loopback_bind_requires_api_key():
     with pytest.raises(RuntimeError, match="ROBERTA_API_KEY"):
         create_server(host="0.0.0.0", port=0, bridge=RobertaBridge(FakeGraph([])), api_key="")
+
+
+def test_bridge_thread_id_uses_checkpoint_config_without_rewriting_user_message():
+    graph = FakeGraph([AIMessage(content="threaded reply")])
+    bridge = RobertaBridge(graph)
+
+    reply = bridge.ask("What about $50 instead?", thread_id="chat-123")
+
+    assert reply == "threaded reply"
+    assert graph.calls[0]["payload"]["messages"] == [
+        {"role": "user", "content": "What about $50 instead?"}
+    ]
+    assert graph.calls[0]["config"] == {
+        "configurable": {"thread_id": "chat-123"}
+    }
+
+
+def test_http_bridge_accepts_and_echoes_thread_id():
+    graph = FakeGraph([AIMessage(content="continued")])
+    bridge = RobertaBridge(graph)
+    server, thread = _serve_once(bridge)
+    try:
+        url = f"http://127.0.0.1:{server.server_port}/v1/roberta"
+        status, payload = _request(
+            url,
+            body={"message": "Why?", "thread_id": "chat-why"},
+        )
+        assert status == 200
+        assert payload == {
+            "service": "roberta_bridge",
+            "status": "ok",
+            "reply": "continued",
+            "thread_id": "chat-why",
+        }
+        assert graph.calls[0]["config"] == {
+            "configurable": {"thread_id": "chat-why"}
+        }
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
+
+
+@pytest.mark.parametrize("thread_id", ["", "   ", "x" * 129])
+def test_http_bridge_rejects_invalid_thread_id(thread_id):
+    bridge = RobertaBridge(FakeGraph([AIMessage(content="unused")]))
+    server, thread = _serve_once(bridge)
+    try:
+        status, payload = _request(
+            f"http://127.0.0.1:{server.server_port}/v1/roberta",
+            body={"message": "hello", "thread_id": thread_id},
+        )
+        assert status == 400
+        assert payload["error"]["code"] == "invalid_thread_id"
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)

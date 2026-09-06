@@ -32,3 +32,17 @@ Durability across process or machine restarts requires a durable injected checkp
 ## Not durable memory
 
 Thread checkpoints must not be used as a replacement for HXMP/HMPX. Phase 7B will define durable-memory contracts, relevance filtering, write policy, and fresh-data override behavior separately.
+
+
+## ROBERTA #379 bridge adoption
+
+The local ROBERTA HTTP bridge now accepts an optional \`thread_id\` and the
+website supplies its browser chat ID as that value. When present, the bridge
+uses \`invoke_thread(...)\` rather than flattening prior conversation prose into
+the new message.
+
+The default local runtime uses \`InMemorySaver\`, so this is process-lifetime
+thread continuity only. A bridge restart clears checkpoint state even if
+browser-local visible chat history remains.
+
+See \`ROBERTA_CONVERSATIONAL_CONTINUITY_V1.md\`.
