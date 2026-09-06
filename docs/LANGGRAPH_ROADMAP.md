@@ -709,11 +709,11 @@ The next Truth Gate is **Concentration Warning / Early Warning Claim Integrity**
 
 ## Regulatory Intelligence Learning Layer — Issue #363
 
-**ACTIVE FOUNDATION / NOT YET ACCEPTED ON MAIN.** ROBERTA #363 adds a bounded regulatory learning and reasoning layer beginning with the U.S. GENIUS Act.
+**COMPLETE FOUNDATION / ACCEPTED ON MAIN.** ROBERTA #363 / PR #364 and protected `roberta-core` #64 / PR #65 add a bounded regulatory learning and reasoning layer beginning with the U.S. GENIUS Act.
 
 The design preserves three distinct layers:
 
-1. static primary-source knowledge;
+1. static regulatory learning knowledge with primary-law provenance;
 2. current CMIS `regulatory_evidence/v1`;
 3. ROBERTA judgment.
 
@@ -721,4 +721,4 @@ The public branch adds `roberta_regulatory_intelligence/v1`, a primary-law sourc
 
 USDC.X is explicitly treated as a bridged representation whose underlying USDC evidence does not erase bridge/custody/liquidity/redemption risk. `legal_compliance=null`, `legal_advice=false`, and `execution_authorized=false` remain invariant.
 
-Live use remains blocked until CMIS #536 is accepted and separately promoted for Scout reliance.
+CMIS #536 / PR #537 is accepted as a non-promoted foundation. Live use remains blocked until `regulatory_evidence/v1` receives a separate runtime freshness, capability-manifest, and Scout-reliance promotion gate.
