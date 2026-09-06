@@ -7,8 +7,8 @@ Parent issue: #376
 Implementation issues:
 - #377 — Human Response Contract v1
 - `roberta-core#72` — Canonical Human Response Decision Object v1 — **ACCEPTED** via protected PR #74 / merge `cff1be5bf95c29ac163dc9228bfdf4c1056762dd`
-- #378 — Human language renderer + Quick / Normal / Deep Dive response modes — **NEXT EXACT GATE**
-- #379 — Conversational continuity for evidence-bound follow-up decisions
+- #378 — Human language renderer + Quick / Normal / Deep Dive response modes — **ACCEPTED** via public PR #388 / merge `ee52d60079571d349a45299fc524d0ea972412f3` + protected `roberta-core` PR #76 / merge `971c49b675b5dee43d5b6d002a86b61a1a951811`
+- #379 — Conversational continuity for evidence-bound follow-up decisions — **NEXT EXACT GATE**
 - #380 — Human Response Learning Corpus + response-quality evaluator
 - #381 — Website progressive evidence disclosure + human decision labels
 
@@ -311,16 +311,16 @@ The public [ROBERTA Human Response Contract v1](./ROBERTA_HUMAN_RESPONSE_CONTRAC
 The protected `roberta_human_response_decision/v1` object now carries source-bound primary driver, supporting evidence, counterevidence, important unknowns, conviction, evidence profile, evidence-bound change-my-mind conditions, recommendation family, technical-detail availability, and response-depth eligibility without recomputing CMIS facts.
 
 ### Phase C — Human renderer
-#378 — **IMPLEMENTATION ACTIVE**
+#378 — **ACCEPTED** via public PR #388 / merge `ee52d60079571d349a45299fc524d0ea972412f3` and protected runtime PR #76 / merge `971c49b675b5dee43d5b6d002a86b61a1a951811`.
 
-Implement Quick / Normal / Deep Dive human prose over the accepted public `roberta_human_response/v1` contract and protected `roberta_human_response_decision/v1` object. The public deterministic renderer is documented in [ROBERTA_HUMAN_LANGUAGE_RENDERER_V1.md](./ROBERTA_HUMAN_LANGUAGE_RENDERER_V1.md).
-
-
+Quick / Normal / Deep Dive human prose is now deterministic over the accepted public `roberta_human_response/v1` contract and protected `roberta_human_response_decision/v1` object. The renderer is documented in [ROBERTA_HUMAN_LANGUAGE_RENDERER_V1.md](./ROBERTA_HUMAN_LANGUAGE_RENDERER_V1.md). Protected runtime adoption requires the rendered output to remain inside Claim Integrity and falls back to the previous accepted response otherwise.
 
 ### Phase D — Continuity
-#379
+#379 — **NEXT EXACT GATE**
 
 Add evidence-safe multi-turn follow-up handling.
+
+
 
 ### Phase E — Learning and QA
 #380
