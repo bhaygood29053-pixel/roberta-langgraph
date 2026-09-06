@@ -701,7 +701,7 @@ def overview_request(asset: str) -> str:
     return (
         f"On X1, run the first-class Asset Overview for {asset}. "
         "Use X1 Scout with operation='asset_overview'. The workflow must compose "
-        "one validated CMIS instant_x1_scan/v3 product and one validated CMIS "
+        "one validated CMIS instant_x1_scan/v6 product and one validated CMIS "
         "burn_intelligence/v1 product, bound to the same exact verified X1 mint. "
         "Preserve all scan market, tokenomics, holder, history, risk, evidence, "
         "and freshness states exactly as returned. Add bounded 1h/24h/7d/30d Burn "
