@@ -20,6 +20,7 @@ from roberta.cmis.capabilities import (
     require_historical_all_available_capability,
     require_instant_x1_scan_capability,
     require_service_capability,
+    require_trade_price_impact_capability,
     validate_capability_manifest,
 )
 from roberta.cmis.bridge_to_xdex import (
@@ -48,6 +49,12 @@ from roberta.cmis.concentration_warning import (
 from roberta.cmis.instant_scan import (
     CMISInstantX1ScanContractError,
     validate_instant_x1_scan_response,
+)
+from roberta.cmis.trade_price_impact import (
+    SERVICE as TRADE_PRICE_IMPACT_SERVICE,
+    CMISTradePriceImpactContractError,
+    normalize_trade_price_impact_request,
+    validate_trade_price_impact_response,
 )
 from roberta.cmis.contracts import (
     CMISEnvelope,
@@ -877,6 +884,73 @@ class CMISHTTPClient:
                 asset=normalized_asset,
                 status="error",
                 code="invalid_cmis_cross_chain_provenance_response",
+                message=str(exc),
+            )
+
+    def trade_price_impact_intelligence(
+        self,
+        *,
+        chain: str,
+        evidence_id: str,
+        asset_mint: str,
+    ) -> CMISEnvelope:
+        normalized_chain, normalized_asset = self._identity(
+            chain,
+            asset_mint,
+        )
+        try:
+            require_trade_price_impact_capability(
+                self.capabilities(),
+                chain=normalized_chain,
+            )
+            params = normalize_trade_price_impact_request(
+                evidence_id=evidence_id,
+                asset_mint=normalized_asset,
+            )
+        except CMISCapabilityUnavailable as exc:
+            return self._error_envelope(
+                service=TRADE_PRICE_IMPACT_SERVICE,
+                chain=normalized_chain,
+                asset=normalized_asset,
+                status="unavailable",
+                code="cmis_trade_price_impact_unavailable",
+                message=str(exc),
+                warning=True,
+            )
+        except (
+            CMISCapabilityContractError,
+            CMISTradePriceImpactContractError,
+        ) as exc:
+            return self._error_envelope(
+                service=TRADE_PRICE_IMPACT_SERVICE,
+                chain=normalized_chain,
+                asset=normalized_asset,
+                status="unavailable",
+                code="cmis_trade_price_impact_contract_unavailable",
+                message=f"CMIS Trade Price-Impact contract unavailable: {exc}",
+                warning=True,
+            )
+
+        response = self._request(
+            service=TRADE_PRICE_IMPACT_SERVICE,
+            chain=normalized_chain,
+            asset=normalized_asset,
+            params=params,
+        )
+        if response.get("status") != "ok":
+            return response
+        try:
+            return validate_trade_price_impact_response(
+                response,
+                expected_request=params,
+            )
+        except CMISTradePriceImpactContractError as exc:
+            return self._error_envelope(
+                service=TRADE_PRICE_IMPACT_SERVICE,
+                chain=normalized_chain,
+                asset=normalized_asset,
+                status="error",
+                code="invalid_cmis_trade_price_impact_response",
                 message=str(exc),
             )
 
