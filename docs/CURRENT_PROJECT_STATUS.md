@@ -43,6 +43,21 @@ The website on `main` remains the PR #362 human landing + connected chat workspa
 
 This reconciliation adds **Understand Regulations** as the seventh human-friendly service plus a GENIUS Act / USDC.X example. The service routes through ROBERTA and the accepted regulatory intelligence boundary; it does not calculate compliance in the browser and does not bypass X1 Scout → CMIS.
 
+## Active Human Experience program
+
+**ROBERTA #376 — Human Intelligence Experience v1** is now the active plan for making ROBERTA's accepted intelligence sound consistently human without weakening evidence boundaries.
+
+Implementation sequence:
+
+1. #377 Human Response Contract v1;
+2. protected `roberta-core#72` canonical Human Response Decision Object;
+3. #378 human renderer and Quick / Normal / Deep Dive modes;
+4. #379 evidence-safe conversational continuity;
+5. #380 75+ scenario learning corpus and response-quality evaluator;
+6. #381 website progressive evidence disclosure.
+
+This program builds on the already-accepted answer-first/evidence-aware milestones #33, #45, and #51.
+
 ## Next exact product work
 
 1. keep website and Human/Machine ROBERTA claims synchronized with the now-accepted live Large-Trade → #498 handoff;
