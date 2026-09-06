@@ -717,7 +717,7 @@ The design preserves three distinct layers:
 2. current CMIS `regulatory_evidence/v1`;
 3. ROBERTA judgment.
 
-The branch adds `roberta_regulatory_intelligence/v1`, a packaged GENIUS Act source capsule, a primary-source manifest, CMIS-boundary validation, and fail-closed tests. Missing CMIS evidence produces `INSUFFICIENT_EVIDENCE`; it does not permit ROBERTA to guess current issuer, licensing, bridge, custody, or compliance state.
+The public branch adds `roberta_regulatory_intelligence/v1`, a primary-source manifest, CMIS-boundary validation, and fail-closed tests. The actual Learning Plane source binding is owned by protected `roberta-core` under the Phase 6 split. Missing CMIS evidence produces `INSUFFICIENT_EVIDENCE`; it does not permit ROBERTA to guess current issuer, licensing, bridge, custody, or compliance state.
 
 USDC.X is explicitly treated as a bridged representation whose underlying USDC evidence does not erase bridge/custody/liquidity/redemption risk. `legal_compliance=null`, `legal_advice=false`, and `execution_authorized=false` remain invariant.
 
