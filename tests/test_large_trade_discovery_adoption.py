@@ -404,8 +404,8 @@ def test_public_x1_scout_wiring_preserves_cmis_rank_and_exact_selectors():
     assert "large_trade_direction: str | None = None" in tool
     assert "large_trade_limit: int | None = None" in tool
     assert "large-trade discovery asset must equal the exact X1 asset mint" in tool
-    assert '"Preserve "' in tool
-    assert '"CMIS ranking order' in tool
+    assert "Preserve " in tool
+    assert "CMIS ranking order" in tool
     assert "whale/insider/manipulator labels" in tool
 
     assert "large_trade_asset_mint: NotRequired[str]" in state
