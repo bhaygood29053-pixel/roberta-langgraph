@@ -16,8 +16,10 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Optional
 
 from langchain_core.messages import AIMessage
+from langgraph.checkpoint.memory import InMemorySaver
 
 from roberta.private_core import build_graph
+from roberta.runtime import invoke_thread
 from roberta.web_ui import web_ui_bytes
 
 DEFAULT_HOST = "127.0.0.1"
@@ -65,7 +67,14 @@ def build_runtime_graph():
     oracle_model = create_runtime_model()
     x1_planner_model = create_runtime_model()
     tools = get_roberta_tools(x1_planner_model=x1_planner_model)
-    return build_graph(model=oracle_model, tools=tools)
+    # Local bridge continuity uses the already-accepted LangGraph checkpoint
+    # boundary. The in-memory backend intentionally does not survive process
+    # restarts; it is thread state, not durable memory.
+    return build_graph(
+        model=oracle_model,
+        tools=tools,
+        checkpointer=InMemorySaver(),
+    )
 
 
 class RobertaBridge:
@@ -78,16 +87,32 @@ class RobertaBridge:
     def from_runtime(cls) -> "RobertaBridge":
         return cls(build_runtime_graph())
 
-    def ask(self, message: str) -> str:
+    def ask(self, message: str, *, thread_id: str | None = None) -> str:
         user_text = str(message or "").strip()
         if not user_text:
             raise ValueError("A non-empty user message is required.")
+        normalized_thread_id = None
+        if thread_id is not None:
+            if not isinstance(thread_id, str):
+                raise TypeError("thread_id must be a string when provided")
+            normalized_thread_id = thread_id.strip()
+            if not normalized_thread_id:
+                raise ValueError("thread_id must not be empty when provided")
+            if len(normalized_thread_id) > 128:
+                raise ValueError("thread_id must be 128 characters or fewer")
 
-        result = self._graph.invoke(
-            {
-                "messages": [{"role": "user", "content": user_text}],
-                "status": "running",
-            }
+        inputs = {
+            "messages": [{"role": "user", "content": user_text}],
+            "status": "running",
+        }
+        result = (
+            invoke_thread(
+                self._graph,
+                inputs,
+                thread_id=normalized_thread_id,
+            )
+            if normalized_thread_id is not None
+            else self._graph.invoke(inputs)
         )
         if not isinstance(result, Mapping):
             raise RuntimeError("Roberta graph returned an invalid result.")
@@ -261,8 +286,37 @@ def make_handler(bridge: RobertaBridge, *, api_key: str = ""):
                 )
                 return
 
+            thread_id = request.get("thread_id")
+            if thread_id is not None:
+                if not isinstance(thread_id, str) or not thread_id.strip():
+                    self._send_json(
+                        400,
+                        {
+                            "service": "roberta_bridge",
+                            "status": "error",
+                            "error": {
+                                "code": "invalid_thread_id",
+                                "message": "thread_id must be a non-empty string when provided.",
+                            },
+                        },
+                    )
+                    return
+                if len(thread_id.strip()) > 128:
+                    self._send_json(
+                        400,
+                        {
+                            "service": "roberta_bridge",
+                            "status": "error",
+                            "error": {
+                                "code": "invalid_thread_id",
+                                "message": "thread_id must be 128 characters or fewer.",
+                            },
+                        },
+                    )
+                    return
+
             try:
-                reply = bridge.ask(message)
+                reply = bridge.ask(message, thread_id=thread_id)
             except Exception as exc:  # fail closed without leaking prompts/secrets
                 self._send_json(
                     503,
@@ -277,14 +331,14 @@ def make_handler(bridge: RobertaBridge, *, api_key: str = ""):
                 )
                 return
 
-            self._send_json(
-                200,
-                {
-                    "service": "roberta_bridge",
-                    "status": "ok",
-                    "reply": reply,
-                },
-            )
+            response_payload = {
+                "service": "roberta_bridge",
+                "status": "ok",
+                "reply": reply,
+            }
+            if isinstance(thread_id, str) and thread_id.strip():
+                response_payload["thread_id"] = thread_id.strip()
+            self._send_json(200, response_payload)
 
         def log_message(self, format, *args):  # noqa: A003
             super().log_message(format, *args)
