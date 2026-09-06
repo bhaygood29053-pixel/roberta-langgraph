@@ -1,17 +1,18 @@
 # ROBERTA — Verified On-Chain Intelligence Roadmap
 
-## Live checkpoint — 2026-09-05
+## Live checkpoint — 2026-09-06
 
 - **ROBERTA Opinion v1: ACCEPTED.**
-- **ROBERTA Claim Integrity v1: ACCEPTED** for X1 asset intelligence, X1 Compare, standalone History, Burn, Discovery, and WHAT CHANGED?.
-- **Next ROBERTA Truth Gate:** Concentration Warning / Early Warning, then remaining specialist products.
-- **CMIS #410 is COMPLETE.** PR #469 merged as `3681559b728d8493fbc0c5e39227df5c34c23c69`, accepting the bounded 24h XDEX-program activity proof, comparable wSOL.X USD value basis, and final `bridge_to_xdex_utilization/v1` composition.
-- **Cross-chain release gate moved to CMIS #482.** ROBERTA #314 is now blocked only on public-service / Scout-reliance promotion of the already-accepted #410 contract. ROBERTA must not recompute bridge supply, flow, value basis, or utilization locally.
-- **CMIS #461 remains active.** PR #470 is the remaining five-pool X1.Ninja USD-liquidity semantic proof. Its current head is still running the repeated-revaluation live evidence workflow; `liquidity_freshness_verified=false` remains a later #459 gate.
-- **CMIS Web Discovery v1-v5 is accepted internally through PR #481.** Issue #483 is the active v6 XDEX network-gap registry. It classifies covered APIs, direct read-only gaps, execution-adjacent exclusions, and UI-only candidates while keeping browser capture unnecessary for the currently known gap set. Discovery remains `DISCOVERED`, non-promoted, and outside ROBERTA fact authority.
+- **Claim Integrity: ACCEPTED through Concentration Warning / Early Warning.** Protected `roberta-core` PR #67 completes the current Truth Gate sequence after Asset Intelligence, Compare, History, Burn, Discovery, and WHAT CHANGED?.
+- **Instant X1 Scan v6: ACCEPTED end to end.** Public PR #358 and protected `roberta-core` PR #57 adopt the current CMIS scan/history-adequacy surface.
+- **Verified wallet trade + pool price-impact intelligence: ACCEPTED.** Public PR #359 plus protected `roberta-core` PR #61 preserve exact CMIS #498 facts without widening pool-local effects into whole-market causality.
+- **Large-Trade Discovery: ACCEPTED.** Public PR #361 plus protected `roberta-core` PR #63 adopt CMIS 1.25 provider-scoped `large_trade_discovery/v1`.
+- **Website: CURRENT.** PR #362 merged the human landing page + connected chat workspace with chat history, clear-chat controls, simple services/examples, and read-only Scout → CMIS labels.
+- **GENIUS Act learning layer: ACCEPTED.** Public PR #364 plus protected `roberta-core` PR #65 add the bounded regulatory learning source/reasoning foundation.
+- **Live Regulatory Intelligence: ACCEPTED end to end.** Public PR #368 adopts CMIS 1.26 `regulatory_evidence/v1` through X1 Scout; protected `roberta-core` PR #69 adds the canonical Human/Machine Decision Object and rendering boundary; public PR #369 reconciles the completed adoption. No legal advice, COMPLIANT/NON_COMPLIANT label, automatic risk conclusion, or execution authority is granted.
+- **Upstream live Large-Trade → #498 handoff remains separately gated.** `cmis-core` PR #41 has green deterministic CI, but its dedicated live workflow remains the exact acceptance condition and must pass before that live handoff is called proven.
 - Controlled Execution remains locked: `execution_authorized=false`.
-
-Last reconciled: 2026-09-05 (America/New_York)
+Last reconciled: 2026-09-06 (America/New_York)
 
 Status source: accepted code and contracts on `main`. Open PRs are not current truth unless explicitly identified as pending.
 
@@ -43,7 +44,7 @@ Accepted on `main`:
 - X1 Scout decision-production readiness under the accepted CMIS boundary;
 - Solana Scout read-only readiness for its accepted surface;
 - X1 Scout adoption of CMIS `concentration_change_intelligence/v1`;
-- X1 Scout adoption of accepted CMIS capability through `1.18.0`, including all-available history, exact-mint X1 identity, bounded verified-provider historical price backfill, Instant X1 Scan v3, Burn Intelligence, Discovery Intelligence, field-scoped current-market freshness, and pull-only Concentration Warning Intelligence;
+- X1 Scout adoption of the accepted current CMIS surface through 1.26, including Instant X1 Scan v6, history/identity, Burn, Discovery, field-scoped freshness, concentration warning, cross-chain provenance/Bridge-to-XDEX, trade price-impact intelligence, Large-Trade Discovery, and freshness-aware Regulatory Evidence;
 - Learning System Phases 1-10;
 - fail-closed `verified_learned_knowledge` classification with no general operational-trust promotion wrapper;
 - source-specific Blockchain Reasoning Pyramid architecture and source-mastery ledger;
@@ -685,69 +686,20 @@ rerun Scan, Burn, or Discovery. It prevents ROBERTA from:
 - turning WHAT CHANGED? into deterministic CMIS risk or a CMIS trade
   recommendation.
 
-### Planned product — Verified Wallet Trade + Pool Price Impact
+### Verified Wallet Trade + Pool Price Impact
 
-**QUEUED.** Public ROBERTA issue #354 depends on CMIS #498 and will adopt a
-read-only `trade_price_impact_intelligence/v1` capability through X1 Scout.
+**ACCEPTED.** Public ROBERTA PR #359 and protected `roberta-core` PR #61 adopt CMIS `trade_price_impact_intelligence/v1` through X1 Scout.
 
-The intended Human ROBERTA answer may identify the exact public wallet,
-transaction signature, transaction time, trade size, verified measured-window
-volume contribution, pre-trade pool spot price, average execution price,
-post-trade pool spot price, and next verified trade execution price.
+Human and Machine ROBERTA may preserve exact public wallet/transaction/time, trade size, verified measured-window volume contribution, pre-trade pool spot price, average execution price, post-trade pool spot price, and next verified trade price when CMIS supplies those facts. Pool-local state transition evidence must not be widened into whole-market causality, real-world wallet identity, whale/insider/manipulator labels, intent, coordination, automatic risk, or a recommendation without separate evidence.
 
-When CMIS proves the exact AMM reserve/state transition, ROBERTA may say that the
-swap moved **that identified pool's** spot price from X to Y. She must not widen
-that into whole-market causality, wallet ownership/identity, whale/insider/
-manipulator labels, intent, coordination, automatic risk, or a trade
-recommendation without separately accepted evidence.
+### Large-Trade Discovery
 
-ROBERTA will not recompute reserves, deltas, price impact, or volume contribution
-locally and will not call providers directly. `execution_authorized=false`.
+**ACCEPTED.** Public ROBERTA PR #361 and protected `roberta-core` PR #63 adopt CMIS 1.25 `large_trade_discovery/v1` as a provider-scoped read-only ranking/discovery surface. Scope and source limitations remain explicit.
 
-The next Truth Gate is **Concentration Warning / Early Warning Claim Integrity**.
-`execution_authorized=false`.
+The separate protected CMIS live handoff proof under `cmis-core` PR #41 remains pending and must not be represented as accepted until its exact live workflow passes.
 
-## Regulatory Intelligence Learning Layer — Issue #363
+### Regulatory Intelligence
 
-**COMPLETE FOUNDATION / ACCEPTED ON MAIN.** ROBERTA #363 / PR #364 and protected `roberta-core` #64 / PR #65 add a bounded regulatory learning and reasoning layer beginning with the U.S. GENIUS Act.
+**ACCEPTED.** Public ROBERTA PR #368, protected `roberta-core` PR #69, and reconciliation PR #369 complete end-to-end CMIS 1.26 regulatory evidence adoption for the initial U.S. GENIUS Act / X1 USDC.X proof case.
 
-The design preserves three distinct layers:
-
-1. static regulatory learning knowledge with primary-law provenance;
-2. current CMIS `regulatory_evidence/v1`;
-3. ROBERTA judgment.
-
-The public branch adds `roberta_regulatory_intelligence/v1`, a primary-law source manifest, CMIS-boundary validation, and fail-closed tests. Protected `roberta-core` owns the actual Learning Plane source: v1 uses a digest-bound secondary regulatory primer, while exact full-statute ingestion remains a separate future source-integrity gate. Missing CMIS evidence produces `INSUFFICIENT_EVIDENCE`; it does not permit ROBERTA to guess current issuer, licensing, bridge, custody, or compliance state.
-
-USDC.X is explicitly treated as a bridged representation whose underlying USDC evidence does not erase bridge/custody/liquidity/redemption risk. `legal_compliance=null`, `legal_advice=false`, and `execution_authorized=false` remain invariant.
-
-CMIS #536 / PR #537 established the foundation; CMIS #539 / PR #540 plus protected `cmis-core` #42 / PR #43 completed the CMIS 1.26 runtime freshness/capability/Scout-reliance promotion. ROBERTA #367 / PR #368 plus protected `roberta-core` #68 / PR #69 completed downstream X1 Scout and Canonical Human/Machine ROBERTA adoption.
-
-## Regulatory Intelligence Runtime Adoption — Issue #367
-
-**COMPLETE.** ROBERTA #367 / PR #368 and protected `roberta-core` #68 / PR #69 adopt the accepted CMIS 1.26 `regulatory_evidence/v1` service through X1 Scout and the Canonical Human/Machine Decision Object.
-
-Initial scope is explicit-request-only and X1-only:
-
-- U.S. GENIUS Act;
-- exact X1 mint identity;
-- first proof case: USDC.X mint `B69chRzqzDCmdB5WYB8NRu5Yv5ZA95ABiZcdzCgGm9Tq`;
-- primary-law and primary-regulator provenance preserved;
-- current proposed/final/effective state preserved exactly;
-- current-state freshness preserved from CMIS;
-- existing `roberta_regulatory_intelligence/v1` reasoning consumes the validated projection.
-
-Accepted runtime state:
-
-- X1 Scout requires CMIS >=1.26.0 and exact `regulatory_evidence/v1` promotion metadata;
-- selector/freshness-only dispatch is explicit-request-only;
-- exact X1 mint, primary-law and primary-regulator provenance, and rulemaking freshness are preserved;
-- `x1_regulatory_intelligence/v1` feeds the existing `roberta_regulatory_intelligence/v1` reasoning layer;
-- Human and Machine ROBERTA consume one canonical Decision Object;
-- proposed/final/effective status cannot be widened;
-- `legal_compliance=null`;
-- `legal_advice=false`;
-- `automatic_risk_conclusion_authorized=false`;
-- `execution_authorized=false`.
-
-Compliance conclusions, legal advice, automatic risk, and execution remain unauthorized.
+Human rendering separates what the law/framework says, what CMIS currently verified, ROBERTA's bounded judgment, and what remains unknown. `legal_compliance=null`, `legal_advice=false`, automatic regulatory risk conclusions remain unauthorized, and `execution_authorized=false`.
