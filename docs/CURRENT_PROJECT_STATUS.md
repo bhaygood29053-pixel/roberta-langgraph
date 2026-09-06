@@ -33,9 +33,9 @@ ROBERTA may explain what the verified framework/evidence says and what remains u
 
 Trade price-impact and provider-scoped Large-Trade Discovery are accepted through ROBERTA.
 
-The separate upstream `cmis-core` PR #41 live Large-Trade → #498 handoff proof remains open. Its deterministic CI is green, but the dedicated live workflow is still the exact acceptance gate.
+The upstream `cmis-core` PR #41 live Large-Trade → #498 handoff proof is now **ACCEPTED**. Exact live run #7 passed at protected head `9ff63bcac15d9bd7f46868489f444508ed126c06`; PR #41 merged as `f659f53f3d565bd5886dfae3e1a12370100cddc9` and Issue #40 closed completed.
 
-ROBERTA must not describe that live handoff as proven until the live run passes.
+ROBERTA may describe the bounded handoff as proven while preserving its provider-scoped, pool-local, public-wallet-only, non-causal, read-only evidence boundaries.
 
 ## Website
 
@@ -45,8 +45,8 @@ This reconciliation adds **Understand Regulations** as the seventh human-friendl
 
 ## Next exact product work
 
-1. finish the exact live `cmis-core` #41 handoff proof before promoting that live path;
-2. keep website service claims synchronized only with accepted end-to-end capability;
+1. keep website and Human/Machine ROBERTA claims synchronized with the now-accepted live Large-Trade → #498 handoff;
+2. continue the open CMIS provider-gap track, including bounded historical transaction fallback qualification where separately accepted;
 3. continue remaining specialist/product roadmap work without changing the read-only execution boundary.
 
 `execution_authorized=false`
