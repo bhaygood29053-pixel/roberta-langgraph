@@ -793,6 +793,9 @@ def _summarize_cmis_result(
         "warnings": list(result["warnings"]),
         "errors": list(result["errors"]),
     }
+    response_freshness = result.get("freshness")
+    if isinstance(response_freshness, Mapping):
+        investigation["freshness"] = dict(response_freshness)
     if historical_coverage_presentation is not None:
         investigation["historical_coverage_presentation"] = (
             historical_coverage_presentation
@@ -921,6 +924,9 @@ def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
         ],
         "errors": list(primary["errors"]),
     }
+    primary_freshness = primary.get("freshness")
+    if isinstance(primary_freshness, Mapping):
+        report["freshness"] = dict(primary_freshness)
     historical_coverage_presentation = primary.get(
         "historical_coverage_presentation"
     )

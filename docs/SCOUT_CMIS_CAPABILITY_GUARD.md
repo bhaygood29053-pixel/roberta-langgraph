@@ -35,6 +35,12 @@ The response must satisfy:
 
 A successfully validated manifest is cached for that client instance. A Scout performing several CMIS operations therefore does not perform a capability GET before every POST.
 
+## CMIS 1.27 universal response freshness
+
+When the capability contract is CMIS `>=1.27.0`, the manifest must advertise `response_freshness.contract_version=cmis_response_freshness/v1` and preserve three invariants: freshness is required on every public response, observation/collection time alone never proves provider-fact freshness, and missing service-specific freshness fails closed.
+
+After that handshake, every service POST response must include a valid top-level `freshness` object. X1 Scout preserves that object in each investigation and on the primary report. `VERIFIED`, `PARTIAL`, `NOT_VERIFIED`, `UNKNOWN`, `STALE`, and `NOT_APPLICABLE` are all legitimate states; omission is not. ROBERTA does not make a second freshness request and does not infer freshness from `observed_at`.
+
 ## Fail-closed rules
 
 The client does not guess capability support.

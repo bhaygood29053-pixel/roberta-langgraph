@@ -169,9 +169,13 @@ HUMAN_ROBERTA_PRESENTATION_POLICY = (
     "execution boundary internally, but translate them into plain English. "
     "Round DISPLAY values to useful human precision without changing or "
     "recalculating the underlying facts: use readable currency separators, compact "
-    "large numbers, and sensible price precision. Group related freshness gaps into "
-    "one LIVE MARKET FRESHNESS statement and name the affected fields instead of "
-    "repeating one warning per field. Replace KEY LIMITATIONS with WHAT ROBERTA "
+    "large numbers, and sensible price precision. For every token-facing X1 answer, "
+    "when X1 Scout supplies top-level CMIS response freshness, show one explicit "
+    "FRESHNESS status even when it is VERIFIED, PARTIAL, NOT_VERIFIED, UNKNOWN, "
+    "STALE, or NOT_APPLICABLE; never omit a supplied freshness result. Group related "
+    "field freshness gaps into one LIVE MARKET FRESHNESS statement and name the "
+    "affected fields instead of repeating one warning per field. Replace KEY "
+    "LIMITATIONS with WHAT ROBERTA STILL NEEDS. "
     "STILL NEEDS. Show no more than three prioritized, decision-relevant items there. "
     "Do not expose raw snake_case limitation codes, internal contract invariants, "
     "implementation diagnostics, or duplicate caveats in the normal human answer. "
@@ -630,6 +634,17 @@ def automatic_status_summary(content: object) -> str | None:
                 if meaning:
                     block.append(f"    Evidence need: {meaning}")
 
+        response_freshness = _as_mapping(investigation.get("freshness"))
+        response_freshness_state = (
+            _text(response_freshness.get("state")) or ""
+        ).upper()
+        if response_freshness_state:
+            block.append(f"  Freshness: [{response_freshness_state}]")
+            if response_freshness_state in {"NOT_VERIFIED", "UNKNOWN", "STALE"}:
+                reason = _text(response_freshness.get("reason"))
+                if reason and "_" not in reason:
+                    block.append(f"    Meaning: {reason}")
+
         evidence = _as_mapping(investigation.get("evidence_context"))
         proof_strength = (_text(evidence.get("proof_strength")) or "").upper()
         if proof_strength:
@@ -648,19 +663,20 @@ def automatic_status_summary(content: object) -> str | None:
                     block.append(f"    Meaning: {meaning}")
 
         if evidence:
-            freshness = evidence.get("freshness_verified")
-            if freshness is True:
-                block.append("  Freshness: [VERIFIED]")
-            elif freshness is False:
-                block.append("  Freshness: [NOT VERIFIED]")
-                block.append(
-                    "    Meaning: The evidence freshness requirement was not proven."
-                )
-            elif freshness is None:
-                block.append("  Freshness: [UNKNOWN]")
-                block.append(
-                    "    Meaning: There is not enough metadata to determine freshness."
-                )
+            if not response_freshness:
+                freshness = evidence.get("freshness_verified")
+                if freshness is True:
+                    block.append("  Freshness: [VERIFIED]")
+                elif freshness is False:
+                    block.append("  Freshness: [NOT VERIFIED]")
+                    block.append(
+                        "    Meaning: The evidence freshness requirement was not proven."
+                    )
+                elif freshness is None:
+                    block.append("  Freshness: [UNKNOWN]")
+                    block.append(
+                        "    Meaning: There is not enough metadata to determine freshness."
+                    )
 
             unknown_categories = [
                 _warning_text(item)

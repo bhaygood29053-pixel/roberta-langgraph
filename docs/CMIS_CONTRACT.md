@@ -38,7 +38,7 @@ Accepted milestones include:
 
 Roberta Phase 11 — Controlled Execution remains **locked / not started**.
 
-CMIS currently advertises capability contract **1.18.0**. Roberta keeps a global existing-service minimum of **1.8.0**; the promoted concentration intelligence operation keeps its service-specific minimum of **1.9.0**, legacy X1 all-available historical modes remain compatible from **1.10.0**, normalized exact-mint X1 identity requires **1.11.0**, verified provider-price backfill semantics require the **1.12.0** historical limitation contract, Burn Intelligence is accepted from **1.15.0**, Discovery Intelligence from **1.16.0**, field-scoped current-market freshness from **1.17.0**, and pull-only Concentration Warning Intelligence from **1.18.0**.
+CMIS currently advertises capability contract **1.27.0**. Roberta keeps a global existing-service minimum of **1.8.0** and service-specific gates for later semantics: concentration intelligence from **1.9.0**, all-available history from **1.10.0**, exact-mint identity from **1.11.0**, provider price backfill from **1.12.0**, Burn from **1.15.0**, Discovery from **1.16.0**, field-scoped market freshness from **1.17.0**, concentration warning from **1.18.0**, cross-chain/Bridge-to-XDEX through **1.20.0**, Instant X1 Scan v6 from **1.23.0**, trade price-impact from **1.24.0**, Large-Trade Discovery from **1.25.0**, Regulatory Evidence from **1.26.0**, and universal top-level `cmis_response_freshness/v1` from **1.27.0**.
 
 ## September 5 Warp / bridge checkpoint
 
@@ -79,6 +79,10 @@ The shared CMIS contract includes, where the live chain capability manifest perm
 - `concentration_change_intelligence` — X1-only bounded promoted service under CMIS 1.9.0
 
 A CMIS runtime capability does not become an autonomous Scout action merely because the service exists. Every operation names its target chain explicitly. No unsupported-chain fallback is permitted.
+
+### Universal response freshness — CMIS 1.27
+
+Every public CMIS response now carries top-level `cmis_response_freshness/v1`. The freshness state may be `VERIFIED`, `PARTIAL`, `NOT_VERIFIED`, `UNKNOWN`, `STALE`, or `NOT_APPLICABLE`. The presence of the field is mandatory after a 1.27 handshake; a verified result is not. ROBERTA/X1 Scout preserve the returned state without recomputation, and `observed_at` alone never upgrades a fact to fresh.
 
 ## Capability handshake
 

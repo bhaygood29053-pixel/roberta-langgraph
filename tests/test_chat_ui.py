@@ -225,6 +225,40 @@ def test_automatic_status_summary_explains_field_freshness_warnings() -> None:
     assert "transactions_24h_freshness_unverified" not in summary
 
 
+def test_automatic_status_summary_prefers_universal_cmis_response_freshness() -> None:
+    report = {
+        "investigations": [
+            {
+                "operation": "market_report",
+                "cmis_status": "ok",
+                "risk_help": None,
+                "freshness": {
+                    "contract_version": "cmis_response_freshness/v1",
+                    "scope": "market_report.response",
+                    "state": "NOT_VERIFIED",
+                    "freshness_verified": False,
+                    "observed_at": "2026-09-06T22:00:00Z",
+                    "details": {
+                        "observation_freshness_verified": True,
+                        "provider_fact_time_verified": False,
+                    },
+                },
+                "evidence_context": {
+                    "freshness_verified": True,
+                },
+                "warnings": [],
+                "errors": [],
+            }
+        ]
+    }
+
+    summary = automatic_status_summary(report)
+
+    assert summary is not None
+    assert "Freshness: [NOT_VERIFIED]" in summary
+    assert "Freshness: [VERIFIED]" not in summary
+
+
 def test_current_market_menu_flows_use_scan_freshness_contract() -> None:
     liquidity = liquidity_request("AGI")
     activity = activity_request("AGI")
@@ -397,7 +431,9 @@ def test_single_asset_human_output_replaces_raw_key_limitations_heading() -> Non
     assert "WHAT ROBERTA STILL NEEDS" in request
     assert "KEY LIMITATIONS for missing" not in request
     assert "Do not expose raw snake_case limitation codes" in request
-    assert "Group related freshness gaps into one LIVE MARKET FRESHNESS statement" in request
+    assert "For every token-facing X1 answer" in request
+    assert "never omit a supplied freshness result" in request
+    assert "Group related field freshness gaps into one LIVE MARKET FRESHNESS statement" in request
 
 
 def test_burn_request_uses_first_class_cmis_service() -> None:

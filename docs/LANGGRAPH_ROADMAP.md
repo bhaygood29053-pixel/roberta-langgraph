@@ -59,7 +59,7 @@ Accepted on `main`:
 - X1 Scout decision-production readiness under the accepted CMIS boundary;
 - Solana Scout read-only readiness for its accepted surface;
 - X1 Scout adoption of CMIS `concentration_change_intelligence/v1`;
-- X1 Scout adoption of the accepted current CMIS surface through 1.26, including Instant X1 Scan v6, history/identity, Burn, Discovery, field-scoped freshness, concentration warning, cross-chain provenance/Bridge-to-XDEX, trade price-impact intelligence, Large-Trade Discovery, and freshness-aware Regulatory Evidence;
+- X1 Scout adoption of the accepted current CMIS surface through 1.27, including Instant X1 Scan v6, history/identity, Burn, Discovery, field-scoped freshness, concentration warning, cross-chain provenance/Bridge-to-XDEX, trade price-impact intelligence, Large-Trade Discovery, freshness-aware Regulatory Evidence, and universal `cmis_response_freshness/v1` on every public CMIS response;
 - Learning System Phases 1-10;
 - fail-closed `verified_learned_knowledge` classification with no general operational-trust promotion wrapper;
 - source-specific Blockchain Reasoning Pyramid architecture and source-mastery ledger;
