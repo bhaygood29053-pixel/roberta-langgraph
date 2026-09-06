@@ -107,6 +107,36 @@ TRADE_PRICE_IMPACT_REQUIRED_LIMITATIONS = (
     "no_execution_authorization",
     "x1_only_initial_scope",
 )
+LARGE_TRADE_DISCOVERY_MIN_CMIS_CONTRACT_VERSION = "1.25.0"
+LARGE_TRADE_DISCOVERY_CONTRACT_VERSION = "large_trade_discovery/v1"
+LARGE_TRADE_DISCOVERY_REQUIRED_REQUIREMENTS = (
+    "exact_x1_asset_mint_identity",
+    "verified_provider_scoped_current_market_pool_set",
+    "aligned_complete_exact_pool_24h_windows",
+    "all_exact_pool_swaps_classified",
+    "verified_historical_usd_value_for_every_ranked_swap",
+    "deterministic_buy_sell_from_exact_vault_delta_signs",
+    "deterministic_verified_usd_notional_ranking",
+    "optional_verified_public_wallet_attribution",
+    "optional_trusted_trade_price_impact_evidence_handoff",
+)
+LARGE_TRADE_DISCOVERY_REQUIRED_LIMITATIONS = (
+    "provider_scoped_pool_universe_is_not_every_x1_dex",
+    "global_xdex_pool_universe_not_verified",
+    "global_x1_dex_trade_ranking_not_authorized",
+    "wallet_address_is_not_real_world_identity",
+    "large_wallet_is_not_whale_insider_owner_or_manipulator",
+    "missing_wallet_attribution_remains_unknown",
+    "intent_not_inferred",
+    "coordinated_wallet_activity_not_inferred",
+    "one_ranked_trade_is_not_whole_market_price_impact",
+    "volume_contribution_is_not_volume_causality",
+    "source_independence_unverified_unless_separately_proven",
+    "no_automatic_risk_conclusion",
+    "no_trade_recommendation",
+    "no_execution_authorization",
+    "x1_only_initial_scope",
+)
 CONCENTRATION_WARNING_REQUIRED_REQUIREMENTS = (
     "x1_only",
     "exact_x1_asset_id",
@@ -729,6 +759,25 @@ def validate_capability_manifest(value: Any) -> CMISCapabilities:
                             f"CMIS x1/trade_price_impact_intelligence {field} must be boolean."
                         )
                     normalized_capability[field] = raw_flag
+            if chain == "x1" and service == "large_trade_discovery":
+                contract = capability_raw.get("service_contract_version")
+                if not isinstance(contract, str) or not contract.strip():
+                    raise CMISCapabilityContractError(
+                        "CMIS x1/large_trade_discovery service_contract_version must be text."
+                    )
+                normalized_capability["service_contract_version"] = contract
+                for field in (
+                    "read_only",
+                    "public_service_promoted",
+                    "scout_reliance_promoted",
+                    "execution_authorized",
+                ):
+                    raw_flag = capability_raw.get(field)
+                    if not isinstance(raw_flag, bool):
+                        raise CMISCapabilityContractError(
+                            f"CMIS x1/large_trade_discovery {field} must be boolean."
+                        )
+                    normalized_capability[field] = raw_flag
             if chain == "x1" and service == "asset_lookup":
                 identity_contract = capability_raw.get("identity_contract_version")
                 if identity_contract is not None:
@@ -1323,6 +1372,76 @@ def require_trade_price_impact_capability(
     return capability
 
 
+def require_large_trade_discovery_capability(
+    manifest: Mapping[str, Any],
+    *,
+    chain: str = "x1",
+) -> CMISServiceCapability:
+    """Require accepted CMIS 1.25 Large-Trade Discovery promotion."""
+
+    normalized_chain = str(chain or "").strip().lower()
+    if normalized_chain != "x1":
+        raise CMISCapabilityUnavailable(
+            chain=normalized_chain,
+            service="large_trade_discovery",
+            state=None,
+            limitations=["large_trade_discovery_x1_only"],
+        )
+    version = manifest.get("contract_version")
+    if _semver(version) < _semver(
+        LARGE_TRADE_DISCOVERY_MIN_CMIS_CONTRACT_VERSION
+    ):
+        raise CMISCapabilityContractError(
+            "CMIS Large-Trade Discovery requires contract "
+            f">={LARGE_TRADE_DISCOVERY_MIN_CMIS_CONTRACT_VERSION}, got {version!r}."
+        )
+    capability = require_service_capability(
+        manifest,
+        chain=normalized_chain,
+        service="large_trade_discovery",
+    )
+    if capability.get("state") != "bounded":
+        raise CMISCapabilityContractError(
+            "CMIS x1/large_trade_discovery state must remain bounded."
+        )
+    if capability.get(
+        "service_contract_version"
+    ) != LARGE_TRADE_DISCOVERY_CONTRACT_VERSION:
+        raise CMISCapabilityContractError(
+            "CMIS x1/large_trade_discovery service contract mismatch."
+        )
+    for field, expected in (
+        ("read_only", True),
+        ("public_service_promoted", True),
+        ("scout_reliance_promoted", True),
+        ("execution_authorized", False),
+    ):
+        if capability.get(field) is not expected:
+            raise CMISCapabilityContractError(
+                f"CMIS x1/large_trade_discovery {field} must be "
+                f"{str(expected).lower()}."
+            )
+    missing_requirements = sorted(
+        set(LARGE_TRADE_DISCOVERY_REQUIRED_REQUIREMENTS)
+        - set(capability["requirements"])
+    )
+    if missing_requirements:
+        raise CMISCapabilityContractError(
+            "CMIS x1/large_trade_discovery is missing accepted "
+            f"requirements: {missing_requirements!r}."
+        )
+    missing_limitations = sorted(
+        set(LARGE_TRADE_DISCOVERY_REQUIRED_LIMITATIONS)
+        - set(capability["limitations"])
+    )
+    if missing_limitations:
+        raise CMISCapabilityContractError(
+            "CMIS x1/large_trade_discovery is missing accepted "
+            f"limitations: {missing_limitations!r}."
+        )
+    return capability
+
+
 def require_cross_chain_provenance_capability(
     manifest: Mapping[str, Any],
     *,
@@ -1495,8 +1614,13 @@ __all__ = [
     "TRADE_PRICE_IMPACT_MIN_CMIS_CONTRACT_VERSION",
     "TRADE_PRICE_IMPACT_REQUIRED_LIMITATIONS",
     "TRADE_PRICE_IMPACT_REQUIRED_REQUIREMENTS",
+    "LARGE_TRADE_DISCOVERY_CONTRACT_VERSION",
+    "LARGE_TRADE_DISCOVERY_MIN_CMIS_CONTRACT_VERSION",
+    "LARGE_TRADE_DISCOVERY_REQUIRED_LIMITATIONS",
+    "LARGE_TRADE_DISCOVERY_REQUIRED_REQUIREMENTS",
     "require_bridge_to_xdex_utilization_capability",
     "require_trade_price_impact_capability",
+    "require_large_trade_discovery_capability",
     "require_burn_intelligence_capability",
     "require_concentration_warning_capability",
     "require_cross_chain_provenance_capability",
