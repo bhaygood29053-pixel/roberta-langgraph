@@ -12,14 +12,14 @@ from roberta.cmis.instant_scan import validate_instant_x1_scan_response
 from roberta.cmis.mock import MockCMISClient
 
 
-def test_cmis_117_scan_v3_capability_and_payload_are_accepted():
+def test_cmis_123_scan_v6_capability_and_payload_are_accepted():
     client = MockCMISClient()
     manifest = client.capabilities()
 
     capability = require_instant_x1_scan_capability(manifest)
-    assert INSTANT_X1_SCAN_MIN_CMIS_CONTRACT_VERSION == "1.17.0"
-    assert INSTANT_X1_SCAN_CONTRACT_VERSION == "instant_x1_scan/v3"
-    assert capability["service_contract_version"] == "instant_x1_scan/v3"
+    assert INSTANT_X1_SCAN_MIN_CMIS_CONTRACT_VERSION == "1.23.0"
+    assert INSTANT_X1_SCAN_CONTRACT_VERSION == "instant_x1_scan/v6"
+    assert capability["service_contract_version"] == "instant_x1_scan/v6"
 
     response = validate_instant_x1_scan_response(
         client.instant_x1_scan(chain="x1", asset="XNT")
@@ -32,9 +32,10 @@ def test_cmis_117_scan_v3_capability_and_payload_are_accepted():
     assert history["continuous_coverage_verified"] is False
     market = response["data"]["sections"]["market"]
     freshness = market["freshness"]
-    assert freshness["contract_version"] == "x1_current_market_freshness/v1"
+    assert freshness["contract_version"] == "x1_current_market_freshness/v3"
     assert freshness["freshness_state"] == "NOT_VERIFIED"
     assert freshness["verified_field_count"] == 0
+    assert freshness["total_field_count"] == 6
     assert market["price_freshness_verified"] is False
     assert market["liquidity_freshness_verified"] is False
     assert market["volume_24h_freshness_verified"] is False
@@ -42,16 +43,16 @@ def test_cmis_117_scan_v3_capability_and_payload_are_accepted():
     assert response["data"]["execution_authorized"] is False
 
 
-def test_scan_v3_capability_fails_closed_on_cmis_113():
+def test_scan_v6_capability_fails_closed_before_cmis_123():
     manifest = MockCMISClient().capabilities()
     stale = copy.deepcopy(manifest)
-    stale["contract_version"] = "1.16.0"
+    stale["contract_version"] = "1.22.0"
 
     with pytest.raises(CMISCapabilityContractError):
         require_instant_x1_scan_capability(stale)
 
 
-def test_scan_v3_rejects_lifetime_or_continuity_promotion():
+def test_scan_v6_rejects_asset_lifetime_or_global_continuity_promotion():
     client = MockCMISClient()
     response = client.instant_x1_scan(chain="x1", asset="XNT")
 
@@ -66,7 +67,7 @@ def test_scan_v3_rejects_lifetime_or_continuity_promotion():
         validate_instant_x1_scan_response(promoted)
 
 
-def test_scan_v3_accepts_verified_pair_lifetime_without_usd_promotion():
+def test_scan_v6_accepts_verified_pair_lifetime_without_usd_promotion():
     client = MockCMISClient()
     response = client.instant_x1_scan(chain="x1", asset="XNT")
     promoted = copy.deepcopy(response)
@@ -109,7 +110,7 @@ def test_scan_v3_accepts_verified_pair_lifetime_without_usd_promotion():
     assert accepted_history["full_asset_lifetime_verified"] is False
 
 
-def test_scan_v3_rejects_inconsistent_pair_lifetime_promotion():
+def test_scan_v6_rejects_inconsistent_pair_lifetime_promotion():
     client = MockCMISClient()
     response = client.instant_x1_scan(chain="x1", asset="XNT")
     promoted = copy.deepcopy(response)
@@ -129,7 +130,7 @@ def test_scan_v3_rejects_inconsistent_pair_lifetime_promotion():
         validate_instant_x1_scan_response(promoted)
 
 
-def test_scan_v3_accepts_price_only_partial_freshness_and_rejects_global_promotion():
+def test_scan_v6_accepts_field_scoped_freshness_and_rejects_incoherent_global_flag():
     response = MockCMISClient().instant_x1_scan(chain="x1", asset="XNT")
     market = response["data"]["sections"]["market"]
     freshness = market["freshness"]
@@ -158,9 +159,23 @@ def test_scan_v3_accepts_price_only_partial_freshness_and_rejects_global_promoti
     promoted_market = promoted["data"]["sections"]["market"]
     promoted_freshness = promoted_market["freshness"]
     promoted_freshness["fields"]["liquidity_usd"]["freshness_verified"] = True
-    promoted_freshness["fields"]["liquidity_usd"]["reason"] = "unexpected_promotion"
+    promoted_freshness["fields"]["liquidity_usd"]["reason"] = (
+        "current_chain_liquidity_proof_verified"
+    )
     promoted_freshness["verified_field_count"] = 2
     promoted_market["liquidity_freshness_verified"] = True
 
-    with pytest.raises(Exception, match="must not promote liquidity"):
-        validate_instant_x1_scan_response(promoted)
+    accepted_promoted = validate_instant_x1_scan_response(promoted)
+    assert (
+        accepted_promoted["data"]["sections"]["market"][
+            "liquidity_freshness_verified"
+        ]
+        is True
+    )
+
+    incoherent = copy.deepcopy(promoted)
+    incoherent["data"]["sections"]["market"]["freshness"][
+        "current_market_freshness_verified"
+    ] = True
+    with pytest.raises(Exception, match="global freshness flag"):
+        validate_instant_x1_scan_response(incoherent)

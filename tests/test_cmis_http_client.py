@@ -27,6 +27,7 @@ from roberta.cmis.capabilities import (
     X1_ASSET_IDENTITY_REQUIRED_LIMITATIONS,
 )
 from roberta.cmis.http import CMISHTTPClient
+from roberta.cmis.instant_scan import INSTANT_X1_SCAN_REQUIRED_RESPONSE_LIMITATIONS
 
 
 def _envelope(service: str, *, chain: str = "x1") -> dict[str, object]:
@@ -272,9 +273,9 @@ class _Server:
         self.thread.join(timeout=2)
 
 
-def _cmis_1_13_instant_scan_capabilities() -> dict[str, object]:
+def _cmis_1_23_instant_scan_capabilities() -> dict[str, object]:
     capabilities = deepcopy(_capabilities())
-    capabilities["contract_version"] = "1.13.0"
+    capabilities["contract_version"] = "1.23.0"
     capabilities["supported_services"].append("instant_x1_scan")
 
     capabilities["chains"]["x1"]["services"]["instant_x1_scan"] = {
@@ -318,8 +319,74 @@ def _instant_x1_scan_data() -> dict[str, object]:
         "contract_version": INSTANT_X1_SCAN_CONTRACT_VERSION,
         "read_only": True,
         "sections": {
-            "identity": {},
-            "market": {},
+            "identity": {
+                "status": "partial",
+                "verified": False,
+                "symbol": "AGI",
+                "name": None,
+                "mint": "mint-1",
+                "resolved_by": None,
+                "match_quality": None,
+                "identity_key": "mint:mint-1",
+                "normalized_identity": None,
+                "identity_reconciliation": None,
+            },
+            "market": {
+                "status": "partial",
+                "price_usd": None,
+                "price_verified": False,
+                "liquidity_usd": None,
+                "liquidity_verified": False,
+                "volume_24h_usd": None,
+                "volume_24h_verified": False,
+                "transactions_24h": None,
+                "transactions_24h_verified": False,
+                "freshness": {
+                    "contract_version": "x1_current_market_freshness/v3",
+                    "scope": "instant_x1_scan.current_market",
+                    "freshness_state": "NOT_VERIFIED",
+                    "collection_freshness_verified": False,
+                    "provider_price_fact_time_verified": False,
+                    "current_market_freshness_verified": False,
+                    "verified_field_count": 0,
+                    "total_field_count": 6,
+                    "fields": {
+                        "price_usd": {"freshness_verified": False, "reason": "fixture"},
+                        "liquidity_usd": {"freshness_verified": False, "reason": "fixture"},
+                        "provider_nominal_liquidity": {
+                            "freshness_verified": False,
+                            "reason": "fixture",
+                            "value": None,
+                            "unit": None,
+                            "provider_fact_time_verified": False,
+                            "source_independence_verified": False,
+                        },
+                        "independent_liquidity_usd": {
+                            "freshness_verified": False,
+                            "reason": "fixture",
+                            "value": None,
+                            "unit": None,
+                            "provider_fact_time_verified": False,
+                            "source_independence_verified": False,
+                        },
+                        "volume_24h_usd": {"freshness_verified": False, "reason": "fixture"},
+                        "transactions_24h": {"freshness_verified": False, "reason": "fixture"},
+                    },
+                    "provider_nominal_liquidity_freshness_verified": False,
+                    "independent_liquidity_usd_freshness_verified": False,
+                    "limitations": [],
+                    "execution_authorized": False,
+                },
+                "price_freshness_verified": False,
+                "liquidity_freshness_verified": False,
+                "provider_nominal_liquidity": None,
+                "provider_nominal_liquidity_unit": None,
+                "provider_nominal_liquidity_freshness_verified": False,
+                "independent_liquidity_usd": None,
+                "independent_liquidity_usd_freshness_verified": False,
+                "volume_24h_freshness_verified": False,
+                "transactions_24h_freshness_verified": False,
+            },
             "tokenomics": {},
             "holder_concentration": {
                 "holders": None,
@@ -328,10 +395,57 @@ def _instant_x1_scan_data() -> dict[str, object]:
                     "value": None,
                     "verified": False,
                     "state": "unavailable",
-                    "reason": "current_concentration_not_promoted_for_instant_x1_scan_v1",
                 },
             },
-            "history": {},
+            "history": {
+                "mode": "all_available",
+                "provider_history_imported": True,
+                "provider_price_history": {},
+                "provider_history_backfill": {},
+                "coverage": {},
+                "metrics": {"price": {"observation_count": 1}},
+                "available_metric_count": 1,
+                "price_coverage_scope": "bounded_verified_price_observations",
+                "price_lifetime_coverage": {},
+                "full_supported_pair_lifetime_verified": False,
+                "continuous_pair_price_coverage_verified": False,
+                "provider_range_complete_verified": False,
+                "historical_quote_usd_equivalence_verified": False,
+                "full_usd_lifetime_verified": False,
+                "full_asset_lifetime_verified": False,
+                "continuous_coverage_verified": False,
+                "scan_completion": {
+                    "contract_version": "instant_x1_scan_history_adequacy/v1",
+                    "status": "NOT_VERIFIED",
+                    "required_history_scope": "supported_pair_price_lifetime",
+                    "history_completion_verified": False,
+                    "checks": {
+                        "native_xnt_identity_verified": False,
+                        "all_available_history_mode": True,
+                        "verified_price_history_available": True,
+                        "exact_xnt_usdcx_pair_identity_bound": False,
+                        "full_supported_pair_lifetime_verified": False,
+                        "continuous_pair_price_coverage_verified": False,
+                        "provider_supported_range_complete_verified": False,
+                    },
+                    "same_fact_corroboration": {
+                        "state": "BOUNDED_PROVIDER_CLOSE_CORROBORATION",
+                        "scope": "accepted_provider_price_backfill_only",
+                        "source_independence_implied": False,
+                    },
+                    "source_independence_verified": False,
+                    "source_independence_required_for_scan_completion": False,
+                    "historical_quote_usd_equivalence_verified": False,
+                    "full_usd_lifetime_verified": False,
+                    "full_usd_lifetime_required_for_scan_completion": False,
+                    "global_provider_archive_complete_verified": False,
+                    "global_archive_completeness_required_for_scan_completion": False,
+                    "non_price_metric_lifetimes_verified": False,
+                    "non_price_metric_lifetimes_required_for_scan_completion": False,
+                    "stronger_corroboration_still_available": True,
+                    "execution_authorized": False,
+                },
+            },
             "risk": {
                 **_instant_x1_scan_risk(),
                 "execution_authorized": False,
@@ -341,28 +455,18 @@ def _instant_x1_scan_data() -> dict[str, object]:
                 "runtime_evidence_receipt_post_processing_only": True,
             },
         },
-        "limitations": [
-            "missing_or_unverified_fields_remain_unknown",
-            "holder_count_requires_existing_verified_holder_semantics",
-            "current_top_account_concentration_not_promoted_in_v1",
-            "history_is_cmis_stored_verified_observations_only",
-            "history_does_not_imply_complete_asset_lifetime",
-            "proof_score_does_not_modify_market_facts_or_risk",
-            "risk_score_remains_unavailable_until_separately_calibrated",
-            "execution_authorized_false",
-        ],
+        "limitations": list(INSTANT_X1_SCAN_REQUIRED_RESPONSE_LIMITATIONS),
         "execution_authorized": False,
     }
 
-
-def test_http_client_posts_exact_instant_x1_scan_request_under_cmis_1_13() -> None:
+def test_http_client_posts_exact_instant_x1_scan_request_under_cmis_1_23() -> None:
     expected = _envelope("instant_x1_scan")
     expected["data"] = _instant_x1_scan_data()
     expected["risk"] = _instant_x1_scan_risk()
 
     with _Server(
         expected,
-        capabilities=_cmis_1_13_instant_scan_capabilities(),
+        capabilities=_cmis_1_23_instant_scan_capabilities(),
     ) as running:
         result = CMISHTTPClient(
             base_url=running.base_url,
@@ -392,7 +496,7 @@ def test_http_client_rejects_unhashable_instant_scan_status(
 
     with _Server(
         expected,
-        capabilities=_cmis_1_13_instant_scan_capabilities(),
+        capabilities=_cmis_1_23_instant_scan_capabilities(),
     ) as running:
         result = CMISHTTPClient(
             base_url=running.base_url,
@@ -413,7 +517,7 @@ def test_http_client_rejects_malformed_instant_scan_success_payload() -> None:
 
     with _Server(
         expected,
-        capabilities=_cmis_1_13_instant_scan_capabilities(),
+        capabilities=_cmis_1_23_instant_scan_capabilities(),
     ) as running:
         result = CMISHTTPClient(
             base_url=running.base_url,
@@ -433,7 +537,7 @@ def test_http_client_rejects_missing_instant_scan_section() -> None:
 
     with _Server(
         expected,
-        capabilities=_cmis_1_13_instant_scan_capabilities(),
+        capabilities=_cmis_1_23_instant_scan_capabilities(),
     ) as running:
         result = CMISHTTPClient(
             base_url=running.base_url,
@@ -444,9 +548,9 @@ def test_http_client_rejects_missing_instant_scan_section() -> None:
     assert result["errors"][0]["code"] == "invalid_cmis_instant_x1_scan_response"
 
 
-def test_http_client_blocks_instant_scan_on_cmis_1_12_before_post() -> None:
-    capabilities = _cmis_1_13_instant_scan_capabilities()
-    capabilities["contract_version"] = "1.12.0"
+def test_http_client_blocks_instant_scan_before_cmis_1_23_before_post() -> None:
+    capabilities = _cmis_1_23_instant_scan_capabilities()
+    capabilities["contract_version"] = "1.22.0"
 
     with _Server(_envelope("instant_x1_scan"), capabilities=capabilities) as running:
         result = CMISHTTPClient(
@@ -461,7 +565,7 @@ def test_http_client_blocks_instant_scan_on_cmis_1_12_before_post() -> None:
 
 
 def test_http_client_never_falls_back_instant_scan_to_solana() -> None:
-    capabilities = _cmis_1_13_instant_scan_capabilities()
+    capabilities = _cmis_1_23_instant_scan_capabilities()
 
     with _Server(
         _envelope("instant_x1_scan", chain="solana"),

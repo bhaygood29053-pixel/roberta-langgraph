@@ -172,6 +172,51 @@ def test_x1_scout_uses_single_cmis_composition_and_preserves_unknowns() -> None:
     raw_data = report["findings"]["data"]
     assert raw_data["sections"]["holder_concentration"] == holder
     assert presentation["limitations"] == raw_data["limitations"]
+    history_completion = presentation["sections"]["history"]["scan_completion"]
+    assert history_completion["contract_version"] == "instant_x1_scan_history_adequacy/v1"
+    assert history_completion["history_completion_verified"] is False
+    assert history_completion["source_independence_verified"] is False
+    assert history_completion["source_independence_required_for_scan_completion"] is False
+    assert history_completion["execution_authorized"] is False
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        lambda completion: completion.__setitem__("history_completion_verified", True),
+        lambda completion: completion.__setitem__("source_independence_verified", True),
+        lambda completion: completion.__setitem__(
+            "source_independence_required_for_scan_completion", True
+        ),
+        lambda completion: completion.__setitem__(
+            "global_archive_completeness_required_for_scan_completion", True
+        ),
+        lambda completion: completion.__setitem__("execution_authorized", True),
+    ],
+)
+def test_x1_scout_rejects_forged_or_unsafe_v6_history_completion(mutation) -> None:
+    class MalformedHistoryCMIS(MockCMISClient):
+        def instant_x1_scan(self, *, chain: str, asset: str):
+            result = super().instant_x1_scan(chain=chain, asset=asset)
+            completion = result["data"]["sections"]["history"]["scan_completion"]
+            mutation(completion)
+            return result
+
+    result = build_x1_scout_graph(MalformedHistoryCMIS()).invoke(
+        {
+            "request": {
+                "asset": "AGI",
+                "objective": "scan AGI",
+            },
+            "status": "running",
+        }
+    )
+
+    report = result["report"]
+    assert report["status"] == "error"
+    assert report["cmis_status"] == "error"
+    assert report["findings"]["data"] == {}
+    assert report["errors"][0]["code"] == "invalid_cmis_instant_x1_scan_response"
 
 
 @pytest.mark.parametrize("bad_envelope", [None, [], ["not", "an", "object"]])

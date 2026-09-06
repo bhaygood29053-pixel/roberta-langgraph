@@ -116,7 +116,7 @@ def test_asset_overview_routes_to_first_class_scan_plus_burn_workflow() -> None:
 
     assert "Asset Overview for AGI" in overview
     assert "operation='asset_overview'" in overview
-    assert "instant_x1_scan/v3" in overview
+    assert "instant_x1_scan/v6" in overview
     assert "burn_intelligence/v1" in overview
     assert "same exact verified X1 mint" in overview
     assert "1h/24h/7d/30d Burn Intelligence" in overview
