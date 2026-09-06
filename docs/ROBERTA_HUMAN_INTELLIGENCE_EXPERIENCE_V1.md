@@ -8,8 +8,8 @@ Implementation issues:
 - #377 — Human Response Contract v1
 - `roberta-core#72` — Canonical Human Response Decision Object v1 — **ACCEPTED** via protected PR #74 / merge `cff1be5bf95c29ac163dc9228bfdf4c1056762dd`
 - #378 — Human language renderer + Quick / Normal / Deep Dive response modes — **ACCEPTED** via public PR #388 / merge `ee52d60079571d349a45299fc524d0ea972412f3` + protected `roberta-core` PR #76 / merge `971c49b675b5dee43d5b6d002a86b61a1a951811`
-- #379 — Conversational continuity for evidence-bound follow-up decisions — **NEXT EXACT GATE**
-- #380 — Human Response Learning Corpus + response-quality evaluator
+- #379 — Conversational continuity for evidence-bound follow-up decisions — **ACCEPTED** via public PR #390 / merge `e2045d3243afd2e2b810cb560530bc44f0b6396b` + protected `roberta-core` PR #78 / merge `5842e359cb671358638373199a442d800046cc80`
+- #380 — Human Response Learning Corpus + response-quality evaluator — **NEXT EXACT GATE**
 - #381 — Website progressive evidence disclosure + human decision labels
 
 ## 1. Why this exists
