@@ -47,7 +47,7 @@ def _scan_report() -> dict[str, object]:
         ],
         "errors": [],
         "instant_x1_scan_presentation": {
-            "contract_version": "instant_x1_scan/v3",
+            "contract_version": "instant_x1_scan/v6",
             "read_only": True,
             "sections": {
                 "identity": {
