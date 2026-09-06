@@ -4420,9 +4420,9 @@
           "guaranteed profit",
           "guaranteed safe",
           "risk-free",
-          "compliant",
-          "non-compliant",
-          "legal advice"
+          "it is compliant",
+          "it is non-compliant",
+          "this is legal advice"
         ],
         "uncertainty_required": true,
         "uncertainty_any": [
@@ -4481,9 +4481,9 @@
           "guaranteed profit",
           "guaranteed safe",
           "risk-free",
-          "compliant",
-          "non-compliant",
-          "legal advice"
+          "it is compliant",
+          "it is non-compliant",
+          "this is legal advice"
         ],
         "uncertainty_required": true,
         "uncertainty_any": [
@@ -4542,9 +4542,9 @@
           "guaranteed profit",
           "guaranteed safe",
           "risk-free",
-          "compliant",
-          "non-compliant",
-          "legal advice"
+          "it is compliant",
+          "it is non-compliant",
+          "this is legal advice"
         ],
         "uncertainty_required": true,
         "uncertainty_any": [
@@ -4603,9 +4603,9 @@
           "guaranteed profit",
           "guaranteed safe",
           "risk-free",
-          "compliant",
-          "non-compliant",
-          "legal advice"
+          "it is compliant",
+          "it is non-compliant",
+          "this is legal advice"
         ],
         "uncertainty_required": true,
         "uncertainty_any": [
@@ -4664,9 +4664,9 @@
           "guaranteed profit",
           "guaranteed safe",
           "risk-free",
-          "compliant",
-          "non-compliant",
-          "legal advice"
+          "it is compliant",
+          "it is non-compliant",
+          "this is legal advice"
         ],
         "uncertainty_required": true,
         "uncertainty_any": [
@@ -4725,9 +4725,9 @@
           "guaranteed profit",
           "guaranteed safe",
           "risk-free",
-          "compliant",
-          "non-compliant",
-          "legal advice"
+          "it is compliant",
+          "it is non-compliant",
+          "this is legal advice"
         ],
         "uncertainty_required": true,
         "uncertainty_any": [
@@ -4786,9 +4786,9 @@
           "guaranteed profit",
           "guaranteed safe",
           "risk-free",
-          "compliant",
-          "non-compliant",
-          "legal advice"
+          "it is compliant",
+          "it is non-compliant",
+          "this is legal advice"
         ],
         "uncertainty_required": true,
         "uncertainty_any": [
@@ -4847,9 +4847,9 @@
           "guaranteed profit",
           "guaranteed safe",
           "risk-free",
-          "compliant",
-          "non-compliant",
-          "legal advice"
+          "it is compliant",
+          "it is non-compliant",
+          "this is legal advice"
         ],
         "uncertainty_required": true,
         "uncertainty_any": [
