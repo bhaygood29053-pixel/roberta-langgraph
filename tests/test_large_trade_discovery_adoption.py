@@ -414,5 +414,5 @@ def test_public_x1_scout_wiring_preserves_cmis_rank_and_exact_selectors():
 
     assert "def large_trade_discovery(" in client
     assert "asset_mint: str" in client
-    assert "direction: str = "ANY"" in client
+    assert 'direction: str = "ANY"' in client
     assert "limit: int = 5" in client
