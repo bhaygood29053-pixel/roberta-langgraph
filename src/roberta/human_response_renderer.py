@@ -126,7 +126,7 @@ def _direct_answer(response_decision: Mapping[str, Any]) -> str:
         "I'd reduce exposure.": f"I'd reduce exposure to {subject}.",
         "I'd exit this position.": f"I'd exit the {subject} position.",
         "I don't have enough evidence to support a trade decision yet.": (
-            f"I don't have enough evidence to support a {subject} trade decision yet."
+            f"I don't have enough evidence to support a trade decision on {subject} yet."
         ),
     }
     return replacements.get(base, base)
@@ -345,7 +345,7 @@ def _counter_sentence(item: Mapping[str, Any]) -> str:
     economic = item.get("economic_assessment")
     if isinstance(economic, str) and economic.strip():
         return (
-            f"{interpretation.rstrip('.')} "
+            f"{interpretation.rstrip('.')}. "
             f"{economic.strip()[0].upper() + economic.strip()[1:].rstrip('.')}."
         )
     return interpretation.rstrip(".") + "."
