@@ -307,3 +307,21 @@ There is currently **no accepted next public intelligence/alert service or Scout
 **Roberta coordinates, applies policy, and explains the result to the user.**
 
 The system becomes more capable by proving more—not by guessing more.
+
+## CMIS 1.26 Regulatory Evidence reliance
+
+X1 Scout may rely on `regulatory_evidence/v1` only when CMIS advertises the
+X1 service as bounded, callable, read-only, public-service promoted,
+Scout-reliance promoted, `compliance_conclusion_authorized=false`, and
+`execution_authorized=false`.
+
+ROBERTA requires CMIS >= 1.26.0 and the accepted provenance/freshness
+requirements and guardrails. The initial operation is explicit-request-only.
+X1 Scout supplies jurisdiction, framework, logical asset selector, exact X1
+mint, evaluation timestamp, and freshness bound; it does not submit legal
+facts, regulator status, source material, compliance conclusions, or risk.
+
+A proposed rule is not a final rule. A final rule is not effective regulation
+without separate effective-state verification. Regulatory framework evidence is
+not issuer/asset compliance, and underlying USDC evidence does not erase
+USDC.X bridge/custody/liquidity/redemption dependencies.
