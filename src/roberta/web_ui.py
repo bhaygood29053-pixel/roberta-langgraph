@@ -322,7 +322,7 @@ function formatAssistant(text){
   var lines=String(text||'').split('\n'),out=[];
   lines.forEach(function(line){
     var trim=line.trim(),safe=escapeHtml(line);
-    if(/^(ROBERTA['’]S ANSWER|Why|What I found|What could change my mind|You may also want to ask)\s*:??$/i.test(trim)){
+    if(/^(ROBERTA['’]S ANSWER|Why|What I found|What could change my mind|What would change my mind|You may also want to ask)\s*:??$/i.test(trim)){
       out.push('<span class="msgTitle">'+safe.replace(/:$/,'')+'</span>');return;
     }
     if(/^(My recommendation|My view|ROBERTA['’]s assessment)\s*:/i.test(trim)){
