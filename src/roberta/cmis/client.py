@@ -131,6 +131,19 @@ class CMISClient(Protocol):
     ) -> CMISEnvelope:
         ...
 
+    def regulatory_evidence(
+        self,
+        *,
+        chain: str,
+        asset: str,
+        jurisdiction: str,
+        framework: str,
+        asset_id: str,
+        evaluated_at: str,
+        max_evidence_age_seconds: float,
+    ) -> CMISEnvelope:
+        ...
+
     def concentration_warning_intelligence(
         self,
         *,
