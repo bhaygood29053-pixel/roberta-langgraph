@@ -39,6 +39,7 @@ def build_x1_scout_tool(
             "concentration_warning_intelligence",
             "bridge_to_xdex_utilization",
             "cross_chain_asset_provenance",
+            "trade_price_impact_intelligence",
         ] | None = None,
         action: TradeAction | None = None,
         amount_usd: float | None = None,
@@ -59,6 +60,8 @@ def build_x1_scout_tool(
         provenance_evidence_sha256: str | None = None,
         provenance_current_asset_id: str | None = None,
         provenance_current_asset_id_kind: str | None = None,
+        trade_price_impact_evidence_id: str | None = None,
+        trade_price_impact_asset_mint: str | None = None,
         compare_asset: str | None = None,
         include_history: bool = False,
     ) -> str:
@@ -129,6 +132,17 @@ def build_x1_scout_tool(
             raise ValueError(
                 "Cross-chain provenance selector/identity inputs require "
                 "operation='cross_chain_asset_provenance'"
+            )
+        trade_price_impact_inputs = (
+            trade_price_impact_evidence_id,
+            trade_price_impact_asset_mint,
+        )
+        if operation != "trade_price_impact_intelligence" and any(
+            value is not None for value in trade_price_impact_inputs
+        ):
+            raise ValueError(
+                "trade price-impact selector/identity inputs require "
+                "operation='trade_price_impact_intelligence'"
             )
         warning_inputs = (
             intelligence_evidence_ids,
@@ -306,6 +320,51 @@ def build_x1_scout_tool(
                 {
                     "operation": "concentration_change_intelligence",
                     "intelligence_evidence_id": evidence_id,
+                }
+            )
+        elif operation == "trade_price_impact_intelligence":
+            if include_history or compare_asset is not None:
+                raise ValueError(
+                    "history/compare inputs are not accepted for trade price-impact"
+                )
+            if action is not None or amount_usd is not None:
+                raise ValueError(
+                    "trade action/amount are not accepted for trade price-impact"
+                )
+            if (
+                intelligence_evidence_id is not None
+                or intelligence_evidence_ids is not None
+            ):
+                raise ValueError(
+                    "concentration evidence inputs are not accepted for trade price-impact"
+                )
+            required_trade_inputs = {
+                "trade_price_impact_evidence_id": trade_price_impact_evidence_id,
+                "trade_price_impact_asset_mint": trade_price_impact_asset_mint,
+            }
+            missing = [
+                key for key, value in required_trade_inputs.items()
+                if value is None
+            ]
+            if missing:
+                raise ValueError(
+                    "trade_price_impact_intelligence requires an exact CMIS "
+                    "evidence id and exact X1 asset mint: "
+                    + ", ".join(sorted(missing))
+                )
+            normalized_asset = str(asset or "").strip()
+            normalized_mint = str(trade_price_impact_asset_mint or "").strip()
+            if not normalized_asset or normalized_asset != normalized_mint:
+                raise ValueError(
+                    "trade price-impact asset must equal the exact X1 asset mint"
+                )
+            request.update(
+                {
+                    "operation": "trade_price_impact_intelligence",
+                    "trade_price_impact_evidence_id": str(
+                        trade_price_impact_evidence_id
+                    ).strip(),
+                    "trade_price_impact_asset_mint": normalized_mint,
                 }
             )
         elif operation == "bridge_to_xdex_utilization":
@@ -499,6 +558,15 @@ def build_x1_scout_tool(
             "use operation='concentration_change_intelligence' only when an exact "
             "CMIS-owned ie_ content id is present in the user request or trusted current "
             "context; copy it into intelligence_evidence_id and never invent one. "
+            "For promoted Trade Price-Impact Intelligence, use "
+            "operation='trade_price_impact_intelligence' only when the exact "
+            "CMIS-owned evidence id and exact X1 asset mint are present in trusted "
+            "current context. Preserve the CMIS wallet address, transaction, time, "
+            "trade amounts, pool reserves, pre/average/post prices, optional next "
+            "verified trade price, and measured-window volume contribution without "
+            "recalculation. Never infer real-world wallet identity, whale/insider/"
+            "manipulator status, intent, coordination, whole-market price impact, "
+            "broader volume causality, automatic risk, or a trade recommendation. "
             "For promoted Bridge-to-XDEX Utilization, use "
             "operation='bridge_to_xdex_utilization' only when the exact CMIS canonical "
             "evidence SHA, route id, source mint, X1 destination mint, evaluation time, "
