@@ -157,7 +157,14 @@ def _envelope():
                     wallet="Wallet11111111111111111111111111111111111",
                     evidence_id="tpi:buy-big",
                 ),
-                _row(2, "buy-mid", 40, POOL_B, 300),
+                _row(
+                    2,
+                    "buy-mid",
+                    40,
+                    POOL_B,
+                    300,
+                    evidence_id="tpi:buy-mid",
+                ),
             ],
             "evidence_boundaries": {
                 "global_x1_dex_trade_ranking_authorized": False,
@@ -247,6 +254,7 @@ def test_response_preserves_ranked_transactions_and_handoff_without_recompute():
     )
     assert data["results"][0]["trade_price_impact_handoff_ready"] is True
     assert data["results"][1]["wallet_address"] is None
+    assert data["results"][1]["trade_price_impact_evidence_id"] == "tpi:buy-mid"
     assert data["results"][1]["trade_price_impact_handoff_ready"] is False
     assert data["evidence_boundaries"][
         "global_x1_dex_trade_ranking_authorized"
