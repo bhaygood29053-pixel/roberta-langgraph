@@ -36,6 +36,8 @@ class X1ScoutRequest(TypedDict):
     provenance_evidence_sha256: NotRequired[str]
     provenance_current_asset_id: NotRequired[str]
     provenance_current_asset_id_kind: NotRequired[str]
+    trade_price_impact_evidence_id: NotRequired[str]
+    trade_price_impact_asset_mint: NotRequired[str]
     compare_asset: NotRequired[str]
 
 
