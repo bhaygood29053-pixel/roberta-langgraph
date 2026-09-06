@@ -73,6 +73,7 @@ class X1ScoutInvestigation(TypedDict):
     findings: dict[str, object]
     confidence: dict[str, object]
     evidence_context: dict[str, object]
+    freshness: NotRequired[dict[str, object]]
     risk_help: dict[str, object] | None
     component_status_table: str | None
     pretrade_presentation: dict[str, object] | None
@@ -104,6 +105,7 @@ class X1ScoutReport(TypedDict):
     findings: dict[str, object]
     confidence: dict[str, object]
     evidence_context: dict[str, object]
+    freshness: NotRequired[dict[str, object]]
     risk_help: dict[str, object] | None
     component_status_table: str | None
     pretrade_presentation: dict[str, object] | None
