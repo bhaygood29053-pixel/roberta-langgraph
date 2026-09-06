@@ -24,7 +24,7 @@ def test_web_ui_contains_current_service_surface():
     assert "Ask ROBERTA" in ROBERTA_WEB_UI_HTML
     assert "Get a quick health check" in ROBERTA_WEB_UI_HTML
     assert "Did this transaction move the pool price?" in ROBERTA_WEB_UI_HTML
-    assert "How much XNT was burned this week?" in ROBERTA_WEB_UI_HTML
+    assert "How much XNT was burned this week?" in ROBERTA_WEB_UI_HTML\n    assert "What does the GENIUS Act mean for USDC.X?" in ROBERTA_WEB_UI_HTML\n    assert "regulatory context" in ROBERTA_WEB_UI_HTML
 
     # Landing -> workspace transition for both human and agent/API access.
     assert 'id="connectHuman"' in ROBERTA_WEB_UI_HTML
