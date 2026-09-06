@@ -16,6 +16,8 @@ from roberta.cmis.capabilities import (
     HISTORICAL_PROVIDER_BACKFILL_REQUIRED_LIMITATIONS,
     INTELLIGENCE_FOUNDATION_CAPABILITIES,
     MIN_CMIS_CONTRACT_VERSION,
+    RESPONSE_FRESHNESS_CONTRACT_VERSION,
+    RESPONSE_FRESHNESS_MIN_CMIS_CONTRACT_VERSION,
     X1_ASSET_IDENTITY_CONTRACT_VERSION,
     X1_ASSET_IDENTITY_MIN_CMIS_CONTRACT_VERSION,
     X1_ASSET_IDENTITY_REQUIRED_LIMITATIONS,
@@ -420,6 +422,38 @@ def test_all_available_history_fails_closed_on_old_or_weakened_contract() -> Non
             chain="x1",
             pair=True,
         )
+
+
+def test_cmis_127_requires_exact_universal_response_freshness_capability() -> None:
+    manifest = _manifest()
+    manifest["contract_version"] = RESPONSE_FRESHNESS_MIN_CMIS_CONTRACT_VERSION
+    manifest["response_freshness"] = {
+        "contract_version": RESPONSE_FRESHNESS_CONTRACT_VERSION,
+        "required_on_every_public_response": True,
+        "observation_time_alone_never_proves_provider_fact_freshness": True,
+        "missing_service_specific_freshness_fails_closed": True,
+    }
+
+    validated = validate_capability_manifest(manifest)
+
+    assert validated["response_freshness"]["contract_version"] == (
+        "cmis_response_freshness/v1"
+    )
+    assert validated["response_freshness"]["required_on_every_public_response"] is True
+
+
+def test_cmis_127_fails_closed_if_response_freshness_capability_is_missing() -> None:
+    manifest = _manifest()
+    manifest["contract_version"] = RESPONSE_FRESHNESS_MIN_CMIS_CONTRACT_VERSION
+
+    with pytest.raises(CMISCapabilityContractError, match="response_freshness"):
+        validate_capability_manifest(manifest)
+
+
+def test_pre_127_capability_remains_compatible_without_universal_freshness() -> None:
+    validated = validate_capability_manifest(_manifest())
+
+    assert "response_freshness" not in validated
 
 
 def test_unknown_chain_never_falls_back_to_another_chain() -> None:
