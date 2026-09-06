@@ -318,6 +318,7 @@ class CMISServiceCapability(TypedDict):
     service_contract_version: NotRequired[str]
     public_service_promoted: NotRequired[bool]
     scout_reliance_promoted: NotRequired[bool]
+    compliance_conclusion_authorized: NotRequired[bool]
     delivery_mode: NotRequired[str]
     push_delivery_authorized: NotRequired[bool]
     execution_authorized: NotRequired[bool]
