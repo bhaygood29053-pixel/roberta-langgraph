@@ -14,7 +14,8 @@ Accepted on public/protected main:
 - Large-Trade Discovery through public PR #361 + protected `roberta-core` #63;
 - GENIUS Act Regulatory Intelligence Learning Layer v1 through public PR #364 + protected `roberta-core` #65;
 - live CMIS 1.26 Regulatory Evidence adoption through public PR #368 + protected `roberta-core` #69 + reconciliation PR #369;
-- simplified public website / connected chat workspace through PR #362.
+- CMIS 1.27 universal `cmis_response_freshness/v1` adoption so every public token/service response carries an explicit freshness result, including UNKNOWN/NOT_VERIFIED when proof is incomplete;
+- conversation-first public website with saved investigations/evidence panel through PR #374.
 
 ## Regulatory Intelligence
 
@@ -39,7 +40,7 @@ ROBERTA may describe the bounded handoff as proven while preserving its provider
 
 ## Website
 
-The website on `main` remains the PR #362 human landing + connected chat workspace and is synchronized to accepted capability.
+The website on `main` is the PR #374 conversation-first ROBERTA experience with saved investigations, universal question entry, and optional evidence/details inspection.
 
 This reconciliation adds **Understand Regulations** as the seventh human-friendly service plus a GENIUS Act / USDC.X example. The service routes through ROBERTA and the accepted regulatory intelligence boundary; it does not calculate compliance in the browser and does not bypass X1 Scout → CMIS.
 
