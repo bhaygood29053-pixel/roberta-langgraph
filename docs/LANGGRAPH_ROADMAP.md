@@ -721,12 +721,11 @@ The public branch adds `roberta_regulatory_intelligence/v1`, a primary-law sourc
 
 USDC.X is explicitly treated as a bridged representation whose underlying USDC evidence does not erase bridge/custody/liquidity/redemption risk. `legal_compliance=null`, `legal_advice=false`, and `execution_authorized=false` remain invariant.
 
-CMIS #536 / PR #537 established the foundation; CMIS #539 / PR #540 plus protected `cmis-core` #42 / PR #43 completed the CMIS 1.26 runtime freshness/capability/Scout-reliance promotion. ROBERTA Issue #367 is the active downstream X1 Scout adoption gate.
+CMIS #536 / PR #537 established the foundation; CMIS #539 / PR #540 plus protected `cmis-core` #42 / PR #43 completed the CMIS 1.26 runtime freshness/capability/Scout-reliance promotion. ROBERTA #367 / PR #368 plus protected `roberta-core` #68 / PR #69 completed downstream X1 Scout and Canonical Human/Machine ROBERTA adoption.
 
 ## Regulatory Intelligence Runtime Adoption — Issue #367
 
-**ACTIVE.** ROBERTA is adopting the accepted CMIS 1.26 `regulatory_evidence/v1`
-service through X1 Scout.
+**COMPLETE.** ROBERTA #367 / PR #368 and protected `roberta-core` #68 / PR #69 adopt the accepted CMIS 1.26 `regulatory_evidence/v1` service through X1 Scout and the Canonical Human/Machine Decision Object.
 
 Initial scope is explicit-request-only and X1-only:
 
@@ -738,6 +737,17 @@ Initial scope is explicit-request-only and X1-only:
 - current-state freshness preserved from CMIS;
 - existing `roberta_regulatory_intelligence/v1` reasoning consumes the validated projection.
 
-Paired protected `roberta-core` Issue #68 owns Canonical Human/Machine
-Decision Object adoption. Compliance conclusions, legal advice, automatic risk,
-and execution remain unauthorized.
+Accepted runtime state:
+
+- X1 Scout requires CMIS >=1.26.0 and exact `regulatory_evidence/v1` promotion metadata;
+- selector/freshness-only dispatch is explicit-request-only;
+- exact X1 mint, primary-law and primary-regulator provenance, and rulemaking freshness are preserved;
+- `x1_regulatory_intelligence/v1` feeds the existing `roberta_regulatory_intelligence/v1` reasoning layer;
+- Human and Machine ROBERTA consume one canonical Decision Object;
+- proposed/final/effective status cannot be widened;
+- `legal_compliance=null`;
+- `legal_advice=false`;
+- `automatic_risk_conclusion_authorized=false`;
+- `execution_authorized=false`.
+
+Compliance conclusions, legal advice, automatic risk, and execution remain unauthorized.
