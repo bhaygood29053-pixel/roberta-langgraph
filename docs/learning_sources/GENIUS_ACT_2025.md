@@ -2,8 +2,7 @@
 
 Issue: ROBERTA #363
 
-Status: **candidate source on the #363 implementation branch; not accepted on
-main until review/merge and source-integrity acceptance.**
+Status: **accepted foundation on `main` via ROBERTA PR #364 and protected `roberta-core` PR #65.**
 
 ## Identity
 
@@ -18,7 +17,8 @@ main until review/merge and source-integrity acceptance.**
 ## Learning classification
 
 ```text
-authority_class = primary
+primary_law_authority_class = primary
+protected_primer_authority_class = secondary
 knowledge_scope = static_regulatory_framework
 live_state_authority = false
 cmis_override_authorized = false
@@ -26,7 +26,7 @@ compliance_conclusion_authorized = false
 execution_authorized = false
 ```
 
-The public shell stores only this source manifest. The actual Learning Plane source binding and ingestible source bytes belong in the protected `roberta-core` repository under the Phase 6 ownership boundary.
+The public shell stores only this source manifest. The actual digest-bound Learning Plane primer and ingestible source bytes are accepted in protected `roberta-core` under the Phase 6 ownership boundary.
 
 Protected `roberta-core` v1 packages a digest-bound ROBERTA-authored regulatory primer classified as `secondary`; it does not masquerade as the primary statute. A future exact-primary-artifact gate may separately bind the full GovInfo artifact through the existing immutable source machinery.
 
