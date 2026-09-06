@@ -112,6 +112,19 @@ class CMISClient(Protocol):
     ) -> CMISEnvelope:
         ...
 
+    def regulatory_evidence(
+        self,
+        *,
+        chain: str,
+        jurisdiction: str,
+        framework: str,
+        asset_id: str,
+        chain_asset_id: str,
+        evaluated_at: str,
+        max_evidence_age_seconds: float,
+    ) -> CMISEnvelope:
+        ...
+
     def trade_price_impact_intelligence(
         self,
         *,
