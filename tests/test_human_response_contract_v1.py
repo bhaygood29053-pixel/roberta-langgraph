@@ -23,8 +23,8 @@ def _opinion():
     return {
         "contract_version": "roberta_opinion/v1",
         "recommendation": "AVOID",
-        "conviction": "MODERATE",
-        "evidence_quality": "WEAK",
+        "recommendation_strength": "MODERATE",
+        "evidence_quality": "LOW",
     }
 
 
@@ -56,7 +56,7 @@ def _payload(depth="normal"):
         "direct_answer": "I wouldn't trade X1X right now.",
         "recommendation": "AVOID",
         "conviction": "MODERATE",
-        "evidence_quality": "WEAK",
+        "evidence_quality": "LOW",
         "facts_authority": "chain_scout_cmis",
         "judgment_authority": "roberta",
         "read_only": True,
@@ -307,3 +307,17 @@ def test_authority_and_execution_invariants_fail_closed(field, value, error):
             opinion=_opinion(),
             source_fact_json=_source_facts(),
         )
+
+
+def test_actual_opinion_v1_recommendation_strength_is_accepted():
+    payload = _payload()
+    payload["evidence_profile"][0]["state"] = "LOW"
+
+    validated = validate_human_response_contract(
+        payload,
+        opinion=_opinion(),
+        source_fact_json=_source_facts(),
+    )
+
+    assert validated["conviction"] == "MODERATE"
+    assert validated["evidence_quality"] == "LOW"
