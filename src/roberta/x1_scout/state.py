@@ -41,6 +41,12 @@ class X1ScoutRequest(TypedDict):
     large_trade_asset_mint: NotRequired[str]
     large_trade_direction: NotRequired[str]
     large_trade_limit: NotRequired[int]
+    regulatory_jurisdiction: NotRequired[str]
+    regulatory_framework: NotRequired[str]
+    regulatory_asset_id: NotRequired[str]
+    regulatory_chain_asset_id: NotRequired[str]
+    regulatory_evaluated_at: NotRequired[str]
+    regulatory_max_evidence_age_seconds: NotRequired[float]
     compare_asset: NotRequired[str]
 
 
@@ -112,6 +118,7 @@ class X1ScoutReport(TypedDict):
     x1_cross_chain_asset_provenance: NotRequired[dict[str, object]]
     x1_trade_price_impact_intelligence: NotRequired[dict[str, object]]
     x1_large_trade_discovery: NotRequired[dict[str, object]]
+    x1_regulatory_intelligence: NotRequired[dict[str, object]]
     source: dict[str, str]
     sources: list[object]
     warnings: list[object]

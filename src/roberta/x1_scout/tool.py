@@ -44,6 +44,7 @@ def build_x1_scout_tool(
             "cross_chain_asset_provenance",
             "trade_price_impact_intelligence",
             "large_trade_discovery",
+            "regulatory_evidence",
         ] | None = None,
         action: TradeAction | None = None,
         amount_usd: float | None = None,
@@ -69,6 +70,12 @@ def build_x1_scout_tool(
         large_trade_asset_mint: str | None = None,
         large_trade_direction: str | None = None,
         large_trade_limit: int | None = None,
+        regulatory_jurisdiction: str | None = None,
+        regulatory_framework: str | None = None,
+        regulatory_asset_id: str | None = None,
+        regulatory_chain_asset_id: str | None = None,
+        regulatory_evaluated_at: str | None = None,
+        regulatory_max_evidence_age_seconds: float | None = None,
         compare_asset: str | None = None,
         include_history: bool = False,
     ) -> str:
@@ -103,6 +110,11 @@ def build_x1_scout_tool(
         Set include_history=true only when the user explicitly asks for full/
         entire/lifetime pair history; the history path uses CMIS
         all_available_pair and never reconstructs pair history locally.
+
+        Regulatory Evidence is explicit-request-only. ROBERTA must provide the
+        jurisdiction, framework, logical asset selector, exact X1 mint,
+        evaluation timestamp, and freshness bound. X1 Scout does not accept
+        caller-supplied legal facts, regulator state, compliance labels, or risk.
 
         Pre-trade analysis and promoted concentration-change intelligence are
         explicit-request-only. Roberta must copy the exact user/trusted-context
@@ -162,6 +174,21 @@ def build_x1_scout_tool(
             raise ValueError(
                 "large-trade discovery inputs require "
                 "operation='large_trade_discovery'"
+            )
+        regulatory_inputs = (
+            regulatory_jurisdiction,
+            regulatory_framework,
+            regulatory_asset_id,
+            regulatory_chain_asset_id,
+            regulatory_evaluated_at,
+            regulatory_max_evidence_age_seconds,
+        )
+        if operation != "regulatory_evidence" and any(
+            value is not None for value in regulatory_inputs
+        ):
+            raise ValueError(
+                "regulatory selector/freshness inputs require "
+                "operation='regulatory_evidence'"
             )
         warning_inputs = (
             intelligence_evidence_ids,
@@ -427,6 +454,70 @@ def build_x1_scout_tool(
                         trade_price_impact_evidence_id
                     ).strip(),
                     "trade_price_impact_asset_mint": normalized_mint,
+                }
+            )
+        elif operation == "regulatory_evidence":
+            if include_history or compare_asset is not None:
+                raise ValueError(
+                    "history/compare inputs are not accepted for regulatory evidence"
+                )
+            if action is not None or amount_usd is not None:
+                raise ValueError(
+                    "trade action/amount are not accepted for regulatory evidence"
+                )
+            if (
+                intelligence_evidence_id is not None
+                or intelligence_evidence_ids is not None
+            ):
+                raise ValueError(
+                    "concentration evidence inputs are not accepted for regulatory evidence"
+                )
+            required_regulatory_inputs = {
+                "regulatory_jurisdiction": regulatory_jurisdiction,
+                "regulatory_framework": regulatory_framework,
+                "regulatory_asset_id": regulatory_asset_id,
+                "regulatory_chain_asset_id": regulatory_chain_asset_id,
+                "regulatory_evaluated_at": regulatory_evaluated_at,
+                "regulatory_max_evidence_age_seconds": regulatory_max_evidence_age_seconds,
+            }
+            missing = [
+                key
+                for key, value in required_regulatory_inputs.items()
+                if value is None
+            ]
+            if missing:
+                raise ValueError(
+                    "regulatory_evidence requires exact jurisdiction/framework, "
+                    "logical asset, exact X1 mint, evaluated_at, and freshness bound: "
+                    + ", ".join(sorted(missing))
+                )
+            normalized_asset = str(asset or "").strip()
+            normalized_chain_asset = str(
+                regulatory_chain_asset_id or ""
+            ).strip()
+            if not normalized_asset or normalized_asset != normalized_chain_asset:
+                raise ValueError(
+                    "regulatory evidence asset must equal the exact X1 chain asset id"
+                )
+            request.update(
+                {
+                    "operation": "regulatory_evidence",
+                    "regulatory_jurisdiction": str(
+                        regulatory_jurisdiction
+                    ).strip(),
+                    "regulatory_framework": str(
+                        regulatory_framework
+                    ).strip(),
+                    "regulatory_asset_id": str(
+                        regulatory_asset_id
+                    ).strip(),
+                    "regulatory_chain_asset_id": normalized_chain_asset,
+                    "regulatory_evaluated_at": str(
+                        regulatory_evaluated_at
+                    ).strip(),
+                    "regulatory_max_evidence_age_seconds": float(
+                        regulatory_max_evidence_age_seconds
+                    ),
                 }
             )
         elif operation == "bridge_to_xdex_utilization":

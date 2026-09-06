@@ -109,6 +109,31 @@ TRADE_PRICE_IMPACT_REQUIRED_LIMITATIONS = (
 )
 LARGE_TRADE_DISCOVERY_MIN_CMIS_CONTRACT_VERSION = "1.25.0"
 LARGE_TRADE_DISCOVERY_CONTRACT_VERSION = "large_trade_discovery/v1"
+REGULATORY_EVIDENCE_MIN_CMIS_CONTRACT_VERSION = "1.26.0"
+REGULATORY_EVIDENCE_CONTRACT_VERSION = "regulatory_evidence/v1"
+REGULATORY_EVIDENCE_REQUIRED_REQUIREMENTS = (
+    "canonical_cmis_owned_regulatory_record",
+    "exact_jurisdiction_and_framework_identity",
+    "exact_x1_mint_identity",
+    "primary_law_provenance",
+    "primary_regulator_provenance_for_current_state",
+    "explicit_current_rulemaking_status",
+    "verified_current_regulatory_fact_time",
+    "bounded_regulatory_evidence_freshness",
+    "native_vs_bridged_representation_preserved",
+)
+REGULATORY_EVIDENCE_REQUIRED_LIMITATIONS = (
+    "proposed_rule_is_not_final_rule",
+    "final_rule_is_not_effective_without_separate_verification",
+    "regulatory_framework_evidence_is_not_issuer_compliance",
+    "underlying_asset_evidence_does_not_erase_bridge_or_custody_dependency",
+    "regulatory_evidence_does_not_establish_liquidity_or_redemption_safety",
+    "no_compliant_or_non_compliant_conclusion",
+    "no_legal_advice",
+    "no_automatic_risk_conclusion",
+    "no_execution_authorization",
+    "x1_only_initial_scope",
+)
 LARGE_TRADE_DISCOVERY_REQUIRED_REQUIREMENTS = (
     "exact_x1_asset_mint_identity",
     "verified_provider_scoped_current_market_pool_set",
@@ -295,6 +320,7 @@ class CMISServiceCapability(TypedDict):
     delivery_mode: NotRequired[str]
     push_delivery_authorized: NotRequired[bool]
     execution_authorized: NotRequired[bool]
+    compliance_conclusion_authorized: NotRequired[bool]
 
 
 class CMISChainCapabilities(TypedDict):
@@ -738,6 +764,26 @@ def validate_capability_manifest(value: Any) -> CMISCapabilities:
                     if not isinstance(raw_flag, bool):
                         raise CMISCapabilityContractError(
                             f"CMIS x1/cross_chain_asset_provenance {field} must be boolean."
+                        )
+                    normalized_capability[field] = raw_flag
+            if chain == "x1" and service == "regulatory_evidence":
+                contract = capability_raw.get("service_contract_version")
+                if not isinstance(contract, str) or not contract.strip():
+                    raise CMISCapabilityContractError(
+                        "CMIS x1/regulatory_evidence service_contract_version must be text."
+                    )
+                normalized_capability["service_contract_version"] = contract
+                for field in (
+                    "read_only",
+                    "public_service_promoted",
+                    "scout_reliance_promoted",
+                    "compliance_conclusion_authorized",
+                    "execution_authorized",
+                ):
+                    raw_flag = capability_raw.get(field)
+                    if not isinstance(raw_flag, bool):
+                        raise CMISCapabilityContractError(
+                            f"CMIS x1/regulatory_evidence {field} must be boolean."
                         )
                     normalized_capability[field] = raw_flag
             if chain == "x1" and service == "trade_price_impact_intelligence":
@@ -1512,6 +1558,73 @@ def require_cross_chain_provenance_capability(
         )
     return capability
 
+def require_regulatory_evidence_capability(
+    manifest: Mapping[str, Any],
+    *,
+    chain: str = "x1",
+) -> CMISServiceCapability:
+    """Require accepted CMIS 1.26 Regulatory Evidence promotion."""
+
+    normalized_chain = str(chain or "").strip().lower()
+    if normalized_chain != "x1":
+        raise CMISCapabilityUnavailable(
+            chain=normalized_chain,
+            service="regulatory_evidence",
+            state=None,
+            limitations=["regulatory_evidence_x1_only"],
+        )
+    version = manifest.get("contract_version")
+    if _semver(version) < _semver(REGULATORY_EVIDENCE_MIN_CMIS_CONTRACT_VERSION):
+        raise CMISCapabilityContractError(
+            "CMIS Regulatory Evidence requires contract "
+            f">={REGULATORY_EVIDENCE_MIN_CMIS_CONTRACT_VERSION}, got {version!r}."
+        )
+    capability = require_service_capability(
+        manifest,
+        chain=normalized_chain,
+        service="regulatory_evidence",
+    )
+    if capability.get("state") != "bounded":
+        raise CMISCapabilityContractError(
+            "CMIS x1/regulatory_evidence state must remain bounded."
+        )
+    if capability.get("service_contract_version") != REGULATORY_EVIDENCE_CONTRACT_VERSION:
+        raise CMISCapabilityContractError(
+            "CMIS x1/regulatory_evidence service contract mismatch."
+        )
+    for field, expected in (
+        ("read_only", True),
+        ("public_service_promoted", True),
+        ("scout_reliance_promoted", True),
+        ("compliance_conclusion_authorized", False),
+        ("execution_authorized", False),
+    ):
+        if capability.get(field) is not expected:
+            raise CMISCapabilityContractError(
+                f"CMIS x1/regulatory_evidence {field} must be "
+                f"{str(expected).lower()}."
+            )
+    missing_requirements = sorted(
+        set(REGULATORY_EVIDENCE_REQUIRED_REQUIREMENTS)
+        - set(capability["requirements"])
+    )
+    if missing_requirements:
+        raise CMISCapabilityContractError(
+            "CMIS x1/regulatory_evidence is missing accepted requirements: "
+            f"{missing_requirements!r}."
+        )
+    missing_limitations = sorted(
+        set(REGULATORY_EVIDENCE_REQUIRED_LIMITATIONS)
+        - set(capability["limitations"])
+    )
+    if missing_limitations:
+        raise CMISCapabilityContractError(
+            "CMIS x1/regulatory_evidence is missing accepted limitations: "
+            f"{missing_limitations!r}."
+        )
+    return capability
+
+
 def require_historical_all_available_capability(
     manifest: Mapping[str, Any],
     *,
@@ -1618,9 +1731,14 @@ __all__ = [
     "LARGE_TRADE_DISCOVERY_MIN_CMIS_CONTRACT_VERSION",
     "LARGE_TRADE_DISCOVERY_REQUIRED_LIMITATIONS",
     "LARGE_TRADE_DISCOVERY_REQUIRED_REQUIREMENTS",
+    "REGULATORY_EVIDENCE_CONTRACT_VERSION",
+    "REGULATORY_EVIDENCE_MIN_CMIS_CONTRACT_VERSION",
+    "REGULATORY_EVIDENCE_REQUIRED_LIMITATIONS",
+    "REGULATORY_EVIDENCE_REQUIRED_REQUIREMENTS",
     "require_bridge_to_xdex_utilization_capability",
     "require_trade_price_impact_capability",
     "require_large_trade_discovery_capability",
+    "require_regulatory_evidence_capability",
     "require_burn_intelligence_capability",
     "require_concentration_warning_capability",
     "require_cross_chain_provenance_capability",
