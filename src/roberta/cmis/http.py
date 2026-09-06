@@ -22,6 +22,8 @@ from roberta.cmis.capabilities import (
     require_large_trade_discovery_capability,
     require_regulatory_evidence_capability,
     require_service_capability,
+    RESPONSE_FRESHNESS_CONTRACT_VERSION,
+    response_freshness_required,
     require_trade_price_impact_capability,
     validate_capability_manifest,
 )
@@ -96,6 +98,14 @@ _REQUIRED_ENVELOPE_FIELDS = {
     "errors",
 }
 _ALLOWED_STATUSES: set[str] = {"ok", "partial", "unavailable", "ambiguous", "error"}
+_ALLOWED_RESPONSE_FRESHNESS_STATES: set[str] = {
+    "VERIFIED",
+    "PARTIAL",
+    "NOT_VERIFIED",
+    "UNKNOWN",
+    "STALE",
+    "NOT_APPLICABLE",
+}
 _ALLOWED_RANK_METRICS: set[str] = {
     "volume",
     "liquidity",
@@ -241,9 +251,53 @@ class CMISHTTPClient:
             "confidence": {},
             "sources": [],
             "observed_at": None,
+            "freshness": {
+                "contract_version": RESPONSE_FRESHNESS_CONTRACT_VERSION,
+                "scope": f"{service}.response",
+                "state": "UNKNOWN",
+                "freshness_verified": None,
+                "observed_at": None,
+                "details": {},
+                "reason": "client_generated_error_envelope",
+            },
             "warnings": [item] if warning else [],
             "errors": [] if warning else [item],
         }
+
+    @staticmethod
+    def _freshness_contract_error(
+        freshness: Any,
+        *,
+        service: CMISOperation,
+        observed_at: Any,
+    ) -> str | None:
+        if not isinstance(freshness, dict):
+            return "CMIS response freshness must be an object."
+        if freshness.get("contract_version") != RESPONSE_FRESHNESS_CONTRACT_VERSION:
+            return "CMIS response freshness contract version mismatch."
+        if freshness.get("scope") != f"{service}.response":
+            return "CMIS response freshness scope does not match the requested service."
+        state = freshness.get("state")
+        if not isinstance(state, str) or state not in _ALLOWED_RESPONSE_FRESHNESS_STATES:
+            return f"CMIS response freshness state is invalid: {state!r}."
+        verified = freshness.get("freshness_verified")
+        if verified is not None and not isinstance(verified, bool):
+            return "CMIS response freshness_verified must be boolean or null."
+        if state == "VERIFIED" and verified is not True:
+            return "CMIS VERIFIED response freshness requires freshness_verified=true."
+        if verified is True and state != "VERIFIED":
+            return "CMIS freshness_verified=true requires state=VERIFIED."
+        if freshness.get("observed_at") != observed_at:
+            return "CMIS response freshness observed_at must match the response observed_at."
+        details = freshness.get("details")
+        if not isinstance(details, dict):
+            return "CMIS response freshness details must be an object."
+        if "reason" in freshness and (
+            not isinstance(freshness.get("reason"), str)
+            or not str(freshness.get("reason")).strip()
+        ):
+            return "CMIS response freshness reason must be non-empty text when present."
+        return None
 
     @classmethod
     def _validate_envelope(
@@ -253,6 +307,7 @@ class CMISHTTPClient:
         service: CMISOperation,
         chain: str,
         asset: str,
+        require_response_freshness: bool = False,
     ) -> CMISEnvelope:
         if not isinstance(value, dict):
             return cls._error_envelope(
@@ -295,6 +350,35 @@ class CMISHTTPClient:
                 code="invalid_cmis_status",
                 message=f"CMIS returned unsupported status {status!r}.",
             )
+
+        freshness = value.get("freshness")
+        if require_response_freshness and freshness is None:
+            return cls._error_envelope(
+                service=service,
+                chain=chain,
+                asset=asset,
+                status="error",
+                code="cmis_response_freshness_missing",
+                message=(
+                    "CMIS 1.27+ advertised universal response freshness but "
+                    "the service response omitted freshness."
+                ),
+            )
+        if freshness is not None:
+            freshness_error = cls._freshness_contract_error(
+                freshness,
+                service=service,
+                observed_at=value.get("observed_at"),
+            )
+            if freshness_error:
+                return cls._error_envelope(
+                    service=service,
+                    chain=chain,
+                    asset=asset,
+                    status="error",
+                    code="invalid_cmis_response_freshness",
+                    message=freshness_error,
+                )
         return value  # type: ignore[return-value]
 
     def _send_payload(
@@ -309,11 +393,13 @@ class CMISHTTPClient:
         # that the live CMIS deployment has not explicitly classified as
         # callable under a compatible contract version.
         try:
+            manifest = self.capabilities()
             require_service_capability(
-                self.capabilities(),
+                manifest,
                 chain=chain,
                 service=service,
             )
+            require_freshness = response_freshness_required(manifest)
         except CMISCapabilityUnavailable as exc:
             return self._error_envelope(
                 service=service,
@@ -390,6 +476,7 @@ class CMISHTTPClient:
             service=service,
             chain=chain,
             asset=error_context,
+            require_response_freshness=require_freshness,
         )
 
     def _request(
