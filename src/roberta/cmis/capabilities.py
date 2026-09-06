@@ -77,6 +77,36 @@ BRIDGE_TO_XDEX_REQUIRED_LIMITATIONS = (
     "no_execution_authorization",
     "x1_only_initial_scope",
 )
+TRADE_PRICE_IMPACT_MIN_CMIS_CONTRACT_VERSION = "1.24.0"
+TRADE_PRICE_IMPACT_CONTRACT_VERSION = "trade_price_impact_intelligence/v1"
+TRADE_PRICE_IMPACT_REQUIRED_REQUIREMENTS = (
+    "exact_x1_asset_mint_identity",
+    "cmis_owned_trade_evidence_resolver",
+    "verified_public_wallet_transaction_direction",
+    "verified_exact_selected_pool_membership",
+    "single_normalized_recognized_amm_attribution",
+    "exact_selected_pool_vault_deltas",
+    "verified_execution_price_from_exact_pool_leg_amounts",
+    "transaction_adjacent_pre_and_post_pool_reserves",
+    "verified_exact_pool_rolling_24h_window",
+    "same_verified_usd_basis_for_trade_and_window_volume",
+    "strictly_ordered_next_pool_trade_when_next_price_claimed",
+)
+TRADE_PRICE_IMPACT_REQUIRED_LIMITATIONS = (
+    "pool_local_price_impact_is_not_whole_market_price_impact",
+    "wallet_address_is_not_real_world_identity",
+    "large_wallet_is_not_whale_insider_owner_or_manipulator",
+    "volume_contribution_is_not_volume_causality",
+    "sequence_or_correlation_is_not_broader_market_causality",
+    "one_pool_is_not_every_x1_market_or_dex",
+    "routed_or_multi_amm_transactions_fail_closed",
+    "same_slot_next_trade_ordering_is_unavailable",
+    "source_independence_unverified_unless_separately_proven",
+    "no_automatic_risk_conclusion",
+    "no_trade_recommendation",
+    "no_execution_authorization",
+    "x1_only_initial_scope",
+)
 CONCENTRATION_WARNING_REQUIRED_REQUIREMENTS = (
     "x1_only",
     "exact_x1_asset_id",
@@ -1204,6 +1234,76 @@ def require_bridge_to_xdex_utilization_capability(
 
 
 
+def require_trade_price_impact_capability(
+    manifest: Mapping[str, Any],
+    *,
+    chain: str = "x1",
+) -> CMISServiceCapability:
+    """Require accepted CMIS 1.24 trade price-impact promotion."""
+
+    normalized_chain = str(chain or "").strip().lower()
+    if normalized_chain != "x1":
+        raise CMISCapabilityUnavailable(
+            chain=normalized_chain,
+            service="trade_price_impact_intelligence",
+            state=None,
+            limitations=["trade_price_impact_intelligence_x1_only"],
+        )
+    version = manifest.get("contract_version")
+    if _semver(version) < _semver(
+        TRADE_PRICE_IMPACT_MIN_CMIS_CONTRACT_VERSION
+    ):
+        raise CMISCapabilityContractError(
+            "CMIS Trade Price-Impact Intelligence requires contract "
+            f">={TRADE_PRICE_IMPACT_MIN_CMIS_CONTRACT_VERSION}, got {version!r}."
+        )
+    capability = require_service_capability(
+        manifest,
+        chain=normalized_chain,
+        service="trade_price_impact_intelligence",
+    )
+    if capability.get("state") != "bounded":
+        raise CMISCapabilityContractError(
+            "CMIS x1/trade_price_impact_intelligence state must remain bounded."
+        )
+    if capability.get(
+        "service_contract_version"
+    ) != TRADE_PRICE_IMPACT_CONTRACT_VERSION:
+        raise CMISCapabilityContractError(
+            "CMIS x1/trade_price_impact_intelligence service contract mismatch."
+        )
+    for field, expected in (
+        ("read_only", True),
+        ("public_service_promoted", True),
+        ("scout_reliance_promoted", True),
+        ("execution_authorized", False),
+    ):
+        if capability.get(field) is not expected:
+            raise CMISCapabilityContractError(
+                f"CMIS x1/trade_price_impact_intelligence {field} must be "
+                f"{str(expected).lower()}."
+            )
+    missing_requirements = sorted(
+        set(TRADE_PRICE_IMPACT_REQUIRED_REQUIREMENTS)
+        - set(capability["requirements"])
+    )
+    if missing_requirements:
+        raise CMISCapabilityContractError(
+            "CMIS x1/trade_price_impact_intelligence is missing accepted "
+            f"requirements: {missing_requirements!r}."
+        )
+    missing_limitations = sorted(
+        set(TRADE_PRICE_IMPACT_REQUIRED_LIMITATIONS)
+        - set(capability["limitations"])
+    )
+    if missing_limitations:
+        raise CMISCapabilityContractError(
+            "CMIS x1/trade_price_impact_intelligence is missing accepted "
+            f"limitations: {missing_limitations!r}."
+        )
+    return capability
+
+
 def require_cross_chain_provenance_capability(
     manifest: Mapping[str, Any],
     *,
@@ -1372,7 +1472,12 @@ __all__ = [
     "INTELLIGENCE_FOUNDATION_SCHEMA_VERSION",
     "INTELLIGENCE_PROMOTION_RULE",
     "MIN_CMIS_CONTRACT_VERSION",
+    "TRADE_PRICE_IMPACT_CONTRACT_VERSION",
+    "TRADE_PRICE_IMPACT_MIN_CMIS_CONTRACT_VERSION",
+    "TRADE_PRICE_IMPACT_REQUIRED_LIMITATIONS",
+    "TRADE_PRICE_IMPACT_REQUIRED_REQUIREMENTS",
     "require_bridge_to_xdex_utilization_capability",
+    "require_trade_price_impact_capability",
     "require_burn_intelligence_capability",
     "require_concentration_warning_capability",
     "require_cross_chain_provenance_capability",
