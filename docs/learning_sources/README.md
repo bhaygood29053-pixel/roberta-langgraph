@@ -192,7 +192,7 @@ XenBlocks PoW snapshot (PR #141) — exact-byte Phase 1 blocker
 
 Status: **candidate on ROBERTA #363; not yet accepted on `main`.**
 
-The public branch packages the source manifest and regulatory boundary only; the actual primary-source Learning Plane binding belongs in protected `roberta-core`. It may teach stablecoin statutory concepts and law identity once accepted, but current rulemaking, issuer status, asset/bridge identity, licensing, reserve disclosures, redemption state, and compliance remain freshness-sensitive.
+The public branch packages the source manifest and regulatory boundary only. Protected `roberta-core` owns the digest-bound secondary GENIUS Act primer; exact full-statute primary-source ingestion remains a separate future source-integrity gate. It may teach stablecoin statutory concepts and law identity once accepted, but current rulemaking, issuer status, asset/bridge identity, licensing, reserve disclosures, redemption state, and compliance remain freshness-sensitive.
 
 See `docs/learning_sources/GENIUS_ACT_2025.md`. Exact full-statute mastery may later use the existing immutable autonomous local-source ingestion against an exact GovInfo artifact.
 
