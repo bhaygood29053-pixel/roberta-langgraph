@@ -21,6 +21,7 @@ from roberta.cmis.capabilities import (
     require_discovery_intelligence_capability,
     require_instant_x1_scan_capability,
     require_large_trade_discovery_capability,
+    require_regulatory_evidence_capability,
     require_trade_price_impact_capability,
     require_x1_normalized_asset_identity_capability,
 )
@@ -51,6 +52,10 @@ from roberta.x1_scout.trade_price_impact import (
 from roberta.x1_scout.large_trade_discovery import (
     X1LargeTradeDiscoveryContractError,
     build_x1_large_trade_discovery,
+)
+from roberta.x1_scout.regulatory_intelligence import (
+    X1RegulatoryIntelligenceContractError,
+    build_x1_regulatory_intelligence,
 )
 from roberta.x1_scout.burn_intelligence import (
     X1BurnIntelligenceContractError,
@@ -390,6 +395,55 @@ def _dispatch_cmis_operation(
             max_persistence_window_seconds=required[
                 "warning_max_persistence_window_seconds"
             ],
+        )
+    if operation == "regulatory_evidence":
+        required = {
+            "jurisdiction": request.get("regulatory_jurisdiction"),
+            "framework": request.get("regulatory_framework"),
+            "asset_id": request.get("regulatory_asset_id"),
+            "evaluated_at": request.get("regulatory_evaluated_at"),
+            "max_evidence_age_seconds": request.get(
+                "regulatory_max_evidence_age_seconds"
+            ),
+        }
+        missing = [key for key, value in required.items() if value is None]
+        if missing:
+            raise ValueError(
+                "regulatory_evidence missing explicit selectors/freshness inputs: "
+                + ", ".join(sorted(missing))
+            )
+        try:
+            require_regulatory_evidence_capability(
+                cmis_client.capabilities(),
+                chain="x1",
+            )
+        except (CMISCapabilityUnavailable, CMISCapabilityContractError) as exc:
+            return {
+                "service": "regulatory_evidence",
+                "chain": "x1",
+                "status": "unavailable",
+                "asset": {"query": asset},
+                "data": {},
+                "risk": None,
+                "confidence": {},
+                "sources": [],
+                "observed_at": None,
+                "warnings": [{
+                    "code": "cmis_regulatory_evidence_contract_unavailable",
+                    "message": str(exc),
+                }],
+                "errors": [],
+            }
+        return cmis_client.regulatory_evidence(
+            chain="x1",
+            asset=str(asset),
+            jurisdiction=str(required["jurisdiction"]),
+            framework=str(required["framework"]),
+            asset_id=str(required["asset_id"]),
+            evaluated_at=str(required["evaluated_at"]),
+            max_evidence_age_seconds=float(
+                required["max_evidence_age_seconds"]
+            ),
         )
     if operation == "large_trade_discovery":
         asset_mint = request.get("large_trade_asset_mint")
@@ -966,6 +1020,32 @@ def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
                 )
             )
         except X1CrossChainProvenanceContractError:
+            pass
+
+    if (
+        primary_result.get("service") == "regulatory_evidence"
+        and primary_result.get("status") == "ok"
+    ):
+        expected_request = {
+            "jurisdiction": request.get("regulatory_jurisdiction"),
+            "framework": request.get("regulatory_framework"),
+            "asset_id": request.get("regulatory_asset_id"),
+            "asset_mint": request.get("asset"),
+            "evaluated_at": request.get("regulatory_evaluated_at"),
+            "max_evidence_age_seconds": request.get(
+                "regulatory_max_evidence_age_seconds"
+            ),
+        }
+        try:
+            regulatory_product = build_x1_regulatory_intelligence(
+                primary_result,
+                expected_request=expected_request,
+            )
+            report["x1_regulatory_intelligence"] = regulatory_product
+            report["roberta_regulatory_intelligence"] = regulatory_product[
+                "roberta_regulatory_intelligence"
+            ]
+        except X1RegulatoryIntelligenceContractError:
             pass
 
     if (
