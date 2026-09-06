@@ -8,6 +8,9 @@ from langchain_core.tools import BaseTool, StructuredTool
 from roberta.cmis.client import CMISClient
 from roberta.cmis.concentration_intelligence import normalize_intelligence_evidence_id
 from roberta.cmis.concentration_warning import normalize_warning_request
+from roberta.cmis.large_trade_discovery import (
+    normalize_large_trade_discovery_request,
+)
 from roberta.cmis.contracts import TradeAction
 from roberta.x1_scout.asset_intelligence_workflow import run_x1_asset_intelligence_workflow
 from roberta.x1_scout.asset_overview_workflow import run_x1_asset_overview_workflow
@@ -40,6 +43,7 @@ def build_x1_scout_tool(
             "bridge_to_xdex_utilization",
             "cross_chain_asset_provenance",
             "trade_price_impact_intelligence",
+            "large_trade_discovery",
         ] | None = None,
         action: TradeAction | None = None,
         amount_usd: float | None = None,
@@ -62,6 +66,9 @@ def build_x1_scout_tool(
         provenance_current_asset_id_kind: str | None = None,
         trade_price_impact_evidence_id: str | None = None,
         trade_price_impact_asset_mint: str | None = None,
+        large_trade_asset_mint: str | None = None,
+        large_trade_direction: str | None = None,
+        large_trade_limit: int | None = None,
         compare_asset: str | None = None,
         include_history: bool = False,
     ) -> str:
@@ -143,6 +150,18 @@ def build_x1_scout_tool(
             raise ValueError(
                 "trade price-impact selector/identity inputs require "
                 "operation='trade_price_impact_intelligence'"
+            )
+        large_trade_inputs = (
+            large_trade_asset_mint,
+            large_trade_direction,
+            large_trade_limit,
+        )
+        if operation != "large_trade_discovery" and any(
+            value is not None for value in large_trade_inputs
+        ):
+            raise ValueError(
+                "large-trade discovery inputs require "
+                "operation='large_trade_discovery'"
             )
         warning_inputs = (
             intelligence_evidence_ids,
@@ -320,6 +339,49 @@ def build_x1_scout_tool(
                 {
                     "operation": "concentration_change_intelligence",
                     "intelligence_evidence_id": evidence_id,
+                }
+            )
+        elif operation == "large_trade_discovery":
+            if include_history or compare_asset is not None:
+                raise ValueError(
+                    "history/compare inputs are not accepted for large-trade discovery"
+                )
+            if action is not None or amount_usd is not None:
+                raise ValueError(
+                    "trade action/amount are not accepted for large-trade discovery"
+                )
+            if (
+                intelligence_evidence_id is not None
+                or intelligence_evidence_ids is not None
+            ):
+                raise ValueError(
+                    "concentration evidence inputs are not accepted for large-trade discovery"
+                )
+            if (
+                large_trade_asset_mint is None
+                or large_trade_direction is None
+                or large_trade_limit is None
+            ):
+                raise ValueError(
+                    "large_trade_discovery requires exact X1 asset mint, "
+                    "BUY/SELL/ANY direction, and bounded top-N limit"
+                )
+            normalized = normalize_large_trade_discovery_request(
+                asset_mint=large_trade_asset_mint,
+                direction=large_trade_direction,
+                limit=large_trade_limit,
+            )
+            normalized_asset = str(asset or "").strip()
+            if normalized_asset != normalized["asset_mint"]:
+                raise ValueError(
+                    "large-trade discovery asset must equal the exact X1 asset mint"
+                )
+            request.update(
+                {
+                    "operation": "large_trade_discovery",
+                    "large_trade_asset_mint": normalized["asset_mint"],
+                    "large_trade_direction": normalized["direction"],
+                    "large_trade_limit": normalized["limit"],
                 }
             )
         elif operation == "trade_price_impact_intelligence":
@@ -558,6 +620,15 @@ def build_x1_scout_tool(
             "use operation='concentration_change_intelligence' only when an exact "
             "CMIS-owned ie_ content id is present in the user request or trusted current "
             "context; copy it into intelligence_evidence_id and never invent one. "
+            "For promoted Large-Trade Discovery, use "
+            "operation='large_trade_discovery' when the user asks for the biggest "
+            "or top verified buys/sells and the exact X1 asset mint is available. "
+            "Copy the exact mint into large_trade_asset_mint, choose BUY/SELL/ANY "
+            "from the request, and provide a bounded large_trade_limit. Preserve "
+            "CMIS ranking order and verified USD notionals exactly; do not re-rank, "
+            "widen the provider-scoped pool universe to every X1 DEX, infer a "
+            "real-world wallet owner, add whale/insider/manipulator labels, infer "
+            "intent/coordination, or create risk/recommendation conclusions. "
             "For promoted Trade Price-Impact Intelligence, use "
             "operation='trade_price_impact_intelligence' only when the exact "
             "CMIS-owned evidence id and exact X1 asset mint are present in trusted "
