@@ -6,8 +6,8 @@ Parent issue: #376
 
 Implementation issues:
 - #377 — Human Response Contract v1
-- `roberta-core#72` — Canonical Human Response Decision Object v1
-- #378 — Human language renderer + Quick / Normal / Deep Dive response modes
+- `roberta-core#72` — Canonical Human Response Decision Object v1 — **ACCEPTED** via protected PR #74 / merge `cff1be5bf95c29ac163dc9228bfdf4c1056762dd`
+- #378 — Human language renderer + Quick / Normal / Deep Dive response modes — **NEXT EXACT GATE**
 - #379 — Conversational continuity for evidence-bound follow-up decisions
 - #380 — Human Response Learning Corpus + response-quality evaluator
 - #381 — Website progressive evidence disclosure + human decision labels
@@ -306,14 +306,16 @@ The exact wording is not contractual, but the product target is:
 The public [ROBERTA Human Response Contract v1](./ROBERTA_HUMAN_RESPONSE_CONTRACT_V1.md) and `roberta_human_response/v1` validator are accepted. The contract consumes accepted `roberta_opinion/v1`; it does not create a second recommendation system.
 
 ### Phase B — Protected decision object
-`roberta-core#72` — **NEXT EXACT GATE**
+`roberta-core#72` — **ACCEPTED** via protected PR #74 / merge `cff1be5bf95c29ac163dc9228bfdf4c1056762dd`
 
-Populate the canonical Human Response Decision Object fields from accepted Decision Object + Opinion evidence without recomputing CMIS facts.
+The protected `roberta_human_response_decision/v1` object now carries source-bound primary driver, supporting evidence, counterevidence, important unknowns, conviction, evidence profile, evidence-bound change-my-mind conditions, recommendation family, technical-detail availability, and response-depth eligibility without recomputing CMIS facts.
 
 ### Phase C — Human renderer
-#378
+#378 — **NEXT EXACT GATE**
 
-Implement Quick / Normal / Deep Dive / Machine behavior.
+Implement Quick / Normal / Deep Dive human prose over the accepted public `roberta_human_response/v1` contract and protected `roberta_human_response_decision/v1` object.
+
+
 
 ### Phase D — Continuity
 #379
