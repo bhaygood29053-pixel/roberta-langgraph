@@ -19,6 +19,7 @@ from roberta.cmis.capabilities import (
     require_discovery_intelligence_capability,
     require_historical_all_available_capability,
     require_instant_x1_scan_capability,
+    require_large_trade_discovery_capability,
     require_service_capability,
     require_trade_price_impact_capability,
     validate_capability_manifest,
@@ -55,6 +56,12 @@ from roberta.cmis.trade_price_impact import (
     CMISTradePriceImpactContractError,
     normalize_trade_price_impact_request,
     validate_trade_price_impact_response,
+)
+from roberta.cmis.large_trade_discovery import (
+    SERVICE as LARGE_TRADE_DISCOVERY_SERVICE,
+    CMISLargeTradeDiscoveryContractError,
+    normalize_large_trade_discovery_request,
+    validate_large_trade_discovery_response,
 )
 from roberta.cmis.contracts import (
     CMISEnvelope,
@@ -884,6 +891,75 @@ class CMISHTTPClient:
                 asset=normalized_asset,
                 status="error",
                 code="invalid_cmis_cross_chain_provenance_response",
+                message=str(exc),
+            )
+
+    def large_trade_discovery(
+        self,
+        *,
+        chain: str,
+        asset_mint: str,
+        direction: str = "ANY",
+        limit: int = 5,
+    ) -> CMISEnvelope:
+        normalized_chain, normalized_asset = self._identity(
+            chain,
+            asset_mint,
+        )
+        try:
+            require_large_trade_discovery_capability(
+                self.capabilities(),
+                chain=normalized_chain,
+            )
+            params = normalize_large_trade_discovery_request(
+                asset_mint=normalized_asset,
+                direction=direction,
+                limit=limit,
+            )
+        except CMISCapabilityUnavailable as exc:
+            return self._error_envelope(
+                service=LARGE_TRADE_DISCOVERY_SERVICE,
+                chain=normalized_chain,
+                asset=normalized_asset,
+                status="unavailable",
+                code="cmis_large_trade_discovery_unavailable",
+                message=str(exc),
+                warning=True,
+            )
+        except (
+            CMISCapabilityContractError,
+            CMISLargeTradeDiscoveryContractError,
+        ) as exc:
+            return self._error_envelope(
+                service=LARGE_TRADE_DISCOVERY_SERVICE,
+                chain=normalized_chain,
+                asset=normalized_asset,
+                status="unavailable",
+                code="cmis_large_trade_discovery_contract_unavailable",
+                message=f"CMIS Large-Trade Discovery contract unavailable: {exc}",
+                warning=True,
+            )
+
+        response = self._request(
+            service=LARGE_TRADE_DISCOVERY_SERVICE,
+            chain=normalized_chain,
+            asset=normalized_asset,
+            params=params,
+        )
+        if response.get("status") != "ok":
+            return response
+        try:
+            return validate_large_trade_discovery_response(
+                response,
+                expected_request=params,
+            )
+        except CMISLargeTradeDiscoveryContractError as exc:
+            return self._error_envelope(
+                service=LARGE_TRADE_DISCOVERY_SERVICE,
+                chain=normalized_chain,
+                asset=normalized_asset,
+                status="error",
+                code="invalid_cmis_large_trade_discovery_response",
                 message=str(exc),
             )
 

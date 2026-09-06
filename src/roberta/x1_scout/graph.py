@@ -20,6 +20,7 @@ from roberta.cmis.capabilities import (
     require_cross_chain_provenance_capability,
     require_discovery_intelligence_capability,
     require_instant_x1_scan_capability,
+    require_large_trade_discovery_capability,
     require_trade_price_impact_capability,
     require_x1_normalized_asset_identity_capability,
 )
@@ -46,6 +47,10 @@ from roberta.x1_scout.cross_chain_provenance import (
 from roberta.x1_scout.trade_price_impact import (
     X1TradePriceImpactContractError,
     build_x1_trade_price_impact_intelligence,
+)
+from roberta.x1_scout.large_trade_discovery import (
+    X1LargeTradeDiscoveryContractError,
+    build_x1_large_trade_discovery,
 )
 from roberta.x1_scout.burn_intelligence import (
     X1BurnIntelligenceContractError,
@@ -386,6 +391,46 @@ def _dispatch_cmis_operation(
                 "warning_max_persistence_window_seconds"
             ],
         )
+    if operation == "large_trade_discovery":
+        asset_mint = request.get("large_trade_asset_mint")
+        direction = request.get("large_trade_direction")
+        limit = request.get("large_trade_limit")
+        if asset_mint is None or direction is None or limit is None:
+            raise ValueError(
+                "large_trade_discovery requires exact X1 asset mint, direction, and limit"
+            )
+        if str(asset or "").strip() != str(asset_mint).strip():
+            raise ValueError(
+                "large-trade discovery asset must equal the exact X1 asset mint"
+            )
+        try:
+            require_large_trade_discovery_capability(
+                cmis_client.capabilities(),
+                chain="x1",
+            )
+        except (CMISCapabilityUnavailable, CMISCapabilityContractError) as exc:
+            return {
+                "service": "large_trade_discovery",
+                "chain": "x1",
+                "status": "unavailable",
+                "asset": {"query": asset},
+                "data": {},
+                "risk": None,
+                "confidence": {},
+                "sources": [],
+                "observed_at": None,
+                "warnings": [{
+                    "code": "cmis_large_trade_discovery_contract_unavailable",
+                    "message": str(exc),
+                }],
+                "errors": [],
+            }
+        return cmis_client.large_trade_discovery(
+            chain="x1",
+            asset_mint=str(asset_mint),
+            direction=str(direction),
+            limit=int(limit),
+        )
     if operation == "trade_price_impact_intelligence":
         evidence_id = request.get("trade_price_impact_evidence_id")
         asset_mint = request.get("trade_price_impact_asset_mint")
@@ -620,6 +665,7 @@ def make_cmis_calls_node(cmis_client: CMISClient) -> Callable[[X1ScoutState], di
             and "bridge_to_xdex_utilization" not in operations
             and "cross_chain_asset_provenance" not in operations
             and "trade_price_impact_intelligence" not in operations
+            and "large_trade_discovery" not in operations
             and _looks_like_exact_x1_mint(request.get("asset"))
         ):
             try:
@@ -920,6 +966,25 @@ def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
                 )
             )
         except X1CrossChainProvenanceContractError:
+            pass
+
+    if (
+        primary_result.get("service") == "large_trade_discovery"
+        and primary_result.get("status") == "ok"
+    ):
+        expected_request = {
+            "asset_mint": request.get("large_trade_asset_mint"),
+            "direction": request.get("large_trade_direction"),
+            "limit": request.get("large_trade_limit"),
+        }
+        try:
+            report["x1_large_trade_discovery"] = (
+                build_x1_large_trade_discovery(
+                    primary_result,
+                    expected_request=expected_request,
+                )
+            )
+        except X1LargeTradeDiscoveryContractError:
             pass
 
     if (

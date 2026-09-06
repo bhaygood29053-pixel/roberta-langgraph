@@ -121,6 +121,16 @@ class CMISClient(Protocol):
     ) -> CMISEnvelope:
         ...
 
+    def large_trade_discovery(
+        self,
+        *,
+        chain: str,
+        asset_mint: str,
+        direction: str = "ANY",
+        limit: int = 5,
+    ) -> CMISEnvelope:
+        ...
+
     def concentration_warning_intelligence(
         self,
         *,

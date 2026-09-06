@@ -38,6 +38,9 @@ class X1ScoutRequest(TypedDict):
     provenance_current_asset_id_kind: NotRequired[str]
     trade_price_impact_evidence_id: NotRequired[str]
     trade_price_impact_asset_mint: NotRequired[str]
+    large_trade_asset_mint: NotRequired[str]
+    large_trade_direction: NotRequired[str]
+    large_trade_limit: NotRequired[int]
     compare_asset: NotRequired[str]
 
 
@@ -108,6 +111,7 @@ class X1ScoutReport(TypedDict):
     x1_bridge_to_xdex_utilization: NotRequired[dict[str, object]]
     x1_cross_chain_asset_provenance: NotRequired[dict[str, object]]
     x1_trade_price_impact_intelligence: NotRequired[dict[str, object]]
+    x1_large_trade_discovery: NotRequired[dict[str, object]]
     source: dict[str, str]
     sources: list[object]
     warnings: list[object]
