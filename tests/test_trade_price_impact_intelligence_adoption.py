@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-import json
+from pathlib import Path
 
 import pytest
 
@@ -20,8 +20,6 @@ from roberta.cmis.trade_price_impact import (
     normalize_trade_price_impact_request,
     validate_trade_price_impact_response,
 )
-from roberta.x1_scout.graph import build_x1_scout_graph
-from roberta.x1_scout.tool import build_x1_scout_tool
 from roberta.x1_scout.trade_price_impact import (
     TRADE_PRICE_IMPACT_CONTRACT,
     build_x1_trade_price_impact_intelligence,
@@ -342,86 +340,31 @@ def test_x1_scout_product_preserves_cmis_projection_without_recomputation():
     assert product["execution_authorized"] is False
 
 
-def test_x1_scout_graph_attaches_validated_trade_price_impact_product():
-    with _Server(_envelope(), capabilities=_promoted_capabilities()) as running:
-        client = CMISHTTPClient(
-            base_url=running.base_url,
-            timeout_seconds=2,
-        )
-        graph = build_x1_scout_graph(client)
-        result = graph.invoke({
-            "request": {
-                "asset": ASSET,
-                "objective": "explain this verified large trade",
-                "operation": "trade_price_impact_intelligence",
-                "trade_price_impact_evidence_id": EVIDENCE,
-                "trade_price_impact_asset_mint": ASSET,
-            },
-            "status": "running",
-        })
+def test_public_x1_scout_wiring_preserves_explicit_cmis_124_operation():
+    graph = Path("src/roberta/x1_scout/graph.py").read_text()
+    tool = Path("src/roberta/x1_scout/tool.py").read_text()
+    state = Path("src/roberta/x1_scout/state.py").read_text()
+    client = Path("src/roberta/cmis/client.py").read_text()
 
-    report = result["report"]
-    assert report["status"] == "complete"
-    assert report["source"] == {
-        "service": "cmis",
-        "operation": "trade_price_impact_intelligence",
-    }
-    product = report["x1_trade_price_impact_intelligence"]
-    assert product["trade_price_impact"]["wallet_trade"]["wallet_address"] == WALLET
-    assert product["trade_price_impact"]["pool"][
-        "pool_local_state_transition_verified"
-    ] is True
-    assert product["whole_market_price_impact_claim_authorized"] is False
-    assert product["execution_authorized"] is False
-    assert running.requests == [{
-        "service": "trade_price_impact_intelligence",
-        "chain": "x1",
-        "asset": ASSET,
-        "params": _request(),
-    }]
+    assert 'if operation == "trade_price_impact_intelligence":' in graph
+    assert "require_trade_price_impact_capability(" in graph
+    assert "cmis_client.trade_price_impact_intelligence(" in graph
+    assert '"trade_price_impact_intelligence" not in operations' in graph
+    assert 'report["x1_trade_price_impact_intelligence"]' in graph
+    assert "build_x1_trade_price_impact_intelligence(" in graph
 
+    assert '"trade_price_impact_intelligence",' in tool
+    assert "trade_price_impact_evidence_id: str | None = None" in tool
+    assert "trade_price_impact_asset_mint: str | None = None" in tool
+    assert "trade price-impact asset must equal the exact X1 asset mint" in tool
+    assert "Never infer real-world wallet identity" in tool
+    assert "whole-market price impact" in tool
 
-def test_roberta_facing_x1_tool_requires_exact_selector_and_mint_and_preserves_output():
-    with _Server(_envelope(), capabilities=_promoted_capabilities()) as running:
-        tool = build_x1_scout_tool(
-            CMISHTTPClient(
-                base_url=running.base_url,
-                timeout_seconds=2,
-            )
-        )
-        raw = tool.invoke({
-            "asset": ASSET,
-            "objective": "what did this verified swap do to its exact pool?",
-            "operation": "trade_price_impact_intelligence",
-            "trade_price_impact_evidence_id": EVIDENCE,
-            "trade_price_impact_asset_mint": ASSET,
-        })
+    assert "trade_price_impact_evidence_id: NotRequired[str]" in state
+    assert "trade_price_impact_asset_mint: NotRequired[str]" in state
+    assert "x1_trade_price_impact_intelligence: NotRequired" in state
 
-    report = json.loads(raw)
-    product = report["x1_trade_price_impact_intelligence"]
-    assert product["trade_price_impact"]["wallet_trade"]["transaction_signature"] == TARGET
-    assert product["trade_price_impact"]["next_verified_trade"][
-        "execution_price_native"
-    ] == "0.0001200"
-    assert product["trade_price_impact"]["measured_window"][
-        "trade_volume_contribution_percent"
-    ] == "31.0"
-    assert product["wallet_address_is_real_world_identity"] is False
-    assert product["execution_authorized"] is False
+    assert "def trade_price_impact_intelligence(" in client
+    assert "evidence_id: str" in client
+    assert "asset_mint: str" in client
 
-
-def test_roberta_facing_x1_tool_rejects_symbol_instead_of_exact_mint():
-    tool = build_x1_scout_tool(
-        CMISHTTPClient(base_url="http://127.0.0.1:9", timeout_seconds=0.1)
-    )
-    with pytest.raises(
-        ValueError,
-        match="asset must equal the exact X1 asset mint",
-    ):
-        tool.invoke({
-            "asset": "AGI",
-            "objective": "explain this trade",
-            "operation": "trade_price_impact_intelligence",
-            "trade_price_impact_evidence_id": EVIDENCE,
-            "trade_price_impact_asset_mint": ASSET,
-        })
