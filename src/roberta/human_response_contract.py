@@ -26,6 +26,10 @@ EVIDENCE_PROFILE_STATES = frozenset(
         "STRONG",
         "MODERATE",
         "WEAK",
+        "LOW",
+        "MEDIUM",
+        "HIGH",
+        "VERY_HIGH",
         "VERIFIED",
         "PARTIAL",
         "UNVERIFIED",
@@ -140,8 +144,17 @@ def _validate_opinion_consistency(
         raise HumanResponseContractError(
             "opinion must be an accepted roberta_opinion/v1 envelope"
         )
-    for field in ("recommendation", "conviction", "evidence_quality"):
-        if payload.get(field) != opinion.get(field):
+    expected = {
+        "recommendation": opinion.get("recommendation"),
+        "conviction": (
+            opinion.get("conviction")
+            if opinion.get("conviction") is not None
+            else opinion.get("recommendation_strength")
+        ),
+        "evidence_quality": opinion.get("evidence_quality"),
+    }
+    for field, value in expected.items():
+        if payload.get(field) != value:
             raise HumanResponseContractError(
                 f"{field} must exactly preserve the accepted opinion envelope"
             )
