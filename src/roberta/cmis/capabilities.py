@@ -20,8 +20,8 @@ HISTORICAL_ALL_AVAILABLE_MIN_CMIS_CONTRACT_VERSION = "1.10.0"
 HISTORICAL_PROVIDER_BACKFILL_MIN_CMIS_CONTRACT_VERSION = "1.12.0"
 X1_ASSET_IDENTITY_MIN_CMIS_CONTRACT_VERSION = "1.11.0"
 X1_ASSET_IDENTITY_CONTRACT_VERSION = "x1_asset_identity/v1"
-INSTANT_X1_SCAN_MIN_CMIS_CONTRACT_VERSION = "1.17.0"
-INSTANT_X1_SCAN_CONTRACT_VERSION = "instant_x1_scan/v3"
+INSTANT_X1_SCAN_MIN_CMIS_CONTRACT_VERSION = "1.23.0"
+INSTANT_X1_SCAN_CONTRACT_VERSION = "instant_x1_scan/v6"
 BURN_INTELLIGENCE_MIN_CMIS_CONTRACT_VERSION = "1.15.0"
 BURN_INTELLIGENCE_CONTRACT_VERSION = "burn_intelligence/v1"
 DISCOVERY_INTELLIGENCE_MIN_CMIS_CONTRACT_VERSION = "1.16.0"
@@ -145,20 +145,29 @@ INSTANT_X1_SCAN_REQUIRED_REQUIREMENTS = (
     "cmis_verified_history",
     "bounded_verified_provider_price_backfill",
     "field_scoped_current_market_freshness",
+    "x1_current_market_freshness_v3",
+    "exact_rolling_24h_chain_window_evidence_when_promoted",
     "deterministic_risk_core",
+    "instant_x1_scan_history_adequacy_v1",
+    "native_xnt_supported_pair_price_lifetime_when_history_completion_promoted",
 )
 INSTANT_X1_SCAN_REQUIRED_LIMITATIONS = (
-    "holder_count_may_remain_unverified",
-    "current_top_account_concentration_not_promoted_in_v3",
+    "holder_count_may_remain_unverified_for_non_native_assets",
+    "native_xnt_distribution_uses_native_account_addresses_not_holders",
     "provider_price_backfill_is_price_only",
     "provider_source_independence_not_verified",
-    "provider_archive_completeness_not_verified",
+    "source_independence_is_stronger_optional_corroboration_for_scan_completion",
+    "global_provider_archive_completeness_not_required_for_scan_completion",
     "current_market_freshness_is_field_scoped",
     "price_freshness_uses_timestamped_provider_backfill",
-    "liquidity_volume_transaction_fact_time_not_verified",
+    "rolling_volume_and_transaction_freshness_require_exact_chain_window_evidence",
+    "provider_fact_time_not_promoted_by_chain_reconstruction",
+    "source_independence_separate_from_freshness",
     "collection_time_is_not_provider_fact_time",
-    "history_does_not_imply_complete_asset_lifetime",
-    "continuous_coverage_requires_separate_archive_completeness_proof",
+    "history_completion_is_exact_supported_pair_price_lifetime_only",
+    "full_usd_lifetime_not_required_for_supported_pair_scan_completion",
+    "non_price_metric_lifetimes_not_required_for_scan_completion",
+    "same_fact_provider_close_corroboration_does_not_prove_source_independence",
     "proof_score_separate_from_risk",
     "risk_score_unavailable_until_calibrated",
     "execution_authorized_false",
@@ -843,7 +852,7 @@ def require_instant_x1_scan_capability(
     *,
     chain: str = "x1",
 ) -> CMISServiceCapability:
-    """Require the exact accepted CMIS 1.17 Instant X1 Scan v3 contract."""
+    """Require the exact accepted CMIS 1.23 Instant X1 Scan v6 contract."""
 
     normalized_chain = str(chain or "").strip().lower()
     if normalized_chain != "x1":
