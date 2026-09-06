@@ -1,4 +1,4 @@
-"""Strict validator for the accepted CMIS Instant X1 Scan v3 payload.
+"""Strict validator for the accepted CMIS Instant X1 Scan v6 payload.
 
 CMIS owns the composed facts. This module validates authority/evidence contract
 shape only; it never recomputes market data, proof, risk, holder semantics,
@@ -28,6 +28,8 @@ _REQUIRED_SECTIONS = (
 _FRESHNESS_FIELDS = (
     "price_usd",
     "liquidity_usd",
+    "provider_nominal_liquidity",
+    "independent_liquidity_usd",
     "volume_24h_usd",
     "transactions_24h",
 )
@@ -38,9 +40,17 @@ INSTANT_X1_SCAN_COMMON_RESPONSE_LIMITATIONS = (
     "provider_price_backfill_is_price_only",
     "provider_source_independence_not_verified",
     "current_market_freshness_is_field_scoped",
-    "price_freshness_uses_timestamped_provider_backfill",
-    "liquidity_volume_transaction_fact_time_not_verified",
+    "provider_fact_time_not_promoted_by_chain_reconstruction",
+    "source_independence_separate_from_freshness",
     "collection_time_is_not_provider_fact_time",
+    "provider_nominal_liquidity_is_not_independent_external_usd",
+    "legacy_liquidity_usd_freshness_semantics_preserved_from_v2",
+    "scan_history_completion_is_supported_pair_price_lifetime_only",
+    "source_independence_is_stronger_optional_corroboration_for_scan_completion",
+    "global_provider_archive_completeness_not_required_for_scan_completion",
+    "full_usd_lifetime_not_required_for_supported_pair_scan_completion",
+    "non_price_metric_lifetimes_not_required_for_scan_completion",
+    "same_fact_provider_close_corroboration_does_not_prove_source_independence",
     "proof_score_does_not_modify_market_facts_or_risk",
     "risk_score_remains_unavailable_until_separately_calibrated",
     "execution_authorized_false",
@@ -71,7 +81,7 @@ INSTANT_X1_SCAN_REQUIRED_RESPONSE_LIMITATIONS = (
 
 
 class CMISInstantX1ScanContractError(RuntimeError):
-    """CMIS returned a successful scan outside the accepted v3 authority shape."""
+    """CMIS returned a successful scan outside the accepted v6 authority shape."""
 
 
 def _mapping(value: object, *, field: str) -> Mapping[str, Any]:
@@ -221,23 +231,31 @@ def _validate_current_market_freshness(
         market.get("freshness"),
         field="data.sections.market.freshness",
     )
-    if freshness.get("contract_version") != "x1_current_market_freshness/v1":
+    if freshness.get("contract_version") != "x1_current_market_freshness/v3":
         raise CMISInstantX1ScanContractError(
-            "CMIS Instant X1 Scan v3 market freshness contract mismatch."
+            "CMIS Instant X1 Scan v6 market freshness contract mismatch."
         )
     if freshness.get("scope") != "instant_x1_scan.current_market":
         raise CMISInstantX1ScanContractError(
-            "CMIS Instant X1 Scan v3 market freshness scope mismatch."
+            "CMIS Instant X1 Scan v6 market freshness scope mismatch."
+        )
+    if freshness.get("execution_authorized") is not False:
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan v6 freshness must preserve execution_authorized=false."
         )
 
-    for field in (
+    for optional_bool in (
         "collection_freshness_verified",
         "provider_price_fact_time_verified",
         "current_market_freshness_verified",
+        "provider_nominal_liquidity_freshness_verified",
+        "independent_liquidity_usd_freshness_verified",
     ):
-        if not isinstance(freshness.get(field), bool):
+        if optional_bool in freshness and not isinstance(
+            freshness.get(optional_bool), bool
+        ):
             raise CMISInstantX1ScanContractError(
-                f"CMIS Instant X1 Scan v3 freshness.{field} must be boolean."
+                f"CMIS Instant X1 Scan v6 freshness.{optional_bool} must be boolean."
             )
 
     fields = _mapping(
@@ -246,7 +264,7 @@ def _validate_current_market_freshness(
     )
     if set(fields) != set(_FRESHNESS_FIELDS):
         raise CMISInstantX1ScanContractError(
-            "CMIS Instant X1 Scan v3 freshness fields must match the accepted market field set."
+            "CMIS Instant X1 Scan v6 freshness fields must match the accepted six-field set."
         )
 
     verified_count = 0
@@ -258,45 +276,59 @@ def _validate_current_market_freshness(
         verified = record.get("freshness_verified")
         if not isinstance(verified, bool):
             raise CMISInstantX1ScanContractError(
-                f"CMIS Instant X1 Scan v3 freshness field {field_name} must expose boolean freshness_verified."
+                f"CMIS Instant X1 Scan v6 freshness field {field_name} must expose boolean freshness_verified."
             )
-        reason = record.get("reason")
-        if not isinstance(reason, str) or not reason.strip():
+        if "reason" in record and (
+            not isinstance(record.get("reason"), str)
+            or not str(record.get("reason")).strip()
+        ):
             raise CMISInstantX1ScanContractError(
-                f"CMIS Instant X1 Scan v3 freshness field {field_name} must expose a reason."
+                f"CMIS Instant X1 Scan v6 freshness field {field_name} reason must be non-empty text."
             )
+        if field_name in {
+            "provider_nominal_liquidity",
+            "independent_liquidity_usd",
+        }:
+            for boundary in ("provider_fact_time_verified", "source_independence_verified"):
+                if boundary in record and record.get(boundary) is not False:
+                    raise CMISInstantX1ScanContractError(
+                        f"CMIS Instant X1 Scan v6 {field_name}.{boundary} must remain false."
+                    )
         if verified:
             verified_count += 1
 
-    if any(
-        _mapping(fields.get(field_name), field=field_name).get("freshness_verified") is True
-        for field_name in ("liquidity_usd", "volume_24h_usd", "transactions_24h")
-    ):
-        raise CMISInstantX1ScanContractError(
-            "CMIS 1.17 Instant X1 Scan v3 must not promote liquidity, rolling volume, or transaction freshness."
-        )
-
-    price_fresh = (
-        _mapping(fields.get("price_usd"), field="price_usd").get("freshness_verified")
-        is True
+    nominal = _mapping(
+        fields.get("provider_nominal_liquidity"),
+        field="provider_nominal_liquidity",
     )
-    if price_fresh and (
-        freshness.get("collection_freshness_verified") is not True
-        or freshness.get("provider_price_fact_time_verified") is not True
+    independent = _mapping(
+        fields.get("independent_liquidity_usd"),
+        field="independent_liquidity_usd",
+    )
+    if nominal.get("freshness_verified") is True and (
+        nominal.get("unit") != "USDC.X_nominal_quote_basis"
+        or nominal.get("value") is None
     ):
         raise CMISInstantX1ScanContractError(
-            "Verified price freshness requires verified collection recency and provider price fact time."
+            "Verified provider-nominal liquidity requires exact USDC.X nominal unit and value."
+        )
+    if independent.get("freshness_verified") is True and (
+        independent.get("unit") != "USD"
+        or independent.get("value") is None
+    ):
+        raise CMISInstantX1ScanContractError(
+            "Verified independent liquidity requires a current USD value."
         )
 
     total_field_count = freshness.get("total_field_count")
     reported_verified_count = freshness.get("verified_field_count")
     if total_field_count != len(_FRESHNESS_FIELDS):
         raise CMISInstantX1ScanContractError(
-            "CMIS Instant X1 Scan v3 freshness total_field_count mismatch."
+            "CMIS Instant X1 Scan v6 freshness total_field_count mismatch."
         )
     if type(reported_verified_count) is not int or reported_verified_count != verified_count:
         raise CMISInstantX1ScanContractError(
-            "CMIS Instant X1 Scan v3 freshness verified_field_count mismatch."
+            "CMIS Instant X1 Scan v6 freshness verified_field_count mismatch."
         )
 
     expected_state = (
@@ -306,33 +338,57 @@ def _validate_current_market_freshness(
     )
     if freshness.get("freshness_state") != expected_state:
         raise CMISInstantX1ScanContractError(
-            "CMIS Instant X1 Scan v3 freshness_state does not match field verification."
+            "CMIS Instant X1 Scan v6 freshness_state does not match field verification."
         )
     if freshness.get("current_market_freshness_verified") is not (
         verified_count == len(_FRESHNESS_FIELDS)
     ):
         raise CMISInstantX1ScanContractError(
-            "CMIS Instant X1 Scan v3 global freshness flag does not match field verification."
+            "CMIS Instant X1 Scan v6 global freshness flag does not match field verification."
+        )
+
+    price_fresh = _mapping(fields.get("price_usd"), field="price_usd").get(
+        "freshness_verified"
+    ) is True
+    if price_fresh and (
+        freshness.get("collection_freshness_verified") is not True
+        or freshness.get("provider_price_fact_time_verified") is not True
+    ):
+        raise CMISInstantX1ScanContractError(
+            "Verified price freshness requires verified collection recency and provider price fact time."
         )
 
     market_flags = {
         "price_usd": "price_freshness_verified",
         "liquidity_usd": "liquidity_freshness_verified",
+        "provider_nominal_liquidity": "provider_nominal_liquidity_freshness_verified",
+        "independent_liquidity_usd": "independent_liquidity_usd_freshness_verified",
         "volume_24h_usd": "volume_24h_freshness_verified",
         "transactions_24h": "transactions_24h_freshness_verified",
     }
     for field_name, flag_name in market_flags.items():
-        expected = (
-            _mapping(fields.get(field_name), field=field_name).get("freshness_verified")
-            is True
-        )
+        expected = _mapping(fields.get(field_name), field=field_name).get(
+            "freshness_verified"
+        ) is True
         if market.get(flag_name) is not expected:
             raise CMISInstantX1ScanContractError(
-                f"CMIS Instant X1 Scan v3 market.{flag_name} must match freshness.fields.{field_name}."
+                f"CMIS Instant X1 Scan v6 market.{flag_name} must match freshness.fields.{field_name}."
             )
 
-    return freshness
+    if market.get("provider_nominal_liquidity") != nominal.get("value"):
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan v6 provider nominal liquidity projection mismatch."
+        )
+    if market.get("provider_nominal_liquidity_unit") != nominal.get("unit"):
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan v6 provider nominal liquidity unit mismatch."
+        )
+    if market.get("independent_liquidity_usd") != independent.get("value"):
+        raise CMISInstantX1ScanContractError(
+            "CMIS Instant X1 Scan v6 independent liquidity projection mismatch."
+        )
 
+    return freshness
 
 def validate_instant_x1_scan_response(
     envelope: CMISEnvelope,
