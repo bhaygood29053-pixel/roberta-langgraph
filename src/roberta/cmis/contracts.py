@@ -24,6 +24,7 @@ CMISService: TypeAlias = Literal[
     "bridge_to_xdex_utilization",
     "cross_chain_asset_provenance",
     "trade_price_impact_intelligence",
+    "large_trade_discovery",
     "instant_x1_scan",
 ]
 CMISOperation: TypeAlias = Literal[
@@ -42,6 +43,7 @@ CMISOperation: TypeAlias = Literal[
     "bridge_to_xdex_utilization",
     "cross_chain_asset_provenance",
     "trade_price_impact_intelligence",
+    "large_trade_discovery",
     "instant_x1_scan",
 ]
 CMISStatus: TypeAlias = Literal[
@@ -104,4 +106,5 @@ CMISConcentrationWarningIntelligence: TypeAlias = CMISEnvelope
 CMISBridgeToXdexUtilization: TypeAlias = CMISEnvelope
 CMISCrossChainAssetProvenance: TypeAlias = CMISEnvelope
 CMISTradePriceImpactIntelligence: TypeAlias = CMISEnvelope
+CMISLargeTradeDiscovery: TypeAlias = CMISEnvelope
 CMISInstantX1Scan: TypeAlias = CMISEnvelope
