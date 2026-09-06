@@ -214,7 +214,7 @@ def test_deep_dive_adds_evidence_profile_and_technical_boundary():
         ("EXIT", "I'd exit the X1X position."),
         (
             "INSUFFICIENT_EVIDENCE",
-            "I don't have enough evidence to support a X1X trade decision yet.",
+            "I don't have enough evidence to support a trade decision on X1X yet.",
         ),
     ],
 )
@@ -290,6 +290,7 @@ def test_renderer_rejects_machine_status_as_primary_economic_meaning():
     ("workflow", "source_contract"),
     [
         ("instant_x1_scan", "instant_x1_scan_product_view/v1"),
+        ("x1_compare", "x1_compare/v1"),
         ("x1_burn_intelligence", "x1_burn_intelligence/v1"),
         ("x1_discovery_intelligence", "x1_discovery_intelligence/v1"),
         ("x1_what_changed", "x1_what_changed/v1"),
