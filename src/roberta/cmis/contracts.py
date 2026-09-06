@@ -71,6 +71,18 @@ RankMetric: TypeAlias = Literal[
 ]
 
 
+class CMISResponseFreshness(TypedDict):
+    """Top-level CMIS response-freshness contract promoted in CMIS 1.27."""
+
+    contract_version: str
+    scope: str
+    state: str
+    freshness_verified: bool | None
+    observed_at: object | None
+    details: dict[str, object]
+    reason: NotRequired[str]
+
+
 class CMISEnvelope(TypedDict):
     """Standard CMIS HTTP response envelope plus evidence-quality metadata."""
 
@@ -83,6 +95,10 @@ class CMISEnvelope(TypedDict):
     confidence: dict[str, object]
     sources: list[object]
     observed_at: object | None
+    # Required by the live HTTP client after a CMIS 1.27 capability handshake.
+    # NotRequired preserves structural compatibility with older deterministic
+    # fixtures/adapters that predate universal response freshness.
+    freshness: NotRequired[CMISResponseFreshness]
     warnings: list[object]
     errors: list[object]
     # Added by CMIS contract >=1.7.0. NotRequired keeps legacy deterministic
