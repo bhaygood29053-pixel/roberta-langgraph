@@ -8,7 +8,11 @@ import urllib.request
 import pytest
 from langchain_core.messages import AIMessage, ToolMessage
 
-from roberta.bridge_http import RobertaBridge, create_server
+from roberta.bridge_http import (
+    EVALUATION_TELEMETRY_VERSION,
+    RobertaBridge,
+    create_server,
+)
 
 
 class FakeGraph:
@@ -185,6 +189,147 @@ def test_http_bridge_rejects_invalid_thread_id(thread_id):
         )
         assert status == 400
         assert payload["error"]["code"] == "invalid_thread_id"
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
+
+
+def test_http_bridge_evaluation_mode_exposes_only_accepted_final_structures():
+    final = AIMessage(
+        content="I would avoid XNT for now.",
+        additional_kwargs={
+            "roberta_human_response_decision": {
+                "contract_version": "roberta_human_response_decision/v1",
+                "subject": {"chain": "x1", "symbol": "XNT"},
+                "recommendation": "AVOID",
+                "conviction": "MODERATE",
+                "evidence_quality": "LOW",
+                "primary_decision_driver": {
+                    "fact_ref": "facts.market.liquidity_usd",
+                    "source_value": 1250.0,
+                },
+                "evidence_profile": [
+                    {
+                        "dimension": "freshness",
+                        "state": "VERIFIED",
+                        "source_ref": "facts.market.freshness.freshness_state",
+                        "source_value": "VERIFIED",
+                    }
+                ],
+                "facts_authority": "chain_scout_cmis",
+                "judgment_authority": "roberta",
+                "execution_authorized": False,
+            },
+            "roberta_opinion": {
+                "contract_version": "roberta_opinion/v1",
+                "recommendation": "AVOID",
+                "facts_authority": "chain_scout_cmis",
+                "judgment_authority": "roberta",
+                "execution_authorized": False,
+            },
+            "roberta_claim_integrity": {
+                "contract_version": "roberta_claim_integrity/v1",
+                "status": "PASS",
+                "source_contracts": ["instant_x1_scan_product_view/v1"],
+                "facts_authority": "chain_scout_cmis",
+                "judgment_authority": "roberta",
+                "provider_truth_certified": False,
+                "all_natural_language_claims_certified": False,
+                "execution_authorized": False,
+            },
+            "roberta_human_renderer": {
+                "contract_version": "roberta_human_renderer/v1",
+                "facts_authority": "chain_scout_cmis",
+                "judgment_authority": "roberta",
+                "execution_authorized": False,
+            },
+        },
+    )
+    bridge = RobertaBridge(FakeGraph([final]))
+    server, thread = _serve_once(bridge)
+    try:
+        url = f"http://127.0.0.1:{server.server_port}/v1/roberta"
+        status, payload = _request(
+            url,
+            body={
+                "message": "Should I buy XNT?",
+                "evaluation_mode": EVALUATION_TELEMETRY_VERSION,
+            },
+        )
+        assert status == 200
+        assert payload["reply"] == "I would avoid XNT for now."
+        assert payload["evaluation_telemetry_version"] == EVALUATION_TELEMETRY_VERSION
+        evidence = payload["evaluation_evidence"]
+        assert set(evidence) == {
+            "human_response_decision",
+            "opinion",
+            "claim_integrity",
+            "human_renderer",
+        }
+        assert evidence["claim_integrity"]["status"] == "PASS"
+        assert payload["execution_authorized"] is False
+        assert payload["evidence_freshness"]["state"] == "VERIFIED"
+        assert payload["evidence_provenance"]["source_contracts"] == [
+            "instant_x1_scan_product_view/v1"
+        ]
+        claims = payload["claims"]
+        assert {
+            "name": "recommendation",
+            "evidence_path": "human_response_decision.recommendation",
+            "value": "AVOID",
+        } in claims
+        assert {
+            "name": "primary_decision_driver",
+            "evidence_path": (
+                "human_response_decision.primary_decision_driver.source_value"
+            ),
+            "value": 1250.0,
+        } in claims
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
+
+
+def test_http_bridge_evaluation_mode_stays_unqualified_without_structured_final_evidence():
+    bridge = RobertaBridge(FakeGraph([AIMessage(content="Pure factual prose.")]))
+    server, thread = _serve_once(bridge)
+    try:
+        url = f"http://127.0.0.1:{server.server_port}/v1/roberta"
+        status, payload = _request(
+            url,
+            body={
+                "message": "What is XNT?",
+                "evaluation_mode": EVALUATION_TELEMETRY_VERSION,
+            },
+        )
+        assert status == 200
+        assert payload["evaluation_evidence"] == {}
+        assert payload["claims"] == []
+        assert payload["evidence_freshness"]["state"] == "UNAVAILABLE"
+        assert payload["execution_authorized"] is False
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
+
+
+def test_http_bridge_rejects_unknown_evaluation_mode():
+    graph = FakeGraph([AIMessage(content="unused")])
+    bridge = RobertaBridge(graph)
+    server, thread = _serve_once(bridge)
+    try:
+        status, payload = _request(
+            f"http://127.0.0.1:{server.server_port}/v1/roberta",
+            body={
+                "message": "hello",
+                "evaluation_mode": "unversioned-debug-mode",
+            },
+        )
+        assert status == 400
+        assert payload["error"]["code"] == "invalid_evaluation_mode"
+        assert graph.calls == []
     finally:
         server.shutdown()
         server.server_close()
