@@ -40,13 +40,13 @@ ROBERTA may describe the bounded handoff as proven while preserving its provider
 
 ## Website
 
-The website on `main` is the PR #374 conversation-first ROBERTA experience with saved investigations, universal question entry, and optional evidence/details inspection.
+The website on `main` is the accepted Human Intelligence Experience v1 conversation surface. PR #394 adds human decision labels, field-specific risk/evidence/freshness presentation, and keyboard-safe progressive evidence disclosure while preserving saved investigations, universal question entry, and ROBERTA-only routing.
 
 This reconciliation adds **Understand Regulations** as the seventh human-friendly service plus a GENIUS Act / USDC.X example. The service routes through ROBERTA and the accepted regulatory intelligence boundary; it does not calculate compliance in the browser and does not bypass X1 Scout → CMIS.
 
-## Active Human Experience program
+## Human Intelligence Experience v1 — COMPLETE
 
-**ROBERTA #376 — Human Intelligence Experience v1** is now the active plan for making ROBERTA's accepted intelligence sound consistently human without weakening evidence boundaries.
+**ROBERTA #376 — Human Intelligence Experience v1 is COMPLETE.** The full human-response, continuity, evaluation, and website disclosure sequence is accepted without weakening evidence boundaries.
 
 Implementation sequence:
 
@@ -55,7 +55,7 @@ Implementation sequence:
 3. #378 human renderer and Quick / Normal / Deep Dive modes — **ACCEPTED** via public PR #388 / merge `ee52d60079571d349a45299fc524d0ea972412f3` + protected PR #76 / merge `971c49b675b5dee43d5b6d002a86b61a1a951811`;
 4. #379 evidence-safe conversational continuity — **ACCEPTED** via public PR #390 / merge `e2045d3243afd2e2b810cb560530bc44f0b6396b` + protected PR #78 / merge `5842e359cb671358638373199a442d800046cc80`;
 5. #380 100-scenario learning corpus and response-quality evaluator — **ACCEPTED** via public PR #392 / merge `25641db5a67428b4f32f2158e7402b3208a36865` + protected compatibility PR #80 / merge `002fa78b012699ff661f817b16f8ebf7d5cd563c`;
-6. #381 website progressive evidence disclosure + human decision labels — **NEXT EXACT GATE**.
+6. #381 website progressive evidence disclosure + human decision labels — **ACCEPTED** via public PR #394 / merge `c71fe592caf26c900816e1068b672894bd5b9095` + protected compatibility PR #82 / merge `3f503ff508739adceeb0407fd85642cff0f3296e`.
 
 This program builds on the already-accepted answer-first/evidence-aware milestones #33, #45, and #51.
 
