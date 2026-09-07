@@ -32,3 +32,15 @@ def test_sync_script_verifies_health_and_live_website():
     assert "ROBERTA judgment" in SCRIPT
     assert "website_runtime=PASS" in SCRIPT
     assert "LOCAL_STACK_SYNC=PASS" in SCRIPT
+
+
+def test_sync_script_cleans_only_known_generated_packaging_artifacts():
+    assert "cleanup_generated_artifacts" in SCRIPT
+    assert "build/|build/*|dist/|dist/*|*.egg-info/|*.egg-info/*" in SCRIPT
+    assert "git status --porcelain --untracked-files=all" in SCRIPT
+    assert "rm -rf -- \"$path\"" in SCRIPT
+
+    # The general dirty-worktree guard must remain after cleanup.
+    cleanup_index = SCRIPT.index("cleanup_generated_artifacts \"$repo\"")
+    dirty_guard_index = SCRIPT.index("git status --porcelain", cleanup_index)
+    assert cleanup_index < dirty_guard_index

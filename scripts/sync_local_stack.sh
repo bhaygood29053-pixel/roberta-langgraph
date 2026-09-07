@@ -16,6 +16,27 @@ for repo in "$CMIS" "$CMIS_CORE" "$ROBERTA" "$ROBERTA_CORE"; do
   [[ -d "$repo/.git" ]] || fail "Git repository not found: $repo"
 done
 
+cleanup_generated_artifacts() {
+  local repo="$1"
+  local name line path
+  name="$(basename "$repo")"
+
+  cd "$repo"
+
+  # Remove only known untracked Python packaging output. Real source edits and
+  # arbitrary untracked files still stop the sync.
+  while IFS= read -r line; do
+    [[ "$line" == "?? "* ]] || continue
+    path="${line#?? }"
+    case "$path" in
+      build/|build/*|dist/|dist/*|*.egg-info/|*.egg-info/*)
+        printf 'Removing generated packaging artifact from %s: %s\n' "$name" "$path"
+        rm -rf -- "$path"
+        ;;
+    esac
+  done < <(git status --porcelain --untracked-files=all)
+}
+
 sync_repo() {
   local repo="$1"
   local name
@@ -25,6 +46,7 @@ sync_repo() {
   cd "$repo"
 
   git fetch --prune origin
+  cleanup_generated_artifacts "$repo"
 
   if [[ -n "$(git status --porcelain)" ]]; then
     printf 'Local changes detected in %s:\n' "$name" >&2
