@@ -93,7 +93,7 @@ def test_web_ui_is_conversation_first_investigation_experience():
     assert "Optional — conversation remains primary" in ROBERTA_WEB_UI_HTML
     assert "The interface does not invent missing sources or time-series data." in ROBERTA_WEB_UI_HTML
 
-    # Answers support consistent fact/judgment/confidence presentation.
+    # Answers support human-first fact/judgment/confidence presentation.
     assert "Verified fact" in ROBERTA_WEB_UI_HTML
     assert "ROBERTA['’]s assessment" in ROBERTA_WEB_UI_HTML
     assert "Uncertain" in ROBERTA_WEB_UI_HTML
@@ -105,11 +105,28 @@ def test_web_ui_is_conversation_first_investigation_experience():
     assert ".opinionLine" in ROBERTA_WEB_UI_HTML
     assert ".uncertainLine" in ROBERTA_WEB_UI_HTML
     assert ".confidenceLine" in ROBERTA_WEB_UI_HTML
+    assert "ROBERTA judgment" in ROBERTA_WEB_UI_HTML
+    assert "function decisionLabelFromText" in ROBERTA_WEB_UI_HTML
+    assert "function primaryDriverFromText" in ROBERTA_WEB_UI_HTML
+    assert "function unknownsFromText" in ROBERTA_WEB_UI_HTML
+    assert "function changeMindFromText" in ROBERTA_WEB_UI_HTML
 
-    # Every answer can suggest the next investigation.
-    assert ">Evidence<" in ROBERTA_WEB_UI_HTML
+    # Risk, evidence quality, and freshness have separate presentation semantics.
+    assert "function riskClass" in ROBERTA_WEB_UI_HTML
+    assert "function evidenceQualityClass" in ROBERTA_WEB_UI_HTML
+    assert "function freshnessClass" in ROBERTA_WEB_UI_HTML
+    assert "['high','veryhigh','block','severe','critical'].indexOf(v)>=0)return'bad'" in ROBERTA_WEB_UI_HTML
+    assert "['strong','verystrong','high','verified'].indexOf(v)>=0)return'good'" in ROBERTA_WEB_UI_HTML
+    assert "machineStatusToken" in ROBERTA_WEB_UI_HTML
+
+    # Evidence is progressively disclosed with native keyboard-safe details/summary.
+    assert '<details class="answerEvidenceDisclosure">' in ROBERTA_WEB_UI_HTML
+    assert "<summary>View evidence &amp; details</summary>" in ROBERTA_WEB_UI_HTML
+    assert '<details class="inspectorBlock evidencePanel">' in ROBERTA_WEB_UI_HTML
+    assert "View evidence &amp; technical detail" in ROBERTA_WEB_UI_HTML
+    assert "This browser does not calculate risk, compliance, freshness, or market facts." in ROBERTA_WEB_UI_HTML
+    assert "Ask ROBERTA for evidence" in ROBERTA_WEB_UI_HTML
     assert "Explain Simply" in ROBERTA_WEB_UI_HTML
-    assert "Technical Detail" in ROBERTA_WEB_UI_HTML
     assert ">Chart<" in ROBERTA_WEB_UI_HTML
     assert "Compare Token" in ROBERTA_WEB_UI_HTML
     assert "Check Wallet" in ROBERTA_WEB_UI_HTML
@@ -164,3 +181,48 @@ def test_bridge_serves_web_ui_and_keeps_roberta_api_path():
         server.shutdown()
         server.server_close()
         thread.join(timeout=2)
+
+
+def test_web_ui_progressive_disclosure_never_calculates_risk_or_bypasses_roberta():
+    html = ROBERTA_WEB_UI_HTML
+
+    # Human labels are presentation projections of ROBERTA-returned wording only.
+    assert "function decisionLabelFromText" in html
+    assert "function updateInspector" in html
+    assert "extractField(text,'Risk')" in html
+    assert "evidenceQualityFromText(text)" in html
+    assert "freshnessClass(fresh)" in html
+
+    # The browser must not call CMIS/provider endpoints or implement risk/compliance arithmetic.
+    assert "fetch(apiUrl('/v1/roberta')" in html
+    assert "fetch(apiUrl('/healthz')" in html
+    assert "fetch(apiUrl('/v1/cmis" not in html
+    assert "fetch(apiUrl('/cmis" not in html
+    assert "riskScore" not in html
+    assert "complianceScore" not in html
+    assert "calculateRisk" not in html
+    assert "calculateCompliance" not in html
+
+    # HIGH has field-specific semantics: bad for risk, good only for evidence quality.
+    risk_block = html[html.index("function riskClass"):html.index("function evidenceQualityClass")]
+    evidence_block = html[
+        html.index("function evidenceQualityClass"):html.index("function freshnessClass")
+    ]
+    assert "'high'" in risk_block and "return'bad'" in risk_block
+    assert "'high'" in evidence_block and "return'good'" in evidence_block
+
+
+def test_web_ui_evidence_disclosure_is_native_keyboard_accessible():
+    html = ROBERTA_WEB_UI_HTML
+
+    # Native details/summary controls are keyboard operable without custom key handlers.
+    assert '<details class="answerEvidenceDisclosure">' in html
+    assert "<summary>View evidence &amp; details</summary>" in html
+    assert '<details class="inspectorBlock evidencePanel">' in html
+    assert ".answerEvidenceDisclosure summary:focus-visible" in html
+    assert ".evidencePanel>summary:focus-visible" in html
+
+    # Collapsible side inspector publishes its expanded state for assistive technology.
+    assert "setAttribute('aria-expanded','true')" in html
+    assert "Expand evidence panel" in html
+    assert "Collapse evidence panel" in html
