@@ -119,6 +119,7 @@ _COUNTER_CUES = (
 _FIRST_PERSON_OR_DIRECT = (
     "i ",
     "i'd ",
+    "i'm ",
     "i wouldn't ",
     "i would ",
     "i can't ",
