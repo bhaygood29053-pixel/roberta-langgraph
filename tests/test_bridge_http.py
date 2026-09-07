@@ -244,9 +244,13 @@ def test_http_bridge_evaluation_mode_exposes_only_accepted_final_structures():
                 "judgment_authority": "roberta",
                 "execution_authorized": False,
             },
+            "unrelated_internal_metadata": {
+                "must_not_be_exposed": True,
+            },
         },
     )
-    bridge = RobertaBridge(FakeGraph([final]))
+    graph = FakeGraph([final])
+    bridge = RobertaBridge(graph)
     server, thread = _serve_once(bridge)
     try:
         url = f"http://127.0.0.1:{server.server_port}/v1/roberta"
@@ -286,6 +290,8 @@ def test_http_bridge_evaluation_mode_exposes_only_accepted_final_structures():
             ),
             "value": 1250.0,
         } in claims
+        assert len(graph.calls) == 1
+        assert "unrelated_internal_metadata" not in json.dumps(payload)
     finally:
         server.shutdown()
         server.server_close()
