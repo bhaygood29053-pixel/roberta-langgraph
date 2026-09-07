@@ -1,43 +1,62 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from typing import Any
 
-from langchain_core.messages import AIMessage, HumanMessage
-from langgraph.checkpoint.memory import InMemorySaver
+from langchain_core.messages import AIMessage
 
 from roberta.bridge_http import (
     EVALUATION_TELEMETRY_VERSION,
     RobertaBridge,
 )
-from roberta.graph import build_graph
 
 
-class HistoryEchoModel:
-    """Echo the user-message history visible to the protected Oracle graph."""
+class StrictStatelessGraph:
+    """Public-shell stand-in that rejects accidental checkpoint config."""
 
-    def bind_tools(self, tools: list[Any]) -> "HistoryEchoModel":
-        return self
+    def __init__(self) -> None:
+        self.calls: list[dict[str, Any]] = []
 
-    def invoke(self, messages: list[Any]) -> AIMessage:
-        user_text = [
-            str(message.content)
-            for message in messages
-            if isinstance(message, HumanMessage)
-        ]
-        return AIMessage(content="seen:" + "|".join(user_text))
+    def invoke(self, payload, config=None):
+        if config is not None:
+            raise AssertionError("stateless graph received checkpoint config")
+        self.calls.append({"payload": payload, "config": config})
+        text = str(payload["messages"][-1]["content"])
+        return {
+            "messages": [AIMessage(content=f"seen:{text}")],
+            "status": "complete",
+        }
+
+
+class StrictCheckpointGraph:
+    """Emulate LangGraph's explicit-thread checkpoint requirement."""
+
+    def __init__(self) -> None:
+        self.history: dict[str, list[str]] = defaultdict(list)
+        self.calls: list[dict[str, Any]] = []
+
+    def invoke(self, payload, config=None):
+        configurable = config.get("configurable") if isinstance(config, dict) else None
+        thread_id = configurable.get("thread_id") if isinstance(configurable, dict) else None
+        if not isinstance(thread_id, str) or not thread_id:
+            raise ValueError("checkpointed graph requires thread_id")
+
+        text = str(payload["messages"][-1]["content"])
+        self.history[thread_id].append(text)
+        self.calls.append({"payload": payload, "config": config})
+        return {
+            "messages": [
+                AIMessage(content="seen:" + "|".join(self.history[thread_id]))
+            ],
+            "status": "complete",
+        }
 
 
 def _bridge() -> RobertaBridge:
-    stateless = build_graph(
-        model=HistoryEchoModel(),
-        tools=[],
+    return RobertaBridge(
+        StrictStatelessGraph(),
+        threaded_graph=StrictCheckpointGraph(),
     )
-    threaded = build_graph(
-        model=HistoryEchoModel(),
-        tools=[],
-        checkpointer=InMemorySaver(),
-    )
-    return RobertaBridge(stateless, threaded_graph=threaded)
 
 
 def test_stateless_bridge_requests_do_not_require_checkpoint_config() -> None:
