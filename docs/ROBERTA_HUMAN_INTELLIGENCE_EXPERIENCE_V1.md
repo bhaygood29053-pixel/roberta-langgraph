@@ -1,6 +1,6 @@
 # ROBERTA Human Intelligence Experience v1
 
-Status: **PLANNED / ACTIVE IMPLEMENTATION PROGRAM**
+Status: **COMPLETE / ACCEPTED**
 
 Parent issue: #376
 
@@ -10,7 +10,7 @@ Implementation issues:
 - #378 — Human language renderer + Quick / Normal / Deep Dive response modes — **ACCEPTED** via public PR #388 / merge `ee52d60079571d349a45299fc524d0ea972412f3` + protected `roberta-core` PR #76 / merge `971c49b675b5dee43d5b6d002a86b61a1a951811`
 - #379 — Conversational continuity for evidence-bound follow-up decisions — **ACCEPTED** via public PR #390 / merge `e2045d3243afd2e2b810cb560530bc44f0b6396b` + protected `roberta-core` PR #78 / merge `5842e359cb671358638373199a442d800046cc80`
 - #380 — Human Response Learning Corpus + response-quality evaluator — **ACCEPTED** via public PR #392 / merge `25641db5a67428b4f32f2158e7402b3208a36865` + protected compatibility `roberta-core` PR #80 / merge `002fa78b012699ff661f817b16f8ebf7d5cd563c`
-- #381 — Website progressive evidence disclosure + human decision labels — **NEXT EXACT GATE**
+- #381 — Website progressive evidence disclosure + human decision labels — **ACCEPTED** via public PR #394 / merge `c71fe592caf26c900816e1068b672894bd5b9095` + protected compatibility `roberta-core` PR #82 / merge `3f503ff508739adceeb0407fd85642cff0f3296e`
 
 ## 1. Why this exists
 
@@ -344,5 +344,27 @@ Human Intelligence Experience v1 is accepted only when:
 - technical detail remains available;
 - Human and Machine outputs remain semantically consistent;
 - no execution authority is introduced.
+
+`execution_authorized=false`
+
+
+## Completion state
+
+Human Intelligence Experience v1 is **COMPLETE**.
+
+The accepted stack now includes:
+
+- Human Response Contract v1;
+- canonical protected Human Response Decision Object v1;
+- Quick / Normal / Deep Dive deterministic human renderer;
+- evidence-bound conversational continuity;
+- 100-scenario Human Response Learning Corpus + deterministic quality evaluator;
+- website progressive evidence disclosure + human decision labels.
+
+The final website keeps ROBERTA's judgment, risk, evidence quality, freshness,
+unknowns, and change-my-mind conditions distinct. Technical evidence remains
+optional and browser-side intelligence calculation remains prohibited.
+
+Parent #376 and final slice #381 are closed completed.
 
 `execution_authorized=false`
