@@ -187,8 +187,8 @@ def _evaluation_telemetry(message: AIMessage) -> dict[str, Any]:
     }
 
 
-def build_runtime_graph():
-    """Build the same live Roberta graph used by the CLI smoke test."""
+def build_runtime_graph(*, checkpointer: Any | None = None):
+    """Build one live ROBERTA graph with optional checkpoint persistence."""
     from roberta.models import create_runtime_model
     from roberta.tools import get_roberta_tools
 
@@ -198,22 +198,28 @@ def build_runtime_graph():
     # Local bridge continuity uses the already-accepted LangGraph checkpoint
     # boundary. The in-memory backend intentionally does not survive process
     # restarts; it is thread state, not durable memory.
-    return build_graph(
-        model=oracle_model,
-        tools=tools,
-        checkpointer=InMemorySaver(),
-    )
+    kwargs: dict[str, Any] = {
+        "model": oracle_model,
+        "tools": tools,
+    }
+    if checkpointer is not None:
+        kwargs["checkpointer"] = checkpointer
+    return build_graph(**kwargs)
 
 
 class RobertaBridge:
     """Small application boundary around a compiled Roberta graph."""
 
-    def __init__(self, graph: Any):
+    def __init__(self, graph: Any, *, threaded_graph: Any | None = None):
         self._graph = graph
+        self._threaded_graph = threaded_graph or graph
 
     @classmethod
     def from_runtime(cls) -> "RobertaBridge":
-        return cls(build_runtime_graph())
+        return cls(
+            build_runtime_graph(),
+            threaded_graph=build_runtime_graph(checkpointer=InMemorySaver()),
+        )
 
     def _final_message(
         self,
@@ -238,14 +244,13 @@ class RobertaBridge:
             "messages": [{"role": "user", "content": user_text}],
             "status": "running",
         }
-        result = (
-            self._graph.invoke(
+        if normalized_thread_id is not None:
+            result = self._threaded_graph.invoke(
                 inputs,
                 config={"configurable": {"thread_id": normalized_thread_id}},
             )
-            if normalized_thread_id is not None
-            else self._graph.invoke(inputs)
-        )
+        else:
+            result = self._graph.invoke(inputs)
         if not isinstance(result, Mapping):
             raise RuntimeError("Roberta graph returned an invalid result.")
         messages = result.get("messages")
