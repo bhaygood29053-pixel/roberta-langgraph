@@ -15,7 +15,8 @@ Accepted on public/protected main:
 - GENIUS Act Regulatory Intelligence Learning Layer v1 through public PR #364 + protected `roberta-core` #65;
 - live CMIS 1.26 Regulatory Evidence adoption through public PR #368 + protected `roberta-core` #69 + reconciliation PR #369;
 - CMIS 1.27 universal `cmis_response_freshness/v1` adoption so every public token/service response carries an explicit freshness result, including UNKNOWN/NOT_VERIFIED when proof is incomplete;
-- conversation-first public website with saved investigations/evidence panel through PR #374.
+- conversation-first public website with saved investigations/evidence panel through PR #374;
+- read-only Evaluation Telemetry v1 through public PR #399 / merge `109f91f289c3fd6a2542b1eebca93091d5c0a225`, with protected public-shell compatibility through `roberta-core` PR #85 / merge `13a870195f038865d023280fd3d1277bc9736397`. The telemetry is opt-in, uses the same final graph invocation, exposes only accepted final-message structures, and remains bounded by Claim Integrity.
 
 ## Regulatory Intelligence
 
@@ -59,10 +60,17 @@ Implementation sequence:
 
 This program builds on the already-accepted answer-first/evidence-aware milestones #33, #45, and #51.
 
+## Evaluation Laboratory integration
+
+`roberta-eval` LAB #21 is accepted via PR #43 / merge `bd42df06d7fa80034a38e875fed96328774460f0`.
+
+Live evaluation requests may explicitly request `roberta_evaluation_telemetry/v1`. Missing structured claims or Claim Integrity remains unqualified rather than guessed. A bounded evidence-contract PASS does not certify upstream provider truth or every natural-language sentence.
+
 ## Next exact product work
 
-1. keep website and Human/Machine ROBERTA claims synchronized with the now-accepted live Large-Trade → #498 handoff;
-2. continue the open CMIS provider-gap track, including bounded historical transaction fallback qualification where separately accepted;
-3. continue remaining specialist/product roadmap work without changing the read-only execution boundary.
+1. run the first balanced real-subject bounded live evaluation after local runtime synchronization and use its EVIDENCE_REQUIRED/FAIL findings to drive the next claim-coverage work;
+2. keep website and Human/Machine ROBERTA claims synchronized with the now-accepted live Large-Trade → #498 handoff;
+3. continue the open CMIS provider-gap track, including bounded historical transaction fallback qualification where separately accepted;
+4. continue remaining specialist/product roadmap work without changing the read-only execution boundary.
 
 `execution_authorized=false`

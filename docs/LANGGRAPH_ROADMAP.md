@@ -3,6 +3,7 @@
 ## Live checkpoint — 2026-09-06
 
 - **ROBERTA Opinion v1: ACCEPTED.**
+- **Evaluation Telemetry v1: ACCEPTED.** Public PR #399 / merge `109f91f289c3fd6a2542b1eebca93091d5c0a225` exposes an opt-in, read-only `roberta_evaluation_telemetry/v1` projection from the same final graph invocation; protected `roberta-core` PR #85 / merge `13a870195f038865d023280fd3d1277bc9736397` pins and proves the exact public-shell compatibility. `roberta-eval` LAB #21 / PR #43 is the accepted bounded live-evaluation consumer. Claim Integrity remains bounded and does not certify provider truth or every natural-language claim.
 - **Claim Integrity: ACCEPTED through Concentration Warning / Early Warning.** Protected `roberta-core` PR #67 completes the current Truth Gate sequence after Asset Intelligence, Compare, History, Burn, Discovery, and WHAT CHANGED?.
 - **Instant X1 Scan v6: ACCEPTED end to end.** Public PR #358 and protected `roberta-core` PR #57 adopt the current CMIS scan/history-adequacy surface.
 - **Verified wallet trade + pool price-impact intelligence: ACCEPTED.** Public PR #359 plus protected `roberta-core` PR #61 preserve exact CMIS #498 facts without widening pool-local effects into whole-market causality.
