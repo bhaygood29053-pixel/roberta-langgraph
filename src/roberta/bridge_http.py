@@ -24,6 +24,7 @@ from roberta.web_ui import web_ui_bytes
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8766
 MAX_REQUEST_BYTES = 65_536
+EVALUATION_TELEMETRY_VERSION = "roberta_evaluation_telemetry/v1"
 _LOOPBACK_HOSTS = {"127.0.0.1", "localhost", "::1"}
 
 
@@ -58,6 +59,134 @@ def _message_text(message: object) -> str:
     return content.strip() if isinstance(content, str) else str(content).strip()
 
 
+def _mapping_value(value: object) -> dict[str, Any] | None:
+    if isinstance(value, Mapping):
+        return dict(value)
+    return None
+
+
+def _telemetry_freshness(decision: Mapping[str, Any] | None) -> dict[str, Any]:
+    if decision is not None:
+        profile = decision.get("evidence_profile")
+        if isinstance(profile, list):
+            for item in profile:
+                if not isinstance(item, Mapping):
+                    continue
+                if str(item.get("dimension") or "").strip().lower() != "freshness":
+                    continue
+                return {
+                    "state": item.get("state"),
+                    "source_ref": item.get("source_ref"),
+                    "source_value": item.get("source_value"),
+                }
+    return {
+        "state": "UNAVAILABLE",
+        "source_ref": None,
+        "source_value": None,
+    }
+
+
+def _telemetry_claims(decision: Mapping[str, Any] | None) -> list[dict[str, Any]]:
+    if decision is None:
+        return []
+
+    claims: list[dict[str, Any]] = []
+    for key in ("subject", "recommendation", "conviction", "evidence_quality"):
+        if key not in decision:
+            continue
+        claims.append(
+            {
+                "name": key,
+                "evidence_path": f"human_response_decision.{key}",
+                "value": decision.get(key),
+            }
+        )
+
+    primary = decision.get("primary_decision_driver")
+    if isinstance(primary, Mapping) and "source_value" in primary:
+        claims.append(
+            {
+                "name": "primary_decision_driver",
+                "evidence_path": (
+                    "human_response_decision.primary_decision_driver.source_value"
+                ),
+                "value": primary.get("source_value"),
+            }
+        )
+    return claims
+
+
+def _evaluation_telemetry(message: AIMessage) -> dict[str, Any]:
+    additional = (
+        message.additional_kwargs
+        if isinstance(message.additional_kwargs, Mapping)
+        else {}
+    )
+    decision = _mapping_value(additional.get("roberta_human_response_decision"))
+    opinion = _mapping_value(additional.get("roberta_opinion"))
+    integrity = _mapping_value(additional.get("roberta_claim_integrity"))
+    renderer = _mapping_value(additional.get("roberta_human_renderer"))
+
+    evidence: dict[str, Any] = {}
+    if decision is not None:
+        evidence["human_response_decision"] = decision
+    if opinion is not None:
+        evidence["opinion"] = opinion
+    if integrity is not None:
+        evidence["claim_integrity"] = integrity
+    if renderer is not None:
+        evidence["human_renderer"] = renderer
+
+    authority_sources = [
+        item
+        for item in (decision, integrity, opinion, renderer)
+        if isinstance(item, Mapping)
+    ]
+    facts_authority = next(
+        (
+            item.get("facts_authority")
+            for item in authority_sources
+            if item.get("facts_authority") is not None
+        ),
+        None,
+    )
+    judgment_authority = next(
+        (
+            item.get("judgment_authority")
+            for item in authority_sources
+            if item.get("judgment_authority") is not None
+        ),
+        None,
+    )
+    source_contracts = (
+        list(integrity.get("source_contracts"))
+        if integrity is not None
+        and isinstance(integrity.get("source_contracts"), list)
+        else []
+    )
+
+    execution_values = [
+        item.get("execution_authorized")
+        for item in authority_sources
+        if "execution_authorized" in item
+    ]
+    execution_authorized = any(value is True for value in execution_values)
+
+    return {
+        "evaluation_telemetry_version": EVALUATION_TELEMETRY_VERSION,
+        "evaluation_evidence": evidence,
+        "claims": _telemetry_claims(decision),
+        "evidence_provenance": {
+            "facts_authority": facts_authority,
+            "judgment_authority": judgment_authority,
+            "source_contracts": source_contracts,
+            "telemetry_scope": "accepted_final_message_structures_only",
+        },
+        "evidence_freshness": _telemetry_freshness(decision),
+        "execution_authorized": execution_authorized,
+    }
+
+
 def build_runtime_graph():
     """Build the same live Roberta graph used by the CLI smoke test."""
     from roberta.models import create_runtime_model
@@ -86,7 +215,12 @@ class RobertaBridge:
     def from_runtime(cls) -> "RobertaBridge":
         return cls(build_runtime_graph())
 
-    def ask(self, message: str, *, thread_id: str | None = None) -> str:
+    def _final_message(
+        self,
+        message: str,
+        *,
+        thread_id: str | None = None,
+    ) -> AIMessage:
         user_text = str(message or "").strip()
         if not user_text:
             raise ValueError("A non-empty user message is required.")
@@ -120,10 +254,22 @@ class RobertaBridge:
 
         for item in reversed(messages):
             if isinstance(item, AIMessage) and not item.tool_calls:
-                reply = _message_text(item)
-                if reply:
-                    return reply
+                if _message_text(item):
+                    return item
         raise RuntimeError("Roberta graph returned no final assistant reply.")
+
+    def ask(self, message: str, *, thread_id: str | None = None) -> str:
+        final = self._final_message(message, thread_id=thread_id)
+        return _message_text(final)
+
+    def ask_with_evaluation(
+        self,
+        message: str,
+        *,
+        thread_id: str | None = None,
+    ) -> tuple[str, dict[str, Any]]:
+        final = self._final_message(message, thread_id=thread_id)
+        return _message_text(final), _evaluation_telemetry(final)
 
 
 def make_handler(bridge: RobertaBridge, *, api_key: str = ""):
@@ -284,6 +430,27 @@ def make_handler(bridge: RobertaBridge, *, api_key: str = ""):
                 )
                 return
 
+            evaluation_mode = request.get("evaluation_mode")
+            if (
+                evaluation_mode is not None
+                and evaluation_mode != EVALUATION_TELEMETRY_VERSION
+            ):
+                self._send_json(
+                    400,
+                    {
+                        "service": "roberta_bridge",
+                        "status": "error",
+                        "error": {
+                            "code": "invalid_evaluation_mode",
+                            "message": (
+                                "evaluation_mode must be "
+                                f"{EVALUATION_TELEMETRY_VERSION!r} when provided."
+                            ),
+                        },
+                    },
+                )
+                return
+
             thread_id = request.get("thread_id")
             if thread_id is not None:
                 if not isinstance(thread_id, str) or not thread_id.strip():
@@ -314,7 +481,14 @@ def make_handler(bridge: RobertaBridge, *, api_key: str = ""):
                     return
 
             try:
-                reply = bridge.ask(message, thread_id=thread_id)
+                telemetry = None
+                if evaluation_mode == EVALUATION_TELEMETRY_VERSION:
+                    reply, telemetry = bridge.ask_with_evaluation(
+                        message,
+                        thread_id=thread_id,
+                    )
+                else:
+                    reply = bridge.ask(message, thread_id=thread_id)
             except Exception as exc:  # fail closed without leaking prompts/secrets
                 self._send_json(
                     503,
@@ -336,6 +510,8 @@ def make_handler(bridge: RobertaBridge, *, api_key: str = ""):
             }
             if isinstance(thread_id, str) and thread_id.strip():
                 response_payload["thread_id"] = thread_id.strip()
+            if isinstance(telemetry, Mapping):
+                response_payload.update(telemetry)
             self._send_json(200, response_payload)
 
         def log_message(self, format, *args):  # noqa: A003
@@ -401,6 +577,7 @@ __all__ = [
     "DEFAULT_HOST",
     "DEFAULT_PORT",
     "MAX_REQUEST_BYTES",
+    "EVALUATION_TELEMETRY_VERSION",
     "RobertaBridge",
     "build_runtime_graph",
     "create_server",
