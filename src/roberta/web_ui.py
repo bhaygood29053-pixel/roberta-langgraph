@@ -83,10 +83,12 @@ button{cursor:pointer}
 .msgWrap{max-width:90%;display:flex;flex-direction:column;gap:5px}.msgWrap.user{align-self:flex-end;align-items:flex-end}.msgWrap.assistant{align-self:flex-start;align-items:flex-start}
 .msg{padding:12px 14px;border-radius:16px;white-space:pre-wrap;word-break:break-word}.msg.user{background:linear-gradient(105deg,#356ff1,#7157ef);color:#fff;border-bottom-right-radius:5px}.msg.assistant{background:rgba(12,18,40,.90);border:1px solid rgba(126,151,255,.12);color:#e6eafc;border-bottom-left-radius:5px}.msg.system{align-self:center;color:#7480a3;font-size:8px;padding:4px}
 .msgTitle{display:block;color:#fff;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;margin:4px 0 6px}.opinionLine,.factLine,.uncertainLine,.confidenceLine{display:block;margin:4px 0}.opinionLine strong{color:#83d0ff}.factLine strong{color:#7fe5b1}.uncertainLine strong{color:#ffd27f}.confidenceLine strong{color:#c3a6ff}
-.statusToken{display:inline-flex;align-items:center;padding:1px 6px;border-radius:999px;border:1px solid rgba(135,150,190,.18);background:rgba(120,135,170,.08);color:#aeb7d3;font-size:.88em;font-weight:900}.statusToken.good{color:#7ce4ae;border-color:rgba(89,211,146,.22);background:rgba(49,140,93,.1)}.statusToken.warn{color:#ffd27f;border-color:rgba(255,203,104,.2);background:rgba(156,111,26,.1)}.statusToken.bad{color:#ff909d;border-color:rgba(255,118,132,.2);background:rgba(157,45,60,.1)}
+.statusToken{display:inline-flex;align-items:center;padding:1px 6px;border-radius:999px;border:1px solid rgba(135,150,190,.18);background:rgba(120,135,170,.08);color:#aeb7d3;font-size:.88em;font-weight:900}
+.machineStatusToken{display:inline-flex;align-items:center;padding:1px 6px;border-radius:999px;border:1px solid rgba(135,150,190,.16);background:rgba(120,135,170,.06);color:#aeb7d3;font-size:.88em;font-weight:800}
 .pos{color:#77e2ad;font-weight:900}.neg{color:#ff8f9a;font-weight:900}
 .entityLink{display:inline;border:0;background:transparent;color:#70cbff;padding:0;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:2px;font:inherit;cursor:pointer}
-.answerActions{display:flex;gap:5px;flex-wrap:wrap}.answerActions button{border:1px solid rgba(126,151,255,.12);background:rgba(8,13,31,.72);color:#9facca;border-radius:999px;padding:5px 8px;font-size:7px}.answerActions button:hover{border-color:rgba(85,183,255,.35);color:#fff}
+.decisionSummary{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:0 0 6px}.decisionSummaryLabel{color:#737fa3;font-size:7px;font-weight:900;letter-spacing:.1em;text-transform:uppercase}.decisionBadge{display:inline-flex;align-items:center;border:1px solid rgba(126,151,255,.18);border-radius:999px;padding:4px 8px;background:rgba(105,120,160,.08);color:#c8d0e8;font-size:8px;font-weight:900;letter-spacing:.04em}.decisionBadge.good{color:#7ce4ae;border-color:rgba(89,211,146,.24);background:rgba(49,140,93,.1)}.decisionBadge.warn{color:#ffd27f;border-color:rgba(255,203,104,.23);background:rgba(156,111,26,.1)}.decisionBadge.bad{color:#ff909d;border-color:rgba(255,118,132,.24);background:rgba(157,45,60,.1)}
+.answerActions{display:flex;gap:5px;flex-wrap:wrap;align-items:flex-start}.answerActions button,.answerEvidenceDisclosure summary{border:1px solid rgba(126,151,255,.12);background:rgba(8,13,31,.72);color:#9facca;border-radius:999px;padding:5px 8px;font-size:7px}.answerActions button:hover,.answerEvidenceDisclosure summary:hover{border-color:rgba(85,183,255,.35);color:#fff}.answerEvidenceDisclosure{position:relative}.answerEvidenceDisclosure summary{list-style:none;cursor:pointer;user-select:none}.answerEvidenceDisclosure summary::-webkit-details-marker{display:none}.answerEvidenceDisclosure summary:focus-visible{outline:2px solid #70cbff;outline-offset:2px}.answerEvidenceDisclosure[open] summary{color:#fff;border-color:rgba(85,183,255,.35)}.answerEvidenceMenu{margin-top:5px;border:1px solid rgba(126,151,255,.12);background:rgba(7,11,27,.98);border-radius:12px;padding:8px;display:grid;gap:6px;min-width:235px;box-shadow:0 14px 35px rgba(0,0,0,.28)}.answerEvidenceMenu p{margin:0;color:#7784a7;font-size:7px;line-height:1.45}.answerEvidenceMenu .evidenceButtons{display:flex;gap:5px;flex-wrap:wrap}
 
 .emptyState{margin:auto;max-width:720px;width:100%;text-align:center;padding:22px}.emptyState h2{font-size:clamp(27px,4vw,42px);letter-spacing:-.04em;margin:0 0 8px}.emptyState p{color:#8793b8;font-size:11px;margin:0 0 18px}.emptyGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.emptyGrid button{border:1px solid rgba(126,151,255,.13);background:rgba(10,15,34,.68);color:#d8def4;border-radius:14px;padding:12px;text-align:left;font-size:9px}.emptyGrid button:hover{border-color:rgba(85,183,255,.34);background:rgba(16,24,52,.8)}.emptyHint{margin-top:15px;color:#69769b;font-size:9px}
 
@@ -100,6 +102,7 @@ button{cursor:pointer}
 .inspectorBlock{border-top:1px solid rgba(126,151,255,.10);padding:12px 0}.inspectorBlock:first-child{border-top:0}.inspectorBlock h4{font-size:8px;text-transform:uppercase;letter-spacing:.12em;color:#707da4;margin:0 0 7px}.inspectorValue{color:#cad2ed;font-size:9px}.inspectorNote{color:#7380a3;font-size:8px;line-height:1.5}
 .detailChips{display:flex;gap:5px;flex-wrap:wrap}.detailChip{border:1px solid rgba(126,151,255,.12);border-radius:999px;padding:4px 7px;color:#97a4c8;font-size:7px}.detailChip.good{color:#7ce4ae;border-color:rgba(89,211,146,.2)}.detailChip.warn{color:#ffd27f;border-color:rgba(255,203,104,.2)}.detailChip.bad{color:#ff909d;border-color:rgba(255,118,132,.2)}
 .inspectorActions{display:grid;gap:5px}.inspectorActions button{border:1px solid rgba(126,151,255,.12);background:rgba(9,14,32,.65);color:#b7c1df;border-radius:11px;padding:8px 9px;text-align:left;font-size:8px}.inspectorActions button:hover{border-color:rgba(84,186,255,.33);color:#fff}.entityDetail{word-break:break-all;color:#7fcfff;font-size:8px}
+.evidencePanel>summary{cursor:pointer;color:#9ca9ca;font-size:8px;font-weight:900;letter-spacing:.06em;list-style:none}.evidencePanel>summary::-webkit-details-marker{display:none}.evidencePanel>summary:before{content:"＋";display:inline-block;margin-right:6px;color:#70cbff}.evidencePanel[open]>summary:before{content:"−"}.evidencePanel>summary:focus-visible{outline:2px solid #70cbff;outline-offset:3px;border-radius:4px}
 
 .settings{display:none;position:fixed;z-index:90;right:20px;top:78px;width:min(390px,calc(100vw - 40px));background:#0b1024;border:1px solid rgba(126,151,255,.2);border-radius:22px;padding:17px;box-shadow:var(--shadow)}.settings.open{display:block}.settings h3{margin:0 0 11px;font-size:15px}.field{display:grid;gap:5px;margin-top:9px}.field label{color:#8d98ba;font-size:8px}.field input{border:1px solid rgba(126,151,255,.16);background:#060918;color:#eef1ff;border-radius:11px;padding:9px 10px;outline:none}.settingNote{color:#6e7a9d;font-size:7px;margin-top:9px}.agentBox{border:1px solid rgba(96,190,255,.17);background:rgba(9,20,38,.72);border-radius:13px;padding:10px;margin-top:11px}.agentBox b{font-size:8px}.agentBox code{display:block;color:#9bdcff;font-size:8px;margin-top:4px;word-break:break-all}
 
@@ -238,27 +241,39 @@ button{cursor:pointer}
       </div>
       <div class="inspectorContent">
         <div class="inspectorBlock">
-          <h4>Current answer</h4>
-          <div id="inspectorSummary" class="inspectorNote">Ask ROBERTA a question. Evidence, confidence, and useful follow-ups will appear here when available.</div>
+          <h4>ROBERTA judgment</h4>
+          <div id="inspectorSummary" class="inspectorNote">Ask ROBERTA a question. Her judgment and the evidence limits behind it will appear here when available.</div>
         </div>
         <div class="inspectorBlock">
-          <h4>Answer labels</h4>
-          <div id="detailChips" class="detailChips"><span class="detailChip">Evidence</span><span class="detailChip">Risk</span><span class="detailChip">Freshness</span><span class="detailChip">Opinion</span></div>
+          <h4>Decision labels</h4>
+          <div id="detailChips" class="detailChips"><span class="detailChip">ROBERTA judgment</span><span class="detailChip">Risk</span><span class="detailChip">Evidence quality</span><span class="detailChip">Freshness</span></div>
+        </div>
+        <div class="inspectorBlock">
+          <h4>Primary driver</h4>
+          <div id="primaryDriver" class="inspectorNote">ROBERTA's main reason will appear here when her answer supplies one.</div>
+        </div>
+        <div class="inspectorBlock">
+          <h4>Important unknowns</h4>
+          <div id="importantUnknowns" class="inspectorNote">Material uncertainty stays separate from ROBERTA's judgment.</div>
+        </div>
+        <div class="inspectorBlock">
+          <h4>What would change her mind</h4>
+          <div id="changeMind" class="inspectorNote">Evidence-bound change conditions will appear here when supplied.</div>
         </div>
         <div class="inspectorBlock">
           <h4>Selected on-chain identifier</h4>
           <div id="entityDetail" class="inspectorNote">Click a wallet, transaction, pool, program, or other long on-chain identifier in an answer to investigate it.</div>
         </div>
-        <div class="inspectorBlock">
-          <h4>Investigate further</h4>
+        <details class="inspectorBlock evidencePanel">
+          <summary>View evidence &amp; technical detail</summary>
+          <div class="inspectorNote" style="margin:7px 0">Exact receipts, provenance, timestamps, source scope, and machine statuses stay optional. The browser requests them from ROBERTA; it does not calculate them.</div>
           <div class="inspectorActions">
-            <button data-followup="evidence">View evidence behind the answer</button>
-            <button data-followup="simple">Explain this simply</button>
+            <button data-followup="evidence">Ask ROBERTA for evidence</button>
             <button data-followup="technical">Show technical detail</button>
             <button data-followup="chart">Show a useful chart if verified data supports one</button>
             <button data-followup="recheck">Recheck with current data</button>
           </div>
-        </div>
+        </details>
         <div class="inspectorBlock">
           <h4>Sources &amp; charts</h4>
           <div class="inspectorNote">ROBERTA only exposes source detail or chart-ready evidence when the underlying answer supports it. The interface does not invent missing sources or time-series data.</div>
@@ -311,12 +326,84 @@ function askFromLanding(text){
 }
 
 function escapeHtml(text){return String(text==null?'':text).replace(/[&<>"']/g,function(ch){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]})}
-function statusClass(v){
-  v=String(v||'').toLowerCase().replace(/[^a-z]/g,'');
-  if(['pass','verified','ok','clear','available','strong','high'].indexOf(v)>=0)return'good';
-  if(['warn','partial','watch','caution','moderate','medium'].indexOf(v)>=0)return'warn';
-  if(['block','error','unverified','unavailable','notverified','weak','limited'].indexOf(v)>=0)return'bad';
+function normalizedToken(v){return String(v||'').toLowerCase().replace(/[^a-z]/g,'')}
+function riskClass(v){
+  v=normalizedToken(v);
+  if(['high','veryhigh','block','severe','critical'].indexOf(v)>=0)return'bad';
+  if(['medium','moderate','warn','warning','caution'].indexOf(v)>=0)return'warn';
+  if(['low','verylow','clear'].indexOf(v)>=0)return'good';
   return'';
+}
+function evidenceQualityClass(v){
+  v=normalizedToken(v);
+  if(['strong','verystrong','high','verified'].indexOf(v)>=0)return'good';
+  if(['moderate','medium','partial'].indexOf(v)>=0)return'warn';
+  if(['weak','low','verylow','unverified','unavailable','notverified','insufficient'].indexOf(v)>=0)return'bad';
+  return'';
+}
+function freshnessClass(v){
+  v=normalizedToken(v);
+  if(['verified','fresh','current'].indexOf(v)>=0)return'good';
+  if(['partial','unknown'].indexOf(v)>=0)return'warn';
+  if(['stale','unverified','notverified','unavailable'].indexOf(v)>=0)return'bad';
+  return'';
+}
+function decisionClass(v){
+  v=normalizedToken(v);
+  if(['buycandidate','buy','stronglyfavor','accumulatecautiously','hold'].indexOf(v)>=0)return'good';
+  if(['wait','watch','caution','insufficientevidence'].indexOf(v)>=0)return'warn';
+  if(['avoid','stronglyavoid','block','reduce','exit'].indexOf(v)>=0)return'bad';
+  return'';
+}
+function decisionLabelFromText(text){
+  var s=String(text||'').trim(),explicit=extractField(s,'My recommendation')||extractField(s,"ROBERTA['’]s assessment");
+  if(explicit){
+    var e=explicit.toUpperCase().replace(/_/g,' ');
+    if(/STRONGLY AVOID|AVOID/.test(e))return'AVOID';
+    if(/BLOCK/.test(e))return'BLOCK';
+    if(/INSUFFICIENT EVIDENCE/.test(e))return'INSUFFICIENT EVIDENCE';
+    if(/WAIT/.test(e))return'WAIT';
+    if(/WATCH|CAUTION/.test(e))return'CAUTION';
+    if(/BUY|STRONGLY FAVOR|ACCUMULATE/.test(e))return'BUY CANDIDATE';
+    if(/HOLD/.test(e))return'HOLD';
+    if(/REDUCE/.test(e))return'REDUCE';
+    if(/EXIT/.test(e))return'EXIT';
+  }
+  var first=s.split(/\n+/)[0].trim().toLowerCase();
+  if(/^i(?:'|’)d strongly avoid\b/.test(first)||/^i wouldn(?:'|’)t trade\b/.test(first)||/^i(?:'|’)d avoid\b/.test(first))return'AVOID';
+  if(/^i don(?:'|’)t have enough evidence\b/.test(first)||/^i can(?:'|’)t support .*trade decision\b/.test(first)||/^i cannot support .*trade decision\b/.test(first))return'INSUFFICIENT EVIDENCE';
+  if(/^i(?:'|’)d wait\b/.test(first))return'WAIT';
+  if(/^i(?:'|’)d watch\b/.test(first))return'CAUTION';
+  if(/^i(?:'|’)d only accumulate\b/.test(first)||/^i(?:'|’)d be comfortable buying\b/.test(first)||/^i(?:'|’)d strongly favor\b/.test(first))return'BUY CANDIDATE';
+  if(/^i(?:'|’)d hold\b/.test(first))return'HOLD';
+  if(/^i(?:'|’)d reduce\b/.test(first))return'REDUCE';
+  if(/^i(?:'|’)d exit\b/.test(first))return'EXIT';
+  return'';
+}
+function evidenceQualityFromText(text){
+  var explicit=extractField(text,'Evidence quality');
+  if(explicit)return explicit;
+  var m=String(text||'').match(/evidence quality is\s+([^.,;\n]+)/i);return m?m[1].trim():'';
+}
+function convictionFromText(text){
+  var explicit=extractField(text,'Confidence')||extractField(text,'Conviction');
+  if(explicit)return explicit;
+  var m=String(text||'').match(/my conviction is\s+([^,.;\n]+)/i);return m?m[1].trim():'';
+}
+function primaryDriverFromText(text){
+  var m=String(text||'').match(/(?:^|\n)The biggest reason is\s+([^\n]+)/i);return m?m[1].trim():'';
+}
+function unknownsFromText(text){
+  var s=String(text||''),m=s.match(/What I(?:'|’)m still uncertain about:\s*\n([\s\S]*?)(?=\n\s*My conviction is|\n\s*What would change my mind:|$)/i);
+  return m?m[1].trim():'';
+}
+function changeMindFromText(text){
+  var m=String(text||'').match(/What would change my mind:\s*([^\n]+)/i);return m?m[1].trim():'';
+}
+function decisionSummary(text){
+  var label=decisionLabelFromText(text);
+  if(!label)return'';
+  return '<div class="decisionSummary" aria-label="ROBERTA judgment"><span class="decisionSummaryLabel">ROBERTA judgment</span><span class="decisionBadge '+decisionClass(label)+'">'+escapeHtml(label)+'</span></div>';
 }
 function formatAssistant(text){
   var lines=String(text||'').split('\n'),out=[];
@@ -339,7 +426,7 @@ function formatAssistant(text){
     }
     if(/^\s*[A-Z][A-Z0-9 &?\/—-]{2,}:?\s*$/.test(trim)){out.push('<span class="msgTitle">'+safe.replace(/:$/,'')+'</span>');return}
     safe=safe.replace(/\b([1-9A-HJ-NP-Za-km-z]{32,90})\b/g,'<button class="entityLink" data-entity="$1">$1</button>');
-    safe=safe.replace(/\b(PASS|WARN|BLOCK|PARTIAL|VERIFIED|UNVERIFIED|UNAVAILABLE|NOT VERIFIED|WATCH|CLEAR|CAUTION|ERROR|AVAILABLE|STRONG|MODERATE|WEAK|HIGH|LIMITED)\b/g,function(m){return'<span class="statusToken '+statusClass(m)+'">'+m+'</span>'});
+    safe=safe.replace(/\b(PASS|WARN|BLOCK|PARTIAL|VERIFIED|UNVERIFIED|UNAVAILABLE|NOT VERIFIED|WATCH|CLEAR|CAUTION|ERROR|AVAILABLE|STRONG|MODERATE|WEAK|HIGH|LIMITED)\b/g,function(m){return'<span class="machineStatusToken">'+m+'</span>'});
     safe=safe.replace(/(^|[\s(])([+]\d[\d,]*(?:\.\d+)?%?)(?=$|[\s),.;])/g,'$1<span class="pos">$2</span>');
     safe=safe.replace(/(^|[\s(])(-\d[\d,]*(?:\.\d+)?%?)(?=$|[\s),.;])/g,'$1<span class="neg">$2</span>');
     out.push(safe);
@@ -348,9 +435,11 @@ function formatAssistant(text){
 }
 function answerActions(chatId){
   return '<div class="answerActions">'+
-    '<button data-followup="evidence">Evidence</button>'+
+    '<details class="answerEvidenceDisclosure"><summary>View evidence &amp; details</summary><div class="answerEvidenceMenu">'+
+      '<p>Evidence and technical detail come from ROBERTA. This browser does not calculate risk, compliance, freshness, or market facts.</p>'+
+      '<div class="evidenceButtons"><button data-followup="evidence">Ask ROBERTA for evidence</button><button data-followup="technical">Technical detail</button><button data-followup="recheck">Recheck current data</button></div>'+
+    '</div></details>'+
     '<button data-followup="simple">Explain Simply</button>'+
-    '<button data-followup="technical">Technical Detail</button>'+
     '<button data-followup="chart">Chart</button>'+
     '<button data-followup="compare">Compare Token</button>'+
     '<button data-followup="wallet">Check Wallet</button>'+
@@ -360,7 +449,7 @@ function answerActions(chatId){
 function addMessage(role,text,chatId){
   var wrap=document.createElement('div');wrap.className='msgWrap '+role;
   var d=document.createElement('div');d.className='msg '+role;
-  if(role==='assistant')d.innerHTML=formatAssistant(text);else d.textContent=text;
+  if(role==='assistant')d.innerHTML=decisionSummary(text)+formatAssistant(text);else d.textContent=text;
   wrap.appendChild(d);
   if(role==='assistant')wrap.insertAdjacentHTML('beforeend',answerActions(chatId));
   $('#messages').appendChild(wrap);$('#messages').scrollTop=$('#messages').scrollHeight;return wrap;
@@ -435,20 +524,36 @@ function extractField(text,label){
   var re=new RegExp('^'+label+'\\s*:\\s*(.+)$','im'),m=String(text||'').match(re);return m?m[1].trim():'';
 }
 function updateInspector(text){
-  if(!text){$('#inspectorSummary').textContent='Ask ROBERTA a question. Evidence, confidence, and useful follow-ups will appear here when available.';$('#detailChips').innerHTML='<span class="detailChip">Evidence</span><span class="detailChip">Risk</span><span class="detailChip">Freshness</span><span class="detailChip">Opinion</span>';return}
-  var rec=extractField(text,'My recommendation')||extractField(text,"ROBERTA['’]s assessment");
-  var conf=extractField(text,'Confidence')||extractField(text,'Conviction');
-  var ev=extractField(text,'Evidence quality');
+  if(!text){
+    $('#inspectorSummary').textContent='Ask ROBERTA a question. Her judgment and the evidence limits behind it will appear here when available.';
+    $('#detailChips').innerHTML='<span class="detailChip">ROBERTA judgment</span><span class="detailChip">Risk</span><span class="detailChip">Evidence quality</span><span class="detailChip">Freshness</span>';
+    $('#primaryDriver').textContent="ROBERTA's main reason will appear here when her answer supplies one.";
+    $('#importantUnknowns').textContent="Material uncertainty stays separate from ROBERTA's judgment.";
+    $('#changeMind').textContent='Evidence-bound change conditions will appear here when supplied.';
+    return
+  }
+  var decision=decisionLabelFromText(text);
+  var conf=convictionFromText(text);
+  var ev=evidenceQualityFromText(text);
   var risk=extractField(text,'Risk');
   var fresh=extractField(text,'Freshness');
+  var driver=primaryDriverFromText(text);
+  var unknowns=unknownsFromText(text);
+  var change=changeMindFromText(text);
   var summary=[];
-  if(rec)summary.push('View: '+rec);if(conf)summary.push('Confidence: '+conf);if(ev)summary.push('Evidence: '+ev);if(risk)summary.push('Risk: '+risk);if(fresh)summary.push('Freshness: '+fresh);
-  $('#inspectorSummary').textContent=summary.length?summary.join(' · '):'ROBERTA answered. Use the actions below to inspect evidence, request simpler wording, technical detail, or a chart when supported.';
+  if(decision)summary.push('ROBERTA judgment: '+decision);
+  if(conf)summary.push('Conviction: '+conf);
+  $('#inspectorSummary').textContent=summary.length?summary.join(' · '):'ROBERTA answered. Her judgment remains in the conversation; use the optional evidence disclosure for receipts and technical detail.';
   var chips=[];
-  [['Evidence',ev],['Risk',risk],['Freshness',fresh],['Opinion',rec],['Confidence',conf]].forEach(function(x){
-    var cls=statusClass(x[1]);chips.push('<span class="detailChip '+cls+'">'+escapeHtml(x[0]+(x[1]?': '+x[1]:''))+'</span>');
-  });
-  $('#detailChips').innerHTML=chips.join('');
+  if(decision)chips.push('<span class="detailChip '+decisionClass(decision)+'">ROBERTA judgment: '+escapeHtml(decision)+'</span>');
+  if(risk)chips.push('<span class="detailChip '+riskClass(risk)+'">Risk: '+escapeHtml(risk)+'</span>');
+  if(ev)chips.push('<span class="detailChip '+evidenceQualityClass(ev)+'">Evidence quality: '+escapeHtml(ev)+'</span>');
+  if(fresh)chips.push('<span class="detailChip '+freshnessClass(fresh)+'">Freshness: '+escapeHtml(fresh)+'</span>');
+  if(conf)chips.push('<span class="detailChip">Conviction: '+escapeHtml(conf)+'</span>');
+  $('#detailChips').innerHTML=chips.length?chips.join(''):'<span class="detailChip">No explicit answer labels supplied</span>';
+  $('#primaryDriver').textContent=driver||"ROBERTA's answer did not supply a separate primary-driver sentence.";
+  $('#importantUnknowns').textContent=unknowns||'No separate important-unknowns section was supplied in this answer.';
+  $('#changeMind').textContent=change||'No separate change-my-mind condition was supplied in this answer.';
 }
 
 function openEntity(value){
@@ -529,7 +634,8 @@ $('#agentEntryTop').onclick=function(){enterWorkspace('agent')};
 $('#backAbout').onclick=leaveWorkspace;
 $('#newChat').onclick=newChat;$('#clearChat').onclick=clearCurrent;$('#clearHistory').onclick=clearHistory;
 $('#settingsBtn').onclick=function(){$('#settings').classList.toggle('open')};
-$('#inspectorToggle').onclick=function(){$('#inspector').classList.toggle('collapsed');this.textContent=$('#inspector').classList.contains('collapsed')?'‹':'›'};
+$('#inspectorToggle').setAttribute('aria-expanded','true');
+$('#inspectorToggle').onclick=function(){var collapsed=$('#inspector').classList.toggle('collapsed');this.textContent=collapsed?'‹':'›';this.setAttribute('aria-expanded',collapsed?'false':'true');this.setAttribute('aria-label',collapsed?'Expand evidence panel':'Collapse evidence panel')};
 $('#servicesToggle').onclick=function(){$('#sideServices').classList.toggle('closed');$('#servicesChevron').textContent=$('#sideServices').classList.contains('closed')?'+':'−'};
 $('#send').onclick=function(){send($('#composer').value)};
 $('#composer').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send(this.value)}});
