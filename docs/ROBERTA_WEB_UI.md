@@ -197,3 +197,23 @@ When ROBERTA gains a new accepted backend capability:
 3. keep incomplete, experimental, failing-gate, or unaccepted functionality off the public website;
 4. preserve the conversation-first UX even as internal intelligence becomes more sophisticated;
 5. update this document and the website contract tests with any material public-surface change.
+
+
+## Human Intelligence Experience — progressive disclosure
+
+ROBERTA #381 adds human-first website presentation on top of the accepted Human
+Response and conversational-continuity contracts.
+
+The conversation now presents a compact ROBERTA judgment label when the accepted
+ROBERTA direct-answer vocabulary already supplies one. Risk, evidence quality,
+freshness, and conviction remain separate display concepts.
+
+Raw machine statuses remain visually neutral rather than being promoted into
+economic meaning.
+
+Evidence and technical detail are available through native keyboard-safe
+details / summary disclosure controls. Those controls request evidence from
+ROBERTA; the browser does not call CMIS/providers or calculate risk, compliance,
+freshness, or market facts.
+
+See ROBERTA_WEB_PROGRESSIVE_DISCLOSURE_V1.md.
