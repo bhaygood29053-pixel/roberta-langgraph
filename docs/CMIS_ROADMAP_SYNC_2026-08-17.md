@@ -1,42 +1,55 @@
-# CMIS Roadmap Sync — refreshed 2026-09-05
+# CMIS Roadmap Sync — refreshed 2026-09-08
 
 This document is ROBERTA's current CMIS integration snapshot. The authoritative CMIS roadmap remains `bhaygood29053-pixel/cmis/docs/CMIS_PRODUCT_ROADMAP.md`.
 
 ## Accepted CMIS surface relevant to ROBERTA
 
-CMIS capability contract remains `1.18.0`, with accepted X1 history, exact-mint identity, Instant X1 Scan v3, Burn Intelligence, Discovery Intelligence, field-scoped freshness, and pull-only Concentration Warning Intelligence.
+Current CMIS capability contract is `1.27.0`.
 
-Cross-chain evidence has now advanced through **completed #410**:
+Accepted ROBERTA-relevant CMIS surface includes:
 
-- #409 bridge supply + current/prior 24h/7d/30d flow intelligence;
-- verified XDEX program-family wSOL.X pool state;
-- bounded 24h XDEX activity-window proof;
-- comparable wSOL.X USD value basis;
-- final `bridge_to_xdex_utilization/v1` acceptance.
+- Instant X1 Scan v6;
+- universal `cmis_response_freshness/v1`;
+- X1 history and exact-mint identity;
+- Burn and Discovery Intelligence;
+- concentration warning / Early Warning facts;
+- Bridge-to-XDEX and cross-chain asset provenance;
+- `trade_price_impact_intelligence/v1`;
+- provider-scoped `large_trade_discovery/v1`;
+- freshness-aware `regulatory_evidence/v1`.
 
-## Current cross-chain release gate
+Older 1.18-era capability references are compatibility history, not the current integration target.
 
-CMIS Issue **#482** is now the only cross-chain release gate before ROBERTA #314.
+## Cross-chain state
 
-#482 must expose the already-accepted #410 contract through the public CMIS capability/service boundary and authorize X1 Scout reliance without widening scope or recomputing facts.
+Bridge Supply + Flow, Bridge-to-XDEX Utilization, and cross-chain asset provenance are accepted through their public/protected promotion paths and may be consumed by X1 Scout only within their verified route/program-family scope.
 
-ROBERTA #314 may proceed only after #482 is accepted.
+The earlier #482 / ROBERTA #314 release dependency is complete and is no longer an active blocker.
 
-## Current X1.Ninja liquidity state
+## X1.Ninja liquidity / freshness state
 
-Accepted prerequisites: PRs #465, #466, and #468.
-
-Active:
-
-- PR #470 final five-pool USD-liquidity semantic proof;
-- its current repeated-revaluation evidence workflow is still running;
-- #459 remains the later liquidity/rolling-24h freshness promotion gate.
+The earlier #461/#470 semantic proof and #459 rolling-freshness blockers are historical. Their accepted results are incorporated into the later CMIS scan/freshness stack through 1.27 and Instant X1 Scan v6.
 
 ## CMIS Web Discovery
 
-v1-v5 is accepted internally through PR #481. Issue #483 is active for the XDEX network-gap registry.
+CMIS Web Discovery is accepted internally through the source-specific stack, including X1 Agents Radio:
 
-Discovery remains `DISCOVERED` candidate evidence and is not a provider-truth shortcut.
+- #564 / PR #566 — X1 Agents Radio source discovery;
+- #568 / PR #569 — `x1_agents_radio_structured_discovery/v1`;
+- #571 / PR #572 — `x1_agents_radio_rpc_corroboration/v1`;
+- #574 / PR #576 — `x1_program_upgrade_semantic_verification/v1`.
+
+Discovery remains subordinate to deterministic verification. Radio application names/categories/frameworks and application IDL/business semantics remain unverified unless separately proven.
+
+## XONE/XNT boundary
+
+XONE/XNT Conversion Intelligence is **RETIRED / HISTORICAL** by CMIS Issue #628 / merge #629. Existing accepted evidence remains auditable, but there is no active XONE/XNT lead-recovery or public-service/X1-Scout promotion gate. Retirement is not proof for or against the existence of a conversion mechanism.
+
+## Current provider-gap hold
+
+CMIS #458 / draft PR #549 (X1Scroll historical transaction fallback) is **ON HOLD** because the required X1Scroll API key is unavailable. Do not merge or promote it until the key exists and the exact live acceptance gate passes.
+
+Other provider-gap work remains fail-closed until separately accepted.
 
 ## Safety
 

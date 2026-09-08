@@ -1,9 +1,11 @@
 # ROBERTA — Verified On-Chain Intelligence Roadmap
 
-## Live checkpoint — 2026-09-06
+## Live checkpoint — 2026-09-08
 
 - **ROBERTA Opinion v1: ACCEPTED.**
 - **Evaluation Telemetry v1: ACCEPTED.** Public PR #399 / merge `109f91f289c3fd6a2542b1eebca93091d5c0a225` exposes an opt-in, read-only `roberta_evaluation_telemetry/v1` projection from the same final graph invocation; protected `roberta-core` PR #85 / merge `13a870195f038865d023280fd3d1277bc9736397` pins and proves the exact public-shell compatibility. `roberta-eval` LAB #21 / PR #43 is the accepted bounded live-evaluation consumer. Claim Integrity remains bounded and does not certify provider truth or every natural-language claim.
+- **Stateless bridge compatibility: ACCEPTED.** Public ROBERTA #401 merged as `4c872b4ac9fb25dda0994632e9e2f7dc4cc8cdfc`, with protected `roberta-core` #86 merged as `18c6d82377876c0627edb741e5c36f1f339dbbdc`. Stateless `/v1/roberta` requests and checkpointed/threaded requests are again explicitly separated and regression-gated without relaxing evidence, Claim Integrity, or execution boundaries.
+- **Evaluation Laboratory LAB #22: ACCEPTED.** `roberta-eval` PR #46 / merge `7eefde5355e99453f43cb4662226200b156cf7a0` adds deterministic live qualification diagnostics over LAB #21 grades, separating runtime failure, telemetry gaps, canonical-claim gaps, evidence-metadata gaps, Claim Integrity gaps, claim/evidence mismatch, and execution violations. `EVIDENCE_REQUIRED` remains distinct from factual FAIL.
 - **Claim Integrity: ACCEPTED through Concentration Warning / Early Warning.** Protected `roberta-core` PR #67 completes the current Truth Gate sequence after Asset Intelligence, Compare, History, Burn, Discovery, and WHAT CHANGED?.
 - **Instant X1 Scan v6: ACCEPTED end to end.** Public PR #358 and protected `roberta-core` PR #57 adopt the current CMIS scan/history-adequacy surface.
 - **Verified wallet trade + pool price-impact intelligence: ACCEPTED.** Public PR #359 plus protected `roberta-core` PR #61 preserve exact CMIS #498 facts without widening pool-local effects into whole-market causality.
@@ -14,7 +16,7 @@
 - **Upstream live Large-Trade → #498 handoff: ACCEPTED.** `cmis-core` PR #41 passed exact live run #7 at head `9ff63bcac15d9bd7f46868489f444508ed126c06`, merged as `f659f53f3d565bd5886dfae3e1a12370100cddc9`, and closed Issue #40 completed. ROBERTA may surface the verified public-wallet/pool-local handoff only within the accepted provider-scoped, non-causal, read-only boundaries.
 - **ROBERTA Human Intelligence Experience v1: COMPLETE.** Parent #376 coordinates Human Response Contract #377, protected `roberta-core#72`, human renderer #378, conversational continuity #379, learning/evaluation corpus #380, and website progressive disclosure #381. This builds on accepted #33/#45/#51 rather than replacing them. **#377 Human Response Contract v1: ACCEPTED** via PR #384 / merge `8ec6fbf1274543e54c2c04508fe968044c72d989`. The public `roberta_human_response/v1` contract is a presentation layer over accepted Decision Object + Opinion evidence; it does not replace `roberta_opinion/v1`. **Protected `roberta-core#72`: ACCEPTED** via PR #74 / merge `cff1be5bf95c29ac163dc9228bfdf4c1056762dd`. The canonical `roberta_human_response_decision/v1` now preserves source-bound response-planning semantics without recomputing CMIS facts. **#378 Human language renderer: ACCEPTED** via public PR #388 / merge `ee52d60079571d349a45299fc524d0ea972412f3` plus protected `roberta-core` PR #76 / merge `971c49b675b5dee43d5b6d002a86b61a1a951811`. Quick / Normal / Deep Dive rendering is deterministic and Claim-Integrity-gated. **#379 evidence-safe conversational continuity: ACCEPTED** via public PR #390 / merge `e2045d3243afd2e2b810cb560530bc44f0b6396b` plus protected `roberta-core` PR #78 / merge `5842e359cb671358638373199a442d800046cc80`. The website now uses checkpoint-backed thread IDs instead of prompt-pasting prior prose, and protected `roberta_conversation_continuity/v1` resolves stable referents while refusing to inherit market values. **#380 Human Response Learning Corpus + response-quality evaluator: ACCEPTED** via public PR #392 / merge `25641db5a67428b4f32f2158e7402b3208a36865` plus protected compatibility `roberta-core` PR #80 / merge `002fa78b012699ff661f817b16f8ebf7d5cd563c`. The accepted public corpus contains 100 synthetic/evaluation-only scenarios across 12 families, with deterministic `roberta_human_response_quality/v1`, actionable per-dimension failures, no live-market authority, and no execution authority. **#381 website progressive evidence disclosure + human decision labels: ACCEPTED** via public PR #394 / merge `c71fe592caf26c900816e1068b672894bd5b9095` plus protected compatibility `roberta-core` PR #82 / merge `3f503ff508739adceeb0407fd85642cff0f3296e`. The website now presents ROBERTA judgment first, separates risk/evidence-quality/freshness display semantics, keeps raw machine statuses neutral, and exposes native keyboard-safe progressive evidence disclosure without browser-side intelligence calculation. **Parent #376 Human Intelligence Experience v1: COMPLETE.**
 - Controlled Execution remains locked: `execution_authorized=false`.
-Last reconciled: 2026-09-06 (America/New_York)
+Last reconciled: 2026-09-08 (America/New_York)
 
 Status source: accepted code and contracts on `main`. Open PRs are not current truth unless explicitly identified as pending.
 
@@ -201,13 +203,19 @@ The autonomous source registry additionally provides an accepted mechanism for e
 
 XenBlocks PoW documentation PR #141 remains open/unaccepted. Its current review blocker is the exact-byte Phase 1 rule: the canonical ingested artifact still represents the LF-normalized derivative instead of the exact uploaded CRLF bytes. Until fixed and merged, XenBlocks must not be listed as accepted.
 
+## CMIS roadmap boundary update — 2026-09-08
+
+CMIS XONE/XNT Conversion Intelligence is now **RETIRED / HISTORICAL** by CMIS Issue #628 / merge #629. Existing accepted evidence remains auditable, but there is no active XONE/XNT lead-recovery or public-service/X1-Scout promotion path. ROBERTA must not present the retired workstream as a verified XONE→XNT conversion mechanism or as proof that no such mechanism exists.
+
+CMIS #458 / draft PR #549 (X1Scroll historical transaction fallback) remains **ON HOLD** because the required X1Scroll API key is unavailable. Do not merge or promote that fallback until the key is available and the exact live acceptance gate passes.
+
 ## CMIS public/private runtime migration
 
 CMIS has completed its six-phase public-shell/private-core migration and historical Git cleanup. The public package boundary now fails closed when the required protected private core is unavailable; no public reconstruction fallback is accepted. This changes deployment/source protection, not the Roberta → Scout → CMIS → Provider authority model.
 
 ## CMIS synchronization
 
-Current accepted CMIS capability contract is `1.18.0`, including first-class X1 Burn Intelligence under 1.15.0, Discovery Intelligence under 1.16.0, `instant_x1_scan/v3` field-scoped current-market freshness under 1.17.0, and pull-only `concentration_warning_intelligence/v1` under 1.18.0.
+Current accepted CMIS capability contract is `1.27.0`. The accepted surface relevant to ROBERTA includes Instant X1 Scan v6, universal `cmis_response_freshness/v1`, X1 history and exact-mint identity, Burn and Discovery Intelligence, concentration warning / Early Warning facts, cross-chain provenance and Bridge-to-XDEX, `trade_price_impact_intelligence/v1`, `large_trade_discovery/v1`, and freshness-aware `regulatory_evidence/v1`. Older 1.18-era contracts remain compatibility history, not the current synchronization target.
 
 The existing X1 `historical_compare` service is accepted for `window`, `all_available`, and `all_available_pair` use through X1 Scout. All-available modes require the service-specific CMIS `>=1.10.0` guard and exact limitation semantics. Pair requests preserve the second user/trusted-context asset explicitly and issue one CMIS pair-history call; Roberta does not recompute two independent histories. For CMIS `>=1.12.0`, Scout reliance additionally requires the accepted price-only provider-backfill limitations: provider source independence, archive completeness, continuous coverage, historical USD-stable peg behavior, and complete asset lifetime remain unverified. Returned lifetime/continuous-coverage limits remain authoritative.
 

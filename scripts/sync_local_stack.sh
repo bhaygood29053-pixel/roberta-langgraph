@@ -11,8 +11,9 @@ CMIS="$STACK_ROOT/cmis"
 CMIS_CORE="$STACK_ROOT/cmis-core"
 ROBERTA="$STACK_ROOT/roberta-langgraph"
 ROBERTA_CORE="$STACK_ROOT/roberta-core"
+ROBERTA_EVAL="$STACK_ROOT/roberta-eval"
 
-for repo in "$CMIS" "$CMIS_CORE" "$ROBERTA" "$ROBERTA_CORE"; do
+for repo in "$CMIS" "$CMIS_CORE" "$ROBERTA" "$ROBERTA_CORE" "$ROBERTA_EVAL"; do
   [[ -d "$repo/.git" ]] || fail "Git repository not found: $repo"
 done
 
@@ -70,6 +71,7 @@ sync_repo "$CMIS"
 sync_repo "$CMIS_CORE"
 sync_repo "$ROBERTA"
 sync_repo "$ROBERTA_CORE"
+sync_repo "$ROBERTA_EVAL"
 
 printf '\n========== REFRESH CMIS PRIVATE RUNTIME ==========\n'
 CMIS_PYTHON="$CMIS/.venv/bin/python"
@@ -134,7 +136,7 @@ grep -q 'ROBERTA judgment' <<<"$website" \
 printf 'website_runtime=PASS\n'
 
 printf '\n========== FINAL REPOSITORY HEADS ==========\n'
-for repo in "$CMIS" "$CMIS_CORE" "$ROBERTA" "$ROBERTA_CORE"; do
+for repo in "$CMIS" "$CMIS_CORE" "$ROBERTA" "$ROBERTA_CORE" "$ROBERTA_EVAL"; do
   cd "$repo"
   printf '%-20s %s\n' "$(basename "$repo")" "$(git rev-parse HEAD)"
 done
@@ -144,4 +146,4 @@ systemctl --no-pager --full status cmis-gateway.service | sed -n '1,10p'
 systemctl --no-pager --full status roberta-bridge.service | sed -n '1,10p'
 
 printf '\nLOCAL_STACK_SYNC=PASS\n'
-printf 'All four local repositories match origin/main, CMIS/ROBERTA runtimes were refreshed, and the live website passed the #381 UI check.\n'
+printf 'All five operational repositories match origin/main, CMIS/ROBERTA runtimes were refreshed, and the live website passed the #381 UI check.\n'
