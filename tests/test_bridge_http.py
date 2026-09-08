@@ -6,10 +6,11 @@ import urllib.error
 import urllib.request
 
 import pytest
-from langchain_core.messages import AIMessage, ToolMessage
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
 from roberta.bridge_http import (
     EVALUATION_TELEMETRY_VERSION,
+    EVALUATION_TELEMETRY_V2,
     RobertaBridge,
     create_server,
 )
@@ -336,6 +337,148 @@ def test_http_bridge_rejects_unknown_evaluation_mode():
         assert status == 400
         assert payload["error"]["code"] == "invalid_evaluation_mode"
         assert graph.calls == []
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
+
+
+def test_http_bridge_evaluation_v2_projects_current_turn_factual_scout_evidence():
+    report = {
+        "specialist": "x1_scout",
+        "chain": "x1",
+        "requested_asset": "XNT",
+        "asset": {"symbol": "XNT", "mint": "verified-mint"},
+        "source": {"service": "cmis", "operation": "market_report"},
+        "cmis_status": "ok",
+        "observed_at_iso": "2026-09-08T16:00:00Z",
+        "findings": {
+            "data": {
+                "price": 0.0123,
+                "liquidity": 5000.0,
+                "volume_24h": 900.0,
+            },
+            "risk": None,
+        },
+        "confidence": {"verification_status": "VERIFIED"},
+        "evidence_context": {"freshness_verified": True},
+        "freshness": {
+            "contract_version": "cmis_response_freshness/v1",
+            "state": "VERIFIED",
+        },
+        "sources": [{"provider": "must_not_be_exposed"}],
+        "warnings": [{"message": "must_not_be_exposed"}],
+        "errors": [],
+    }
+    graph = FakeGraph(
+        [
+            HumanMessage(content="Give me the current verified X1 market report for XNT."),
+            AIMessage(
+                content="",
+                tool_calls=[
+                    {
+                        "name": "x1_scout_investigate",
+                        "args": {},
+                        "id": "1",
+                        "type": "tool_call",
+                    }
+                ],
+            ),
+            ToolMessage(
+                content=json.dumps(report),
+                tool_call_id="1",
+                name="x1_scout_investigate",
+            ),
+            AIMessage(content="XNT has a verified current market observation."),
+        ]
+    )
+    bridge = RobertaBridge(graph)
+    server, thread = _serve_once(bridge)
+    try:
+        url = f"http://127.0.0.1:{server.server_port}/v1/roberta"
+        status, payload = _request(
+            url,
+            body={
+                "message": "Give me the current verified X1 market report for XNT.",
+                "evaluation_mode": EVALUATION_TELEMETRY_V2,
+            },
+        )
+        assert status == 200
+        assert payload["evaluation_telemetry_version"] == EVALUATION_TELEMETRY_V2
+        factual = payload["evaluation_evidence"]["factual_response"]
+        assert factual["contract_version"] == "roberta_evaluation_factual_evidence/v1"
+        assert factual["source"] == {"service": "cmis", "operation": "market_report"}
+        assert factual["findings"]["data"]["price"] == 0.0123
+        assert "sources" not in factual
+        assert "warnings" not in factual
+
+        integrity = payload["evaluation_evidence"]["evaluation_projection_integrity"]
+        assert integrity["contract_version"] == "roberta_evaluation_projection_integrity/v1"
+        assert integrity["status"] == "PASS"
+        assert integrity["provider_truth_certified"] is False
+        assert integrity["all_natural_language_claims_certified"] is False
+        assert integrity["execution_authorized"] is False
+
+        assert {
+            "name": "factual_data_price",
+            "evidence_path": "factual_response.findings.data.price",
+            "value": 0.0123,
+        } in payload["claims"]
+        assert payload["evidence_freshness"]["state"] == "VERIFIED"
+        assert payload["evidence_provenance"]["factual_projection"][
+            "second_cmis_query_performed"
+        ] is False
+        assert payload["evidence_provenance"]["factual_projection"][
+            "prose_claim_inference_performed"
+        ] is False
+        assert payload["execution_authorized"] is False
+        assert len(graph.calls) == 1
+        assert "must_not_be_exposed" not in json.dumps(payload)
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
+
+
+def test_http_bridge_evaluation_v2_does_not_reuse_prior_turn_scout_evidence():
+    prior_report = {
+        "specialist": "x1_scout",
+        "chain": "x1",
+        "requested_asset": "XNT",
+        "asset": {"symbol": "XNT"},
+        "source": {"service": "cmis", "operation": "market_report"},
+        "cmis_status": "ok",
+        "findings": {"data": {"price": 999.0}, "risk": None},
+        "confidence": {},
+        "evidence_context": {"freshness_verified": True},
+    }
+    graph = FakeGraph(
+        [
+            HumanMessage(content="Old question"),
+            ToolMessage(
+                content=json.dumps(prior_report),
+                tool_call_id="old",
+                name="x1_scout_investigate",
+            ),
+            AIMessage(content="Old answer"),
+            HumanMessage(content="New unrelated question"),
+            AIMessage(content="New answer with no current-turn Scout evidence."),
+        ]
+    )
+    bridge = RobertaBridge(graph)
+    server, thread = _serve_once(bridge)
+    try:
+        url = f"http://127.0.0.1:{server.server_port}/v1/roberta"
+        status, payload = _request(
+            url,
+            body={
+                "message": "New unrelated question",
+                "evaluation_mode": EVALUATION_TELEMETRY_V2,
+            },
+        )
+        assert status == 200
+        assert payload["claims"] == []
+        assert "factual_response" not in payload["evaluation_evidence"]
     finally:
         server.shutdown()
         server.server_close()
