@@ -112,9 +112,12 @@ def _scalar_claims(
     if len(output) >= _MAX_FACTUAL_CLAIMS:
         return
     if isinstance(value, Mapping):
-        for key in sorted(value):
+        for raw_key in sorted(value, key=lambda item: str(item)):
+            key = str(raw_key)
+            if not key or "." in key:
+                continue
             _scalar_claims(
-                value[key],
+                value[raw_key],
                 path=f"{path}.{key}",
                 name_prefix=f"{name_prefix}_{key}",
                 output=output,
