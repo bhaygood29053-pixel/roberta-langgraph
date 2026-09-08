@@ -516,7 +516,7 @@ def make_handler(bridge: RobertaBridge, *, api_key: str = ""):
 
             try:
                 telemetry = None
-                if evaluation_mode == EVALUATION_TELEMETRY_VERSION:
+                if evaluation_mode in SUPPORTED_EVALUATION_TELEMETRY_VERSIONS:
                     reply, telemetry = bridge.ask_with_evaluation(
                         message,
                         thread_id=thread_id,
