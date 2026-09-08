@@ -18,6 +18,10 @@ from typing import Any, Optional
 from langchain_core.messages import AIMessage
 from langgraph.checkpoint.memory import InMemorySaver
 
+from roberta.evaluation_telemetry import (
+    EVALUATION_TELEMETRY_V2,
+    extend_evaluation_telemetry_v2,
+)
 from roberta.private_core import build_graph
 from roberta.web_ui import web_ui_bytes
 
@@ -25,6 +29,9 @@ DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8766
 MAX_REQUEST_BYTES = 65_536
 EVALUATION_TELEMETRY_VERSION = "roberta_evaluation_telemetry/v1"
+SUPPORTED_EVALUATION_TELEMETRY_VERSIONS = frozenset(
+    {EVALUATION_TELEMETRY_VERSION, EVALUATION_TELEMETRY_V2}
+)
 _LOOPBACK_HOSTS = {"127.0.0.1", "localhost", "::1"}
 
 
@@ -221,12 +228,12 @@ class RobertaBridge:
             threaded_graph=build_runtime_graph(checkpointer=InMemorySaver()),
         )
 
-    def _final_message(
+    def _final_message_with_messages(
         self,
         message: str,
         *,
         thread_id: str | None = None,
-    ) -> AIMessage:
+    ) -> tuple[AIMessage, list[object]]:
         user_text = str(message or "").strip()
         if not user_text:
             raise ValueError("A non-empty user message is required.")
@@ -260,8 +267,20 @@ class RobertaBridge:
         for item in reversed(messages):
             if isinstance(item, AIMessage) and not item.tool_calls:
                 if _message_text(item):
-                    return item
+                    return item, list(messages)
         raise RuntimeError("Roberta graph returned no final assistant reply.")
+
+    def _final_message(
+        self,
+        message: str,
+        *,
+        thread_id: str | None = None,
+    ) -> AIMessage:
+        final, _messages = self._final_message_with_messages(
+            message,
+            thread_id=thread_id,
+        )
+        return final
 
     def ask(self, message: str, *, thread_id: str | None = None) -> str:
         final = self._final_message(message, thread_id=thread_id)
@@ -272,9 +291,18 @@ class RobertaBridge:
         message: str,
         *,
         thread_id: str | None = None,
+        evaluation_mode: str = EVALUATION_TELEMETRY_VERSION,
     ) -> tuple[str, dict[str, Any]]:
-        final = self._final_message(message, thread_id=thread_id)
-        return _message_text(final), _evaluation_telemetry(final)
+        final, messages = self._final_message_with_messages(
+            message,
+            thread_id=thread_id,
+        )
+        telemetry = _evaluation_telemetry(final)
+        if evaluation_mode == EVALUATION_TELEMETRY_V2:
+            telemetry = extend_evaluation_telemetry_v2(telemetry, messages)
+        elif evaluation_mode != EVALUATION_TELEMETRY_VERSION:
+            raise ValueError(f"Unsupported evaluation telemetry mode: {evaluation_mode}")
+        return _message_text(final), telemetry
 
 
 def make_handler(bridge: RobertaBridge, *, api_key: str = ""):
@@ -438,7 +466,7 @@ def make_handler(bridge: RobertaBridge, *, api_key: str = ""):
             evaluation_mode = request.get("evaluation_mode")
             if (
                 evaluation_mode is not None
-                and evaluation_mode != EVALUATION_TELEMETRY_VERSION
+                and evaluation_mode not in SUPPORTED_EVALUATION_TELEMETRY_VERSIONS
             ):
                 self._send_json(
                     400,
@@ -448,8 +476,9 @@ def make_handler(bridge: RobertaBridge, *, api_key: str = ""):
                         "error": {
                             "code": "invalid_evaluation_mode",
                             "message": (
-                                "evaluation_mode must be "
-                                f"{EVALUATION_TELEMETRY_VERSION!r} when provided."
+                                "evaluation_mode must be one of "
+                                f"{sorted(SUPPORTED_EVALUATION_TELEMETRY_VERSIONS)!r} "
+                                "when provided."
                             ),
                         },
                     },
@@ -487,10 +516,11 @@ def make_handler(bridge: RobertaBridge, *, api_key: str = ""):
 
             try:
                 telemetry = None
-                if evaluation_mode == EVALUATION_TELEMETRY_VERSION:
+                if evaluation_mode in SUPPORTED_EVALUATION_TELEMETRY_VERSIONS:
                     reply, telemetry = bridge.ask_with_evaluation(
                         message,
                         thread_id=thread_id,
+                        evaluation_mode=evaluation_mode,
                     )
                 else:
                     reply = bridge.ask(message, thread_id=thread_id)
@@ -583,6 +613,8 @@ __all__ = [
     "DEFAULT_PORT",
     "MAX_REQUEST_BYTES",
     "EVALUATION_TELEMETRY_VERSION",
+    "EVALUATION_TELEMETRY_V2",
+    "SUPPORTED_EVALUATION_TELEMETRY_VERSIONS",
     "RobertaBridge",
     "build_runtime_graph",
     "create_server",
