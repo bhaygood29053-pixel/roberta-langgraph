@@ -420,9 +420,24 @@ def test_http_bridge_evaluation_v2_projects_current_turn_factual_scout_evidence(
         assert integrity["execution_authorized"] is False
 
         assert {
-            "name": "factual_data_price",
+            "name": "market_price",
             "evidence_path": "factual_response.findings.data.price",
             "value": 0.0123,
+        } in payload["claims"]
+        assert {
+            "name": "market_liquidity",
+            "evidence_path": "factual_response.findings.data.liquidity",
+            "value": 5000.0,
+        } in payload["claims"]
+        assert {
+            "name": "market_volume_24h",
+            "evidence_path": "factual_response.findings.data.volume_24h",
+            "value": 900.0,
+        } in payload["claims"]
+        assert {
+            "name": "asset_symbol",
+            "evidence_path": "factual_response.asset.symbol",
+            "value": "XNT",
         } in payload["claims"]
         assert payload["evidence_freshness"]["state"] == "VERIFIED"
         assert payload["evidence_provenance"]["factual_projection"][
@@ -479,6 +494,141 @@ def test_http_bridge_evaluation_v2_does_not_reuse_prior_turn_scout_evidence():
         assert status == 200
         assert payload["claims"] == []
         assert "factual_response" not in payload["evaluation_evidence"]
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
+
+
+def test_http_bridge_evaluation_v2_prioritizes_instant_scan_market_facts_before_claim_cap():
+    history_noise = {
+        f"field_{index:03d}": index
+        for index in range(100)
+    }
+    report = {
+        "specialist": "x1_scout",
+        "chain": "x1",
+        "requested_asset": "XNT",
+        "asset": {"symbol": "XNT", "name": "XNT", "mint": None},
+        "source": {"service": "cmis", "operation": "instant_x1_scan"},
+        "cmis_status": "partial",
+        "observed_at_iso": "2026-09-08T17:06:35Z",
+        "findings": {
+            "data": {
+                "contract_version": "instant_x1_scan/v6",
+                "execution_authorized": False,
+                "sections": {
+                    "evidence": {"component_source_count": 12},
+                    "history": history_noise,
+                    "market": {
+                        "price_usd": 0.31996138060276996,
+                        "liquidity_usd": 75080.74864961307,
+                        "volume_24h_usd": 14698.627174009862,
+                        "transactions_24h": 7262,
+                        "#LPs": 298,
+                        "price_freshness_verified": False,
+                        "liquidity_freshness_verified": False,
+                        "volume_24h_freshness_verified": False,
+                        "transactions_24h_freshness_verified": False,
+                    },
+                    "risk": {
+                        "recommendation": "WARN",
+                        "score": None,
+                    },
+                    "tokenomics": {
+                        "current_total_supply": "1072030318",
+                        "circulating_supply": "14032456",
+                        "mint_authority": None,
+                        "freeze_authority": None,
+                    },
+                },
+            },
+            "risk": {
+                "recommendation": "WARN",
+                "score": None,
+            },
+        },
+        "confidence": {"verification_ratio": 0.857143},
+        "evidence_context": {
+            "available": True,
+            "freshness_verified": False,
+            "verification_status": "UNVERIFIED",
+        },
+        "freshness": {
+            "contract_version": "cmis_response_freshness/v1",
+            "state": "UNKNOWN",
+        },
+        "sources": [],
+        "warnings": [],
+        "errors": [],
+    }
+    graph = FakeGraph(
+        [
+            HumanMessage(content="Give me the current verified X1 market report for XNT."),
+            AIMessage(
+                content="",
+                tool_calls=[
+                    {
+                        "name": "x1_scout_investigate",
+                        "args": {},
+                        "id": "1",
+                        "type": "tool_call",
+                    }
+                ],
+            ),
+            ToolMessage(
+                content=json.dumps(report),
+                tool_call_id="1",
+                name="x1_scout_investigate",
+            ),
+            AIMessage(content="XNT market summary."),
+        ]
+    )
+    bridge = RobertaBridge(graph)
+    server, thread = _serve_once(bridge)
+    try:
+        url = f"http://127.0.0.1:{server.server_port}/v1/roberta"
+        status, payload = _request(
+            url,
+            body={
+                "message": "Give me the current verified X1 market report for XNT.",
+                "evaluation_mode": EVALUATION_TELEMETRY_V2,
+            },
+        )
+        assert status == 200
+        claims = payload["claims"]
+        assert len(claims) <= 32
+        claim_paths = {claim["evidence_path"] for claim in claims}
+        assert "factual_response.asset.symbol" in claim_paths
+        assert (
+            "factual_response.findings.data.sections.market.price_usd"
+            in claim_paths
+        )
+        assert (
+            "factual_response.findings.data.sections.market.liquidity_usd"
+            in claim_paths
+        )
+        assert (
+            "factual_response.findings.data.sections.market.volume_24h_usd"
+            in claim_paths
+        )
+        assert (
+            "factual_response.findings.data.sections.market.transactions_24h"
+            in claim_paths
+        )
+        assert (
+            "factual_response.findings.data.sections.risk.recommendation"
+            in claim_paths
+        )
+        integrity = payload["evaluation_evidence"]["evaluation_projection_integrity"]
+        factual_count = sum(
+            1
+            for claim in claims
+            if claim["evidence_path"].startswith("factual_response.")
+        )
+        assert integrity["claim_count"] == factual_count
+        assert integrity["status"] == "PASS"
+        assert payload["execution_authorized"] is False
     finally:
         server.shutdown()
         server.server_close()
