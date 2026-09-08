@@ -1,8 +1,8 @@
 # ROBERTA ↔ CMIS Source Sync Baseline
 
-Last reconciled: 2026-09-05 (America/New_York)
+Last reconciled: 2026-09-08 (America/New_York)
 
-This is the mirrored cross-project checkpoint for accepted public/protected state.
+This is the mirrored cross-project checkpoint for accepted public/protected state. The four-repository authority baseline remains ROBERTA public/protected + CMIS public/protected; `roberta-eval` is tracked separately as an independent evaluation consumer and does not become an authority layer.
 
 ## Authority invariant
 
@@ -11,6 +11,7 @@ This is the mirrored cross-project checkpoint for accepted public/protected stat
 - ROBERTA owns orchestration and final synthesis.
 - Chain Scouts consume and interpret accepted CMIS contracts.
 - CMIS owns deterministic facts, freshness, evidence, Proof Score, risk, history, bridge evidence, and provider semantic verification.
+- The Evaluation Laboratory measures behavior and may propose remediation; it does not manufacture provider truth or silently modify production authority.
 - Open PR evidence is not accepted truth.
 - Missing evidence remains unknown/unavailable.
 - `execution_authorized=false`.
@@ -18,72 +19,60 @@ This is the mirrored cross-project checkpoint for accepted public/protected stat
 ## Repository heads at this reconciliation
 
 ```text
-ROBERTA public      917b5459a6d59f6dfab5e708eec235acee48cfc1
-ROBERTA protected   84d1ace9a0ca7a9fc7c36c46e9bd1f2846ad5802
-CMIS public         3681559b728d8493fbc0c5e39227df5c34c23c69
-CMIS protected      98b96c8a73524d2b5c524f536cdd6e4cd2f69437
+ROBERTA public      4c872b4ac9fb25dda0994632e9e2f7dc4cc8cdfc
+ROBERTA protected   18c6d82377876c0627edb741e5c36f1f339dbbdc
+CMIS public         e2a53c94f481ecec4a4f9e1e7051684203e32299
+CMIS protected      9cf490f55eeee12e109343b50b1642a1f15854ff
+ROBERTA eval        ee624173a1af899a3290b456fb4056ef2e5e35bb
 ```
 
 Documentation reconciliation commits may advance these heads after this checkpoint.
 
 ## ROBERTA
 
-- Opinion v1: accepted.
-- Claim Integrity v1: accepted for X1 asset intelligence and Compare.
-- Next Truth Gate: standalone History, then Burn, Discovery, and remaining specialist products.
-- ROBERTA #314 is now blocked only on CMIS #482 public-service / Scout-reliance promotion.
+Accepted:
 
-## CMIS cross-chain state
+- Opinion v1 and Claim Integrity through the current warning/early-warning surface;
+- Instant X1 Scan v6;
+- Human Intelligence Experience v1;
+- trade price-impact, Large-Trade Discovery, cross-chain provenance / Bridge-to-XDEX, and Regulatory Intelligence consumption;
+- Evaluation Telemetry v1;
+- public ROBERTA #401 + protected `roberta-core` #86 stateless/threaded bridge compatibility.
+
+Current operational gate:
+
+- synchronize the five operational repositories and assembled runtimes;
+- rerun the 20-case LAB #21 live smoke plan;
+- classify results with LAB #22;
+- fix confirmed defects service-by-service, rerun, and promote confirmed recurring defects into LAB #15 regression memory.
+
+Open/unaccepted work remains non-current truth, including native Telegram PR #264, planning-only X1Labs Intelligence Scout PR #190, and blocked XenBlocks source PR #141.
+
+## CMIS
 
 Accepted:
 
-- #407 exact Warp route/config semantics;
-- #441 bounded lifecycle retention;
-- #409 bridged supply and current/prior 24h/7d/30d flow intelligence;
-- #410 complete through merged PR #469;
-- exact 24h XDEX activity-window semantics and comparable wSOL.X USD value basis;
-- final `bridge_to_xdex_utilization/v1` acceptance inside the verified XDEX program-family scope.
+- capability contract `1.27.0`;
+- Instant X1 Scan v6 and universal `cmis_response_freshness/v1`;
+- cross-chain / Warp promotion through Bridge-to-XDEX and cross-chain asset provenance;
+- trade price-impact and Large-Trade Discovery;
+- freshness-aware Regulatory Evidence;
+- internal CMIS Web Discovery stack through X1 Agents Radio structured discovery, direct RPC corroboration, and program/upgrade semantic verification.
 
-Active:
+Roadmap boundary changes:
 
-- Issue #482 — promote the already-accepted #410 contract to public CMIS service and X1 Scout reliance.
-- ROBERTA #314 follows #482.
+- XONE/XNT Conversion Intelligence is **RETIRED / HISTORICAL** by Issue #628 / merge #629. Existing evidence remains auditable; there is no active lead-recovery or public-service/X1-Scout promotion path.
+- X1Scroll historical fallback #458 / draft PR #549 is **ON HOLD**. The X1Scroll API key is unavailable; do not merge or promote until the key is available and the exact live gate passes.
+- Provider-gap research #30, FortiBlox fact-time qualification #567, delayed-departure research, Theo transport work, and related historical-provider investigations remain parallel and fail closed until separately accepted.
 
-## CMIS #461 / liquidity state
+## Evaluation Laboratory
 
-Accepted prerequisites:
+- LAB #21 Live Evidence-Backed Evaluation v1: accepted.
+- LAB #22 Live Qualification Diagnostics v1: accepted.
+- Next operational proof is the repaired-runtime 20-case live rerun; no live-quality PASS should be claimed before those results exist.
 
-- PR #465 fact-time evidence;
-- PR #466 current USDC.X reserve backing;
-- PR #468 current USDC.X/USD equivalence.
+## Protected cores
 
-Active:
-
-- PR #470 — final five-pool X1.Ninja USD-liquidity semantic proof; current repeated-revaluation workflow remains in progress.
-- Issue #459 — later liquidity/rolling-24h freshness promotion.
-
-## CMIS Web Discovery
-
-Accepted internally through v4:
-
-- #472 six-source bounded discovery;
-- #474 X1 Explorer structured discovery;
-- #476 sanitized X1 Explorer network observation;
-- #478 operator-controlled passive X1 Explorer browser capture.
-
-Accepted internally through v5, including PR #481 structured XDEX endpoint discovery.
-
-Active:
-
-- Issue #483 — Web Discovery v6 XDEX network-gap registry; current design conclusion is `browser_capture_required_now=false` for known XDEX gaps.
-
-All Web Discovery state remains `DISCOVERED`, non-promoted, and non-authorizing.
-
-## Parallel work
-
-- #444 Instant X1 Scan evidence completion.
-- #459 field-scoped freshness expansion.
-- #363 delayed-vault/X1.Ninja research.
-- ROBERTA Core PR #39 / Issue #38 remain protected-runtime maintenance, not product capability gates.
+Public roadmap/evidence changes do not silently mutate protected runtime behavior. Protected implementation changes remain separately reviewed and merged.
 
 `execution_authorized=false`
