@@ -1,6 +1,6 @@
 # Current ROBERTA Project Status
 
-Current reconciliation: **2026-09-06 12:15 America/New_York**.
+Current reconciliation: **2026-09-08 10:55 America/New_York**.
 
 ## Accepted ROBERTA state
 
@@ -16,7 +16,8 @@ Accepted on public/protected main:
 - live CMIS 1.26 Regulatory Evidence adoption through public PR #368 + protected `roberta-core` #69 + reconciliation PR #369;
 - CMIS 1.27 universal `cmis_response_freshness/v1` adoption so every public token/service response carries an explicit freshness result, including UNKNOWN/NOT_VERIFIED when proof is incomplete;
 - conversation-first public website with saved investigations/evidence panel through PR #374;
-- read-only Evaluation Telemetry v1 through public PR #399 / merge `109f91f289c3fd6a2542b1eebca93091d5c0a225`, with protected public-shell compatibility through `roberta-core` PR #85 / merge `13a870195f038865d023280fd3d1277bc9736397`. The telemetry is opt-in, uses the same final graph invocation, exposes only accepted final-message structures, and remains bounded by Claim Integrity.
+- read-only Evaluation Telemetry v1 through public PR #399 / merge `109f91f289c3fd6a2542b1eebca93091d5c0a225`, with protected public-shell compatibility through `roberta-core` PR #85 / merge `13a870195f038865d023280fd3d1277bc9736397`. The telemetry is opt-in, uses the same final graph invocation, exposes only accepted final-message structures, and remains bounded by Claim Integrity;
+- stateless/threaded bridge compatibility through public ROBERTA #401 / merge `4c872b4ac9fb25dda0994632e9e2f7dc4cc8cdfc` and protected `roberta-core` #86 / merge `18c6d82377876c0627edb741e5c36f1f339dbbdc`.
 
 ## Regulatory Intelligence
 
@@ -66,11 +67,15 @@ This program builds on the already-accepted answer-first/evidence-aware mileston
 
 Live evaluation requests may explicitly request `roberta_evaluation_telemetry/v1`. Missing structured claims or Claim Integrity remains unqualified rather than guessed. A bounded evidence-contract PASS does not certify upstream provider truth or every natural-language sentence.
 
+`roberta-eval` LAB #22 is also accepted via PR #46 / merge `7eefde5355e99453f43cb4662226200b156cf7a0`. It converts LAB #21 live grades into a deterministic service-by-service remediation map and preserves `EVIDENCE_REQUIRED` as qualification-blocking without mislabeling it as a factual ROBERTA failure.
+
 ## Next exact product work
 
-1. run the first balanced real-subject bounded live evaluation after local runtime synchronization and use its EVIDENCE_REQUIRED/FAIL findings to drive the next claim-coverage work;
-2. keep website and Human/Machine ROBERTA claims synchronized with the now-accepted live Large-Trade → #498 handoff;
-3. continue the open CMIS provider-gap track, including bounded historical transaction fallback qualification where separately accepted;
-4. continue remaining specialist/product roadmap work without changing the read-only execution boundary.
+1. synchronize all five operational repositories locally (`cmis`, `cmis-core`, `roberta-langgraph`, `roberta-core`, `roberta-eval`) and refresh the assembled CMIS/ROBERTA runtimes;
+2. rerun the 20-case LAB #21 real-subject live smoke plan against the repaired bridge and capture actual PASS / EVIDENCE_REQUIRED / FAIL results;
+3. run LAB #22 diagnostics service-by-service, fix confirmed ROBERTA/Scout/CMIS defects narrowly, rerun, and convert confirmed recurring defects into permanent LAB #15 regression memory;
+4. keep website and Human/Machine ROBERTA claims synchronized with accepted main-state capability only;
+5. continue CMIS provider-gap work, with X1Scroll #458 / draft PR #549 explicitly on hold until an API key exists and the exact live gate can pass;
+6. continue remaining specialist/product roadmap work without changing the read-only execution boundary.
 
 `execution_authorized=false`
