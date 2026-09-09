@@ -3,6 +3,7 @@
 ## Live checkpoint — 2026-09-08
 
 - **ROBERTA Opinion v1: ACCEPTED.**
+- **X1 direct wallet-relationship productization: QUEUED under #410, blocked on CMIS #631.** X1 Scout will adopt only a separately accepted/promoted `wallet_relationship_intelligence/v1` contract. A verified direct transfer may be surfaced as a direct interaction, but not upgraded into common ownership, insider/whale/bot status, coordination, manipulation, intent, causality, risk, or execution authority.
 - **Evaluation Telemetry v1: ACCEPTED.** Public PR #399 / merge `109f91f289c3fd6a2542b1eebca93091d5c0a225` exposes the original opt-in, read-only evaluation projection and remains preserved for compatibility.
 - **Evaluation Telemetry v2 factual projection: ACCEPTED.** Public PR #405 / merge `55608b5f53bb309daa319436dde564b2ca7e1550` adds same-turn factual projection without a second CMIS/provider query or prose inference; PR #406 / merge `3274a9b9be0a7954ddf9d90b6f0890a5135c95c7` prioritizes service-material facts within the bounded 32-claim budget. `roberta-eval` PR #49 adopts v2 grading, PR #50 requires material service-claim coverage, and PR #51 distinguishes missing current-X1 evidence delegation from a projection gap.
 - **Stateless bridge compatibility: ACCEPTED.** Public ROBERTA #401 merged as `4c872b4ac9fb25dda0994632e9e2f7dc4cc8cdfc`, with protected `roberta-core` #86 merged as `18c6d82377876c0627edb741e5c36f1f339dbbdc`. Stateless `/v1/roberta` requests and checkpointed/threaded requests are again explicitly separated and regression-gated without relaxing evidence, Claim Integrity, or execution boundaries.
@@ -30,7 +31,7 @@ The Evaluation Laboratory remains paused and no longer drives the active product
 Current execution order:
 
 1. **X1 productization umbrella (#246): ACTIVE.** Continue making ROBERTA the user-facing X1 intelligence analyst over the accepted CMIS 1.27 / Instant X1 Scan v6 / Human Intelligence Experience foundation.
-2. **CMIS-backed intelligence expansion: NEXT PRODUCT WORK.** Prioritize explicit holder/wallet intelligence and bounded X1 ecosystem/network-brief inputs that strengthen Investigate / Ask / Compare / Watch / Discover while preserving Roberta -> X1 Scout -> CMIS -> provider.
+2. **Direct wallet-relationship intelligence (#410): NEXT DOWNSTREAM PRODUCT WORK / BLOCKED ON CMIS #631.** After CMIS reconciles and promotes the current canonical `wallet_relationship_intelligence/v1` service, X1 Scout will adopt it through a typed `x1_wallet_relationship_intelligence/v1` projection and ROBERTA will add Claim Integrity before human synthesis. Bounded X1 ecosystem/network-brief inputs follow as a separate product slice.
 3. **Learning Plane scheduling (#275 / protected PR #11): SUPPORTING TRACK.** Continue only under its bounded resource/scheduler acceptance gates; it is not a flagship product blocker.
 4. **Telegram (#264): LOWER PRIORITY / NEEDS REFRESH.** Do not merge the old branch merely because it exists; rebase/revalidate only when Telegram is explicitly prioritized.
 5. **Evaluation Laboratory: PAUSED.** No LAB #21/#22, `live-smoke-005`, regression promotion, or eval-driven PR #90 work until explicitly resumed.
