@@ -19,11 +19,11 @@ This is the mirrored cross-project checkpoint for accepted public/protected stat
 ## Repository heads at this reconciliation
 
 ```text
-ROBERTA public      4c872b4ac9fb25dda0994632e9e2f7dc4cc8cdfc
-ROBERTA protected   18c6d82377876c0627edb741e5c36f1f339dbbdc
-CMIS public         e2a53c94f481ecec4a4f9e1e7051684203e32299
+ROBERTA public      3274a9b9be0a7954ddf9d90b6f0890a5135c95c7
+ROBERTA protected   d864daf1e70dde7cb1734649efa7a36ccda1aa7f
+CMIS public         4778da694a3a735c946908fef08bec3664c36107
 CMIS protected      9cf490f55eeee12e109343b50b1642a1f15854ff
-ROBERTA eval        ee624173a1af899a3290b456fb4056ef2e5e35bb
+ROBERTA eval        9f97bd640c4b85d9a85ce6a15af153f46f428744
 ```
 
 Documentation reconciliation commits may advance these heads after this checkpoint.
@@ -36,15 +36,17 @@ Accepted:
 - Instant X1 Scan v6;
 - Human Intelligence Experience v1;
 - trade price-impact, Large-Trade Discovery, cross-chain provenance / Bridge-to-XDEX, and Regulatory Intelligence consumption;
-- Evaluation Telemetry v1;
+- Evaluation Telemetry v1 plus accepted Evaluation Telemetry v2 factual projection and material-first claim prioritization through public PRs #405/#406;
 - public ROBERTA #401 + protected `roberta-core` #86 stateless/threaded bridge compatibility.
 
 Current operational gate:
 
-- synchronize the five operational repositories and assembled runtimes;
-- rerun the 20-case LAB #21 live smoke plan;
-- classify results with LAB #22;
-- fix confirmed defects service-by-service, rerun, and promote confirmed recurring defects into LAB #15 regression memory.
+- `live-smoke-004` is complete: 20/20 runtime OK, 8 PASS, 12 EVIDENCE_REQUIRED, 0 FAIL;
+- the 8 PASS cases cover asset lookup, Discovery Intelligence, Instant X1 Scan, and Market Report for both XNT and AGI;
+- LAB #22 now localizes the 12 blocked burn/history/pre-trade/risk/tokenomics/verification-evidence cases to protected `roberta_oracle_evidence_delegation`;
+- protected Issue #89 / PR #90 is the active remediation gate and remains unaccepted;
+- after deterministic package + pinned-shell validation and accepted protected merge, synchronize all five repos/runtimes and run `live-smoke-005`;
+- close protected #89/public #404 only on live proof; promote only confirmed recurring/replayable defects into LAB #15 regression memory.
 
 Open/unaccepted work remains non-current truth, including native Telegram PR #264, planning-only X1Labs Intelligence Scout PR #190, and blocked XenBlocks source PR #141.
 
@@ -69,7 +71,10 @@ Roadmap boundary changes:
 
 - LAB #21 Live Evidence-Backed Evaluation v1: accepted.
 - LAB #22 Live Qualification Diagnostics v1: accepted.
-- Next operational proof is the repaired-runtime 20-case live rerun; no live-quality PASS should be claimed before those results exist.
+- Evaluation Telemetry v2 grading is accepted through `roberta-eval` PR #49; material-claim relevance through PR #50; missing current-X1 evidence delegation classification through PR #51.
+- `live-smoke-004`: 20/20 runtime OK, 8 PASS, 12 EVIDENCE_REQUIRED, 0 FAIL.
+- Current qualification blocker is protected ROBERTA evidence delegation, not Telemetry v2 projection.
+- Next operational proof is `live-smoke-005` after protected #90 is deterministically accepted and synchronized.
 
 ## Protected cores
 
