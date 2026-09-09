@@ -17,9 +17,25 @@
 - **Upstream live Large-Trade → #498 handoff: ACCEPTED.** `cmis-core` PR #41 passed exact live run #7 at head `9ff63bcac15d9bd7f46868489f444508ed126c06`, merged as `f659f53f3d565bd5886dfae3e1a12370100cddc9`, and closed Issue #40 completed. ROBERTA may surface the verified public-wallet/pool-local handoff only within the accepted provider-scoped, non-causal, read-only boundaries.
 - **ROBERTA Human Intelligence Experience v1: COMPLETE.** Parent #376 coordinates Human Response Contract #377, protected `roberta-core#72`, human renderer #378, conversational continuity #379, learning/evaluation corpus #380, and website progressive disclosure #381. This builds on accepted #33/#45/#51 rather than replacing them. **#377 Human Response Contract v1: ACCEPTED** via PR #384 / merge `8ec6fbf1274543e54c2c04508fe968044c72d989`. The public `roberta_human_response/v1` contract is a presentation layer over accepted Decision Object + Opinion evidence; it does not replace `roberta_opinion/v1`. **Protected `roberta-core#72`: ACCEPTED** via PR #74 / merge `cff1be5bf95c29ac163dc9228bfdf4c1056762dd`. The canonical `roberta_human_response_decision/v1` now preserves source-bound response-planning semantics without recomputing CMIS facts. **#378 Human language renderer: ACCEPTED** via public PR #388 / merge `ee52d60079571d349a45299fc524d0ea972412f3` plus protected `roberta-core` PR #76 / merge `971c49b675b5dee43d5b6d002a86b61a1a951811`. Quick / Normal / Deep Dive rendering is deterministic and Claim-Integrity-gated. **#379 evidence-safe conversational continuity: ACCEPTED** via public PR #390 / merge `e2045d3243afd2e2b810cb560530bc44f0b6396b` plus protected `roberta-core` PR #78 / merge `5842e359cb671358638373199a442d800046cc80`. The website now uses checkpoint-backed thread IDs instead of prompt-pasting prior prose, and protected `roberta_conversation_continuity/v1` resolves stable referents while refusing to inherit market values. **#380 Human Response Learning Corpus + response-quality evaluator: ACCEPTED** via public PR #392 / merge `25641db5a67428b4f32f2158e7402b3208a36865` plus protected compatibility `roberta-core` PR #80 / merge `002fa78b012699ff661f817b16f8ebf7d5cd563c`. The accepted public corpus contains 100 synthetic/evaluation-only scenarios across 12 families, with deterministic `roberta_human_response_quality/v1`, actionable per-dimension failures, no live-market authority, and no execution authority. **#381 website progressive evidence disclosure + human decision labels: ACCEPTED** via public PR #394 / merge `c71fe592caf26c900816e1068b672894bd5b9095` plus protected compatibility `roberta-core` PR #82 / merge `3f503ff508739adceeb0407fd85642cff0f3296e`. The website now presents ROBERTA judgment first, separates risk/evidence-quality/freshness display semantics, keeps raw machine statuses neutral, and exposes native keyboard-safe progressive evidence disclosure without browser-side intelligence calculation. **Parent #376 Human Intelligence Experience v1: COMPLETE.**
 - Controlled Execution remains locked: `execution_authorized=false`.
-Last reconciled: 2026-09-08 22:33 (America/New_York)
+Last reconciled: 2026-09-08 23:15 (America/New_York)
 
 Status source: accepted code and contracts on `main`. Open PRs are not current truth unless explicitly identified as pending.
+
+## Active execution order — 2026-09-08 23:15 America/New_York
+
+The Evaluation Laboratory is paused and no longer drives the active product sequence. Protected `roberta-core` #89 / PR #90 remains open/unaccepted historical remediation work and is not authorized to merge from the paused eval track.
+
+Current execution order:
+
+1. **X1 productization umbrella (#246): ACTIVE.** Continue making ROBERTA the user-facing X1 intelligence analyst over the already-accepted CMIS 1.27 / Instant X1 Scan v6 / Human Intelligence Experience foundation.
+2. **Roadmap/issue hygiene: ACTIVE.** Reconcile older open issues whose stated targets have been superseded by accepted capability, especially #234 and #249, before treating them as unfinished engineering work.
+3. **Instant Scan product UX (#280): REVIEW FOR RESIDUAL GAP.** Human Intelligence Experience v1 and website progressive disclosure are complete; implement only the remaining deterministic scan-specific product-view gap, if any.
+4. **CMIS-backed intelligence expansion: NEXT PRODUCT WORK.** Favor explicit holder/wallet intelligence and bounded X1 ecosystem/network-brief inputs that strengthen Investigate / Ask / Compare / Watch / Discover without bypassing Scout -> CMIS.
+5. **Learning Plane scheduling (#275 / protected PR #11): SUPPORTING TRACK.** Continue only under its bounded resource/scheduler acceptance gates; it is not a flagship product blocker.
+6. **Telegram (#264): LOWER PRIORITY / NEEDS REFRESH.** Do not merge the old branch merely because it exists; rebase/revalidate only when Telegram is explicitly prioritized.
+7. **Evaluation Laboratory: PAUSED.** No LAB #21/#22, `live-smoke-005`, regression promotion, or eval-driven PR #90 work until explicitly resumed.
+8. **Controlled Execution: LOCKED.** `execution_authorized=false`.
+
 
 ## Completed product initiative — ROBERTA Human Intelligence Experience v1
 
@@ -554,7 +570,7 @@ Solana remains an accepted read-only specialist surface for maintenance, regress
 - **Burn Claim Integrity — ACCEPTED:** protected `roberta-core` PR #52 preserves verified-observed-vs-lifetime scope, window coverage, comparison-state/percentage semantics, burn-time valuation limits, circulating-supply verification, identity binding, and burn/risk separation.
 - **Discovery Claim Integrity — ACCEPTED:** protected `roberta-core` PR #53 preserves bounded observation semantics, first-observation/launch separation, observation-span/age separation, continuity/archive/currentness limits, empty-is-unknown behavior, exact count/fact-time values, identity binding, and Discovery/risk separation.
 - **WHAT CHANGED? Claim Integrity — ACCEPTED:** protected `roberta-core` PR #54 preserves market-history delta semantics, embedded Burn/Discovery boundaries, exact mint/source status, partial-evidence disclosure, anti-causality constraints, and WHAT CHANGED?/risk separation.
-- **Next Truth Gate expansion: Concentration Warning / Early Warning, then remaining specialist products.**
+- **Truth Gate through Concentration Warning / Early Warning: COMPLETE.** Any further specialist Claim Integrity expansion is paired to an explicitly active product capability; there is no automatic next gate by implication.
 
 ### 3. Keep the Learning Plane operationally strong as a supporting track
 
