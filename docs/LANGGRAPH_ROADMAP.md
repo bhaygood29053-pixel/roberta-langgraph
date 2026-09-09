@@ -3,9 +3,10 @@
 ## Live checkpoint — 2026-09-08
 
 - **ROBERTA Opinion v1: ACCEPTED.**
-- **Evaluation Telemetry v1: ACCEPTED.** Public PR #399 / merge `109f91f289c3fd6a2542b1eebca93091d5c0a225` exposes an opt-in, read-only `roberta_evaluation_telemetry/v1` projection from the same final graph invocation; protected `roberta-core` PR #85 / merge `13a870195f038865d023280fd3d1277bc9736397` pins and proves the exact public-shell compatibility. `roberta-eval` LAB #21 / PR #43 is the accepted bounded live-evaluation consumer. Claim Integrity remains bounded and does not certify provider truth or every natural-language claim.
+- **Evaluation Telemetry v1: ACCEPTED.** Public PR #399 / merge `109f91f289c3fd6a2542b1eebca93091d5c0a225` exposes an opt-in, read-only `roberta_evaluation_telemetry/v1` projection from the same final graph invocation; protected `roberta-core` PR #85 / merge `13a870195f038865d023280fd3d1277bc9736397` pins and proves the exact public-shell compatibility.
+- **Evaluation Telemetry v2 factual projection: ACCEPTED on public main.** Public PR #405 / merge `55608b5f53bb309daa319436dde564b2ca7e1550` adds same-turn factual projection without a second CMIS/provider query or prose inference; PR #406 / merge `3274a9b9be0a7954ddf9d90b6f0890a5135c95c7` prioritizes service-material facts within the bounded 32-claim budget. `roberta-eval` PR #49 adopts v2 grading, PR #50 requires material service-claim coverage, and PR #51 distinguishes missing current-X1 evidence delegation from a projection gap.
 - **Stateless bridge compatibility: ACCEPTED.** Public ROBERTA #401 merged as `4c872b4ac9fb25dda0994632e9e2f7dc4cc8cdfc`, with protected `roberta-core` #86 merged as `18c6d82377876c0627edb741e5c36f1f339dbbdc`. Stateless `/v1/roberta` requests and checkpointed/threaded requests are again explicitly separated and regression-gated without relaxing evidence, Claim Integrity, or execution boundaries.
-- **Evaluation Laboratory LAB #22: ACCEPTED.** `roberta-eval` PR #46 / merge `7eefde5355e99453f43cb4662226200b156cf7a0` adds deterministic live qualification diagnostics over LAB #21 grades, separating runtime failure, telemetry gaps, canonical-claim gaps, evidence-metadata gaps, Claim Integrity gaps, claim/evidence mismatch, and execution violations. `EVIDENCE_REQUIRED` remains distinct from factual FAIL.
+- **Evaluation Laboratory LAB #22: ACCEPTED and now live-localized.** `roberta-eval` PR #46 / merge `7eefde5355e99453f43cb4662226200b156cf7a0` adds deterministic live qualification diagnostics. `live-smoke-004` completed 20/20 runtime requests with 8 PASS / 12 EVIDENCE_REQUIRED / 0 FAIL. The 12 blocked cases are now localized by PR #51 / merge `9f97bd640c4b85d9a85ce6a15af153f46f428744` to protected `current_x1_evidence_delegation_gap` / `roberta_oracle_evidence_delegation`, not to Telemetry v2.
 - **Claim Integrity: ACCEPTED through Concentration Warning / Early Warning.** Protected `roberta-core` PR #67 completes the current Truth Gate sequence after Asset Intelligence, Compare, History, Burn, Discovery, and WHAT CHANGED?.
 - **Instant X1 Scan v6: ACCEPTED end to end.** Public PR #358 and protected `roberta-core` PR #57 adopt the current CMIS scan/history-adequacy surface.
 - **Verified wallet trade + pool price-impact intelligence: ACCEPTED.** Public PR #359 plus protected `roberta-core` PR #61 preserve exact CMIS #498 facts without widening pool-local effects into whole-market causality.
@@ -208,6 +209,30 @@ XenBlocks PoW documentation PR #141 remains open/unaccepted. Its current review 
 CMIS XONE/XNT Conversion Intelligence is now **RETIRED / HISTORICAL** by CMIS Issue #628 / merge #629. Existing accepted evidence remains auditable, but there is no active XONE/XNT lead-recovery or public-service/X1-Scout promotion path. ROBERTA must not present the retired workstream as a verified XONE→XNT conversion mechanism or as proof that no such mechanism exists.
 
 CMIS #458 / draft PR #549 (X1Scroll historical transaction fallback) remains **ON HOLD** because the required X1Scroll API key is unavailable. Do not merge or promote that fallback until the key is available and the exact live acceptance gate passes.
+
+## Current live qualification gate — 2026-09-08
+
+The repaired-runtime live qualification has now advanced beyond bridge/telemetry bring-up:
+
+- `live-smoke-004`: **20/20 runtime OK**;
+- LAB #21: **8 PASS / 12 EVIDENCE_REQUIRED / 0 FAIL**;
+- PASS on both XNT and AGI for `asset_lookup`, `discovery_intelligence`, `instant_x1_scan`, and `market_report`;
+- the remaining 12 burn/history/pre-trade/risk/tokenomics/verification-evidence cases are product-defect candidates because no valid current-turn X1 Scout evidence result reached final synthesis;
+- protected `roberta-core` Issue #89 / PR #90 is the active remediation gate;
+- PR #90 is **OPEN / UNACCEPTED**. Local package-overlay validation reached the targeted suite and initially produced 5 PASS / 1 FAIL; the missed historical-compare wording was patched at head `ba9a26a75367b352cc6603f0be6d062fe92dcc99`;
+- GitHub private-core Actions is currently non-diagnostic because the relevant jobs are failing/cancelling before any test step executes.
+
+Next exact sequence:
+
+1. complete executable local package validation for protected #90;
+2. complete pinned-public-shell overlay compatibility for the same exact head;
+3. merge #90 only if those deterministic gates pass;
+4. synchronize all five operational repositories/runtimes;
+5. run `live-smoke-005` over the same 20 XNT/AGI cases;
+6. grade + diagnose with LAB #21/#22;
+7. close protected #89 and public #404 only on live proof that the delegation gap is resolved.
+
+No step above widens transaction, signing, broadcasting, custody, or value-movement authority.
 
 ## CMIS public/private runtime migration
 
