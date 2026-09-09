@@ -16,7 +16,7 @@ This is the mirrored cross-project checkpoint for accepted public/protected stat
 - Missing evidence remains unknown/unavailable.
 - `execution_authorized=false`.
 
-## Repository heads at this reconciliation
+## Observed heads before this documentation reconciliation
 
 ```text
 ROBERTA public      b023bce04b0426ff71d66a8c1023cf428a86e60b
@@ -26,7 +26,7 @@ CMIS protected      9cf490f55eeee12e109343b50b1642a1f15854ff
 ROBERTA eval        9fb6cc488b169e00a9654f8a70bdf1b2a520e3dd
 ```
 
-Repository heads above include documentation-only reconciliation commits. Accepted protected ROBERTA runtime code remains the pre-#90 implementation boundary; PR #90 remains open/unaccepted and must not be treated as accepted runtime behavior.
+These SHAs are the repository heads observed immediately before writing this reconciliation; the documentation commits created by this update advance the affected `main` branches afterward. Accepted protected ROBERTA runtime code remains the pre-#90 implementation boundary; PR #90 remains open/unaccepted and must not be treated as accepted runtime behavior.
 
 ## ROBERTA accepted state
 
