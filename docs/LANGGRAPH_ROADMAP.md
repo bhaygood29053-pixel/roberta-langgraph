@@ -210,31 +210,29 @@ CMIS XONE/XNT Conversion Intelligence is now **RETIRED / HISTORICAL** by CMIS Is
 
 CMIS #458 / draft PR #549 (X1Scroll historical transaction fallback) remains **ON HOLD** because the required X1Scroll API key is unavailable. Do not merge or promote that fallback until the key is available and the exact live acceptance gate passes.
 
-## Current live qualification gate — 2026-09-08
+## Evaluation workstream status — PAUSED BY OWNER — 2026-09-08
 
-The repaired-runtime qualification has produced the first real XNT/AGI baseline:
+All Evaluation Laboratory-driven work is paused until the owner explicitly resumes it.
 
-- `live-smoke-004`: **20/20 runtime OK**;
-- LAB #21: **8 PASS / 12 EVIDENCE_REQUIRED / 0 FAIL**;
-- PASS on both XNT and AGI for `asset_lookup`, `discovery_intelligence`, `instant_x1_scan`, and `market_report`;
-- the remaining burn/history/pre-trade/risk/tokenomics/verification-evidence cases are qualification-blocking product-defect candidates because no valid current-turn X1 Scout evidence result reached final synthesis;
-- protected `roberta-core` Issue #89 / PR #90 is the active remediation gate;
-- PR #90 remains **OPEN / UNACCEPTED** at head `ba9a26a75367b352cc6603f0be6d062fe92dcc99`;
-- local package-overlay imports passed; the first targeted run produced 5 PASS / 1 FAIL, and the single historical-compare classifier miss is patched at the current head;
-- GitHub private-core Actions remains non-diagnostic because the relevant jobs fail/cancel before executing test steps.
+Paused work includes:
 
-Next exact sequence:
+- LAB #21 / LAB #22 live evaluation activity;
+- any new `live-smoke-00x` runs, including `live-smoke-005`;
+- eval grading, diagnostics, trend comparison, and regression-memory promotion;
+- eval-driven remediation sequencing;
+- continued PR #90 validation solely for the purpose of satisfying the Evaluation Laboratory gate.
 
-1. rerun the targeted protected #89 regression at the current PR #90 head and require all targeted cases to pass;
-2. run the full private package suite and doctor/build gate;
-3. prove pinned-public-shell overlay compatibility for the same exact head;
-4. merge PR #90 only if those deterministic gates pass, while keeping Issue #89 open for live acceptance;
-5. synchronize all five operational repositories/runtimes;
-6. run `live-smoke-005` over the same 20 XNT/AGI cases;
-7. grade + diagnose with LAB #21/#22 and compare against the preserved 8/12/0 baseline;
-8. close protected #89 and public #404 only on live proof that the delegation gap is resolved.
+The preserved `live-smoke-004` baseline remains historical evidence:
 
-No step above widens transaction, signing, broadcasting, custody, bridge-transfer, or autonomous value-movement authority.
+- 20/20 runtime OK;
+- 8 PASS;
+- 12 EVIDENCE_REQUIRED;
+- 0 FAIL.
+
+Protected `roberta-core` Issue #89 / PR #90 remains OPEN / UNACCEPTED and is not part of the active roadmap while evaluation work is paused. Do not merge, close, or continue that work based solely on the paused evaluation program.
+
+Accepted production capabilities remain unchanged. Controlled Execution remains locked and `execution_authorized=false`.
+
 
 ## CMIS public/private runtime migration
 
