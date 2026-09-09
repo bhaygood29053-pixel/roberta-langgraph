@@ -1,6 +1,6 @@
 # ROBERTA ↔ CMIS Source Sync Baseline
 
-Last reconciled: 2026-09-08 (America/New_York)
+Last reconciled: 2026-09-08 22:33 America/New_York
 
 This is the mirrored cross-project checkpoint for accepted public/protected state. The four-repository authority baseline remains ROBERTA public/protected + CMIS public/protected; `roberta-eval` is tracked separately as an independent evaluation consumer and does not become an authority layer.
 
@@ -19,14 +19,14 @@ This is the mirrored cross-project checkpoint for accepted public/protected stat
 ## Repository heads at this reconciliation
 
 ```text
-ROBERTA public      57adb19ad049c8bfb10857730fd23d459e04dbfa
-ROBERTA protected   d864daf1e70dde7cb1734649efa7a36ccda1aa7f
+ROBERTA public      b023bce04b0426ff71d66a8c1023cf428a86e60b
+ROBERTA protected   f6fdab139b3573939b66ef4a934bb4b59bd362ee
 CMIS public         4778da694a3a735c946908fef08bec3664c36107
 CMIS protected      9cf490f55eeee12e109343b50b1642a1f15854ff
 ROBERTA eval        9fb6cc488b169e00a9654f8a70bdf1b2a520e3dd
 ```
 
-Protected ROBERTA PR #90 is intentionally not represented as accepted protected head because it remains open/unaccepted.
+Repository heads above include documentation-only reconciliation commits. Accepted protected ROBERTA runtime code remains the pre-#90 implementation boundary; PR #90 remains open/unaccepted and must not be treated as accepted runtime behavior.
 
 ## ROBERTA accepted state
 
