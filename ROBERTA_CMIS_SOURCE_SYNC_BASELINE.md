@@ -1,6 +1,6 @@
 # ROBERTA ↔ CMIS Source Sync Baseline
 
-Last reconciled: 2026-09-08 22:33 America/New_York
+Last reconciled: 2026-09-08 23:15 America/New_York
 
 This is the mirrored cross-project checkpoint for accepted public/protected state. The four-repository authority baseline remains ROBERTA public/protected + CMIS public/protected; `roberta-eval` is tracked separately as an independent evaluation consumer and does not become an authority layer.
 
@@ -19,11 +19,11 @@ This is the mirrored cross-project checkpoint for accepted public/protected stat
 ## Observed heads before this documentation reconciliation
 
 ```text
-ROBERTA public      b023bce04b0426ff71d66a8c1023cf428a86e60b
-ROBERTA protected   f6fdab139b3573939b66ef4a934bb4b59bd362ee
-CMIS public         4778da694a3a735c946908fef08bec3664c36107
-CMIS protected      9cf490f55eeee12e109343b50b1642a1f15854ff
-ROBERTA eval        9fb6cc488b169e00a9654f8a70bdf1b2a520e3dd
+ROBERTA public      83aaf290c665f268fb7966e91f3d8177e4c111fd
+ROBERTA protected   91617f8091e7f69094f511956df3481d47f8f66c
+CMIS public         1c791eca48b3e9687daac4f5a22db8061e4ced88
+CMIS protected      d79b684981bd431f1add5a40fc529cc5d6487720
+ROBERTA eval        be1e37267081b8daa5b17c41a4d4575661517622
 ```
 
 These SHAs are the repository heads observed immediately before writing this reconciliation; the documentation commits created by this update advance the affected `main` branches afterward. Accepted protected ROBERTA runtime code remains the pre-#90 implementation boundary; PR #90 remains open/unaccepted and must not be treated as accepted runtime behavior.
@@ -70,15 +70,13 @@ current_x1_evidence_unavailable
 
 They remain `EVIDENCE_REQUIRED`, not factual FAIL, while being qualification-blocking product-defect candidates.
 
-## Active protected ROBERTA gate
+## Evaluation / protected ROBERTA state
 
-Protected Issue #89 / PR #90 is the current production remediation.
+The Evaluation Laboratory is **PAUSED BY OWNER**.
 
-PR #90 adds deterministic current-X1 evidence delegation enforcement. It remains **OPEN / UNACCEPTED** at head `ba9a26a75367b352cc6603f0be6d062fe92dcc99` after a first executable targeted run produced 5 PASS / 1 FAIL and exposed one historical-compare classifier miss. That exact miss has been patched, but the corrected head still requires targeted/full package validation plus pinned-public-shell compatibility before merge.
+Protected Issue #89 / PR #90 remains **OPEN / UNACCEPTED** and is preserved as historical remediation work. It is not an active product blocker and must not be merged, validated further, or used to trigger `live-smoke-005` solely from the paused eval program.
 
-GitHub Actions failures that execute zero steps are not accepted as a substitute for executable validation and are not treated as product test failures.
-
-After #90 acceptance, the exact next live proof is `live-smoke-005` using the same preserved 20-case plan.
+The preserved live baseline remains 20/20 runtime OK, 8 PASS, 12 EVIDENCE_REQUIRED, 0 FAIL.
 
 ## CMIS
 
@@ -110,12 +108,13 @@ The Laboratory remains an evaluator, not a source of provider truth or productio
 
 ## Next synchronized sequence
 
-1. validate and, only if accepted, merge protected PR #90;
-2. synchronize all five operational repositories/runtimes;
-3. run `live-smoke-005` using the exact 20-case plan;
-4. compare against the preserved 8/12/0 baseline;
-5. close protected #89/public #404 only on live proof;
-6. promote only confirmed recurring/replayable defects to LAB #15 Regression Memory.
+1. keep Evaluation Laboratory work paused and preserve PR #90 unaccepted;
+2. resume ROBERTA X1 productization under #246;
+3. reconcile stale/superseded public issues before treating them as unfinished capability;
+4. review #280 only for residual Instant Scan product-view gaps after Human Intelligence Experience v1;
+5. continue CMIS provider-gap / FortiBlox freshness work separately from ROBERTA product work;
+6. keep Learning Plane scheduling as a bounded supporting track and Telegram as lower priority;
+7. keep `execution_authorized=false`.
 
 ## Protected cores
 
