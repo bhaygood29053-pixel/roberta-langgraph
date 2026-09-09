@@ -103,7 +103,14 @@ def _require_true(name: str, value: Any) -> None:
         raise X1DailyIntelligenceBriefContractError(f"{name} must remain true")
 
 
-def _validated_coverage(value: Any, *, item_count: int) -> dict[str, Any]:
+def _validated_coverage(
+    value: Any,
+    *,
+    item_count: int,
+    requested_services: list[str],
+    window_start: str,
+    window_end: str,
+) -> dict[str, Any]:
     coverage = deepcopy(dict(_mapping("coverage", value)))
     _require_true(
         "coverage.component_response_matrix_complete",
@@ -155,6 +162,20 @@ def _validated_coverage(value: Any, *, item_count: int) -> dict[str, Any]:
     ):
         raise X1DailyIntelligenceBriefContractError(
             "requested and evaluated Daily Brief service classes must match"
+        )
+    if sorted(coverage["input_service_classes_requested"]) != sorted(
+        requested_services
+    ):
+        raise X1DailyIntelligenceBriefContractError(
+            "coverage service classes must match Daily Brief requested_services"
+        )
+    if coverage.get("window_start") != window_start:
+        raise X1DailyIntelligenceBriefContractError(
+            "coverage window_start must match Daily Brief window.start"
+        )
+    if coverage.get("window_end") != window_end:
+        raise X1DailyIntelligenceBriefContractError(
+            "coverage window_end must match Daily Brief window.end"
         )
     return coverage
 
@@ -296,6 +317,7 @@ def validate_cmis_brief_inputs_foundation(value: Any) -> dict[str, Any]:
         source.get("complete_x1_ecosystem_coverage_verified"),
     )
 
+    _text("brief_inputs_id", source.get("brief_inputs_id"))
     subjects = [_mint(item) for item in _sequence("subjects", source.get("subjects"))]
     if not subjects or len(set(subjects)) != len(subjects):
         raise X1DailyIntelligenceBriefContractError(
@@ -310,8 +332,8 @@ def validate_cmis_brief_inputs_foundation(value: Any) -> dict[str, Any]:
         )
 
     window = _mapping("window", source.get("window"))
-    _text("window.start", window.get("start"))
-    _text("window.end", window.get("end"))
+    window_start = _text("window.start", window.get("start"))
+    window_end = _text("window.end", window.get("end"))
     _require_true("window.end_exclusive", window.get("end_exclusive"))
     duration = window.get("duration_seconds")
     if isinstance(duration, bool) or not isinstance(duration, int):
@@ -333,7 +355,13 @@ def validate_cmis_brief_inputs_foundation(value: Any) -> dict[str, Any]:
         raise X1DailyIntelligenceBriefContractError(
             "Daily Brief item ids must be unique"
         )
-    coverage = _validated_coverage(source.get("coverage"), item_count=len(items))
+    coverage = _validated_coverage(
+        source.get("coverage"),
+        item_count=len(items),
+        requested_services=list(requested_services),
+        window_start=window_start,
+        window_end=window_end,
+    )
     if coverage["requested_subject_count"] != len(subjects):
         raise X1DailyIntelligenceBriefContractError(
             "coverage requested_subject_count must match subjects"
