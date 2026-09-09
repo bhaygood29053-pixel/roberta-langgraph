@@ -70,24 +70,11 @@ product_defect_candidate: true
 
 This means the final ROBERTA turn lacked a valid current-turn X1 Scout evidence result. It is an orchestration/evidence-delegation defect, not a Telemetry v2 projection defect and not yet a factual answer FAIL.
 
-## Active remediation — protected #89 / PR #90
+## Paused remediation — protected #89 / PR #90
 
-Protected `roberta-core` Issue #89 is the active production blocker.
+Protected `roberta-core` Issue #89 / PR #90 remains **OPEN / UNACCEPTED**, but it is no longer an active product blocker while the Evaluation Laboratory workstream is paused.
 
-PR #90 adds a deterministic gate so explicit current/verified X1 evidence requests cannot finish without a current-turn `x1_scout_investigate` call/report. The design retries once with the exact user objective and then fails closed rather than substituting model knowledge or another chain specialist.
-
-Current PR #90 state:
-
-- **OPEN / UNACCEPTED**;
-- mergeable on GitHub;
-- current head after the first executable local regression result: `ba9a26a75367b352cc6603f0be6d062fe92dcc99`;
-- local package overlay/import validation: PASS;
-- first targeted regression run: **5 PASS / 1 FAIL**;
-- the single miss was historical-compare wording around an `earliest verified observation` request;
-- that exact classifier gap is patched at the current head;
-- GitHub private-core Actions remains unusable as acceptance evidence because jobs have repeatedly failed/cancelled before executing any steps.
-
-PR #90 must not merge on mergeability alone. It still requires executable targeted + full private package validation and pinned-public-shell compatibility.
+The branch contains a candidate deterministic current-X1 evidence-delegation gate, but no further validation, merge, live-smoke rerun, or eval-driven remediation is authorized solely from the paused Laboratory program. Preserve the branch and historical evidence; resume only on an explicit owner instruction or a separately justified production requirement outside the paused evaluation track.
 
 ## Evaluation Laboratory
 
@@ -123,20 +110,18 @@ Current boundaries remain unchanged:
 
 The website on public `main` remains the accepted Human Intelligence Experience v1 conversation surface. No website capability should claim the six currently blocked live-evaluation service families are qualified until the post-#90 live gate proves them.
 
-## Next exact roadmap sequence
+## Next exact roadmap sequence — Evaluation Laboratory paused
 
-1. finish executable protected PR #90 validation at current head;
-2. run pinned-public-shell compatibility for the same head;
-3. merge PR #90 only if those deterministic gates pass;
-4. synchronize all five operational repositories locally and refresh assembled CMIS/ROBERTA runtimes;
-5. run the same 20 LAB #21 cases as **`live-smoke-005`**;
-6. grade and diagnose with LAB #21/#22;
-7. measure movement from the preserved **8 PASS / 12 EVIDENCE_REQUIRED / 0 FAIL** baseline without forcing PASS;
-8. close protected #89 and public ROBERTA #404 only if live evidence proves the delegation gap is resolved;
-9. promote only confirmed recurring/replayable defects into LAB #15 Regression Memory;
-10. continue later specialist/product roadmap work without changing the read-only execution boundary.
+1. keep the Evaluation Laboratory paused; do not advance PR #90, LAB #21/#22, or `live-smoke-005` from the eval program;
+2. resume the flagship X1 productization umbrella under public Issue #246;
+3. reconcile stale/superseded open tickets such as #234 (normalized identity) and #249 (Instant X1 Scan v1) against the already-accepted current identity and Instant X1 Scan v6 stack before doing new implementation;
+4. review #280 against the completed Human Intelligence Experience v1 and current website; retain only product-facing Instant Scan UX gaps that are still real;
+5. continue CMIS-backed holder/wallet/provider/network intelligence only through explicit accepted Scout -> CMIS contracts; never add a direct ROBERTA -> provider truth path;
+6. keep Learning Plane scheduling/hardening (#275 and protected `roberta-core` PR #11) as a supporting, separately gated track rather than a flagship blocker;
+7. keep Telegram PR #264 lower priority until it is explicitly re-prioritized and brought forward to the current runtime/website architecture;
+8. keep Controlled Execution locked: `execution_authorized=false`.
 
-`execution_authorized=false`## Evaluation workstream — PAUSED BY OWNER
+## Evaluation workstream — PAUSED BY OWNER
 
 The owner has stopped all active Evaluation Laboratory work.
 
@@ -152,4 +137,4 @@ Effective immediately:
 
 Protected Issue #89 / PR #90 remains OPEN / UNACCEPTED, but it is paused rather than an active product blocker. It must not be merged or closed unless separately justified outside the paused evaluation workstream or the owner explicitly resumes it.
 
-
+`execution_authorized=false`
