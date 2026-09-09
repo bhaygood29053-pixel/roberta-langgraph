@@ -306,6 +306,31 @@ def test_whole_x1_coverage_claim_fails_closed():
         build_x1_daily_intelligence_brief(upstream)
 
 
+def test_coverage_scope_must_bind_exact_requested_window_and_services():
+    upstream = source()
+    upstream["coverage"]["window_end"] = "2026-09-10T00:00:01Z"
+    with pytest.raises(
+        X1DailyIntelligenceBriefContractError,
+        match="coverage window_end",
+    ):
+        build_x1_daily_intelligence_brief(upstream)
+
+    upstream = source()
+    upstream["coverage"]["input_service_classes_requested"] = [
+        "concentration_warning_intelligence",
+        "discovery_intelligence",
+    ]
+    upstream["coverage"]["input_service_classes_evaluated"] = [
+        "concentration_warning_intelligence",
+        "discovery_intelligence",
+    ]
+    with pytest.raises(
+        X1DailyIntelligenceBriefContractError,
+        match="coverage service classes",
+    ):
+        build_x1_daily_intelligence_brief(upstream)
+
+
 def test_runtime_promotion_is_not_accepted_by_foundation_tracer_bullet():
     for field in ("public_service_promoted", "scout_reliance_promoted"):
         upstream = source()
