@@ -1,6 +1,6 @@
 # Current ROBERTA Project Status
 
-Current reconciliation: **2026-09-08 10:55 America/New_York**.
+Current reconciliation: **2026-09-08 20:14 America/New_York**.
 
 ## Accepted ROBERTA state
 
@@ -17,7 +17,8 @@ Accepted on public/protected main:
 - CMIS 1.27 universal `cmis_response_freshness/v1` adoption so every public token/service response carries an explicit freshness result, including UNKNOWN/NOT_VERIFIED when proof is incomplete;
 - conversation-first public website with saved investigations/evidence panel through PR #374;
 - read-only Evaluation Telemetry v1 through public PR #399 / merge `109f91f289c3fd6a2542b1eebca93091d5c0a225`, with protected public-shell compatibility through `roberta-core` PR #85 / merge `13a870195f038865d023280fd3d1277bc9736397`. The telemetry is opt-in, uses the same final graph invocation, exposes only accepted final-message structures, and remains bounded by Claim Integrity;
-- stateless/threaded bridge compatibility through public ROBERTA #401 / merge `4c872b4ac9fb25dda0994632e9e2f7dc4cc8cdfc` and protected `roberta-core` #86 / merge `18c6d82377876c0627edb741e5c36f1f339dbbdc`.
+- stateless/threaded bridge compatibility through public ROBERTA #401 / merge `4c872b4ac9fb25dda0994632e9e2f7dc4cc8cdfc` and protected `roberta-core` #86 / merge `18c6d82377876c0627edb741e5c36f1f339dbbdc`;
+- Evaluation Telemetry v2 factual projection through public ROBERTA PR #405 / merge `55608b5f53bb309daa319436dde564b2ca7e1550`, with material-first claim prioritization through PR #406 / merge `3274a9b9be0a7954ddf9d90b6f0890a5135c95c7`. v2 preserves v1, uses only same-turn structured X1 Scout/CMIS evidence, makes no second CMIS/provider query, does not infer claims from prose, and keeps `execution_authorized=false`.
 
 ## Regulatory Intelligence
 
@@ -65,17 +66,49 @@ This program builds on the already-accepted answer-first/evidence-aware mileston
 
 `roberta-eval` LAB #21 is accepted via PR #43 / merge `bd42df06d7fa80034a38e875fed96328774460f0`.
 
-Live evaluation requests may explicitly request `roberta_evaluation_telemetry/v1`. Missing structured claims or Claim Integrity remains unqualified rather than guessed. A bounded evidence-contract PASS does not certify upstream provider truth or every natural-language sentence.
+New live runs now consume Evaluation Telemetry v2 through `roberta-eval` PR #49 / merge `72b1aa1884966ff4b0cf5204380eb0c91939bc4b`. Material service-claim coverage is enforced through PR #50 / merge `d2decf06386e7eaf41ff0067e46f944755dc4b78`. Missing structured evidence remains unqualified rather than guessed, and bounded PASS still does not certify upstream provider truth or every natural-language sentence.
 
-`roberta-eval` LAB #22 is also accepted via PR #46 / merge `7eefde5355e99453f43cb4662226200b156cf7a0`. It converts LAB #21 live grades into a deterministic service-by-service remediation map and preserves `EVIDENCE_REQUIRED` as qualification-blocking without mislabeling it as a factual ROBERTA failure.
+`roberta-eval` LAB #22 is accepted via PR #46 / merge `7eefde5355e99453f43cb4662226200b156cf7a0`. PR #51 / merge `9f97bd640c4b85d9a85ce6a15af153f46f428744` now distinguishes a missing current-turn X1 Scout result from a claim-projection gap and assigns that defect to protected ROBERTA orchestration.
+
+### Live qualification checkpoint — `live-smoke-004`
+
+The exact 20-case XNT/AGI live run completed with **20/20 runtime OK** and:
+
+- **PASS: 8**
+- **EVIDENCE_REQUIRED: 12**
+- **FAIL: 0**
+
+Fully gradeable on both XNT and AGI:
+
+- `asset_lookup`
+- `discovery_intelligence`
+- `instant_x1_scan`
+- `market_report`
+
+The remaining 12 cases are:
+
+- `burn_intelligence`
+- `historical_compare`
+- `pre_trade_check`
+- `risk_check`
+- `tokenomics`
+- `verification_evidence`
+
+LAB #22 now localizes all 12 to `current_x1_evidence_delegation_gap` / `roberta_oracle_evidence_delegation`, owned by `bhaygood29053-pixel/roberta-core`. They are product-defect candidates but remain `EVIDENCE_REQUIRED`, not factual FAILs.
+
+Protected Issue #89 / PR #90 is the active remediation gate. PR #90 is **OPEN / UNACCEPTED**. The first executable local targeted validation reached the new regression suite and produced 5 PASS / 1 FAIL; the one missed historical-compare wording has been patched at head `ba9a26a75367b352cc6603f0be6d062fe92dcc99`. GitHub private-core Actions attempts are currently non-diagnostic because jobs fail/cancel before executing steps. Do not merge #90 until executable package + pinned-public-shell validation passes.
+
+Public ROBERTA Issue #404 also remains open until protected acceptance and a post-fix live rerun prove the end-to-end result.
 
 ## Next exact product work
 
-1. synchronize all five operational repositories locally (`cmis`, `cmis-core`, `roberta-langgraph`, `roberta-core`, `roberta-eval`) and refresh the assembled CMIS/ROBERTA runtimes;
-2. rerun the 20-case LAB #21 real-subject live smoke plan against the repaired bridge and capture actual PASS / EVIDENCE_REQUIRED / FAIL results;
-3. run LAB #22 diagnostics service-by-service, fix confirmed ROBERTA/Scout/CMIS defects narrowly, rerun, and convert confirmed recurring defects into permanent LAB #15 regression memory;
-4. keep website and Human/Machine ROBERTA claims synchronized with accepted main-state capability only;
-5. continue CMIS provider-gap work, with X1Scroll #458 / draft PR #549 explicitly on hold until an API key exists and the exact live gate can pass;
-6. continue remaining specialist/product roadmap work without changing the read-only execution boundary.
+1. finish executable local validation of protected `roberta-core` PR #90 at head `ba9a26a75367b352cc6603f0be6d062fe92dcc99`;
+2. prove pinned public-shell overlay compatibility for that same protected head;
+3. only after those deterministic gates pass, merge PR #90 while keeping Issue #89 open for live acceptance;
+4. synchronize the five operational repositories and assembled runtimes;
+5. run `live-smoke-005` over the same 20 XNT/AGI cases, then grade and diagnose with LAB #21/#22;
+6. close protected #89 and public #404 only if live evidence shows the current-X1 evidence delegation gap is resolved; convert only confirmed recurring/replayable defects into LAB #15 Regression Memory;
+7. keep X1Scroll #458 / draft PR #549 explicitly on hold until an API key exists and the exact live gate can pass;
+8. keep website and Human/Machine ROBERTA claims synchronized with accepted main-state capability only.
 
 `execution_authorized=false`
