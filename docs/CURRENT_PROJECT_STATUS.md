@@ -136,4 +136,20 @@ The website on public `main` remains the accepted Human Intelligence Experience 
 9. promote only confirmed recurring/replayable defects into LAB #15 Regression Memory;
 10. continue later specialist/product roadmap work without changing the read-only execution boundary.
 
-`execution_authorized=false`
+`execution_authorized=false`## Evaluation workstream — PAUSED BY OWNER
+
+The owner has stopped all active Evaluation Laboratory work.
+
+Effective immediately:
+
+- no new LAB #21 / LAB #22 runs;
+- no `live-smoke-005` or later live-smoke runs;
+- no eval grading/diagnostics/trend work;
+- no LAB #15 regression promotion driven by the paused evaluation track;
+- no further PR #90 validation or remediation work solely because of the eval program.
+
+`live-smoke-004` remains preserved as historical evidence at 8 PASS / 12 EVIDENCE_REQUIRED / 0 FAIL.
+
+Protected Issue #89 / PR #90 remains OPEN / UNACCEPTED, but it is paused rather than an active product blocker. It must not be merged or closed unless separately justified outside the paused evaluation workstream or the owner explicitly resumes it.
+
+
