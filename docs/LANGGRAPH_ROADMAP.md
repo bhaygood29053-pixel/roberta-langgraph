@@ -21,20 +21,20 @@ Last reconciled: 2026-09-08 23:15 (America/New_York)
 
 Status source: accepted code and contracts on `main`. Open PRs are not current truth unless explicitly identified as pending.
 
-## Active execution order — 2026-09-08 23:15 America/New_York
+## Active execution order — 2026-09-09 15:20 America/New_York
 
-The Evaluation Laboratory is paused and no longer drives the active product sequence. Protected `roberta-core` #89 / PR #90 remains open/unaccepted historical remediation work and is not authorized to merge from the paused eval track.
+The Evaluation Laboratory remains paused and no longer drives the active product sequence. Protected `roberta-core` #89 / PR #90 remains open/unaccepted historical remediation work and is not authorized to merge from the paused eval track.
+
+**X1 productization hygiene checkpoint — COMPLETE.** Legacy issues #234, #249, and #280 were closed as completed on 2026-09-09 because their acceptance targets are already superseded by merged production capability: normalized X1 identity through PR #235; first-class Instant X1 Scan adoption through PR #279 and subsequent upgrades through Instant X1 Scan v6 / PR #358; and deterministic scan product UX through PR #281 plus the later Human Intelligence Experience and progressive website disclosure.
 
 Current execution order:
 
-1. **X1 productization umbrella (#246): ACTIVE.** Continue making ROBERTA the user-facing X1 intelligence analyst over the already-accepted CMIS 1.27 / Instant X1 Scan v6 / Human Intelligence Experience foundation.
-2. **Roadmap/issue hygiene: ACTIVE.** Reconcile older open issues whose stated targets have been superseded by accepted capability, especially #234 and #249, before treating them as unfinished engineering work.
-3. **Instant Scan product UX (#280): REVIEW FOR RESIDUAL GAP.** Human Intelligence Experience v1 and website progressive disclosure are complete; implement only the remaining deterministic scan-specific product-view gap, if any.
-4. **CMIS-backed intelligence expansion: NEXT PRODUCT WORK.** Favor explicit holder/wallet intelligence and bounded X1 ecosystem/network-brief inputs that strengthen Investigate / Ask / Compare / Watch / Discover without bypassing Scout -> CMIS.
-5. **Learning Plane scheduling (#275 / protected PR #11): SUPPORTING TRACK.** Continue only under its bounded resource/scheduler acceptance gates; it is not a flagship product blocker.
-6. **Telegram (#264): LOWER PRIORITY / NEEDS REFRESH.** Do not merge the old branch merely because it exists; rebase/revalidate only when Telegram is explicitly prioritized.
-7. **Evaluation Laboratory: PAUSED.** No LAB #21/#22, `live-smoke-005`, regression promotion, or eval-driven PR #90 work until explicitly resumed.
-8. **Controlled Execution: LOCKED.** `execution_authorized=false`.
+1. **X1 productization umbrella (#246): ACTIVE.** Continue making ROBERTA the user-facing X1 intelligence analyst over the accepted CMIS 1.27 / Instant X1 Scan v6 / Human Intelligence Experience foundation.
+2. **CMIS-backed intelligence expansion: NEXT PRODUCT WORK.** Prioritize explicit holder/wallet intelligence and bounded X1 ecosystem/network-brief inputs that strengthen Investigate / Ask / Compare / Watch / Discover while preserving Roberta -> X1 Scout -> CMIS -> provider.
+3. **Learning Plane scheduling (#275 / protected PR #11): SUPPORTING TRACK.** Continue only under its bounded resource/scheduler acceptance gates; it is not a flagship product blocker.
+4. **Telegram (#264): LOWER PRIORITY / NEEDS REFRESH.** Do not merge the old branch merely because it exists; rebase/revalidate only when Telegram is explicitly prioritized.
+5. **Evaluation Laboratory: PAUSED.** No LAB #21/#22, `live-smoke-005`, regression promotion, or eval-driven PR #90 work until explicitly resumed.
+6. **Controlled Execution: LOCKED.** `execution_authorized=false`.
 
 
 ## Completed product initiative — ROBERTA Human Intelligence Experience v1
