@@ -27,6 +27,7 @@ CMISService: TypeAlias = Literal[
     "large_trade_discovery",
     "regulatory_evidence",
     "instant_x1_scan",
+    "x1_intelligence_brief_inputs",
 ]
 CMISOperation: TypeAlias = Literal[
     "asset_lookup",
@@ -46,6 +47,7 @@ CMISOperation: TypeAlias = Literal[
     "trade_price_impact_intelligence",
     "large_trade_discovery",
     "instant_x1_scan",
+    "x1_intelligence_brief_inputs",
 ]
 CMISStatus: TypeAlias = Literal[
     "ok",
