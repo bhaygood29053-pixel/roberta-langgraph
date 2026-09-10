@@ -19,6 +19,9 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from roberta.cmis.contracts import CMISOperation, HistoricalMode, RankMetric
 from roberta.cmis.verification import normalize_verification_evidence_selector
+from roberta.cmis.x1_intelligence_brief import (
+    normalize_x1_intelligence_brief_request,
+)
 from roberta.recommendation_policy import (
     autonomous_x1_operations_for_recommendation,
     recommendation_intent,
@@ -445,6 +448,31 @@ def _validate_explicit_request(request: X1ScoutRequest) -> X1ScoutPlan:
             fact_type=request.get("fact_type"),
             subject_id=request.get("subject_id"),
         )
+    if operation == "x1_intelligence_brief_inputs":
+        subjects = request.get("daily_brief_subjects")
+        window_start = request.get("daily_brief_window_start")
+        window_end = request.get("daily_brief_window_end")
+        requested_services = request.get("daily_brief_requested_services")
+        if (
+            subjects is None
+            or window_start is None
+            or window_end is None
+            or requested_services is None
+        ):
+            raise ValueError(
+                "x1_intelligence_brief_inputs requires exact subjects, bounded "
+                "window_start/window_end, and requested_services"
+            )
+        normalized = normalize_x1_intelligence_brief_request(
+            subjects=subjects,
+            window_start=window_start,
+            window_end=window_end,
+            requested_services=requested_services,
+        )
+        if str(request.get("asset") or "").strip() != normalized["subjects"][0]:
+            raise ValueError(
+                "Daily Brief request asset must equal the first exact X1 mint subject"
+            )
     return {
         "operations": [operation],
         "source": "explicit",
