@@ -80,29 +80,31 @@ jobs:
           end = text.find('    def concentration_warning_intelligence(', start)
           if start < 0 or end < 0:
               raise SystemExit('missing CMIS client coexistence anchors')
-          methods = '''    def x1_intelligence_brief_inputs(
-        self,
-        *,
-        chain: str,
-        subjects: list[str],
-        window_start: str,
-        window_end: str,
-        requested_services: list[str],
-    ) -> CMISEnvelope:
-        ...
-
-    def wallet_relationship_intelligence(
-        self,
-        *,
-        chain: str,
-        transaction_signature: str,
-        asset_mint: str,
-        sender_wallet: str,
-        recipient_wallet: str,
-    ) -> CMISEnvelope:
-        ...
-
-'''
+          methods = '\n'.join([
+              '    def x1_intelligence_brief_inputs(',
+              '        self,',
+              '        *,',
+              '        chain: str,',
+              '        subjects: list[str],',
+              '        window_start: str,',
+              '        window_end: str,',
+              '        requested_services: list[str],',
+              '    ) -> CMISEnvelope:',
+              '        ...',
+              '',
+              '    def wallet_relationship_intelligence(',
+              '        self,',
+              '        *,',
+              '        chain: str,',
+              '        transaction_signature: str,',
+              '        asset_mint: str,',
+              '        sender_wallet: str,',
+              '        recipient_wallet: str,',
+              '    ) -> CMISEnvelope:',
+              '        ...',
+              '',
+              '',
+          ])
           client.write_text(text[:start] + methods + text[end:], encoding='utf-8')
           PY
 
