@@ -60,3 +60,5 @@ jobs:
             tests/test_wallet_relationship_intelligence_adoption.py
           git commit -m "feat: adopt CMIS wallet relationship intelligence in X1 Scout"
           git push origin HEAD:feat/wallet-relationship-adoption-410
+
+# rerun after embedded-patch indentation fix
