@@ -108,6 +108,13 @@ class CMISEnvelope(TypedDict):
     # validates these fields after a compatible capability handshake.
     evidence_receipt: NotRequired[dict[str, object]]
     proof_score: NotRequired[dict[str, object]]
+    # Service-specific promotion flags used by CMIS 1.28 X1 Intelligence Brief.
+    read_only: NotRequired[bool]
+    public_service_promoted: NotRequired[bool]
+    scout_reliance_promoted: NotRequired[bool]
+    runtime_capability_promoted: NotRequired[bool]
+    complete_x1_ecosystem_coverage_verified: NotRequired[bool]
+    execution_authorized: NotRequired[bool]
 
 
 CMISResult: TypeAlias = CMISEnvelope
@@ -128,3 +135,4 @@ CMISTradePriceImpactIntelligence: TypeAlias = CMISEnvelope
 CMISLargeTradeDiscovery: TypeAlias = CMISEnvelope
 CMISRegulatoryEvidence: TypeAlias = CMISEnvelope
 CMISInstantX1Scan: TypeAlias = CMISEnvelope
+CMISX1IntelligenceBrief: TypeAlias = CMISEnvelope
