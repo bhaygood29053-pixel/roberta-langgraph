@@ -155,6 +155,17 @@ class CMISClient(Protocol):
     ) -> CMISEnvelope:
         ...
 
+    def wallet_relationship_intelligence(
+        self,
+        *,
+        chain: str,
+        transaction_signature: str,
+        asset_mint: str,
+        sender_wallet: str,
+        recipient_wallet: str,
+    ) -> CMISEnvelope:
+        ...
+
     def concentration_warning_intelligence(
         self,
         *,

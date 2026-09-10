@@ -20,6 +20,7 @@ from roberta.cmis.capabilities import (
     require_historical_all_available_capability,
     require_instant_x1_scan_capability,
     require_large_trade_discovery_capability,
+    require_wallet_relationship_capability,
     require_regulatory_evidence_capability,
     require_x1_intelligence_brief_capability,
     require_service_capability,
@@ -66,6 +67,12 @@ from roberta.cmis.large_trade_discovery import (
     CMISLargeTradeDiscoveryContractError,
     normalize_large_trade_discovery_request,
     validate_large_trade_discovery_response,
+)
+from roberta.cmis.wallet_relationship import (
+    SERVICE as WALLET_RELATIONSHIP_SERVICE,
+    CMISWalletRelationshipContractError,
+    normalize_wallet_relationship_request,
+    validate_wallet_relationship_response,
 )
 from roberta.cmis.regulatory_evidence import (
     SERVICE as REGULATORY_EVIDENCE_SERVICE,
@@ -1208,6 +1215,77 @@ class CMISHTTPClient:
                 asset=normalized_asset,
                 status="error",
                 code="invalid_cmis_large_trade_discovery_response",
+                message=str(exc),
+            )
+
+    def wallet_relationship_intelligence(
+        self,
+        *,
+        chain: str,
+        transaction_signature: str,
+        asset_mint: str,
+        sender_wallet: str,
+        recipient_wallet: str,
+    ) -> CMISEnvelope:
+        normalized_chain = self._chain(chain)
+        try:
+            require_wallet_relationship_capability(
+                self.capabilities(),
+                chain=normalized_chain,
+            )
+            normalized = normalize_wallet_relationship_request(
+                chain=normalized_chain,
+                transaction_signature=transaction_signature,
+                asset_mint=asset_mint,
+                sender_wallet=sender_wallet,
+                recipient_wallet=recipient_wallet,
+            )
+        except CMISCapabilityUnavailable as exc:
+            return self._error_envelope(
+                service=WALLET_RELATIONSHIP_SERVICE,
+                chain=normalized_chain,
+                asset=str(asset_mint or "").strip(),
+                status="unavailable",
+                code="cmis_wallet_relationship_unavailable",
+                message=str(exc),
+                warning=True,
+            )
+        except (CMISCapabilityContractError, CMISWalletRelationshipContractError) as exc:
+            return self._error_envelope(
+                service=WALLET_RELATIONSHIP_SERVICE,
+                chain=normalized_chain,
+                asset=str(asset_mint or "").strip(),
+                status="unavailable",
+                code="cmis_wallet_relationship_contract_unavailable",
+                message=f"CMIS Wallet Relationship contract unavailable: {exc}",
+                warning=True,
+            )
+
+        params = {key: value for key, value in normalized.items() if key != "chain"}
+        response = self._send_payload(
+            service=WALLET_RELATIONSHIP_SERVICE,
+            chain=normalized_chain,
+            error_context=normalized["asset_mint"],
+            payload={
+                "service": WALLET_RELATIONSHIP_SERVICE,
+                "chain": normalized_chain,
+                "params": params,
+            },
+        )
+        if response.get("status") != "ok":
+            return response
+        try:
+            return validate_wallet_relationship_response(
+                response,
+                expected_request=normalized,
+            )
+        except CMISWalletRelationshipContractError as exc:
+            return self._error_envelope(
+                service=WALLET_RELATIONSHIP_SERVICE,
+                chain=normalized_chain,
+                asset=normalized["asset_mint"],
+                status="error",
+                code="invalid_cmis_wallet_relationship_response",
                 message=str(exc),
             )
 

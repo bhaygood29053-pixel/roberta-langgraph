@@ -21,6 +21,7 @@ from roberta.cmis.capabilities import (
     require_discovery_intelligence_capability,
     require_instant_x1_scan_capability,
     require_large_trade_discovery_capability,
+    require_wallet_relationship_capability,
     require_regulatory_evidence_capability,
     require_x1_intelligence_brief_capability,
     require_trade_price_impact_capability,
@@ -53,6 +54,11 @@ from roberta.x1_scout.trade_price_impact import (
 from roberta.x1_scout.large_trade_discovery import (
     X1LargeTradeDiscoveryContractError,
     build_x1_large_trade_discovery,
+)
+from roberta.x1_scout.wallet_relationship_intelligence import (
+    X1WalletRelationshipContractError,
+    build_x1_wallet_relationship_intelligence,
+    render_x1_wallet_relationship_text,
 )
 from roberta.x1_scout.regulatory_intelligence import (
     X1RegulatoryIntelligenceContractError,
@@ -441,6 +447,46 @@ def _dispatch_cmis_operation(
             direction=str(direction),
             limit=int(limit),
         )
+    if operation == "wallet_relationship_intelligence":
+        signature = request.get("wallet_relationship_transaction_signature")
+        asset_mint = request.get("wallet_relationship_asset_mint")
+        sender = request.get("wallet_relationship_sender_wallet")
+        recipient = request.get("wallet_relationship_recipient_wallet")
+        if any(value is None for value in (signature, asset_mint, sender, recipient)):
+            raise ValueError(
+                "wallet_relationship_intelligence requires exact transaction signature, X1 asset mint, sender, and recipient"
+            )
+        if str(asset or "").strip() != str(asset_mint).strip():
+            raise ValueError("wallet relationship asset must equal the exact X1 asset mint")
+        try:
+            require_wallet_relationship_capability(
+                cmis_client.capabilities(),
+                chain="x1",
+            )
+        except (CMISCapabilityUnavailable, CMISCapabilityContractError) as exc:
+            return {
+                "service": "wallet_relationship_intelligence",
+                "chain": "x1",
+                "status": "unavailable",
+                "asset": {"query": asset},
+                "data": {},
+                "risk": None,
+                "confidence": {},
+                "sources": [],
+                "observed_at": None,
+                "warnings": [{
+                    "code": "cmis_wallet_relationship_contract_unavailable",
+                    "message": str(exc),
+                }],
+                "errors": [],
+            }
+        return cmis_client.wallet_relationship_intelligence(
+            chain="x1",
+            transaction_signature=str(signature),
+            asset_mint=str(asset_mint),
+            sender_wallet=str(sender),
+            recipient_wallet=str(recipient),
+        )
     if operation == "trade_price_impact_intelligence":
         evidence_id = request.get("trade_price_impact_evidence_id")
         asset_mint = request.get("trade_price_impact_asset_mint")
@@ -777,6 +823,7 @@ def make_cmis_calls_node(cmis_client: CMISClient) -> Callable[[X1ScoutState], di
             and "cross_chain_asset_provenance" not in operations
             and "trade_price_impact_intelligence" not in operations
             and "large_trade_discovery" not in operations
+            and "wallet_relationship_intelligence" not in operations
             and "regulatory_evidence" not in operations
             and _looks_like_exact_x1_mint(request.get("asset"))
         ):
@@ -1149,6 +1196,27 @@ def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
                 )
             )
         except X1LargeTradeDiscoveryContractError:
+            pass
+
+    if (
+        primary_result.get("service") == "wallet_relationship_intelligence"
+        and primary_result.get("status") == "ok"
+    ):
+        expected_request = {
+            "chain": "x1",
+            "transaction_signature": request.get("wallet_relationship_transaction_signature"),
+            "asset_mint": request.get("wallet_relationship_asset_mint"),
+            "sender_wallet": request.get("wallet_relationship_sender_wallet"),
+            "recipient_wallet": request.get("wallet_relationship_recipient_wallet"),
+        }
+        try:
+            product = build_x1_wallet_relationship_intelligence(
+                primary_result,
+                expected_request=expected_request,
+            )
+            report["x1_wallet_relationship_intelligence"] = product
+            report["x1_wallet_relationship_text"] = render_x1_wallet_relationship_text(product)
+        except X1WalletRelationshipContractError:
             pass
 
     if (

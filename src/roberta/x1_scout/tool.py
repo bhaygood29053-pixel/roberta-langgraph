@@ -11,6 +11,7 @@ from roberta.cmis.concentration_warning import normalize_warning_request
 from roberta.cmis.large_trade_discovery import (
     normalize_large_trade_discovery_request,
 )
+from roberta.cmis.wallet_relationship import normalize_wallet_relationship_request
 from roberta.cmis.contracts import TradeAction
 from roberta.x1_scout.asset_intelligence_workflow import run_x1_asset_intelligence_workflow
 from roberta.x1_scout.asset_overview_workflow import run_x1_asset_overview_workflow
@@ -44,6 +45,7 @@ def build_x1_scout_tool(
             "cross_chain_asset_provenance",
             "trade_price_impact_intelligence",
             "large_trade_discovery",
+            "wallet_relationship_intelligence",
             "regulatory_evidence",
         ] | None = None,
         action: TradeAction | None = None,
@@ -70,6 +72,10 @@ def build_x1_scout_tool(
         large_trade_asset_mint: str | None = None,
         large_trade_direction: str | None = None,
         large_trade_limit: int | None = None,
+        wallet_relationship_transaction_signature: str | None = None,
+        wallet_relationship_asset_mint: str | None = None,
+        wallet_relationship_sender_wallet: str | None = None,
+        wallet_relationship_recipient_wallet: str | None = None,
         regulatory_jurisdiction: str | None = None,
         regulatory_framework: str | None = None,
         regulatory_asset_id: str | None = None,
@@ -174,6 +180,18 @@ def build_x1_scout_tool(
             raise ValueError(
                 "large-trade discovery inputs require "
                 "operation='large_trade_discovery'"
+            )
+        wallet_relationship_inputs = (
+            wallet_relationship_transaction_signature,
+            wallet_relationship_asset_mint,
+            wallet_relationship_sender_wallet,
+            wallet_relationship_recipient_wallet,
+        )
+        if operation != "wallet_relationship_intelligence" and any(
+            value is not None for value in wallet_relationship_inputs
+        ):
+            raise ValueError(
+                "wallet relationship selectors require operation='wallet_relationship_intelligence'"
             )
         regulatory_inputs = (
             regulatory_jurisdiction,
@@ -456,6 +474,44 @@ def build_x1_scout_tool(
                     "trade_price_impact_asset_mint": normalized_mint,
                 }
             )
+        elif operation == "wallet_relationship_intelligence":
+            if include_history or compare_asset is not None:
+                raise ValueError("history/compare inputs are not accepted for wallet relationship intelligence")
+            if action is not None or amount_usd is not None:
+                raise ValueError("trade action/amount are not accepted for wallet relationship intelligence")
+            if intelligence_evidence_id is not None or intelligence_evidence_ids is not None:
+                raise ValueError("concentration evidence inputs are not accepted for wallet relationship intelligence")
+            missing = [
+                name
+                for name, value in {
+                    "transaction_signature": wallet_relationship_transaction_signature,
+                    "asset_mint": wallet_relationship_asset_mint,
+                    "sender_wallet": wallet_relationship_sender_wallet,
+                    "recipient_wallet": wallet_relationship_recipient_wallet,
+                }.items()
+                if value is None
+            ]
+            if missing:
+                raise ValueError(
+                    "wallet_relationship_intelligence requires exact transaction signature, X1 mint, sender, and recipient: "
+                    + ", ".join(sorted(missing))
+                )
+            normalized = normalize_wallet_relationship_request(
+                chain="x1",
+                transaction_signature=wallet_relationship_transaction_signature,
+                asset_mint=wallet_relationship_asset_mint,
+                sender_wallet=wallet_relationship_sender_wallet,
+                recipient_wallet=wallet_relationship_recipient_wallet,
+            )
+            if str(asset or "").strip() != normalized["asset_mint"]:
+                raise ValueError("wallet relationship asset must equal the exact X1 asset mint")
+            request.update({
+                "operation": "wallet_relationship_intelligence",
+                "wallet_relationship_transaction_signature": normalized["transaction_signature"],
+                "wallet_relationship_asset_mint": normalized["asset_mint"],
+                "wallet_relationship_sender_wallet": normalized["sender_wallet"],
+                "wallet_relationship_recipient_wallet": normalized["recipient_wallet"],
+            })
         elif operation == "regulatory_evidence":
             if include_history or compare_asset is not None:
                 raise ValueError(
@@ -711,6 +767,12 @@ def build_x1_scout_tool(
             "use operation='concentration_change_intelligence' only when an exact "
             "CMIS-owned ie_ content id is present in the user request or trusted current "
             "context; copy it into intelligence_evidence_id and never invent one. "
+            "For promoted Wallet Relationship Intelligence, use operation='wallet_relationship_intelligence' "
+            "only with the exact finalized X1 transaction signature, exact asset mint, sender, and recipient. "
+            "ROBERTA may say CMIS verified that selected direct token transfer, but must not turn it into "
+            "common ownership, beneficial ownership, real-world identity, whale/insider/bot/market-maker, "
+            "behavior, intent, coordination, manipulation, fraud, causality, risk, complete-history, or "
+            "complete-relationship-graph claims. "
             "For promoted Large-Trade Discovery, use "
             "operation='large_trade_discovery' when the user asks for the biggest "
             "or top verified buys/sells and the exact X1 asset mint is available. "

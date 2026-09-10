@@ -27,7 +27,7 @@ from roberta.x1_scout.daily_intelligence_brief_runtime import (
 MINT = "7SXmUpcBGSAwW5LmtzQVF9jHswZ7xzmdKqWa4nDgL3ER"
 
 
-def capability_manifest(version="1.28.0"):
+def capability_manifest(version="1.29.0"):
     brief = {
         "state": "bounded",
         "callable": True,
