@@ -109,6 +109,44 @@ TRADE_PRICE_IMPACT_REQUIRED_LIMITATIONS = (
 )
 LARGE_TRADE_DISCOVERY_MIN_CMIS_CONTRACT_VERSION = "1.25.0"
 LARGE_TRADE_DISCOVERY_CONTRACT_VERSION = "large_trade_discovery/v1"
+WALLET_RELATIONSHIP_MIN_CMIS_CONTRACT_VERSION = "1.28.0"
+WALLET_RELATIONSHIP_CONTRACT_VERSION = "wallet_relationship_intelligence/v1"
+WALLET_RELATIONSHIP_REQUEST_CONTRACT_VERSION = "wallet_relationship_intelligence_request/v1"
+WALLET_RELATIONSHIP_REQUIRED_REQUIREMENTS = (
+    "exact_x1_transaction_signature",
+    "exact_x1_asset_mint_identity",
+    "exact_sender_wallet_identity",
+    "exact_recipient_wallet_identity",
+    "cmis_owned_finalized_x1_transaction_resolution",
+    "verified_direct_spl_token_transfer",
+    "exact_token_account_owner_binding",
+    "exact_transfer_direction",
+    "exact_raw_amount_and_decimals",
+    "canonical_transaction_fact_time",
+    "content_addressed_wallet_activity_observation",
+    "content_addressed_direct_relationship_evidence",
+    "caller_fact_evidence_provider_injection_rejected",
+)
+WALLET_RELATIONSHIP_REQUIRED_LIMITATIONS = (
+    "observed_direct_interaction_only",
+    "relationship_is_transaction_scoped_not_complete_history",
+    "transfer_does_not_prove_common_ownership",
+    "transfer_does_not_prove_beneficial_ownership",
+    "wallet_address_is_not_real_world_identity",
+    "transfer_does_not_prove_insider_whale_bot_or_market_maker",
+    "behavior_or_intent_not_inferred",
+    "coordination_manipulation_or_fraud_not_inferred",
+    "sequence_or_transfer_does_not_establish_causality",
+    "risk_severity_not_inferred",
+    "evidence_receipt_binding_unavailable_in_v1",
+    "proof_score_binding_unavailable_in_v1",
+    "proof_score_separate_from_risk",
+    "complete_wallet_history_not_proven",
+    "complete_relationship_graph_not_proven",
+    "missing_evidence_is_unknown_not_zero",
+    "no_execution_authorization",
+    "x1_only_initial_scope",
+)
 REGULATORY_EVIDENCE_MIN_CMIS_CONTRACT_VERSION = "1.26.0"
 RESPONSE_FRESHNESS_MIN_CMIS_CONTRACT_VERSION = "1.27.0"
 RESPONSE_FRESHNESS_CONTRACT_VERSION = "cmis_response_freshness/v1"
@@ -323,6 +361,18 @@ class CMISServiceCapability(TypedDict):
     push_delivery_authorized: NotRequired[bool]
     execution_authorized: NotRequired[bool]
     compliance_conclusion_authorized: NotRequired[bool]
+    request_contract_version: NotRequired[str]
+    materialization_contract_version: NotRequired[str]
+    observed_relationships_only: NotRequired[bool]
+    ownership_inference_authorized: NotRequired[bool]
+    beneficial_ownership_inference_authorized: NotRequired[bool]
+    behavior_or_intent_inference_authorized: NotRequired[bool]
+    risk_inference_authorized: NotRequired[bool]
+    complete_history_claim_authorized: NotRequired[bool]
+    complete_graph_coverage_claim_authorized: NotRequired[bool]
+    evidence_receipt_binding_available: NotRequired[bool]
+    proof_score_binding_available: NotRequired[bool]
+    proof_score_separate_from_risk: NotRequired[bool]
 
 
 class CMISChainCapabilities(TypedDict):
@@ -888,6 +938,42 @@ def validate_capability_manifest(value: Any) -> CMISCapabilities:
                     if not isinstance(raw_flag, bool):
                         raise CMISCapabilityContractError(
                             f"CMIS x1/large_trade_discovery {field} must be boolean."
+                        )
+                    normalized_capability[field] = raw_flag
+            if chain == "x1" and service == "wallet_relationship_intelligence":
+                contract = capability_raw.get("service_contract_version")
+                request_contract = capability_raw.get("request_contract_version")
+                materialization_contract = capability_raw.get("materialization_contract_version")
+                for field, value in (
+                    ("service_contract_version", contract),
+                    ("request_contract_version", request_contract),
+                    ("materialization_contract_version", materialization_contract),
+                ):
+                    if not isinstance(value, str) or not value.strip():
+                        raise CMISCapabilityContractError(
+                            f"CMIS x1/wallet_relationship_intelligence {field} must be text."
+                        )
+                    normalized_capability[field] = value
+                for field in (
+                    "read_only",
+                    "public_service_promoted",
+                    "scout_reliance_promoted",
+                    "observed_relationships_only",
+                    "ownership_inference_authorized",
+                    "beneficial_ownership_inference_authorized",
+                    "behavior_or_intent_inference_authorized",
+                    "risk_inference_authorized",
+                    "complete_history_claim_authorized",
+                    "complete_graph_coverage_claim_authorized",
+                    "evidence_receipt_binding_available",
+                    "proof_score_binding_available",
+                    "proof_score_separate_from_risk",
+                    "execution_authorized",
+                ):
+                    raw_flag = capability_raw.get(field)
+                    if not isinstance(raw_flag, bool):
+                        raise CMISCapabilityContractError(
+                            f"CMIS x1/wallet_relationship_intelligence {field} must be boolean."
                         )
                     normalized_capability[field] = raw_flag
             if chain == "x1" and service == "asset_lookup":
@@ -1553,6 +1639,76 @@ def require_large_trade_discovery_capability(
         raise CMISCapabilityContractError(
             "CMIS x1/large_trade_discovery is missing accepted "
             f"limitations: {missing_limitations!r}."
+        )
+    return capability
+
+
+def require_wallet_relationship_capability(
+    manifest: Mapping[str, Any],
+    *,
+    chain: str = "x1",
+) -> CMISServiceCapability:
+    """Require accepted CMIS 1.28 Wallet Relationship Intelligence promotion."""
+
+    normalized_chain = str(chain or "").strip().lower()
+    if normalized_chain != "x1":
+        raise CMISCapabilityUnavailable(
+            chain=normalized_chain,
+            service="wallet_relationship_intelligence",
+            state=None,
+            limitations=["wallet_relationship_intelligence_x1_only"],
+        )
+    version = manifest.get("contract_version")
+    if _semver(version) < _semver(WALLET_RELATIONSHIP_MIN_CMIS_CONTRACT_VERSION):
+        raise CMISCapabilityContractError(
+            "CMIS Wallet Relationship Intelligence requires contract "
+            f">={WALLET_RELATIONSHIP_MIN_CMIS_CONTRACT_VERSION}, got {version!r}."
+        )
+    capability = require_service_capability(
+        manifest, chain=normalized_chain, service="wallet_relationship_intelligence"
+    )
+    if capability.get("state") != "bounded":
+        raise CMISCapabilityContractError("CMIS x1/wallet_relationship_intelligence state must remain bounded.")
+    if capability.get("service_contract_version") != WALLET_RELATIONSHIP_CONTRACT_VERSION:
+        raise CMISCapabilityContractError("CMIS x1/wallet_relationship_intelligence service contract mismatch.")
+    if capability.get("request_contract_version") != WALLET_RELATIONSHIP_REQUEST_CONTRACT_VERSION:
+        raise CMISCapabilityContractError("CMIS x1/wallet_relationship_intelligence request contract mismatch.")
+    expected_flags = (
+        ("read_only", True),
+        ("public_service_promoted", True),
+        ("scout_reliance_promoted", True),
+        ("observed_relationships_only", True),
+        ("ownership_inference_authorized", False),
+        ("beneficial_ownership_inference_authorized", False),
+        ("behavior_or_intent_inference_authorized", False),
+        ("risk_inference_authorized", False),
+        ("complete_history_claim_authorized", False),
+        ("complete_graph_coverage_claim_authorized", False),
+        ("evidence_receipt_binding_available", False),
+        ("proof_score_binding_available", False),
+        ("proof_score_separate_from_risk", True),
+        ("execution_authorized", False),
+    )
+    for field, expected in expected_flags:
+        if capability.get(field) is not expected:
+            raise CMISCapabilityContractError(
+                f"CMIS x1/wallet_relationship_intelligence {field} must be {str(expected).lower()}."
+            )
+    missing_requirements = sorted(
+        set(WALLET_RELATIONSHIP_REQUIRED_REQUIREMENTS) - set(capability["requirements"])
+    )
+    if missing_requirements:
+        raise CMISCapabilityContractError(
+            "CMIS x1/wallet_relationship_intelligence is missing accepted requirements: "
+            f"{missing_requirements!r}."
+        )
+    missing_limitations = sorted(
+        set(WALLET_RELATIONSHIP_REQUIRED_LIMITATIONS) - set(capability["limitations"])
+    )
+    if missing_limitations:
+        raise CMISCapabilityContractError(
+            "CMIS x1/wallet_relationship_intelligence is missing accepted limitations: "
+            f"{missing_limitations!r}."
         )
     return capability
 
