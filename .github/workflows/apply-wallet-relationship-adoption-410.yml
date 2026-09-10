@@ -1,0 +1,809 @@
+name: Apply Wallet Relationship adoption 410
+
+on:
+  push:
+    branches:
+      - feat/wallet-relationship-adoption-410
+    paths:
+      - ".github/workflows/apply-wallet-relationship-adoption-410.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/wallet-relationship-adoption-410
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+
+      - name: Apply bounded Wallet Relationship adoption
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              p = Path(path)
+              text = p.read_text(encoding="utf-8")
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"{path}: expected one anchor, found {count}: {old[:100]!r}")
+              p.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+          Path("src/roberta/cmis/wallet_relationship.py").write_text(r'''"""ROBERTA-side contract for CMIS Wallet Relationship Intelligence v1.
+
+Only exact caller selectors cross the Scout -> CMIS boundary. The validator
+preserves one CMIS-proven finalized X1 direct token transfer and fails closed on
+ownership, behavior, intent, risk, causality, completeness, or execution drift.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Mapping
+from copy import deepcopy
+import re
+from typing import Any
+
+SERVICE = "wallet_relationship_intelligence"
+SERVICE_CONTRACT_VERSION = "wallet_relationship_intelligence/v1"
+REQUEST_CONTRACT_VERSION = "wallet_relationship_intelligence_request/v1"
+RELATIONSHIP_KIND = "observed_direct_interaction"
+INTERACTION_TYPE = "verified_token_transfer"
+EVIDENCE_SCOPE = "exact_finalized_x1_transaction"
+
+_BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+_BASE58_INDEX = {char: index for index, char in enumerate(_BASE58_ALPHABET)}
+_WR_ID = re.compile(r"^wr_[0-9a-f]{64}$")
+_WA_ID = re.compile(r"^wa_[0-9a-f]{64}$")
+_REQUIRED_LIMITATIONS = frozenset({
+    "observed_direct_interaction_only",
+    "ownership_not_inferred",
+    "beneficial_ownership_not_inferred",
+    "behavior_intent_and_risk_not_inferred",
+    "complete_wallet_history_not_proven",
+    "complete_relationship_graph_not_proven",
+    "missing_amounts_are_not_zero_filled",
+})
+
+
+class CMISWalletRelationshipContractError(ValueError):
+    """Raised when CMIS wallet-relationship material widens accepted authority."""
+
+
+def _text(value: Any, field: str) -> str:
+    if not isinstance(value, str) or not value or value.strip() != value:
+        raise CMISWalletRelationshipContractError(f"{field} must be normalized non-empty text")
+    return value
+
+
+def _decode_base58(value: str) -> bytes | None:
+    number = 0
+    for char in value:
+        digit = _BASE58_INDEX.get(char)
+        if digit is None:
+            return None
+        number = number * 58 + digit
+    leading_zeroes = len(value) - len(value.lstrip("1"))
+    payload = b"" if number == 0 else number.to_bytes((number.bit_length() + 7) // 8, "big")
+    return (b"\x00" * leading_zeroes) + payload
+
+
+def _pubkey(value: Any, field: str) -> str:
+    text = _text(value, field)
+    decoded = _decode_base58(text)
+    if decoded is None or len(decoded) != 32:
+        raise CMISWalletRelationshipContractError(f"{field} must be an exact 32-byte base58 X1 public key")
+    return text
+
+
+def _signature(value: Any) -> str:
+    text = _text(value, "transaction_signature")
+    decoded = _decode_base58(text)
+    if decoded is None or len(decoded) != 64:
+        raise CMISWalletRelationshipContractError(
+            "transaction_signature must be an exact 64-byte base58 transaction signature"
+        )
+    return text
+
+
+def normalize_wallet_relationship_request(
+    *,
+    chain: str,
+    transaction_signature: Any,
+    asset_mint: Any,
+    sender_wallet: Any,
+    recipient_wallet: Any,
+) -> dict[str, str]:
+    normalized_chain = _text(chain, "chain").lower()
+    if normalized_chain != "x1":
+        raise CMISWalletRelationshipContractError("wallet relationship request must use chain=x1")
+    sender = _pubkey(sender_wallet, "sender_wallet")
+    recipient = _pubkey(recipient_wallet, "recipient_wallet")
+    if sender == recipient:
+        raise CMISWalletRelationshipContractError("sender_wallet and recipient_wallet must be distinct")
+    return {
+        "contract_version": REQUEST_CONTRACT_VERSION,
+        "chain": "x1",
+        "transaction_signature": _signature(transaction_signature),
+        "asset_mint": _pubkey(asset_mint, "asset_mint"),
+        "sender_wallet": sender,
+        "recipient_wallet": recipient,
+    }
+
+
+def validate_wallet_relationship_response(
+    response: Mapping[str, Any],
+    *,
+    expected_request: Mapping[str, Any],
+) -> dict[str, Any]:
+    if not isinstance(response, Mapping):
+        raise CMISWalletRelationshipContractError("CMIS wallet relationship response must be an object")
+    safe = deepcopy(dict(response))
+    if safe.get("service") != SERVICE or safe.get("chain") != "x1":
+        raise CMISWalletRelationshipContractError("wallet relationship service/chain mismatch")
+    if safe.get("status") != "ok":
+        raise CMISWalletRelationshipContractError("promoted wallet relationship response requires status=ok")
+    if safe.get("risk") is not None:
+        raise CMISWalletRelationshipContractError("wallet relationship response must not add risk")
+    if safe.get("execution_authorized") is not False:
+        raise CMISWalletRelationshipContractError("wallet relationship response must preserve execution_authorized=false")
+
+    expected = normalize_wallet_relationship_request(
+        chain=expected_request.get("chain", "x1"),
+        transaction_signature=expected_request.get("transaction_signature"),
+        asset_mint=expected_request.get("asset_mint"),
+        sender_wallet=expected_request.get("sender_wallet"),
+        recipient_wallet=expected_request.get("recipient_wallet"),
+    )
+    asset = safe.get("asset")
+    if not isinstance(asset, Mapping) or asset.get("id") != expected["asset_mint"] or asset.get("id_kind") != "mint":
+        raise CMISWalletRelationshipContractError("wallet relationship exact asset identity mismatch")
+    data = safe.get("data")
+    if not isinstance(data, Mapping):
+        raise CMISWalletRelationshipContractError("wallet relationship data must be an object")
+    if data.get("contract_version") != SERVICE_CONTRACT_VERSION:
+        raise CMISWalletRelationshipContractError("wallet relationship service contract mismatch")
+    exact_fields = {
+        "relationship_kind": RELATIONSHIP_KIND,
+        "interaction_type": INTERACTION_TYPE,
+        "asset_mint": expected["asset_mint"],
+        "sender_wallet": expected["sender_wallet"],
+        "recipient_wallet": expected["recipient_wallet"],
+        "transaction_signature": expected["transaction_signature"],
+        "evidence_scope": EVIDENCE_SCOPE,
+    }
+    for field, value in exact_fields.items():
+        if data.get(field) != value:
+            raise CMISWalletRelationshipContractError(f"wallet relationship {field} mismatch")
+    if data.get("observed_at") != safe.get("observed_at"):
+        raise CMISWalletRelationshipContractError("wallet relationship fact time mismatch")
+    block_slot = data.get("block_slot")
+    if block_slot is not None and (isinstance(block_slot, bool) or not isinstance(block_slot, int) or block_slot < 0):
+        raise CMISWalletRelationshipContractError("block_slot must be a non-negative integer or null")
+    amount_raw = data.get("amount_raw")
+    if not isinstance(amount_raw, str) or not amount_raw.isdigit() or int(amount_raw) <= 0 or str(int(amount_raw)) != amount_raw:
+        raise CMISWalletRelationshipContractError("amount_raw must be a positive canonical raw integer string")
+    decimals = data.get("decimals")
+    if isinstance(decimals, bool) or not isinstance(decimals, int) or decimals < 0:
+        raise CMISWalletRelationshipContractError("decimals must be a non-negative integer")
+    for field in ("source_token_account", "destination_token_account"):
+        _text(data.get(field), field)
+    relationship_id = data.get("relationship_evidence_id")
+    observation_id = data.get("wallet_activity_observation_id")
+    if not isinstance(relationship_id, str) or _WR_ID.fullmatch(relationship_id) is None:
+        raise CMISWalletRelationshipContractError("relationship_evidence_id must be canonical wr_ content id")
+    if not isinstance(observation_id, str) or _WA_ID.fullmatch(observation_id) is None:
+        raise CMISWalletRelationshipContractError("wallet_activity_observation_id must be canonical wa_ content id")
+    for field in (
+        "evidence_receipt_binding_available",
+        "proof_score_binding_available",
+        "ownership_inference_added",
+        "beneficial_ownership_inference_added",
+        "behavioral_interpretation_added",
+        "intent_interpretation_added",
+        "complete_history_claimed",
+        "complete_graph_coverage_claimed",
+        "execution_authorized",
+    ):
+        if data.get(field) is not False:
+            raise CMISWalletRelationshipContractError(f"wallet relationship {field} must remain false")
+    if data.get("proof_strength_separate_from_risk") is not True:
+        raise CMISWalletRelationshipContractError("Proof Score must remain separate from risk")
+    if data.get("risk_interpretation") is not None:
+        raise CMISWalletRelationshipContractError("wallet relationship risk_interpretation must remain null")
+    limitations = data.get("limitations")
+    if not isinstance(limitations, list) or not _REQUIRED_LIMITATIONS.issubset(set(limitations)):
+        raise CMISWalletRelationshipContractError("wallet relationship truth-boundary limitations are incomplete")
+    confidence = safe.get("confidence")
+    if not isinstance(confidence, Mapping) or confidence.get("proof_score_available") is not False:
+        raise CMISWalletRelationshipContractError("wallet relationship v1 must not invent Proof Score")
+    return safe
+
+
+__all__ = [
+    "CMISWalletRelationshipContractError",
+    "EVIDENCE_SCOPE",
+    "INTERACTION_TYPE",
+    "RELATIONSHIP_KIND",
+    "REQUEST_CONTRACT_VERSION",
+    "SERVICE",
+    "SERVICE_CONTRACT_VERSION",
+    "normalize_wallet_relationship_request",
+    "validate_wallet_relationship_response",
+]
+''', encoding="utf-8")
+
+          Path("src/roberta/x1_scout/wallet_relationship_intelligence.py").write_text(r'''"""Deterministic X1 Scout projection for CMIS Wallet Relationship Intelligence v1."""
+
+from __future__ import annotations
+
+from collections.abc import Mapping
+from copy import deepcopy
+from typing import Any
+
+from roberta.cmis.wallet_relationship import (
+    CMISWalletRelationshipContractError,
+    SERVICE_CONTRACT_VERSION as CMIS_WALLET_RELATIONSHIP_CONTRACT,
+    validate_wallet_relationship_response,
+)
+
+X1_WALLET_RELATIONSHIP_CONTRACT = "x1_wallet_relationship_intelligence/v1"
+
+
+class X1WalletRelationshipContractError(ValueError):
+    """Raised when CMIS output cannot satisfy the bounded Scout product."""
+
+
+def build_x1_wallet_relationship_intelligence(
+    result: Mapping[str, Any],
+    *,
+    expected_request: Mapping[str, Any],
+) -> dict[str, object]:
+    try:
+        safe = validate_wallet_relationship_response(result, expected_request=expected_request)
+    except CMISWalletRelationshipContractError as exc:
+        raise X1WalletRelationshipContractError(str(exc)) from exc
+    data = safe["data"]
+    return {
+        "contract_version": X1_WALLET_RELATIONSHIP_CONTRACT,
+        "product": "x1_wallet_relationship_intelligence",
+        "chain": "x1",
+        "status": "ok",
+        "cmis_contract_version": CMIS_WALLET_RELATIONSHIP_CONTRACT,
+        "wallet_relationship_intelligence": deepcopy(data),
+        "observed_at": safe.get("observed_at"),
+        "confidence": deepcopy(safe.get("confidence") or {}),
+        "sources": deepcopy(safe.get("sources") or []),
+        "warnings": deepcopy(safe.get("warnings") or []),
+        "errors": deepcopy(safe.get("errors") or []),
+        "relationship_scope_is_one_selected_finalized_transaction": True,
+        "common_ownership_claim_authorized": False,
+        "beneficial_ownership_claim_authorized": False,
+        "real_world_identity_claim_authorized": False,
+        "whale_insider_bot_market_maker_claim_authorized": False,
+        "behavior_or_intent_claim_authorized": False,
+        "coordination_manipulation_fraud_claim_authorized": False,
+        "causality_claim_authorized": False,
+        "risk_severity_claim_authorized": False,
+        "complete_wallet_history_claim_authorized": False,
+        "complete_relationship_graph_claim_authorized": False,
+        "execution_authorized": False,
+    }
+
+
+def render_x1_wallet_relationship_text(product: Mapping[str, Any]) -> str:
+    if product.get("contract_version") != X1_WALLET_RELATIONSHIP_CONTRACT:
+        raise X1WalletRelationshipContractError("wallet relationship Scout contract mismatch")
+    data = product.get("wallet_relationship_intelligence")
+    if not isinstance(data, Mapping):
+        raise X1WalletRelationshipContractError("wallet relationship Scout data missing")
+    return (
+        "CMIS verified a direct X1 token transfer from "
+        f"{data['sender_wallet']} to {data['recipient_wallet']} for mint "
+        f"{data['asset_mint']} in transaction {data['transaction_signature']} at "
+        f"{data['observed_at']}. This verifies this selected finalized transfer only; "
+        "it does not prove common ownership, real-world identity, behavior, intent, "
+        "coordination, manipulation, fraud, causality, risk severity, or complete wallet history."
+    )
+
+
+__all__ = [
+    "CMIS_WALLET_RELATIONSHIP_CONTRACT",
+    "X1_WALLET_RELATIONSHIP_CONTRACT",
+    "X1WalletRelationshipContractError",
+    "build_x1_wallet_relationship_intelligence",
+    "render_x1_wallet_relationship_text",
+]
+''', encoding="utf-8")
+
+          # CMIS external contract types.
+          replace_once(
+              "src/roberta/cmis/contracts.py",
+              '    "large_trade_discovery",\n    "regulatory_evidence",\n    "instant_x1_scan",',
+              '    "large_trade_discovery",\n    "wallet_relationship_intelligence",\n    "regulatory_evidence",\n    "instant_x1_scan",',
+          )
+          replace_once(
+              "src/roberta/cmis/contracts.py",
+              '    "large_trade_discovery",\n    "instant_x1_scan",\n]',
+              '    "large_trade_discovery",\n    "wallet_relationship_intelligence",\n    "instant_x1_scan",\n]',
+          )
+          replace_once(
+              "src/roberta/cmis/contracts.py",
+              'CMISLargeTradeDiscovery: TypeAlias = CMISEnvelope\nCMISRegulatoryEvidence: TypeAlias = CMISEnvelope',
+              'CMISLargeTradeDiscovery: TypeAlias = CMISEnvelope\nCMISWalletRelationshipIntelligence: TypeAlias = CMISEnvelope\nCMISRegulatoryEvidence: TypeAlias = CMISEnvelope',
+          )
+
+          # Capability contract and exact CMIS 1.28 reliance gate.
+          cap = "src/roberta/cmis/capabilities.py"
+          replace_once(
+              cap,
+              'LARGE_TRADE_DISCOVERY_MIN_CMIS_CONTRACT_VERSION = "1.25.0"\nLARGE_TRADE_DISCOVERY_CONTRACT_VERSION = "large_trade_discovery/v1"\nREGULATORY_EVIDENCE_MIN_CMIS_CONTRACT_VERSION = "1.26.0"',
+              '''LARGE_TRADE_DISCOVERY_MIN_CMIS_CONTRACT_VERSION = "1.25.0"\nLARGE_TRADE_DISCOVERY_CONTRACT_VERSION = "large_trade_discovery/v1"\nWALLET_RELATIONSHIP_MIN_CMIS_CONTRACT_VERSION = "1.28.0"\nWALLET_RELATIONSHIP_CONTRACT_VERSION = "wallet_relationship_intelligence/v1"\nWALLET_RELATIONSHIP_REQUEST_CONTRACT_VERSION = "wallet_relationship_intelligence_request/v1"\nWALLET_RELATIONSHIP_REQUIRED_REQUIREMENTS = (\n    "exact_x1_transaction_signature",\n    "exact_x1_asset_mint_identity",\n    "exact_sender_wallet_identity",\n    "exact_recipient_wallet_identity",\n    "cmis_owned_finalized_x1_transaction_resolution",\n    "verified_direct_spl_token_transfer",\n    "exact_token_account_owner_binding",\n    "exact_transfer_direction",\n    "exact_raw_amount_and_decimals",\n    "canonical_transaction_fact_time",\n    "content_addressed_wallet_activity_observation",\n    "content_addressed_direct_relationship_evidence",\n    "caller_fact_evidence_provider_injection_rejected",\n)\nWALLET_RELATIONSHIP_REQUIRED_LIMITATIONS = (\n    "observed_direct_interaction_only",\n    "relationship_is_transaction_scoped_not_complete_history",\n    "transfer_does_not_prove_common_ownership",\n    "transfer_does_not_prove_beneficial_ownership",\n    "wallet_address_is_not_real_world_identity",\n    "transfer_does_not_prove_insider_whale_bot_or_market_maker",\n    "behavior_or_intent_not_inferred",\n    "coordination_manipulation_or_fraud_not_inferred",\n    "sequence_or_transfer_does_not_establish_causality",\n    "risk_severity_not_inferred",\n    "evidence_receipt_binding_unavailable_in_v1",\n    "proof_score_binding_unavailable_in_v1",\n    "proof_score_separate_from_risk",\n    "complete_wallet_history_not_proven",\n    "complete_relationship_graph_not_proven",\n    "missing_evidence_is_unknown_not_zero",\n    "no_execution_authorization",\n    "x1_only_initial_scope",\n)\nREGULATORY_EVIDENCE_MIN_CMIS_CONTRACT_VERSION = "1.26.0"''',
+          )
+          replace_once(
+              cap,
+              '    compliance_conclusion_authorized: NotRequired[bool]\n',
+              '''    compliance_conclusion_authorized: NotRequired[bool]\n    request_contract_version: NotRequired[str]\n    materialization_contract_version: NotRequired[str]\n    observed_relationships_only: NotRequired[bool]\n    ownership_inference_authorized: NotRequired[bool]\n    beneficial_ownership_inference_authorized: NotRequired[bool]\n    behavior_or_intent_inference_authorized: NotRequired[bool]\n    risk_inference_authorized: NotRequired[bool]\n    complete_history_claim_authorized: NotRequired[bool]\n    complete_graph_coverage_claim_authorized: NotRequired[bool]\n    evidence_receipt_binding_available: NotRequired[bool]\n    proof_score_binding_available: NotRequired[bool]\n    proof_score_separate_from_risk: NotRequired[bool]\n''',
+          )
+          large_case = '''            if chain == "x1" and service == "large_trade_discovery":\n                contract = capability_raw.get("service_contract_version")\n                if not isinstance(contract, str) or not contract.strip():\n                    raise CMISCapabilityContractError(\n                        "CMIS x1/large_trade_discovery service_contract_version must be text."\n                    )\n                normalized_capability["service_contract_version"] = contract\n                for field in (\n                    "read_only",\n                    "public_service_promoted",\n                    "scout_reliance_promoted",\n                    "execution_authorized",\n                ):\n                    raw_flag = capability_raw.get(field)\n                    if not isinstance(raw_flag, bool):\n                        raise CMISCapabilityContractError(\n                            f"CMIS x1/large_trade_discovery {field} must be boolean."\n                        )\n                    normalized_capability[field] = raw_flag\n'''
+          wallet_case = large_case + '''            if chain == "x1" and service == "wallet_relationship_intelligence":\n                contract = capability_raw.get("service_contract_version")\n                request_contract = capability_raw.get("request_contract_version")\n                materialization_contract = capability_raw.get("materialization_contract_version")\n                for field, value in (\n                    ("service_contract_version", contract),\n                    ("request_contract_version", request_contract),\n                    ("materialization_contract_version", materialization_contract),\n                ):\n                    if not isinstance(value, str) or not value.strip():\n                        raise CMISCapabilityContractError(\n                            f"CMIS x1/wallet_relationship_intelligence {field} must be text."\n                        )\n                    normalized_capability[field] = value\n                for field in (\n                    "read_only",\n                    "public_service_promoted",\n                    "scout_reliance_promoted",\n                    "observed_relationships_only",\n                    "ownership_inference_authorized",\n                    "beneficial_ownership_inference_authorized",\n                    "behavior_or_intent_inference_authorized",\n                    "risk_inference_authorized",\n                    "complete_history_claim_authorized",\n                    "complete_graph_coverage_claim_authorized",\n                    "evidence_receipt_binding_available",\n                    "proof_score_binding_available",\n                    "proof_score_separate_from_risk",\n                    "execution_authorized",\n                ):\n                    raw_flag = capability_raw.get(field)\n                    if not isinstance(raw_flag, bool):\n                        raise CMISCapabilityContractError(\n                            f"CMIS x1/wallet_relationship_intelligence {field} must be boolean."\n                        )\n                    normalized_capability[field] = raw_flag\n'''
+          replace_once(cap, large_case, wallet_case)
+
+          anchor = 'def require_cross_chain_provenance_capability(\n'
+          helper = '''def require_wallet_relationship_capability(\n    manifest: Mapping[str, Any],\n    *,\n    chain: str = "x1",\n) -> CMISServiceCapability:\n    """Require accepted CMIS 1.28 Wallet Relationship Intelligence promotion."""\n\n    normalized_chain = str(chain or "").strip().lower()\n    if normalized_chain != "x1":\n        raise CMISCapabilityUnavailable(\n            chain=normalized_chain,\n            service="wallet_relationship_intelligence",\n            state=None,\n            limitations=["wallet_relationship_intelligence_x1_only"],\n        )\n    version = manifest.get("contract_version")\n    if _semver(version) < _semver(WALLET_RELATIONSHIP_MIN_CMIS_CONTRACT_VERSION):\n        raise CMISCapabilityContractError(\n            "CMIS Wallet Relationship Intelligence requires contract "\n            f">={WALLET_RELATIONSHIP_MIN_CMIS_CONTRACT_VERSION}, got {version!r}."\n        )\n    capability = require_service_capability(\n        manifest, chain=normalized_chain, service="wallet_relationship_intelligence"\n    )\n    if capability.get("state") != "bounded":\n        raise CMISCapabilityContractError("CMIS x1/wallet_relationship_intelligence state must remain bounded.")\n    if capability.get("service_contract_version") != WALLET_RELATIONSHIP_CONTRACT_VERSION:\n        raise CMISCapabilityContractError("CMIS x1/wallet_relationship_intelligence service contract mismatch.")\n    if capability.get("request_contract_version") != WALLET_RELATIONSHIP_REQUEST_CONTRACT_VERSION:\n        raise CMISCapabilityContractError("CMIS x1/wallet_relationship_intelligence request contract mismatch.")\n    expected_flags = (\n        ("read_only", True),\n        ("public_service_promoted", True),\n        ("scout_reliance_promoted", True),\n        ("observed_relationships_only", True),\n        ("ownership_inference_authorized", False),\n        ("beneficial_ownership_inference_authorized", False),\n        ("behavior_or_intent_inference_authorized", False),\n        ("risk_inference_authorized", False),\n        ("complete_history_claim_authorized", False),\n        ("complete_graph_coverage_claim_authorized", False),\n        ("evidence_receipt_binding_available", False),\n        ("proof_score_binding_available", False),\n        ("proof_score_separate_from_risk", True),\n        ("execution_authorized", False),\n    )\n    for field, expected in expected_flags:\n        if capability.get(field) is not expected:\n            raise CMISCapabilityContractError(\n                f"CMIS x1/wallet_relationship_intelligence {field} must be {str(expected).lower()}."\n            )\n    missing_requirements = sorted(\n        set(WALLET_RELATIONSHIP_REQUIRED_REQUIREMENTS) - set(capability["requirements"])\n    )\n    if missing_requirements:\n        raise CMISCapabilityContractError(\n            "CMIS x1/wallet_relationship_intelligence is missing accepted requirements: "\n            f"{missing_requirements!r}."\n        )\n    missing_limitations = sorted(\n        set(WALLET_RELATIONSHIP_REQUIRED_LIMITATIONS) - set(capability["limitations"])\n    )\n    if missing_limitations:\n        raise CMISCapabilityContractError(\n            "CMIS x1/wallet_relationship_intelligence is missing accepted limitations: "\n            f"{missing_limitations!r}."\n        )\n    return capability\n\n\n'''
+          replace_once(cap, anchor, helper + anchor)
+
+          # Client Protocol.
+          client = "src/roberta/cmis/client.py"
+          replace_once(
+              client,
+              '''    def large_trade_discovery(\n        self,\n        *,\n        chain: str,\n        asset_mint: str,\n        direction: str = "ANY",\n        limit: int = 5,\n    ) -> CMISEnvelope:\n        ...\n\n''',
+              '''    def large_trade_discovery(\n        self,\n        *,\n        chain: str,\n        asset_mint: str,\n        direction: str = "ANY",\n        limit: int = 5,\n    ) -> CMISEnvelope:\n        ...\n\n    def wallet_relationship_intelligence(\n        self,\n        *,\n        chain: str,\n        transaction_signature: str,\n        asset_mint: str,\n        sender_wallet: str,\n        recipient_wallet: str,\n    ) -> CMISEnvelope:\n        ...\n\n''',
+          )
+
+          # HTTP client uses selector-only protected gateway shape (no outer asset field).
+          http = "src/roberta/cmis/http.py"
+          replace_once(
+              http,
+              '    require_large_trade_discovery_capability,\n    require_regulatory_evidence_capability,',
+              '    require_large_trade_discovery_capability,\n    require_wallet_relationship_capability,\n    require_regulatory_evidence_capability,',
+          )
+          replace_once(
+              http,
+              '''from roberta.cmis.large_trade_discovery import (\n    SERVICE as LARGE_TRADE_DISCOVERY_SERVICE,\n    CMISLargeTradeDiscoveryContractError,\n    normalize_large_trade_discovery_request,\n    validate_large_trade_discovery_response,\n)\n''',
+              '''from roberta.cmis.large_trade_discovery import (\n    SERVICE as LARGE_TRADE_DISCOVERY_SERVICE,\n    CMISLargeTradeDiscoveryContractError,\n    normalize_large_trade_discovery_request,\n    validate_large_trade_discovery_response,\n)\nfrom roberta.cmis.wallet_relationship import (\n    SERVICE as WALLET_RELATIONSHIP_SERVICE,\n    CMISWalletRelationshipContractError,\n    normalize_wallet_relationship_request,\n    validate_wallet_relationship_response,\n)\n''',
+          )
+          trade_anchor = '    def trade_price_impact_intelligence(\n'
+          wallet_method = '''    def wallet_relationship_intelligence(\n        self,\n        *,\n        chain: str,\n        transaction_signature: str,\n        asset_mint: str,\n        sender_wallet: str,\n        recipient_wallet: str,\n    ) -> CMISEnvelope:\n        normalized_chain = self._chain(chain)\n        try:\n            require_wallet_relationship_capability(\n                self.capabilities(),\n                chain=normalized_chain,\n            )\n            normalized = normalize_wallet_relationship_request(\n                chain=normalized_chain,\n                transaction_signature=transaction_signature,\n                asset_mint=asset_mint,\n                sender_wallet=sender_wallet,\n                recipient_wallet=recipient_wallet,\n            )\n        except CMISCapabilityUnavailable as exc:\n            return self._error_envelope(\n                service=WALLET_RELATIONSHIP_SERVICE,\n                chain=normalized_chain,\n                asset=str(asset_mint or "").strip(),\n                status="unavailable",\n                code="cmis_wallet_relationship_unavailable",\n                message=str(exc),\n                warning=True,\n            )\n        except (CMISCapabilityContractError, CMISWalletRelationshipContractError) as exc:\n            return self._error_envelope(\n                service=WALLET_RELATIONSHIP_SERVICE,\n                chain=normalized_chain,\n                asset=str(asset_mint or "").strip(),\n                status="unavailable",\n                code="cmis_wallet_relationship_contract_unavailable",\n                message=f"CMIS Wallet Relationship contract unavailable: {exc}",\n                warning=True,\n            )\n\n        params = {key: value for key, value in normalized.items() if key != "chain"}\n        response = self._send_payload(\n            service=WALLET_RELATIONSHIP_SERVICE,\n            chain=normalized_chain,\n            error_context=normalized["asset_mint"],\n            payload={\n                "service": WALLET_RELATIONSHIP_SERVICE,\n                "chain": normalized_chain,\n                "params": params,\n            },\n        )\n        if response.get("status") != "ok":\n            return response\n        try:\n            return validate_wallet_relationship_response(\n                response,\n                expected_request=normalized,\n            )\n        except CMISWalletRelationshipContractError as exc:\n            return self._error_envelope(\n                service=WALLET_RELATIONSHIP_SERVICE,\n                chain=normalized_chain,\n                asset=normalized["asset_mint"],\n                status="error",\n                code="invalid_cmis_wallet_relationship_response",\n                message=str(exc),\n            )\n\n'''
+          replace_once(http, trade_anchor, wallet_method + trade_anchor)
+
+          # Scout state.
+          state = "src/roberta/x1_scout/state.py"
+          replace_once(
+              state,
+              '    large_trade_limit: NotRequired[int]\n    regulatory_jurisdiction: NotRequired[str]',
+              '''    large_trade_limit: NotRequired[int]\n    wallet_relationship_transaction_signature: NotRequired[str]\n    wallet_relationship_asset_mint: NotRequired[str]\n    wallet_relationship_sender_wallet: NotRequired[str]\n    wallet_relationship_recipient_wallet: NotRequired[str]\n    regulatory_jurisdiction: NotRequired[str]''',
+          )
+          replace_once(
+              state,
+              '    x1_large_trade_discovery: NotRequired[dict[str, object]]\n    x1_regulatory_intelligence: NotRequired[dict[str, object]]',
+              '''    x1_large_trade_discovery: NotRequired[dict[str, object]]\n    x1_wallet_relationship_intelligence: NotRequired[dict[str, object]]\n    x1_wallet_relationship_text: NotRequired[str]\n    x1_regulatory_intelligence: NotRequired[dict[str, object]]''',
+          )
+
+          # Scout graph dispatch + projection.
+          graph = "src/roberta/x1_scout/graph.py"
+          replace_once(
+              graph,
+              '    require_large_trade_discovery_capability,\n    require_regulatory_evidence_capability,',
+              '    require_large_trade_discovery_capability,\n    require_wallet_relationship_capability,\n    require_regulatory_evidence_capability,',
+          )
+          replace_once(
+              graph,
+              '''from roberta.x1_scout.large_trade_discovery import (\n    X1LargeTradeDiscoveryContractError,\n    build_x1_large_trade_discovery,\n)\n''',
+              '''from roberta.x1_scout.large_trade_discovery import (\n    X1LargeTradeDiscoveryContractError,\n    build_x1_large_trade_discovery,\n)\nfrom roberta.x1_scout.wallet_relationship_intelligence import (\n    X1WalletRelationshipContractError,\n    build_x1_wallet_relationship_intelligence,\n    render_x1_wallet_relationship_text,\n)\n''',
+          )
+          large_dispatch = '''    if operation == "large_trade_discovery":\n        asset_mint = request.get("large_trade_asset_mint")\n        direction = request.get("large_trade_direction")\n        limit = request.get("large_trade_limit")\n        if asset_mint is None or direction is None or limit is None:\n            raise ValueError(\n                "large_trade_discovery requires exact X1 asset mint, direction, and limit"\n            )\n        if str(asset or "").strip() != str(asset_mint).strip():\n            raise ValueError(\n                "large-trade discovery asset must equal the exact X1 asset mint"\n            )\n        try:\n            require_large_trade_discovery_capability(\n                cmis_client.capabilities(),\n                chain="x1",\n            )\n        except (CMISCapabilityUnavailable, CMISCapabilityContractError) as exc:\n            return {\n                "service": "large_trade_discovery",\n                "chain": "x1",\n                "status": "unavailable",\n                "asset": {"query": asset},\n                "data": {},\n                "risk": None,\n                "confidence": {},\n                "sources": [],\n                "observed_at": None,\n                "warnings": [{\n                    "code": "cmis_large_trade_discovery_contract_unavailable",\n                    "message": str(exc),\n                }],\n                "errors": [],\n            }\n        return cmis_client.large_trade_discovery(\n            chain="x1",\n            asset_mint=str(asset_mint),\n            direction=str(direction),\n            limit=int(limit),\n        )\n'''
+          wallet_dispatch = large_dispatch + '''    if operation == "wallet_relationship_intelligence":\n        signature = request.get("wallet_relationship_transaction_signature")\n        asset_mint = request.get("wallet_relationship_asset_mint")\n        sender = request.get("wallet_relationship_sender_wallet")\n        recipient = request.get("wallet_relationship_recipient_wallet")\n        if any(value is None for value in (signature, asset_mint, sender, recipient)):\n            raise ValueError(\n                "wallet_relationship_intelligence requires exact transaction signature, X1 asset mint, sender, and recipient"\n            )\n        if str(asset or "").strip() != str(asset_mint).strip():\n            raise ValueError("wallet relationship asset must equal the exact X1 asset mint")\n        try:\n            require_wallet_relationship_capability(\n                cmis_client.capabilities(),\n                chain="x1",\n            )\n        except (CMISCapabilityUnavailable, CMISCapabilityContractError) as exc:\n            return {\n                "service": "wallet_relationship_intelligence",\n                "chain": "x1",\n                "status": "unavailable",\n                "asset": {"query": asset},\n                "data": {},\n                "risk": None,\n                "confidence": {},\n                "sources": [],\n                "observed_at": None,\n                "warnings": [{\n                    "code": "cmis_wallet_relationship_contract_unavailable",\n                    "message": str(exc),\n                }],\n                "errors": [],\n            }\n        return cmis_client.wallet_relationship_intelligence(\n            chain="x1",\n            transaction_signature=str(signature),\n            asset_mint=str(asset_mint),\n            sender_wallet=str(sender),\n            recipient_wallet=str(recipient),\n        )\n'''
+          replace_once(graph, large_dispatch, wallet_dispatch)
+          replace_once(
+              graph,
+              '            and "large_trade_discovery" not in operations\n            and "regulatory_evidence" not in operations',
+              '            and "large_trade_discovery" not in operations\n            and "wallet_relationship_intelligence" not in operations\n            and "regulatory_evidence" not in operations',
+          )
+          large_projection_end = '''        except X1LargeTradeDiscoveryContractError:\n            pass\n\n    if (\n        primary_result.get("service") == "trade_price_impact_intelligence"'''
+          wallet_projection = '''        except X1LargeTradeDiscoveryContractError:\n            pass\n\n    if (\n        primary_result.get("service") == "wallet_relationship_intelligence"\n        and primary_result.get("status") == "ok"\n    ):\n        expected_request = {\n            "chain": "x1",\n            "transaction_signature": request.get("wallet_relationship_transaction_signature"),\n            "asset_mint": request.get("wallet_relationship_asset_mint"),\n            "sender_wallet": request.get("wallet_relationship_sender_wallet"),\n            "recipient_wallet": request.get("wallet_relationship_recipient_wallet"),\n        }\n        try:\n            product = build_x1_wallet_relationship_intelligence(\n                primary_result,\n                expected_request=expected_request,\n            )\n            report["x1_wallet_relationship_intelligence"] = product\n            report["x1_wallet_relationship_text"] = render_x1_wallet_relationship_text(product)\n        except X1WalletRelationshipContractError:\n            pass\n\n    if (\n        primary_result.get("service") == "trade_price_impact_intelligence"'''
+          replace_once(graph, large_projection_end, wallet_projection)
+
+          # Public tool selectors and explicit operation only.
+          tool = "src/roberta/x1_scout/tool.py"
+          replace_once(
+              tool,
+              '''from roberta.cmis.large_trade_discovery import (\n    normalize_large_trade_discovery_request,\n)\n''',
+              '''from roberta.cmis.large_trade_discovery import (\n    normalize_large_trade_discovery_request,\n)\nfrom roberta.cmis.wallet_relationship import normalize_wallet_relationship_request\n''',
+          )
+          replace_once(
+              tool,
+              '            "large_trade_discovery",\n            "regulatory_evidence",',
+              '            "large_trade_discovery",\n            "wallet_relationship_intelligence",\n            "regulatory_evidence",',
+          )
+          replace_once(
+              tool,
+              '        large_trade_limit: int | None = None,\n        regulatory_jurisdiction: str | None = None,',
+              '''        large_trade_limit: int | None = None,\n        wallet_relationship_transaction_signature: str | None = None,\n        wallet_relationship_asset_mint: str | None = None,\n        wallet_relationship_sender_wallet: str | None = None,\n        wallet_relationship_recipient_wallet: str | None = None,\n        regulatory_jurisdiction: str | None = None,''',
+          )
+          replace_once(
+              tool,
+              '''        regulatory_inputs = (\n            regulatory_jurisdiction,''',
+              '''        wallet_relationship_inputs = (\n            wallet_relationship_transaction_signature,\n            wallet_relationship_asset_mint,\n            wallet_relationship_sender_wallet,\n            wallet_relationship_recipient_wallet,\n        )\n        if operation != "wallet_relationship_intelligence" and any(\n            value is not None for value in wallet_relationship_inputs\n        ):\n            raise ValueError(\n                "wallet relationship selectors require operation='wallet_relationship_intelligence'"\n            )\n        regulatory_inputs = (\n            regulatory_jurisdiction,''',
+          )
+          regulatory_branch = '        elif operation == "regulatory_evidence":\n'
+          wallet_branch = '''        elif operation == "wallet_relationship_intelligence":\n            if include_history or compare_asset is not None:\n                raise ValueError("history/compare inputs are not accepted for wallet relationship intelligence")\n            if action is not None or amount_usd is not None:\n                raise ValueError("trade action/amount are not accepted for wallet relationship intelligence")\n            if intelligence_evidence_id is not None or intelligence_evidence_ids is not None:\n                raise ValueError("concentration evidence inputs are not accepted for wallet relationship intelligence")\n            missing = [\n                name\n                for name, value in {\n                    "transaction_signature": wallet_relationship_transaction_signature,\n                    "asset_mint": wallet_relationship_asset_mint,\n                    "sender_wallet": wallet_relationship_sender_wallet,\n                    "recipient_wallet": wallet_relationship_recipient_wallet,\n                }.items()\n                if value is None\n            ]\n            if missing:\n                raise ValueError(\n                    "wallet_relationship_intelligence requires exact transaction signature, X1 mint, sender, and recipient: "\n                    + ", ".join(sorted(missing))\n                )\n            normalized = normalize_wallet_relationship_request(\n                chain="x1",\n                transaction_signature=wallet_relationship_transaction_signature,\n                asset_mint=wallet_relationship_asset_mint,\n                sender_wallet=wallet_relationship_sender_wallet,\n                recipient_wallet=wallet_relationship_recipient_wallet,\n            )\n            if str(asset or "").strip() != normalized["asset_mint"]:\n                raise ValueError("wallet relationship asset must equal the exact X1 asset mint")\n            request.update({\n                "operation": "wallet_relationship_intelligence",\n                "wallet_relationship_transaction_signature": normalized["transaction_signature"],\n                "wallet_relationship_asset_mint": normalized["asset_mint"],\n                "wallet_relationship_sender_wallet": normalized["sender_wallet"],\n                "wallet_relationship_recipient_wallet": normalized["recipient_wallet"],\n            })\n'''
+          replace_once(tool, regulatory_branch, wallet_branch + regulatory_branch)
+          replace_once(
+              tool,
+              '            "For promoted Large-Trade Discovery, use "',
+              '''            "For promoted Wallet Relationship Intelligence, use operation='wallet_relationship_intelligence' "\n            "only with the exact finalized X1 transaction signature, exact asset mint, sender, and recipient. "\n            "ROBERTA may say CMIS verified that selected direct token transfer, but must not turn it into "\n            "common ownership, beneficial ownership, real-world identity, whale/insider/bot/market-maker, "\n            "behavior, intent, coordination, manipulation, fraud, causality, risk, complete-history, or "\n            "complete-relationship-graph claims. "\n            "For promoted Large-Trade Discovery, use "''',
+          )
+
+          # Dedicated adoption regression suite.
+          Path("tests/test_wallet_relationship_intelligence_adoption.py").write_text(r'''from __future__ import annotations
+
+from copy import deepcopy
+from pathlib import Path
+
+import pytest
+
+from roberta.cmis.capabilities import (
+    CMISCapabilityContractError,
+    WALLET_RELATIONSHIP_CONTRACT_VERSION,
+    WALLET_RELATIONSHIP_MIN_CMIS_CONTRACT_VERSION,
+    WALLET_RELATIONSHIP_REQUIRED_LIMITATIONS,
+    WALLET_RELATIONSHIP_REQUIRED_REQUIREMENTS,
+    require_wallet_relationship_capability,
+    validate_capability_manifest,
+)
+from roberta.cmis.http import CMISHTTPClient
+from roberta.cmis.wallet_relationship import (
+    CMISWalletRelationshipContractError,
+    normalize_wallet_relationship_request,
+    validate_wallet_relationship_response,
+)
+from roberta.x1_scout.wallet_relationship_intelligence import (
+    X1_WALLET_RELATIONSHIP_CONTRACT,
+    build_x1_wallet_relationship_intelligence,
+    render_x1_wallet_relationship_text,
+)
+from tests.test_cmis_http_client import _Server, _capabilities
+
+
+ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+
+
+def _b58(data: bytes) -> str:
+    number = int.from_bytes(data, "big")
+    encoded = ""
+    while number:
+        number, rem = divmod(number, 58)
+        encoded = ALPHABET[rem] + encoded
+    leading = len(data) - len(data.lstrip(b"\x00"))
+    return "1" * leading + (encoded or "")
+
+
+SIGNATURE = _b58(bytes(range(64)))
+ASSET = _b58(bytes([7]) * 32)
+SENDER = _b58(bytes([8]) * 32)
+RECIPIENT = _b58(bytes([9]) * 32)
+SOURCE_ACCOUNT = _b58(bytes([10]) * 32)
+DEST_ACCOUNT = _b58(bytes([11]) * 32)
+OBSERVED_AT = "2026-09-10T13:00:00Z"
+
+
+def _promoted_capabilities():
+    value = deepcopy(_capabilities())
+    value["contract_version"] = "1.28.0"
+    value["supported_services"].append("wallet_relationship_intelligence")
+    capability = {
+        "state": "bounded",
+        "callable": True,
+        "read_only": True,
+        "public_service_promoted": True,
+        "scout_reliance_promoted": True,
+        "service_contract_version": WALLET_RELATIONSHIP_CONTRACT_VERSION,
+        "request_contract_version": "wallet_relationship_intelligence_request/v1",
+        "materialization_contract_version": "x1_direct_wallet_transfer_materialization/v1",
+        "requirements": list(WALLET_RELATIONSHIP_REQUIRED_REQUIREMENTS),
+        "limitations": list(WALLET_RELATIONSHIP_REQUIRED_LIMITATIONS),
+        "observed_relationships_only": True,
+        "ownership_inference_authorized": False,
+        "beneficial_ownership_inference_authorized": False,
+        "behavior_or_intent_inference_authorized": False,
+        "risk_inference_authorized": False,
+        "complete_history_claim_authorized": False,
+        "complete_graph_coverage_claim_authorized": False,
+        "evidence_receipt_binding_available": False,
+        "proof_score_binding_available": False,
+        "proof_score_separate_from_risk": True,
+        "execution_authorized": False,
+    }
+    x1 = value["chains"]["x1"]
+    x1["services"]["wallet_relationship_intelligence"] = capability
+    x1["callable_services"].append("wallet_relationship_intelligence")
+    solana = value["chains"]["solana"]
+    solana["services"]["wallet_relationship_intelligence"] = {
+        "state": "unavailable",
+        "callable": False,
+        "requirements": [],
+        "limitations": ["wallet_relationship_intelligence_not_available_for_chain"],
+    }
+    return value
+
+
+def _request():
+    return normalize_wallet_relationship_request(
+        chain="x1",
+        transaction_signature=SIGNATURE,
+        asset_mint=ASSET,
+        sender_wallet=SENDER,
+        recipient_wallet=RECIPIENT,
+    )
+
+
+def _envelope():
+    return {
+        "service": "wallet_relationship_intelligence",
+        "chain": "x1",
+        "status": "ok",
+        "asset": {"id": ASSET, "id_kind": "mint"},
+        "data": {
+            "contract_version": "wallet_relationship_intelligence/v1",
+            "relationship_kind": "observed_direct_interaction",
+            "interaction_type": "verified_token_transfer",
+            "asset_mint": ASSET,
+            "sender_wallet": SENDER,
+            "recipient_wallet": RECIPIENT,
+            "transaction_signature": SIGNATURE,
+            "observed_at": OBSERVED_AT,
+            "block_slot": 123456,
+            "amount_raw": "1250000",
+            "decimals": 6,
+            "source_token_account": SOURCE_ACCOUNT,
+            "destination_token_account": DEST_ACCOUNT,
+            "relationship_evidence_id": "wr_" + "a" * 64,
+            "wallet_activity_observation_id": "wa_" + "b" * 64,
+            "evidence_scope": "exact_finalized_x1_transaction",
+            "evidence_receipt_binding_available": False,
+            "proof_score_binding_available": False,
+            "proof_strength_separate_from_risk": True,
+            "ownership_inference_added": False,
+            "beneficial_ownership_inference_added": False,
+            "behavioral_interpretation_added": False,
+            "intent_interpretation_added": False,
+            "risk_interpretation": None,
+            "complete_history_claimed": False,
+            "complete_graph_coverage_claimed": False,
+            "execution_authorized": False,
+            "limitations": [
+                "observed_direct_interaction_only",
+                "ownership_not_inferred",
+                "beneficial_ownership_not_inferred",
+                "behavior_intent_and_risk_not_inferred",
+                "complete_wallet_history_not_proven",
+                "complete_relationship_graph_not_proven",
+                "missing_amounts_are_not_zero_filled",
+            ],
+        },
+        "risk": None,
+        "confidence": {
+            "proof_score_available": False,
+            "proof_score_separate_from_risk": True,
+            "basis": "deterministically_revalidated_direct_transfer_evidence",
+        },
+        "sources": [{"source": "X1 RPC", "transaction_signature": SIGNATURE}],
+        "observed_at": OBSERVED_AT,
+        "freshness": {
+            "contract_version": "cmis_response_freshness/v1",
+            "scope": "wallet_relationship_intelligence.response",
+            "state": "NOT_APPLICABLE",
+            "freshness_verified": None,
+            "observed_at": OBSERVED_AT,
+            "details": {},
+            "reason": "historical_finalized_transaction_fact",
+        },
+        "warnings": ["observed_direct_interaction_only"],
+        "errors": [],
+        "execution_authorized": False,
+    }
+
+
+def test_capability_requires_exact_cmis_128_wallet_relationship_promotion():
+    manifest = validate_capability_manifest(_promoted_capabilities())
+    capability = require_wallet_relationship_capability(manifest)
+    assert WALLET_RELATIONSHIP_MIN_CMIS_CONTRACT_VERSION == "1.28.0"
+    assert capability["state"] == "bounded"
+    assert capability["read_only"] is True
+    assert capability["public_service_promoted"] is True
+    assert capability["scout_reliance_promoted"] is True
+    assert capability["observed_relationships_only"] is True
+    assert capability["ownership_inference_authorized"] is False
+    assert capability["risk_inference_authorized"] is False
+    assert capability["execution_authorized"] is False
+
+
+def test_capability_rejects_missing_complete_history_guardrail():
+    raw = _promoted_capabilities()
+    raw["chains"]["x1"]["services"]["wallet_relationship_intelligence"]["limitations"].remove(
+        "relationship_is_transaction_scoped_not_complete_history"
+    )
+    manifest = validate_capability_manifest(raw)
+    with pytest.raises(CMISCapabilityContractError, match="missing accepted limitations"):
+        require_wallet_relationship_capability(manifest)
+
+
+def test_request_normalization_is_exact_and_rejects_same_wallet():
+    request = _request()
+    assert request == {
+        "contract_version": "wallet_relationship_intelligence_request/v1",
+        "chain": "x1",
+        "transaction_signature": SIGNATURE,
+        "asset_mint": ASSET,
+        "sender_wallet": SENDER,
+        "recipient_wallet": RECIPIENT,
+    }
+    with pytest.raises(CMISWalletRelationshipContractError, match="distinct"):
+        normalize_wallet_relationship_request(
+            chain="x1",
+            transaction_signature=SIGNATURE,
+            asset_mint=ASSET,
+            sender_wallet=SENDER,
+            recipient_wallet=SENDER,
+        )
+
+
+def test_response_preserves_one_exact_transfer_and_rejects_authority_drift():
+    accepted = validate_wallet_relationship_response(_envelope(), expected_request=_request())
+    data = accepted["data"]
+    assert data["transaction_signature"] == SIGNATURE
+    assert data["sender_wallet"] == SENDER
+    assert data["recipient_wallet"] == RECIPIENT
+    assert data["amount_raw"] == "1250000"
+    assert data["ownership_inference_added"] is False
+    assert data["complete_history_claimed"] is False
+    assert accepted["risk"] is None
+    for field, value in (
+        ("ownership_inference_added", True),
+        ("complete_history_claimed", True),
+        ("execution_authorized", True),
+    ):
+        bad = _envelope()
+        bad["data"][field] = value
+        with pytest.raises(CMISWalletRelationshipContractError):
+            validate_wallet_relationship_response(bad, expected_request=_request())
+    bad_risk = _envelope()
+    bad_risk["risk"] = {"level": "HIGH"}
+    with pytest.raises(CMISWalletRelationshipContractError, match="must not add risk"):
+        validate_wallet_relationship_response(bad_risk, expected_request=_request())
+
+
+def test_http_posts_selector_only_shape_without_outer_asset_or_caller_facts():
+    expected = _envelope()
+    with _Server(expected, capabilities=_promoted_capabilities()) as running:
+        result = CMISHTTPClient(base_url=running.base_url, timeout_seconds=2).wallet_relationship_intelligence(
+            chain="x1",
+            transaction_signature=SIGNATURE,
+            asset_mint=ASSET,
+            sender_wallet=SENDER,
+            recipient_wallet=RECIPIENT,
+        )
+    assert result == expected
+    assert running.requests == [{
+        "service": "wallet_relationship_intelligence",
+        "chain": "x1",
+        "params": {
+            "contract_version": "wallet_relationship_intelligence_request/v1",
+            "transaction_signature": SIGNATURE,
+            "asset_mint": ASSET,
+            "sender_wallet": SENDER,
+            "recipient_wallet": RECIPIENT,
+        },
+    }]
+    assert "asset" not in running.requests[0]
+    assert "amount_raw" not in running.requests[0]["params"]
+    assert "risk" not in running.requests[0]["params"]
+
+
+def test_http_fails_closed_before_cmis_128_without_post():
+    capabilities = _promoted_capabilities()
+    capabilities["contract_version"] = "1.27.0"
+    with _Server(_envelope(), capabilities=capabilities) as running:
+        result = CMISHTTPClient(base_url=running.base_url, timeout_seconds=2).wallet_relationship_intelligence(
+            chain="x1",
+            transaction_signature=SIGNATURE,
+            asset_mint=ASSET,
+            sender_wallet=SENDER,
+            recipient_wallet=RECIPIENT,
+        )
+    assert result["status"] == "unavailable"
+    assert running.requests == []
+
+
+def test_x1_scout_projection_and_human_text_do_not_widen_one_transfer():
+    source = _envelope()
+    product = build_x1_wallet_relationship_intelligence(source, expected_request=_request())
+    assert product["contract_version"] == X1_WALLET_RELATIONSHIP_CONTRACT
+    assert product["wallet_relationship_intelligence"] == source["data"]
+    assert product["relationship_scope_is_one_selected_finalized_transaction"] is True
+    assert product["common_ownership_claim_authorized"] is False
+    assert product["whale_insider_bot_market_maker_claim_authorized"] is False
+    assert product["causality_claim_authorized"] is False
+    assert product["risk_severity_claim_authorized"] is False
+    assert product["complete_wallet_history_claim_authorized"] is False
+    assert product["execution_authorized"] is False
+    text = render_x1_wallet_relationship_text(product)
+    assert "CMIS verified a direct X1 token transfer" in text
+    assert "selected finalized transfer only" in text
+    assert "does not prove common ownership" in text
+    assert "complete wallet history" in text
+
+
+def test_public_scout_wiring_is_explicit_and_skips_identity_side_call():
+    graph = Path("src/roberta/x1_scout/graph.py").read_text()
+    tool = Path("src/roberta/x1_scout/tool.py").read_text()
+    state = Path("src/roberta/x1_scout/state.py").read_text()
+    client = Path("src/roberta/cmis/client.py").read_text()
+    contracts = Path("src/roberta/cmis/contracts.py").read_text()
+    assert 'if operation == "wallet_relationship_intelligence":' in graph
+    assert "require_wallet_relationship_capability(" in graph
+    assert "cmis_client.wallet_relationship_intelligence(" in graph
+    assert '"wallet_relationship_intelligence" not in operations' in graph
+    assert 'report["x1_wallet_relationship_intelligence"]' in graph
+    assert 'report["x1_wallet_relationship_text"]' in graph
+    assert '"wallet_relationship_intelligence",' in tool
+    assert "wallet_relationship_transaction_signature: str | None = None" in tool
+    assert "wallet relationship asset must equal the exact X1 asset mint" in tool
+    assert "must not turn it into" in tool
+    assert "wallet_relationship_transaction_signature: NotRequired[str]" in state
+    assert "x1_wallet_relationship_intelligence: NotRequired" in state
+    assert "def wallet_relationship_intelligence(" in client
+    assert '"wallet_relationship_intelligence",' in contracts
+''', encoding="utf-8")
+          PY
+
+      - name: Run Wallet Relationship adoption tests
+        run: python -m pytest -q tests/test_wallet_relationship_intelligence_adoption.py
+
+      - name: Run adjacent CMIS/Scout regressions
+        run: |
+          python -m pytest -q \
+            tests/test_cmis_capabilities.py \
+            tests/test_cmis_http_client.py \
+            tests/test_large_trade_discovery_adoption.py \
+            tests/test_human_response_renderer_v1.py
+
+      - name: Commit adoption patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            src/roberta/cmis/wallet_relationship.py \
+            src/roberta/x1_scout/wallet_relationship_intelligence.py \
+            src/roberta/cmis/contracts.py \
+            src/roberta/cmis/capabilities.py \
+            src/roberta/cmis/client.py \
+            src/roberta/cmis/http.py \
+            src/roberta/x1_scout/state.py \
+            src/roberta/x1_scout/graph.py \
+            src/roberta/x1_scout/tool.py \
+            tests/test_wallet_relationship_intelligence_adoption.py
+          git commit -m "feat: adopt CMIS wallet relationship intelligence in X1 Scout"
+          git push origin HEAD:feat/wallet-relationship-adoption-410
