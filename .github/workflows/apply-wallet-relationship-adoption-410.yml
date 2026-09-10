@@ -61,4 +61,4 @@ jobs:
           git commit -m "feat: adopt CMIS wallet relationship intelligence in X1 Scout"
           git push origin HEAD:feat/wallet-relationship-adoption-410
 
-# rerun after embedded-patch indentation fix
+# rerun after preserving CMIS 1.27+ freshness in 1.28 fixture
