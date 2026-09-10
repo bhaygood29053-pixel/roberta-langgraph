@@ -23,6 +23,7 @@ from roberta.cmis.capabilities import (
     require_large_trade_discovery_capability,
     require_wallet_relationship_capability,
     require_regulatory_evidence_capability,
+    require_x1_intelligence_brief_capability,
     require_trade_price_impact_capability,
     require_x1_normalized_asset_identity_capability,
 )
@@ -62,6 +63,10 @@ from roberta.x1_scout.wallet_relationship_intelligence import (
 from roberta.x1_scout.regulatory_intelligence import (
     X1RegulatoryIntelligenceContractError,
     build_x1_regulatory_intelligence,
+)
+from roberta.x1_scout.daily_intelligence_brief_runtime import (
+    X1DailyIntelligenceBriefRuntimeContractError,
+    build_x1_daily_intelligence_brief_runtime,
 )
 from roberta.x1_scout.burn_intelligence import (
     X1BurnIntelligenceContractError,
@@ -663,6 +668,55 @@ def _dispatch_cmis_operation(
             evaluated_at=str(required["evaluated_at"]),
             max_evidence_age_seconds=float(required["max_evidence_age_seconds"]),
         )
+    if operation == "x1_intelligence_brief_inputs":
+        subjects = request.get("daily_brief_subjects")
+        window_start = request.get("daily_brief_window_start")
+        window_end = request.get("daily_brief_window_end")
+        requested_services = request.get("daily_brief_requested_services")
+        if (
+            subjects is None
+            or window_start is None
+            or window_end is None
+            or requested_services is None
+        ):
+            raise ValueError(
+                "x1_intelligence_brief_inputs missing explicit Daily Brief selectors"
+            )
+        if not subjects or str(asset or "").strip() != str(subjects[0]).strip():
+            raise ValueError(
+                "Daily Brief request asset must equal the first exact X1 mint subject"
+            )
+        try:
+            require_x1_intelligence_brief_capability(
+                cmis_client.capabilities(),
+                chain="x1",
+            )
+        except (CMISCapabilityUnavailable, CMISCapabilityContractError) as exc:
+            return {
+                "service": "x1_intelligence_brief_inputs",
+                "chain": "x1",
+                "status": "unavailable",
+                "asset": {},
+                "data": {},
+                "risk": None,
+                "confidence": {},
+                "sources": [],
+                "observed_at": None,
+                "warnings": [{
+                    "code": "cmis_x1_intelligence_brief_contract_unavailable",
+                    "message": str(exc),
+                }],
+                "errors": [],
+                "execution_authorized": False,
+            }
+        return cmis_client.x1_intelligence_brief_inputs(
+            chain="x1",
+            subjects=list(subjects),
+            window_start=str(window_start),
+            window_end=str(window_end),
+            requested_services=list(requested_services),
+        )
+
     if operation == "pre_trade_check":
         action = request.get("action")
         amount_usd = request.get("amount_usd")
@@ -1101,6 +1155,28 @@ def interpret_cmis_result(state: X1ScoutState) -> dict[str, Any]:
                 )
             )
         except X1RegulatoryIntelligenceContractError:
+            pass
+
+    if (
+        primary_result.get("service") == "x1_intelligence_brief_inputs"
+        and primary_result.get("status") in {"ok", "partial"}
+    ):
+        expected_request = {
+            "subjects": list(request.get("daily_brief_subjects") or []),
+            "window_start": request.get("daily_brief_window_start"),
+            "window_end": request.get("daily_brief_window_end"),
+            "requested_services": list(
+                request.get("daily_brief_requested_services") or []
+            ),
+        }
+        try:
+            report["x1_daily_intelligence_brief_runtime"] = (
+                build_x1_daily_intelligence_brief_runtime(
+                    primary_result,
+                    expected_request=expected_request,
+                )
+            )
+        except X1DailyIntelligenceBriefRuntimeContractError:
             pass
 
     if (

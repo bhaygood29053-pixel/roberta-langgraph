@@ -22,6 +22,7 @@ from roberta.cmis.capabilities import (
     require_large_trade_discovery_capability,
     require_wallet_relationship_capability,
     require_regulatory_evidence_capability,
+    require_x1_intelligence_brief_capability,
     require_service_capability,
     RESPONSE_FRESHNESS_CONTRACT_VERSION,
     response_freshness_required,
@@ -78,6 +79,12 @@ from roberta.cmis.regulatory_evidence import (
     CMISRegulatoryEvidenceContractError,
     normalize_regulatory_evidence_request,
     validate_regulatory_evidence_response,
+)
+from roberta.cmis.x1_intelligence_brief import (
+    SERVICE as X1_INTELLIGENCE_BRIEF_SERVICE,
+    CMISX1IntelligenceBriefContractError,
+    normalize_x1_intelligence_brief_request,
+    validate_x1_intelligence_brief_service_response,
 )
 from roberta.cmis.contracts import (
     CMISEnvelope,
@@ -1067,6 +1074,78 @@ class CMISHTTPClient:
                 asset=normalized_asset,
                 status="error",
                 code="invalid_cmis_regulatory_evidence_response",
+                message=str(exc),
+            )
+
+    def x1_intelligence_brief_inputs(
+        self,
+        *,
+        chain: str,
+        subjects: list[str],
+        window_start: str,
+        window_end: str,
+        requested_services: list[str],
+    ) -> CMISEnvelope:
+        normalized_chain = self._chain(chain)
+        try:
+            require_x1_intelligence_brief_capability(
+                self.capabilities(),
+                chain=normalized_chain,
+            )
+            params = normalize_x1_intelligence_brief_request(
+                subjects=subjects,
+                window_start=window_start,
+                window_end=window_end,
+                requested_services=requested_services,
+            )
+        except CMISCapabilityUnavailable as exc:
+            return self._error_envelope(
+                service=X1_INTELLIGENCE_BRIEF_SERVICE,
+                chain=normalized_chain,
+                asset="X1 Daily Intelligence Brief",
+                status="unavailable",
+                code="cmis_x1_intelligence_brief_unavailable",
+                message=str(exc),
+                warning=True,
+            )
+        except (
+            CMISCapabilityContractError,
+            CMISX1IntelligenceBriefContractError,
+        ) as exc:
+            return self._error_envelope(
+                service=X1_INTELLIGENCE_BRIEF_SERVICE,
+                chain=normalized_chain,
+                asset="X1 Daily Intelligence Brief",
+                status="unavailable",
+                code="cmis_x1_intelligence_brief_contract_unavailable",
+                message=f"CMIS X1 Intelligence Brief contract unavailable: {exc}",
+                warning=True,
+            )
+
+        response = self._send_payload(
+            service=X1_INTELLIGENCE_BRIEF_SERVICE,
+            chain=normalized_chain,
+            error_context="X1 Daily Intelligence Brief",
+            payload={
+                "service": X1_INTELLIGENCE_BRIEF_SERVICE,
+                "chain": normalized_chain,
+                "params": params,
+            },
+        )
+        if response.get("status") not in {"ok", "partial"}:
+            return response
+        try:
+            return validate_x1_intelligence_brief_service_response(
+                response,
+                expected_request=params,
+            )
+        except CMISX1IntelligenceBriefContractError as exc:
+            return self._error_envelope(
+                service=X1_INTELLIGENCE_BRIEF_SERVICE,
+                chain=normalized_chain,
+                asset="X1 Daily Intelligence Brief",
+                status="error",
+                code="invalid_cmis_x1_intelligence_brief_response",
                 message=str(exc),
             )
 

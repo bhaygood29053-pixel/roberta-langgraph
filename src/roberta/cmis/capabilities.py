@@ -151,6 +151,37 @@ REGULATORY_EVIDENCE_MIN_CMIS_CONTRACT_VERSION = "1.26.0"
 RESPONSE_FRESHNESS_MIN_CMIS_CONTRACT_VERSION = "1.27.0"
 RESPONSE_FRESHNESS_CONTRACT_VERSION = "cmis_response_freshness/v1"
 REGULATORY_EVIDENCE_CONTRACT_VERSION = "regulatory_evidence/v1"
+X1_INTELLIGENCE_BRIEF_MIN_CMIS_CONTRACT_VERSION = "1.29.0"
+X1_INTELLIGENCE_BRIEF_SERVICE_CONTRACT_VERSION = "x1_intelligence_brief_inputs/v1"
+X1_INTELLIGENCE_BRIEF_REQUEST_CONTRACT_VERSION = "x1_intelligence_brief_request/v1"
+X1_INTELLIGENCE_BRIEF_COMPOSITION_CONTRACT_VERSION = "x1_intelligence_brief_inputs/v1"
+X1_INTELLIGENCE_BRIEF_REQUIRED_REQUIREMENTS = (
+    "exact_x1_mint_subjects",
+    "canonical_utc_bounded_window_max_86400_seconds",
+    "explicit_accepted_component_service_selection",
+    "complete_subject_service_response_matrix",
+    "cmis_internal_component_invocation_only",
+    "caller_fact_evidence_provider_injection_rejected",
+    "service_specific_fact_time",
+    "explicit_partial_unavailable_error_ambiguous_component_state",
+    "deterministic_priority_separate_from_risk",
+    "proof_score_separate_from_risk",
+)
+X1_INTELLIGENCE_BRIEF_REQUIRED_LIMITATIONS = (
+    "exact_requested_scope_is_not_complete_x1_ecosystem_coverage",
+    "empty_bounded_brief_is_not_global_no_activity",
+    "concentration_warning_requires_cmis_owned_policy_and_evidence_selector",
+    "warning_level_is_not_risk_severity",
+    "wallet_address_is_not_real_world_identity",
+    "large_trade_is_not_whale_insider_owner_or_manipulator",
+    "sequence_or_activity_is_not_causality",
+    "first_verified_observation_is_not_token_launch_time",
+    "top_level_freshness_not_inferred_from_item_fact_time",
+    "missing_evidence_is_unknown_not_zero",
+    "no_trade_recommendation",
+    "no_execution_authorization",
+    "x1_only_initial_scope",
+)
 REGULATORY_EVIDENCE_REQUIRED_REQUIREMENTS = (
     "canonical_cmis_owned_regulatory_record",
     "exact_jurisdiction_and_framework_identity",
@@ -362,6 +393,8 @@ class CMISServiceCapability(TypedDict):
     execution_authorized: NotRequired[bool]
     compliance_conclusion_authorized: NotRequired[bool]
     request_contract_version: NotRequired[str]
+    composition_contract_version: NotRequired[str]
+    complete_x1_ecosystem_coverage_verified: NotRequired[bool]
     materialization_contract_version: NotRequired[str]
     observed_relationships_only: NotRequired[bool]
     ownership_inference_authorized: NotRequired[bool]
@@ -1850,6 +1883,89 @@ def require_regulatory_evidence_capability(
     return capability
 
 
+def require_x1_intelligence_brief_capability(
+    manifest: Mapping[str, Any],
+    *,
+    chain: str = "x1",
+) -> CMISServiceCapability:
+    """Require accepted CMIS 1.29 X1 Intelligence Brief promotion."""
+
+    normalized_chain = str(chain or "").strip().lower()
+    if normalized_chain != "x1":
+        raise CMISCapabilityUnavailable(
+            chain=normalized_chain,
+            service="x1_intelligence_brief_inputs",
+            state=None,
+            limitations=["x1_intelligence_brief_inputs_x1_only"],
+        )
+    version = manifest.get("contract_version")
+    if _semver(version) < _semver(X1_INTELLIGENCE_BRIEF_MIN_CMIS_CONTRACT_VERSION):
+        raise CMISCapabilityContractError(
+            "CMIS X1 Intelligence Brief requires contract "
+            f">={X1_INTELLIGENCE_BRIEF_MIN_CMIS_CONTRACT_VERSION}, got {version!r}."
+        )
+
+    capability = require_service_capability(
+        manifest,
+        chain=normalized_chain,
+        service="x1_intelligence_brief_inputs",
+    )
+    if capability.get("state") != "bounded":
+        raise CMISCapabilityContractError(
+            "CMIS x1/x1_intelligence_brief_inputs state must remain bounded."
+        )
+    if capability.get(
+        "service_contract_version"
+    ) != X1_INTELLIGENCE_BRIEF_SERVICE_CONTRACT_VERSION:
+        raise CMISCapabilityContractError(
+            "CMIS x1/x1_intelligence_brief_inputs service contract mismatch."
+        )
+    if capability.get(
+        "request_contract_version"
+    ) != X1_INTELLIGENCE_BRIEF_REQUEST_CONTRACT_VERSION:
+        raise CMISCapabilityContractError(
+            "CMIS x1/x1_intelligence_brief_inputs request contract mismatch."
+        )
+    if capability.get(
+        "composition_contract_version"
+    ) != X1_INTELLIGENCE_BRIEF_COMPOSITION_CONTRACT_VERSION:
+        raise CMISCapabilityContractError(
+            "CMIS x1/x1_intelligence_brief_inputs composition contract mismatch."
+        )
+    for field, expected in (
+        ("read_only", True),
+        ("public_service_promoted", True),
+        ("scout_reliance_promoted", True),
+        ("complete_x1_ecosystem_coverage_verified", False),
+        ("execution_authorized", False),
+    ):
+        if capability.get(field) is not expected:
+            raise CMISCapabilityContractError(
+                f"CMIS x1/x1_intelligence_brief_inputs {field} must be "
+                f"{str(expected).lower()}."
+            )
+
+    missing_requirements = sorted(
+        set(X1_INTELLIGENCE_BRIEF_REQUIRED_REQUIREMENTS)
+        - set(capability["requirements"])
+    )
+    if missing_requirements:
+        raise CMISCapabilityContractError(
+            "CMIS x1/x1_intelligence_brief_inputs is missing accepted requirements: "
+            f"{missing_requirements!r}."
+        )
+    missing_limitations = sorted(
+        set(X1_INTELLIGENCE_BRIEF_REQUIRED_LIMITATIONS)
+        - set(capability["limitations"])
+    )
+    if missing_limitations:
+        raise CMISCapabilityContractError(
+            "CMIS x1/x1_intelligence_brief_inputs is missing accepted limitations: "
+            f"{missing_limitations!r}."
+        )
+    return capability
+
+
 def require_historical_all_available_capability(
     manifest: Mapping[str, Any],
     *,
@@ -1961,12 +2077,19 @@ __all__ = [
     "REGULATORY_EVIDENCE_MIN_CMIS_CONTRACT_VERSION",
     "REGULATORY_EVIDENCE_REQUIRED_LIMITATIONS",
     "REGULATORY_EVIDENCE_REQUIRED_REQUIREMENTS",
+    "X1_INTELLIGENCE_BRIEF_COMPOSITION_CONTRACT_VERSION",
+    "X1_INTELLIGENCE_BRIEF_MIN_CMIS_CONTRACT_VERSION",
+    "X1_INTELLIGENCE_BRIEF_REQUEST_CONTRACT_VERSION",
+    "X1_INTELLIGENCE_BRIEF_REQUIRED_LIMITATIONS",
+    "X1_INTELLIGENCE_BRIEF_REQUIRED_REQUIREMENTS",
+    "X1_INTELLIGENCE_BRIEF_SERVICE_CONTRACT_VERSION",
     "RESPONSE_FRESHNESS_CONTRACT_VERSION",
     "RESPONSE_FRESHNESS_MIN_CMIS_CONTRACT_VERSION",
     "require_bridge_to_xdex_utilization_capability",
     "require_trade_price_impact_capability",
     "require_large_trade_discovery_capability",
     "require_regulatory_evidence_capability",
+    "require_x1_intelligence_brief_capability",
     "response_freshness_required",
     "require_burn_intelligence_capability",
     "require_concentration_warning_capability",

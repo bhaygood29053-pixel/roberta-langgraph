@@ -144,6 +144,17 @@ class CMISClient(Protocol):
     ) -> CMISEnvelope:
         ...
 
+    def x1_intelligence_brief_inputs(
+        self,
+        *,
+        chain: str,
+        subjects: list[str],
+        window_start: str,
+        window_end: str,
+        requested_services: list[str],
+    ) -> CMISEnvelope:
+        ...
+
     def wallet_relationship_intelligence(
         self,
         *,

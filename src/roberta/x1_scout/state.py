@@ -51,6 +51,10 @@ class X1ScoutRequest(TypedDict):
     regulatory_chain_asset_id: NotRequired[str]
     regulatory_evaluated_at: NotRequired[str]
     regulatory_max_evidence_age_seconds: NotRequired[float]
+    daily_brief_subjects: NotRequired[list[str]]
+    daily_brief_window_start: NotRequired[str]
+    daily_brief_window_end: NotRequired[str]
+    daily_brief_requested_services: NotRequired[list[str]]
     compare_asset: NotRequired[str]
 
 
@@ -127,6 +131,7 @@ class X1ScoutReport(TypedDict):
     x1_wallet_relationship_intelligence: NotRequired[dict[str, object]]
     x1_wallet_relationship_text: NotRequired[str]
     x1_regulatory_intelligence: NotRequired[dict[str, object]]
+    x1_daily_intelligence_brief_runtime: NotRequired[dict[str, object]]
     source: dict[str, str]
     sources: list[object]
     warnings: list[object]
