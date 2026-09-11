@@ -60,6 +60,7 @@ _WORKSPACE_CHAT_FOCUS_STYLE = r'''
    for the conversation, and make sidebar text comfortably readable. */
 .workspaceGrid{grid-template-columns:270px minmax(0,1fr)!important}
 .inspector{display:none!important}
+.inspector.entityOpen{display:block!important;position:fixed!important;right:18px!important;top:86px!important;z-index:90!important;width:min(360px,calc(100vw - 36px))!important;height:auto!important;max-height:calc(100vh - 104px)!important;overflow:auto!important;box-shadow:-18px 18px 60px rgba(0,0,0,.45)!important}
 .workspaceBrand b{font-size:15px!important}
 .workspaceBrand span{font-size:10px!important;line-height:1.35}
 .sidebarTitle{font-size:11px!important}
@@ -75,12 +76,16 @@ _WORKSPACE_CHAT_FOCUS_STYLE = r'''
 #send{background:#15803d!important;border-color:#22c55e!important;color:#fff!important;opacity:1!important}
 #send:disabled{background:#b91c1c!important;border-color:#ef4444!important;color:#fff!important;opacity:1!important}
 
-@media(max-width:940px){.workspaceGrid{grid-template-columns:240px minmax(0,1fr)!important}}
+@media(max-width:940px){.workspaceGrid{grid-template-columns:240px minmax(0,1fr)!important}.inspector.entityOpen{right:12px!important;top:78px!important}}
 </style>
 '''
 
 _BUSY_OLD = "$('#send').textContent=v?'Working…':'Send'"
 _BUSY_NEW = "$('#send').textContent=v?'Working':'Send'"
+_OPEN_ENTITY_OLD = "$('#inspector').classList.remove('collapsed');"
+_OPEN_ENTITY_NEW = "var inspector=$('#inspector');inspector.classList.add('entityOpen');inspector.classList.remove('collapsed');$('#inspectorToggle').setAttribute('aria-expanded','true');$('#inspectorToggle').setAttribute('aria-label','Close identifier details');"
+_INSPECTOR_TOGGLE_OLD = "$('#inspectorToggle').onclick=function(){var collapsed=$('#inspector').classList.toggle('collapsed');this.textContent=collapsed?'‹':'›';this.setAttribute('aria-expanded',collapsed?'false':'true');this.setAttribute('aria-label',collapsed?'Expand evidence panel':'Collapse evidence panel')};"
+_INSPECTOR_TOGGLE_NEW = "$('#inspectorToggle').onclick=function(){var inspector=$('#inspector');if(inspector.classList.contains('entityOpen')){inspector.classList.remove('entityOpen');this.textContent='›';this.setAttribute('aria-expanded','false');this.setAttribute('aria-label','Expand evidence panel');return}var collapsed=inspector.classList.toggle('collapsed');this.textContent=collapsed?'‹':'›';this.setAttribute('aria-expanded',collapsed?'false':'true');this.setAttribute('aria-label',collapsed?'Expand evidence panel':'Collapse evidence panel')};"
 
 
 def apply_current_capability_surface(html: str) -> str:
@@ -123,9 +128,14 @@ def apply_current_capability_surface(html: str) -> str:
             raise RuntimeError("ROBERTA website head contract drifted before workspace overlay.")
         updated = updated.replace(head_anchor, _WORKSPACE_CHAT_FOCUS_STYLE + "\n" + head_anchor, 1)
 
-        if _BUSY_OLD not in updated:
-            raise RuntimeError("ROBERTA website busy-state contract drifted before workspace overlay.")
-        updated = updated.replace(_BUSY_OLD, _BUSY_NEW, 1)
+        for old, new, name in (
+            (_BUSY_OLD, _BUSY_NEW, "busy state"),
+            (_OPEN_ENTITY_OLD, _OPEN_ENTITY_NEW, "identifier detail"),
+            (_INSPECTOR_TOGGLE_OLD, _INSPECTOR_TOGGLE_NEW, "identifier detail close"),
+        ):
+            if old not in updated:
+                raise RuntimeError(f"ROBERTA website {name} contract drifted before workspace overlay.")
+            updated = updated.replace(old, new, 1)
 
     return updated
 
