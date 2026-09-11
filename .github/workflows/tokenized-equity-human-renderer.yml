@@ -39,8 +39,8 @@ jobs:
       - name: Prove existing Human Intelligence renderer coexistence
         run: |
           python -m pytest -q \
-            tests/test_human_response_contract.py \
-            tests/test_human_response_renderer.py
+            tests/test_human_response_contract_v1.py \
+            tests/test_human_response_renderer_v1.py
 
       - name: Contract import proof
         run: |
