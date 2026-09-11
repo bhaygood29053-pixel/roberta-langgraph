@@ -143,6 +143,16 @@ grep -q 'X1 Daily Intelligence Brief' <<<"$website" \
   || fail "The live website is missing accepted X1 Daily Intelligence Brief discovery."
 grep -q 'Evidence-complete answers' <<<"$website" \
   || fail "The live website is missing the system-wide Evidence Completion capability surface."
+grep -q 'id="chat-focus-workspace-v1"' <<<"$website" \
+  || fail "The live website is missing the chat-focused workspace layout."
+grep -q '.inspector{display:none!important}' <<<"$website" \
+  || fail "The live website has not removed the right-side inspector from the visible chat layout."
+grep -q "Working':'Send" <<<"$website" \
+  || fail "The live website is missing the accepted Working/Send chat-button state contract."
+grep -q '#send:disabled{background:#b91c1c!important' <<<"$website" \
+  || fail "The live website is missing the red Working-state button treatment."
+grep -q '#send{background:#15803d!important' <<<"$website" \
+  || fail "The live website is missing the green Send-state button treatment."
 printf 'website_runtime=PASS\n'
 
 printf '\n========== FINAL REPOSITORY HEADS ==========\n'
@@ -156,4 +166,4 @@ systemctl --no-pager --full status cmis-gateway.service | sed -n '1,10p'
 systemctl --no-pager --full status roberta-bridge.service | sed -n '1,10p'
 
 printf '\nLOCAL_STACK_SYNC=PASS\n'
-printf 'All five operational repositories match origin/main, CMIS/ROBERTA runtimes were refreshed, and the live website passed current capability-surface checks.\n'
+printf 'All five operational repositories match origin/main, CMIS/ROBERTA runtimes were refreshed, and the live website passed current capability and chat-workspace checks.\n'
