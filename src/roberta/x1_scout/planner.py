@@ -57,6 +57,12 @@ _TOKEN_SERVICE_TERMS = (
     "token service",
     "token-service",
 )
+_TOKEN_OVERVIEW_TERMS = (
+    "what matters right now",
+    "tell me what matters right now",
+    "what matters most",
+    "current read",
+)
 _RISK_TERMS = (
     "risk",
     "risky",
@@ -144,9 +150,10 @@ the user's X1 objective. Return JSON only, with exactly this shape:
 Rules:
 - You may use only: instant_x1_scan, market_report, rank, historical_compare, tokenomics, burn_intelligence, discovery_intelligence, risk_check.
 - Use instant_x1_scan when the objective explicitly asks for an Instant X1 Scan,
-  quick/instant asset scan, or the ROBERTA Token service. The Token service must
-  use the scan as one canonical identity/evidence composition instead of separate
-  tokenomics + market_report + risk_check calls whose evidence states can diverge.
+  quick/instant asset scan, the ROBERTA Token service, or a whole-token overview
+  such as "check this token and tell me what matters right now." These flows must
+  use one canonical identity/evidence composition instead of separate tokenomics
+  + market_report + risk_check calls whose evidence states can diverge.
 - Use the smallest useful plan, with no duplicates and at most three operations.
 - For a full/complete/comprehensive assessment or due-diligence objective, the
   deterministic policy owns the final plan. The canonical full-assessment
@@ -161,8 +168,8 @@ Rules:
 - Historical change/comparison requests should include historical_compare.
 - Risk questions should include risk_check.
 - Supply, mint-authority, freeze-authority, or tokenomics questions should
-  include tokenomics unless the objective is the ROBERTA Token service, which
-  is deterministically collapsed to instant_x1_scan.
+  include tokenomics unless the objective is the ROBERTA Token service or a
+  whole-token overview, which is deterministically collapsed to instant_x1_scan.
 - Burn, burned-token, burn-rate, burn-event, or burn-intelligence questions
   should include burn_intelligence.
 - Discovery, first-seen, first-observed, or observed-history questions should
@@ -196,20 +203,29 @@ def is_instant_x1_scan_objective(objective: object) -> bool:
 
 
 def is_token_service_objective(objective: object) -> bool:
-    """Return whether one canonical scan must own the Token-service evidence state.
+    """Return whether one canonical scan must own the token-overview evidence state.
 
     The public Token flow historically requested tokenomics, market_report, and
     risk_check independently. Because X1 Scout promotes the final investigation
     as the top-level report, a later partial risk result could make already-verified
-    durable token facts appear UNKNOWN. Detect both explicit Token-service wording
-    and the legacy generated three-service objective so the deterministic planner
-    collapses them to the accepted Instant X1 Scan composition.
+    durable token facts appear UNKNOWN. Detect explicit Token-service wording,
+    whole-token overview language, and the legacy generated three-service objective
+    so the deterministic planner collapses them to the accepted Instant X1 Scan
+    composition. Narrow single-fact questions remain on their specialized service.
     """
 
     normalized = _normalize_objective(objective)
     if not normalized:
         return False
     if any(term in normalized for term in _TOKEN_SERVICE_TERMS):
+        return True
+    if any(term in normalized for term in _TOKEN_OVERVIEW_TERMS):
+        return True
+    if re.search(
+        r"\b(?:check|analy[sz]e|review|evaluate)\s+(?:this|the)\s+"
+        r"(?:token|asset|coin)\b(?:\s*(?:[.!?]|$)|\s+(?:and|then)\b)",
+        normalized,
+    ) is not None:
         return True
     return all(
         service in normalized
