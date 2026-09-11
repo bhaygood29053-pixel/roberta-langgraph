@@ -89,6 +89,29 @@ class CMISResponseFreshness(TypedDict):
     reason: NotRequired[str]
 
 
+class CMISEvidenceCompletion(TypedDict):
+    """System-wide evidence-completion metadata attached by protected CMIS."""
+
+    contract_version: str
+    state: Literal["COMPLETE", "PARTIAL", "BLOCKED"]
+    primary_service: str
+    service_status: str
+    evidence_receipt_available: bool
+    proof_score_available: bool
+    receipt_freshness_checked: bool
+    receipt_freshness_verified: bool | None
+    verification_status: str
+    unresolved_fields: list[str]
+    unknown_proof_categories: list[str]
+    missing_or_unavailable_evidence: list[str]
+    supporting_evidence_checked: list[str]
+    risk_separate_from_proof: bool
+    facts_recomputed: bool
+    risk_recomputed: bool
+    status_rewritten: bool
+    execution_authorized: bool
+
+
 class CMISEnvelope(TypedDict):
     """Standard CMIS HTTP response envelope plus evidence-quality metadata."""
 
@@ -112,6 +135,11 @@ class CMISEnvelope(TypedDict):
     # validates these fields after a compatible capability handshake.
     evidence_receipt: NotRequired[dict[str, object]]
     proof_score: NotRequired[dict[str, object]]
+    # Added centrally by protected CMIS after Evidence Receipt / Proof Score
+    # binding. The field is metadata only: it never upgrades missing evidence,
+    # rewrites risk, or authorizes execution. NotRequired retains compatibility
+    # with historical fixtures until the assembled runtime is upgraded.
+    evidence_completion: NotRequired[CMISEvidenceCompletion]
     # Service-specific promotion flags used by newer promoted CMIS products.
     read_only: NotRequired[bool]
     public_service_promoted: NotRequired[bool]
