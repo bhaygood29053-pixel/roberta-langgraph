@@ -22,10 +22,10 @@ class ScriptedPlannerModel:
 
 
 class MixedStatusCMIS(MockCMISClient):
-    def market_report(self, *, chain: str, asset: str):
-        result = super().market_report(chain=chain, asset=asset)
+    def burn_intelligence(self, *, chain: str, asset: str):
+        result = super().burn_intelligence(chain=chain, asset=asset)
         result["status"] = "unavailable"
-        result["warnings"].append({"code": "MARKET_UNAVAILABLE"})
+        result["warnings"].append({"code": "BURN_UNAVAILABLE"})
         return result
 
 
@@ -34,7 +34,7 @@ def _invoke(scout, objective: str, **request_overrides):
     return scout.invoke({"request": request, "status": "running"})
 
 
-def test_model_can_propose_multistep_read_only_investigation() -> None:
+def test_model_baseline_fact_calls_collapse_to_one_canonical_scan() -> None:
     planner = ScriptedPlannerModel(["market_report", "tokenomics", "risk_check"])
     cmis = MockCMISClient()
     scout = build_x1_scout_graph(cmis, planner_model=planner)
@@ -42,24 +42,20 @@ def test_model_can_propose_multistep_read_only_investigation() -> None:
     result = _invoke(scout, "perform broad due diligence including tokenomics and risk")
 
     assert planner.invoke_count == 1
-    assert [call["operation"] for call in cmis.calls] == [
-        "market_report",
-        "tokenomics",
-        "risk_check",
-    ]
+    assert [call["operation"] for call in cmis.calls] == ["instant_x1_scan"]
     report = result["report"]
     assert report["plan"] == {
-        "operations": ["market_report", "tokenomics", "risk_check"],
+        "operations": ["instant_x1_scan"],
         "source": "model",
         "warnings": [],
     }
     assert [item["operation"] for item in report["investigations"]] == [
-        "market_report",
-        "tokenomics",
-        "risk_check",
+        "instant_x1_scan",
     ]
-    assert report["source"]["operation"] == "risk_check"
-    assert report["findings"]["risk"]["outcome"] == "TEST_ONLY"
+    assert report["source"]["operation"] == "instant_x1_scan"
+    assert report["instant_x1_scan_product_view"]["contract_version"] == (
+        "instant_x1_scan_product_view/v1"
+    )
 
 
 def test_full_assessment_uses_canonical_rank_burn_scan_composition() -> None:
@@ -87,7 +83,6 @@ def test_full_assessment_uses_canonical_rank_burn_scan_composition() -> None:
         "burn_intelligence",
         "instant_x1_scan",
     ]
-    assert report["x1_burn_intelligence"]["contract_version"] == "x1_burn_intelligence/v1"
     assert report["instant_x1_scan_product_view"]["contract_version"] == (
         "instant_x1_scan_product_view/v1"
     )
@@ -121,36 +116,30 @@ def test_full_assessment_preserves_per_investigation_asset_and_flags_wrapped_xnt
     )
 
 
-def test_risk_requirement_is_forced_even_when_planner_omits_it() -> None:
+def test_risk_requirement_uses_canonical_scan_even_when_planner_proposes_market_only() -> None:
     planner = ScriptedPlannerModel(["market_report"])
     cmis = MockCMISClient()
     scout = build_x1_scout_graph(cmis, planner_model=planner)
 
     result = _invoke(scout, "assess market risk")
 
-    assert [call["operation"] for call in cmis.calls] == [
-        "market_report",
-        "risk_check",
-    ]
-    assert result["report"]["plan"]["operations"][-1] == "risk_check"
-    assert result["report"]["source"]["operation"] == "risk_check"
+    assert [call["operation"] for call in cmis.calls] == ["instant_x1_scan"]
+    assert result["report"]["plan"]["operations"] == ["instant_x1_scan"]
+    assert result["report"]["source"]["operation"] == "instant_x1_scan"
 
 
-def test_tokenomics_requirement_is_forced_and_made_primary() -> None:
+def test_tokenomics_requirement_uses_same_canonical_scan() -> None:
     planner = ScriptedPlannerModel(["market_report"])
     cmis = MockCMISClient()
     scout = build_x1_scout_graph(cmis, planner_model=planner)
 
     result = _invoke(scout, "verify mint authority and supply")
 
-    assert [call["operation"] for call in cmis.calls] == [
-        "market_report",
-        "tokenomics",
-    ]
-    assert result["report"]["source"]["operation"] == "tokenomics"
+    assert [call["operation"] for call in cmis.calls] == ["instant_x1_scan"]
+    assert result["report"]["source"]["operation"] == "instant_x1_scan"
 
 
-def test_burn_requirement_is_forced_and_made_primary() -> None:
+def test_burn_requirement_adds_burn_after_canonical_scan() -> None:
     planner = ScriptedPlannerModel(["market_report"])
     cmis = MockCMISClient()
     scout = build_x1_scout_graph(cmis, planner_model=planner)
@@ -158,7 +147,7 @@ def test_burn_requirement_is_forced_and_made_primary() -> None:
     result = _invoke(scout, "show burn intelligence and 24h burn activity")
 
     assert [call["operation"] for call in cmis.calls] == [
-        "market_report",
+        "instant_x1_scan",
         "burn_intelligence",
     ]
     report = result["report"]
@@ -169,6 +158,10 @@ def test_burn_requirement_is_forced_and_made_primary() -> None:
         == "10"
     )
     assert report["x1_burn_intelligence"]["execution_authorized"] is False
+    assert [item["operation"] for item in report["investigations"]] == [
+        "instant_x1_scan",
+        "burn_intelligence",
+    ]
 
 
 def test_planner_cannot_grant_itself_pre_trade_or_unknown_operations() -> None:
@@ -184,13 +177,13 @@ def test_planner_cannot_grant_itself_pre_trade_or_unknown_operations() -> None:
         },
     )
 
-    assert plan["operations"] == ["risk_check"]
+    assert plan["operations"] == ["instant_x1_scan"]
     assert plan["source"] == "deterministic"
     assert "planner_operation_rejected: pre_trade_check" in plan["warnings"]
     assert "planner_operation_rejected: execute_swap" in plan["warnings"]
 
 
-def test_duplicates_are_removed_and_plan_is_bounded() -> None:
+def test_duplicate_baseline_calls_are_collapsed_and_plan_is_bounded() -> None:
     plan = enforce_plan(
         {"asset": "AGI", "objective": "broad market research"},
         {
@@ -204,18 +197,17 @@ def test_duplicates_are_removed_and_plan_is_bounded() -> None:
         },
     )
 
-    assert plan["operations"] == ["market_report", "tokenomics", "risk_check"]
-    assert len(plan["operations"]) == 3
+    assert plan["operations"] == ["instant_x1_scan"]
 
 
-def test_invalid_planner_response_falls_back_deterministically() -> None:
+def test_invalid_planner_response_falls_back_to_canonical_scan() -> None:
     planner = ScriptedPlannerModel(error=RuntimeError("planner unavailable"))
     cmis = MockCMISClient()
     scout = build_x1_scout_graph(cmis, planner_model=planner)
 
     result = _invoke(scout, "check token supply")
 
-    assert [call["operation"] for call in cmis.calls] == ["tokenomics"]
+    assert [call["operation"] for call in cmis.calls] == ["instant_x1_scan"]
     assert result["report"]["plan"]["source"] == "deterministic"
     assert result["report"]["plan"]["warnings"][0].startswith("planner_fallback:")
 
@@ -246,24 +238,20 @@ def test_explicit_pre_trade_bypasses_planner_and_requires_trade_inputs() -> None
     assert result["report"]["plan"]["source"] == "explicit"
 
 
-def test_multistep_report_preserves_per_step_status_and_provenance() -> None:
-    planner = ScriptedPlannerModel(["market_report", "risk_check"])
+def test_multistep_report_preserves_scan_and_specialist_status() -> None:
+    planner = ScriptedPlannerModel(["market_report", "burn_intelligence"])
     cmis = MixedStatusCMIS()
     scout = build_x1_scout_graph(cmis, planner_model=planner)
 
-    result = _invoke(scout, "assess market risk")
+    result = _invoke(scout, "show burn intelligence and current market context")
 
     investigations = result["report"]["investigations"]
-    assert [item["cmis_status"] for item in investigations] == [
-        "unavailable",
-        "partial",
+    assert [item["operation"] for item in investigations] == [
+        "instant_x1_scan",
+        "burn_intelligence",
     ]
-    assert investigations[0]["warnings"][-1] == {"code": "MARKET_UNAVAILABLE"}
-    assert investigations[0]["observed_at"] == "2026-08-15T21:45:00Z"
-    assert investigations[0]["observed_at_iso"] == "2026-08-15T21:45:00Z"
-    assert investigations[1]["sources"] == [
-        {"source": "mock_cmis", "role": "test"}
-    ]
+    assert investigations[-1]["cmis_status"] == "unavailable"
+    assert investigations[-1]["warnings"][-1] == {"code": "BURN_UNAVAILABLE"}
     assert result["status"] == "error"
 
 

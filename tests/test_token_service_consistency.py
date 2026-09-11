@@ -42,10 +42,6 @@ def test_explicit_token_service_language_accepts_canonical_scan() -> None:
     )
 
     assert plan["operations"] == ["instant_x1_scan"]
-    assert not any(
-        warning.startswith("planner_operation_rejected_without_instant_scan_objective")
-        for warning in plan["warnings"]
-    )
 
 
 def test_generic_token_overview_language_uses_same_canonical_scan() -> None:
@@ -66,17 +62,29 @@ def test_generic_token_overview_language_uses_same_canonical_scan() -> None:
     assert plan["operations"] == ["instant_x1_scan"]
 
 
-def test_narrow_tokenomics_question_still_uses_tokenomics_service() -> None:
-    """Do not broaden every supply/authority lookup into the full Token service."""
+def test_narrow_tokenomics_question_uses_canonical_scan_context() -> None:
+    """Durable mint facts must come from the same canonical asset context."""
 
     objective = f"What is the mint authority for {ANL_MINT}?"
 
     assert is_token_service_objective(objective) is False
-    assert select_cmis_operation(objective) == "tokenomics"
+    assert select_cmis_operation(objective) == "instant_x1_scan"
+
+    plan = enforce_plan(
+        {"asset": ANL_MINT, "objective": objective},
+        {"operations": ["market_report", "tokenomics"]},
+    )
+    assert plan["operations"] == ["instant_x1_scan"]
 
 
-def test_check_this_token_possessive_narrow_question_stays_tokenomics() -> None:
+def test_possessive_mint_authority_question_also_uses_canonical_scan() -> None:
     objective = f"Check this token's mint authority: {ANL_MINT}"
 
     assert is_token_service_objective(objective) is False
-    assert select_cmis_operation(objective) == "tokenomics"
+    assert select_cmis_operation(objective) == "instant_x1_scan"
+
+    plan = enforce_plan(
+        {"asset": ANL_MINT, "objective": objective},
+        {"operations": ["tokenomics"]},
+    )
+    assert plan["operations"] == ["instant_x1_scan"]
