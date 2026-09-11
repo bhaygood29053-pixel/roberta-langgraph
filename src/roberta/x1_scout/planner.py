@@ -53,6 +53,10 @@ _INSTANT_SCAN_TERMS = (
     "scan the asset",
     "scan the token",
 )
+_TOKEN_SERVICE_TERMS = (
+    "token service",
+    "token-service",
+)
 _RISK_TERMS = (
     "risk",
     "risky",
@@ -139,7 +143,10 @@ the user's X1 objective. Return JSON only, with exactly this shape:
 
 Rules:
 - You may use only: instant_x1_scan, market_report, rank, historical_compare, tokenomics, burn_intelligence, discovery_intelligence, risk_check.
-- Use instant_x1_scan only when the objective explicitly asks for an Instant X1 Scan or quick/instant asset scan.
+- Use instant_x1_scan when the objective explicitly asks for an Instant X1 Scan,
+  quick/instant asset scan, or the ROBERTA Token service. The Token service must
+  use the scan as one canonical identity/evidence composition instead of separate
+  tokenomics + market_report + risk_check calls whose evidence states can diverge.
 - Use the smallest useful plan, with no duplicates and at most three operations.
 - For a full/complete/comprehensive assessment or due-diligence objective, the
   deterministic policy owns the final plan. The canonical full-assessment
@@ -154,7 +161,8 @@ Rules:
 - Historical change/comparison requests should include historical_compare.
 - Risk questions should include risk_check.
 - Supply, mint-authority, freeze-authority, or tokenomics questions should
-  include tokenomics.
+  include tokenomics unless the objective is the ROBERTA Token service, which
+  is deterministically collapsed to instant_x1_scan.
 - Burn, burned-token, burn-rate, burn-event, or burn-intelligence questions
   should include burn_intelligence.
 - Discovery, first-seen, first-observed, or observed-history questions should
@@ -185,6 +193,28 @@ def is_instant_x1_scan_objective(objective: object) -> bool:
         r"\s+\S+",
         normalized,
     ) is not None
+
+
+def is_token_service_objective(objective: object) -> bool:
+    """Return whether one canonical scan must own the Token-service evidence state.
+
+    The public Token flow historically requested tokenomics, market_report, and
+    risk_check independently. Because X1 Scout promotes the final investigation
+    as the top-level report, a later partial risk result could make already-verified
+    durable token facts appear UNKNOWN. Detect both explicit Token-service wording
+    and the legacy generated three-service objective so the deterministic planner
+    collapses them to the accepted Instant X1 Scan composition.
+    """
+
+    normalized = _normalize_objective(objective)
+    if not normalized:
+        return False
+    if any(term in normalized for term in _TOKEN_SERVICE_TERMS):
+        return True
+    return all(
+        service in normalized
+        for service in ("tokenomics", "market_report", "risk_check")
+    )
 
 
 def is_burn_objective(objective: object) -> bool:
@@ -305,7 +335,7 @@ def rank_limit_from_objective(objective: object, *, default: int = 10) -> int:
 def max_plan_operations_for_objective(objective: object) -> int:
     """Return the deterministic plan ceiling for the requested evidence scope."""
 
-    if is_instant_x1_scan_objective(objective):
+    if is_instant_x1_scan_objective(objective) or is_token_service_objective(objective):
         return 1
     return (
         FULL_ASSESSMENT_MAX_PLAN_OPERATIONS
@@ -331,6 +361,8 @@ def required_operations(objective: object) -> list[CMISOperation]:
         # Keeping the scan last makes the richest accepted product the primary
         # report while avoiding duplicate market/risk collection paths.
         return ["rank", "burn_intelligence", "instant_x1_scan"]
+    if is_token_service_objective(normalized):
+        return ["instant_x1_scan"]
     if is_instant_x1_scan_objective(normalized):
         return ["instant_x1_scan"]
     if is_discovery_objective(normalized):
@@ -356,6 +388,8 @@ def required_operations(objective: object) -> list[CMISOperation]:
 def select_cmis_operation(objective: object) -> CMISOperation:
     """Return the deterministic single-operation fallback for an objective."""
 
+    if is_token_service_objective(objective):
+        return "instant_x1_scan"
     if is_instant_x1_scan_objective(objective):
         return "instant_x1_scan"
     if is_rank_objective(objective):
@@ -509,7 +543,11 @@ def enforce_plan(
             if operation:
                 warnings.append(f"planner_operation_rejected: {operation}")
             continue
-        if operation == "instant_x1_scan" and not is_instant_x1_scan_objective(objective):
+        if (
+            operation == "instant_x1_scan"
+            and not is_instant_x1_scan_objective(objective)
+            and not is_token_service_objective(objective)
+        ):
             warnings.append(
                 "planner_operation_rejected_without_instant_scan_objective: instant_x1_scan"
             )
