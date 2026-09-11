@@ -30,3 +30,15 @@ def test_consistency_overlay_runs_after_intelligence_card_surface() -> None:
     intelligence_index = source.index("apply_intelligence_card_surface(")
     consistency_index = source.index("apply_answer_consistency_surface(")
     assert intelligence_index < consistency_index
+
+
+def test_consistency_overlay_stays_inside_existing_script_block() -> None:
+    html = web_ui.ROBERTA_WEB_UI_HTML
+    normalizer_index = html.index("function normalizeRobertaHumanAnswer(value){")
+    actions_index = html.index("function answerActions(chatId){")
+    script_start = html.rfind("<script", 0, normalizer_index)
+    script_end = html.find("</script>", normalizer_index)
+
+    assert script_start >= 0
+    assert script_start < normalizer_index < actions_index < script_end
+    assert '<script id="roberta-answer-consistency-v1">' not in html
