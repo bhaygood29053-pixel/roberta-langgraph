@@ -29,6 +29,7 @@ CMISService: TypeAlias = Literal[
     "regulatory_evidence",
     "instant_x1_scan",
     "x1_intelligence_brief_inputs",
+    "tokenized_equity_intelligence",
 ]
 CMISOperation: TypeAlias = Literal[
     "asset_lookup",
@@ -50,6 +51,7 @@ CMISOperation: TypeAlias = Literal[
     "wallet_relationship_intelligence",
     "instant_x1_scan",
     "x1_intelligence_brief_inputs",
+    "tokenized_equity_intelligence",
 ]
 CMISStatus: TypeAlias = Literal[
     "ok",
@@ -110,7 +112,7 @@ class CMISEnvelope(TypedDict):
     # validates these fields after a compatible capability handshake.
     evidence_receipt: NotRequired[dict[str, object]]
     proof_score: NotRequired[dict[str, object]]
-    # Service-specific promotion flags used by CMIS 1.29 X1 Intelligence Brief.
+    # Service-specific promotion flags used by newer promoted CMIS products.
     read_only: NotRequired[bool]
     public_service_promoted: NotRequired[bool]
     scout_reliance_promoted: NotRequired[bool]
@@ -139,3 +141,4 @@ CMISWalletRelationshipIntelligence: TypeAlias = CMISEnvelope
 CMISRegulatoryEvidence: TypeAlias = CMISEnvelope
 CMISInstantX1Scan: TypeAlias = CMISEnvelope
 CMISX1IntelligenceBrief: TypeAlias = CMISEnvelope
+CMISTokenizedEquityIntelligence: TypeAlias = CMISEnvelope

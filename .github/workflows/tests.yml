@@ -181,3 +181,6 @@ jobs:
 
       - name: Run staged X1 Daily Intelligence Brief live-adoption tests
         run: python -m pytest -q tests/test_x1_daily_intelligence_brief_live_adoption.py
+
+      - name: Run typed X1 Tokenized Equity projection tests
+        run: python -m pytest -q tests/test_x1_tokenized_equity_projection.py
