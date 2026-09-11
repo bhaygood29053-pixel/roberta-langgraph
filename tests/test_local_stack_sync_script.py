@@ -20,8 +20,16 @@ def test_sync_script_refreshes_private_and_assembled_runtimes():
     assert "cmis-private-core/v1" in SCRIPT
     assert "scripts/build_roberta_runtime.sh" in SCRIPT
     assert "ROBERTA_PRIVATE_CORE_PATH" in SCRIPT
-    assert "sudo systemctl restart cmis-gateway.service" in SCRIPT
-    assert "sudo systemctl restart roberta-bridge.service" in SCRIPT
+    assert "bash scripts/install_cmis_systemd.sh" in SCRIPT
+    assert "bash scripts/install_roberta_bridge_systemd.sh" in SCRIPT
+    assert "cmis_assembled_runtime=PASS" in SCRIPT
+    assert "roberta_bridge_assembled_runtime=PASS" in SCRIPT
+
+
+def test_sync_script_validates_cmis_evidence_completion_timeout_headroom():
+    assert "systemctl show roberta-bridge.service -p Environment --value" in SCRIPT
+    assert "CMIS_TIMEOUT_SECONDS=90" in SCRIPT
+    assert "roberta_cmis_timeout_seconds=90" in SCRIPT
 
 
 def test_sync_script_verifies_health_and_live_website():
