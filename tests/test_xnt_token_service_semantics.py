@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+import roberta.chat_ui as chat_ui
+from roberta.x1_native_asset_semantics import (
+    NATIVE_XNT_OUTPUT_MARKER,
+    NATIVE_XNT_SCAN_CONTRACT,
+)
 from roberta.x1_scout.instant_scan_product_ux import (
     build_instant_x1_scan_product_view,
     render_instant_x1_scan_product_text,
@@ -61,9 +66,19 @@ def _report() -> dict:
                     },
                 },
                 "tokenomics": {
-                    "status": "ok",
+                    "status": "partial",
+                    "scope": "native_network",
+                    "asset_type": "native",
                     "current_total_supply": 1_070_000_000,
                     "supply_verified": True,
+                    "circulating_supply": 14_060_000,
+                    "circulating_supply_verified": True,
+                    "mint_authority": None,
+                    "mint_authority_verified": True,
+                    "mint_authority_state": "not_applicable",
+                    "freeze_authority": None,
+                    "freeze_authority_verified": True,
+                    "freeze_authority_state": "not_applicable",
                 },
                 "holder_concentration": {
                     "holders": None,
@@ -98,8 +113,10 @@ def _report() -> dict:
                     "recommendation": "WARN",
                     "score": None,
                     "score_verified": False,
-                    "reasons": [],
-                    "flags": [],
+                    "reasons": [
+                        "Verified native-network issuance/burn activity was not supplied."
+                    ],
+                    "flags": ["token_activity_unavailable"],
                 },
                 "evidence": {
                     "proof_score_separate_from_risk": True,
@@ -145,3 +162,79 @@ def test_token_text_surfaces_bounded_freshness_completion_result():
     assert "Freshness completion attempt: bounded wait performed before answer" in text
     assert "runtime_freshness_producer_returned_failures" in text
     assert "rolling_activity_production_failed" in text
+
+
+def test_native_xnt_is_an_embedded_native_branch_of_instant_scan():
+    view = build_instant_x1_scan_product_view(_report())
+    assert view is not None
+
+    assert view["product"] == "instant_x1_scan"
+    assert view["identity"]["canonical_id"] == "x1:native:XNT"
+    assert view["identity"]["asset_class"] == "native"
+    assert view["identity"]["mint"] is None
+    assert view["identity"]["mint_applicable"] is False
+    assert view["identity"]["mint_state"] == "not_applicable"
+
+    native = view["native_asset_scan"]
+    assert native["contract_version"] == NATIVE_XNT_SCAN_CONTRACT
+    assert native["embedded_in"] == "instant_x1_scan"
+    assert native["token_mint_address_applicable"] is False
+    assert native["token_contract_authorities_applicable"] is False
+    assert native["token_holder_count_applicable"] is False
+    assert native["wrapped_market_representation_is_native_identity"] is False
+    assert native["execution_authorized"] is False
+
+
+def test_native_xnt_authorities_are_not_applicable_not_missing_or_positive():
+    view = build_instant_x1_scan_product_view(_report())
+    assert view is not None
+
+    economics = view["tokenomics"]
+    assert economics["section_label"] == "Native Economics"
+    assert economics["scope"] == "native_network"
+    assert economics["asset_type"] == "native"
+    assert economics["mint_authority"] == {
+        "value": None,
+        "verified": True,
+        "applicable": False,
+        "state": "not_applicable",
+    }
+    assert economics["freeze_authority"] == {
+        "value": None,
+        "verified": True,
+        "applicable": False,
+        "state": "not_applicable",
+    }
+
+    text = render_instant_x1_scan_product_text(view)
+    assert "Native Economics" in text
+    assert "Token mint address: NOT APPLICABLE" in text
+    assert "Mint Authority: NOT APPLICABLE" in text
+    assert "Freeze Authority: NOT APPLICABLE" in text
+    assert "Wrapped XNT market representations are evidence routes" in text
+    assert "Mint Authority: unknown" not in text
+    assert "Mint Authority: None" not in text
+    assert "Freeze Authority: unknown" not in text
+    assert "Freeze Authority: None" not in text
+
+
+def test_native_xnt_warn_preserves_real_native_evidence_gap():
+    view = build_instant_x1_scan_product_view(_report())
+    assert view is not None
+
+    risk = view["risk"]
+    assert risk["recommendation"] == "WARN"
+    assert risk["native_component_label"] == "Native Economics"
+    assert risk["tokenomics_component_semantics"] == "native_economics"
+    assert "token_activity_unavailable" in risk["flags"]
+    assert any("native-network issuance/burn activity" in reason for reason in risk["reasons"])
+
+
+def test_human_contract_never_requests_a_native_xnt_token_mint():
+    policy = " ".join(chat_ui.HUMAN_ROBERTA_PRESENTATION_POLICY.split())
+    policy_lower = policy.lower()
+    assert NATIVE_XNT_OUTPUT_MARKER in policy
+    assert "token mint address is NOT APPLICABLE" in policy
+    assert "Never ask the user for an exact X1 mint for native XNT" in policy
+    assert "wrapped-xnt mint" in policy_lower
+    assert "not the identity of native xnt" in policy_lower
