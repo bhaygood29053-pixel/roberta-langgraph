@@ -2,16 +2,18 @@
 
 # Apply public product semantics before the protected graph is imported. This
 # guarantees every later X1 Scout import sees the same native-XNT interpretation
-# instead of binding the generic token renderer first.
+# and currentness vocabulary instead of binding generic renderers first.
 from roberta import chat_ui as _chat_ui
 from roberta.x1_scout import instant_scan_product_ux as _instant_scan_product_ux
 from roberta.x1_native_asset_semantics import (
     apply_native_xnt_output_contract,
     apply_native_xnt_product_semantics,
 )
+from roberta.freshness_language_policy import apply_freshness_language_contract
 
 apply_native_xnt_product_semantics(_instant_scan_product_ux)
 apply_native_xnt_output_contract(_chat_ui)
+apply_freshness_language_contract(_chat_ui)
 
 from roberta.private_core import build_graph
 from roberta.state import RobertaState
@@ -46,5 +48,8 @@ _web_ui.ROBERTA_WEB_UI_HTML = apply_polarity_color_surface(
 # explicit sign so the UI can render positive changes green and negative red.
 apply_clean_human_output_contract(_chat_ui)
 apply_polarity_output_contract(_chat_ui)
+# Re-assert freshness wording after presentation overlays in case an overlay
+# reconstructs the single-asset style string.
+apply_freshness_language_contract(_chat_ui)
 
 __all__ = ["RobertaState", "build_graph"]
