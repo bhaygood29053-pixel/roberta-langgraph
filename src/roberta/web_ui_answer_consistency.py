@@ -16,8 +16,12 @@ _RENDER_HOOK = (
 )
 _ANCHOR = "function answerActions(chatId){"
 
+# This fragment is inserted *inside* the website's existing main <script> block.
+# It must therefore remain bare JavaScript. Wrapping it in another <script>
+# element would cause the nested </script> to terminate the main script and the
+# remaining JavaScript would be rendered as visible page text by the browser.
 _SCRIPT = r'''
-<script id="roberta-answer-consistency-v1">
+/* id="roberta-answer-consistency-v1" */
 function normalizeRobertaHumanAnswer(value){
   var text=String(value==null?'':value);
   var freshnessNotVerified=(
@@ -38,7 +42,6 @@ var _robertaBaseFormatIntelligenceCard=formatIntelligenceCard;
 formatIntelligenceCard=function(text){
   return _robertaBaseFormatIntelligenceCard(normalizeRobertaHumanAnswer(text));
 };
-</script>
 '''
 
 
