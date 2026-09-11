@@ -1,8 +1,10 @@
 """Human-facing overlay for the newest accepted ROBERTA capability surface.
 
-The large conversation-first UI intentionally remains stable.  This module adds a
+The large conversation-first UI intentionally remains stable. This module adds a
 small current-capabilities surface at package load so accepted backend progress
 can be reflected without turning the website into an internal service catalog.
+It also carries small human-facing workspace refinements that should survive
+future capability updates without rewriting the large base UI.
 No CMIS/provider names or raw contract identifiers are exposed to website users.
 """
 
@@ -10,6 +12,7 @@ from __future__ import annotations
 
 WEBSITE_CAPABILITY_SURFACE = "roberta-website-capabilities/2026-09-11"
 WEBSITE_CAPABILITY_MARKER = 'data-capability-surface="roberta-website-capabilities/2026-09-11"'
+WORKSPACE_CHAT_FOCUS_MARKER = 'id="chat-focus-workspace-v1"'
 
 _HERO_OLD = (
     '<p class="heroLead">She will investigate it, explain what she found, and tell you what she thinks. '
@@ -51,38 +54,78 @@ _EXTRA_SIDE_SERVICES = (
     '        <button class="sideService" data-fill="Did these two wallets directly interact? Show the verified transactions connecting them."><b>Wallet Relationships</b><span>Observed direct interactions and transfers</span></button>\n'
 )
 
+_WORKSPACE_CHAT_FOCUS_STYLE = r'''
+<style id="chat-focus-workspace-v1">
+/* Chat-first workspace: preserve the left navigation, reclaim the evidence column
+   for the conversation, and make sidebar text comfortably readable. */
+.workspaceGrid{grid-template-columns:270px minmax(0,1fr)!important}
+.inspector{display:none!important}
+.workspaceBrand b{font-size:15px!important}
+.workspaceBrand span{font-size:10px!important;line-height:1.35}
+.sidebarTitle{font-size:11px!important}
+.historyItem b,.savedItem b{font-size:12px!important}
+.historyItem span,.savedItem span{font-size:10px!important;line-height:1.35}
+.recheckBtn{font-size:10px!important}
+.sideLink{font-size:11px!important}
+.servicesToggle{font-size:12px!important}
+.sideService b{font-size:12px!important}
+.sideService span{font-size:10px!important;line-height:1.4}
+
+/* The main composer button communicates request state without changing request logic. */
+#send{background:#15803d!important;border-color:#22c55e!important;color:#fff!important;opacity:1!important}
+#send:disabled{background:#b91c1c!important;border-color:#ef4444!important;color:#fff!important;opacity:1!important}
+
+@media(max-width:940px){.workspaceGrid{grid-template-columns:240px minmax(0,1fr)!important}}
+</style>
+'''
+
+_BUSY_OLD = "$('#send').textContent=v?'Working…':'Send'"
+_BUSY_NEW = "$('#send').textContent=v?'Working':'Send'"
+
 
 def apply_current_capability_surface(html: str) -> str:
     """Return the conversation-first UI with the latest accepted capability surface."""
 
-    if WEBSITE_CAPABILITY_MARKER in html:
+    if WEBSITE_CAPABILITY_MARKER in html and WORKSPACE_CHAT_FOCUS_MARKER in html:
         return html
 
     updated = str(html)
-    if _HERO_OLD not in updated:
-        raise RuntimeError("ROBERTA website hero contract drifted before capability overlay.")
-    updated = updated.replace(_HERO_OLD, _HERO_NEW, 1)
 
-    hero_anchor = (
-        '          <button class="heroExample" data-ask-now="Show me the safest liquid tokens on X1.">'
-        'Show me the safest liquid tokens on X1.</button>\n'
-    )
-    if hero_anchor not in updated:
-        raise RuntimeError("ROBERTA website hero examples drifted before capability overlay.")
-    updated = updated.replace(hero_anchor, hero_anchor + _EXTRA_HERO_EXAMPLES, 1)
+    if WEBSITE_CAPABILITY_MARKER not in updated:
+        if _HERO_OLD not in updated:
+            raise RuntimeError("ROBERTA website hero contract drifted before capability overlay.")
+        updated = updated.replace(_HERO_OLD, _HERO_NEW, 1)
 
-    trust_anchor = '    <section id="trust" class="section">\n'
-    if trust_anchor not in updated:
-        raise RuntimeError("ROBERTA website trust section drifted before capability overlay.")
-    updated = updated.replace(trust_anchor, _CURRENT_CAPABILITIES + "\n" + trust_anchor, 1)
+        hero_anchor = (
+            '          <button class="heroExample" data-ask-now="Show me the safest liquid tokens on X1.">'
+            'Show me the safest liquid tokens on X1.</button>\n'
+        )
+        if hero_anchor not in updated:
+            raise RuntimeError("ROBERTA website hero examples drifted before capability overlay.")
+        updated = updated.replace(hero_anchor, hero_anchor + _EXTRA_HERO_EXAMPLES, 1)
 
-    side_anchor = (
-        '        <button class="sideService" data-fill="Trace this transaction and explain where the funds or tokens moved.">'
-        '<b>Investigations</b><span>Transactions, burns, bridges, flows</span></button>\n'
-    )
-    if side_anchor not in updated:
-        raise RuntimeError("ROBERTA website service drawer drifted before capability overlay.")
-    updated = updated.replace(side_anchor, side_anchor + _EXTRA_SIDE_SERVICES, 1)
+        trust_anchor = '    <section id="trust" class="section">\n'
+        if trust_anchor not in updated:
+            raise RuntimeError("ROBERTA website trust section drifted before capability overlay.")
+        updated = updated.replace(trust_anchor, _CURRENT_CAPABILITIES + "\n" + trust_anchor, 1)
+
+        side_anchor = (
+            '        <button class="sideService" data-fill="Trace this transaction and explain where the funds or tokens moved.">'
+            '<b>Investigations</b><span>Transactions, burns, bridges, flows</span></button>\n'
+        )
+        if side_anchor not in updated:
+            raise RuntimeError("ROBERTA website service drawer drifted before capability overlay.")
+        updated = updated.replace(side_anchor, side_anchor + _EXTRA_SIDE_SERVICES, 1)
+
+    if WORKSPACE_CHAT_FOCUS_MARKER not in updated:
+        head_anchor = "</head>"
+        if head_anchor not in updated:
+            raise RuntimeError("ROBERTA website head contract drifted before workspace overlay.")
+        updated = updated.replace(head_anchor, _WORKSPACE_CHAT_FOCUS_STYLE + "\n" + head_anchor, 1)
+
+        if _BUSY_OLD not in updated:
+            raise RuntimeError("ROBERTA website busy-state contract drifted before workspace overlay.")
+        updated = updated.replace(_BUSY_OLD, _BUSY_NEW, 1)
 
     return updated
 
@@ -90,5 +133,6 @@ def apply_current_capability_surface(html: str) -> str:
 __all__ = [
     "WEBSITE_CAPABILITY_MARKER",
     "WEBSITE_CAPABILITY_SURFACE",
+    "WORKSPACE_CHAT_FOCUS_MARKER",
     "apply_current_capability_surface",
 ]
