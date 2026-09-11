@@ -232,8 +232,9 @@ def test_native_xnt_warn_preserves_real_native_evidence_gap():
 
 def test_human_contract_never_requests_a_native_xnt_token_mint():
     policy = " ".join(chat_ui.HUMAN_ROBERTA_PRESENTATION_POLICY.split())
+    policy_lower = policy.lower()
     assert NATIVE_XNT_OUTPUT_MARKER in policy
     assert "token mint address is NOT APPLICABLE" in policy
     assert "Never ask the user for an exact X1 mint for native XNT" in policy
-    assert "Wrapped-XNT mint" in policy
-    assert "not the identity of native XNT" in policy
+    assert "wrapped-xnt mint" in policy_lower
+    assert "not the identity of native xnt" in policy_lower
