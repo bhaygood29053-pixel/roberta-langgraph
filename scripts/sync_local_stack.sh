@@ -133,6 +133,16 @@ grep -q 'View evidence &amp; details' <<<"$website" \
   || fail "The live website does not contain the accepted #381 progressive-evidence UI."
 grep -q 'ROBERTA judgment' <<<"$website" \
   || fail "The live website does not contain the accepted Human Intelligence judgment UI."
+grep -q 'data-capability-surface="roberta-website-capabilities/2026-09-11"' <<<"$website" \
+  || fail "The live website is not serving the current 2026-09-11 capability surface."
+grep -q 'Wallet relationships' <<<"$website" \
+  || fail "The live website is missing accepted Wallet Relationship capability discovery."
+grep -q 'Tokenized equities &amp; RWAs' <<<"$website" \
+  || fail "The live website is missing accepted Tokenized Equity / RWA capability discovery."
+grep -q 'X1 Daily Intelligence Brief' <<<"$website" \
+  || fail "The live website is missing accepted X1 Daily Intelligence Brief discovery."
+grep -q 'Evidence-complete answers' <<<"$website" \
+  || fail "The live website is missing the system-wide Evidence Completion capability surface."
 printf 'website_runtime=PASS\n'
 
 printf '\n========== FINAL REPOSITORY HEADS ==========\n'
@@ -146,4 +156,4 @@ systemctl --no-pager --full status cmis-gateway.service | sed -n '1,10p'
 systemctl --no-pager --full status roberta-bridge.service | sed -n '1,10p'
 
 printf '\nLOCAL_STACK_SYNC=PASS\n'
-printf 'All five operational repositories match origin/main, CMIS/ROBERTA runtimes were refreshed, and the live website passed the #381 UI check.\n'
+printf 'All five operational repositories match origin/main, CMIS/ROBERTA runtimes were refreshed, and the live website passed current capability-surface checks.\n'
