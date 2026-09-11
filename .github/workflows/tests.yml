@@ -141,7 +141,7 @@ jobs:
             tests/test_cmis_127_freshness_public.py
 
       - name: Run ROBERTA web UI contract tests
-        run: python -m pytest -q tests/test_web_ui.py
+        run: python -m pytest -q tests/test_web_ui.py tests/test_web_ui_current_capabilities.py
 
       - name: Run Human Response Contract v1 tests
         run: python -m pytest -q tests/test_human_response_contract_v1.py
