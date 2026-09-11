@@ -17,6 +17,7 @@ ENV_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/roberta"
 ENV_FILE="$ENV_DIR/roberta.env"
 UNIT_FILE="/etc/systemd/system/roberta-bridge.service"
 HEALTH_URL="http://127.0.0.1:8766/healthz"
+CMIS_TIMEOUT_SECONDS=90
 
 [[ -x "$PYTHON" ]] || fail "Assembled Roberta runtime Python was not found at $PYTHON. Run: bash scripts/build_roberta_runtime.sh"
 
@@ -98,6 +99,7 @@ Type=simple
 User=$RUN_USER
 WorkingDirectory=$REPO_ROOT
 EnvironmentFile=$ENV_FILE
+Environment=CMIS_TIMEOUT_SECONDS=$CMIS_TIMEOUT_SECONDS
 ExecStart=$PYTHON -m roberta.bridge_http --host 127.0.0.1 --port 8766
 Restart=always
 RestartSec=3
@@ -143,3 +145,4 @@ else
 fi
 
 printf '\nRoberta bridge is enabled to start automatically and restart after failures.\n'
+printf 'CMIS transport timeout: %ss (bounded evidence-completion headroom).\n' "$CMIS_TIMEOUT_SECONDS"
