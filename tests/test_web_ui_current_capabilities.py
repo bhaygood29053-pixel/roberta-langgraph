@@ -35,6 +35,7 @@ def test_chat_workspace_prioritizes_readability_and_conversation_width():
     assert WORKSPACE_CHAT_FOCUS_MARKER in html
     assert ".workspaceGrid{grid-template-columns:270px minmax(0,1fr)!important}" in html
     assert ".inspector{display:none!important}" in html
+    assert ".inspector.entityOpen{display:block!important" in html
     assert ".sidebarTitle{font-size:11px!important}" in html
     assert ".sideService b{font-size:12px!important}" in html
     assert ".sideService span{font-size:10px!important;line-height:1.4}" in html
@@ -45,6 +46,12 @@ def test_chat_workspace_prioritizes_readability_and_conversation_width():
     assert "#send:disabled{background:#b91c1c!important" in html
     assert "$('#send').textContent=v?'Working':'Send'" in html
     assert "$('#send').disabled=v" in html
+
+    # Removing the permanent right column must not discard identifier drill-down.
+    # A clicked on-chain identifier temporarily opens the old detail surface as an overlay.
+    assert "inspector.classList.add('entityOpen')" in html
+    assert "inspector.classList.remove('entityOpen')" in html
+    assert "Close identifier details" in html
 
 
 def test_live_web_bytes_include_current_capability_surface():
