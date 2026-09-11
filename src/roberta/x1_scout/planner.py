@@ -42,6 +42,20 @@ MAX_PLAN_OPERATIONS = 3
 FULL_ASSESSMENT_MAX_PLAN_OPERATIONS = 3
 MAX_RANK_LIMIT = 50
 
+# These facts are already composed by Instant X1 Scan. Running them again through
+# independent CMIS services creates competing evidence envelopes for the same
+# subject and was the source of the Token-service consistency defect.
+_SCAN_OWNED_OPERATIONS: frozenset[CMISOperation] = frozenset(
+    {"market_report", "tokenomics", "risk_check"}
+)
+
+# These services add evidence the scan does not fully replace. For ordinary
+# single-asset objectives they run after one canonical scan so they enrich a
+# stable asset context instead of independently redefining it.
+_CANONICAL_CONTEXT_ENRICHMENTS: frozenset[CMISOperation] = frozenset(
+    {"historical_compare", "burn_intelligence", "discovery_intelligence"}
+)
+
 _INSTANT_SCAN_TERMS = (
     "instant x1 scan",
     "instant scan",
@@ -149,27 +163,30 @@ the user's X1 objective. Return JSON only, with exactly this shape:
 
 Rules:
 - You may use only: instant_x1_scan, market_report, rank, historical_compare, tokenomics, burn_intelligence, discovery_intelligence, risk_check.
+- Instant X1 Scan is the canonical context layer for ordinary single-asset X1
+  analysis. It already owns current market, tokenomics, baseline deterministic
+  risk, freshness, identity, evidence metadata, and bounded single-asset history.
+- Do not request separate market_report, tokenomics, or risk_check when one
+  instant_x1_scan can supply those same dimensions. Deterministic policy will
+  collapse duplicate proposals to one scan even if you propose them.
+- Historical Compare, Burn Intelligence, and Discovery Intelligence remain
+  specialist enrichments. For a single-asset objective, deterministic policy
+  may prepend one Instant X1 Scan before those services. A true two-asset
+  comparison remains a specialist comparison and is not widened by this rule.
 - Use instant_x1_scan when the objective explicitly asks for an Instant X1 Scan,
   quick/instant asset scan, the ROBERTA Token service, or a whole-token overview
-  such as "check this token and tell me what matters right now." These flows must
-  use one canonical identity/evidence composition instead of separate tokenomics
-  + market_report + risk_check calls whose evidence states can diverge.
+  such as "check this token and tell me what matters right now."
 - Use the smallest useful plan, with no duplicates and at most three operations.
 - For a full/complete/comprehensive assessment or due-diligence objective, the
   deterministic policy owns the final plan. The canonical full-assessment
   composition is rank + burn_intelligence + instant_x1_scan. Instant X1 Scan
-  already carries current market, tokenomics, all-available history,
-  freshness-aware deterministic risk, and evidence metadata.
+  remains the top-level asset authority for that product.
 - Never propose pre_trade_check, verification_evidence, transaction preparation,
   signing, broadcasting, wallet permissions, or any value-moving action.
 - Do not invent market facts. You are selecting investigations, not answering
   the market question.
 - Ranking/top/gainer/loser/trending requests should include rank.
-- Historical change/comparison requests should include historical_compare.
-- Risk questions should include risk_check.
-- Supply, mint-authority, freeze-authority, or tokenomics questions should
-  include tokenomics unless the objective is the ROBERTA Token service or a
-  whole-token overview, which is deterministically collapsed to instant_x1_scan.
+- Historical change/comparison requests may include historical_compare.
 - Burn, burned-token, burn-rate, burn-event, or burn-intelligence questions
   should include burn_intelligence.
 - Discovery, first-seen, first-observed, or observed-history questions should
@@ -211,7 +228,7 @@ def is_token_service_objective(objective: object) -> bool:
     durable token facts appear UNKNOWN. Detect explicit Token-service wording,
     whole-token overview language, and the legacy generated three-service objective
     so the deterministic planner collapses them to the accepted Instant X1 Scan
-    composition. Narrow single-fact questions remain on their specialized service.
+    composition.
     """
 
     normalized = _normalize_objective(objective)
@@ -257,7 +274,6 @@ def is_rank_objective(objective: object) -> bool:
 def is_historical_objective(objective: object) -> bool:
     normalized = _normalize_objective(objective)
     return bool(normalized) and any(term in normalized for term in _HISTORICAL_TERMS)
-
 
 
 def is_all_available_history_objective(objective: object) -> bool:
@@ -371,11 +387,9 @@ def required_operations(objective: object) -> list[CMISOperation]:
     normalized = _normalize_objective(objective)
     intent = recommendation_intent(normalized)
     if intent == "full_assessment":
-        # Full assessment uses the flagship scan as the single current-market,
-        # tokenomics, history, risk, freshness, and evidence authority, then
-        # adds only the two dimensions the scan intentionally does not own.
-        # Keeping the scan last makes the richest accepted product the primary
-        # report while avoiding duplicate market/risk collection paths.
+        # Full assessment keeps the scan last so its complete baseline remains
+        # the top-level report while rank and Burn Intelligence stay available
+        # as bounded enrichments.
         return ["rank", "burn_intelligence", "instant_x1_scan"]
     if is_token_service_objective(normalized):
         return ["instant_x1_scan"]
@@ -417,17 +431,73 @@ def select_cmis_operation(objective: object) -> CMISOperation:
     if is_historical_objective(objective):
         return "historical_compare"
     required = required_operations(objective)
-    if "risk_check" in required:
-        return "risk_check"
+    if any(operation in _SCAN_OWNED_OPERATIONS for operation in required):
+        return "instant_x1_scan"
     if "burn_intelligence" in required:
         return "burn_intelligence"
     if "discovery_intelligence" in required:
         return "discovery_intelligence"
-    if "tokenomics" in required:
-        return "tokenomics"
-    if "market_report" in required:
-        return "market_report"
-    return "market_report"
+    return "instant_x1_scan"
+
+
+def _canonicalize_asset_context_plan(
+    request: X1ScoutRequest,
+    operations: list[CMISOperation],
+    *,
+    max_operations: int,
+) -> list[CMISOperation]:
+    """Collapse duplicate baseline fact collection into one canonical scan.
+
+    Instant X1 Scan owns market/tokenomics/baseline risk. Historical, Burn, and
+    Discovery remain enrichments and follow the scan for ordinary single-asset
+    work. Rank-only and full-assessment compositions keep their established
+    product semantics. Explicit operations never enter this helper.
+    """
+
+    objective = request["objective"]
+    intent = recommendation_intent(objective)
+    if intent == "full_assessment":
+        return operations[-max_operations:]
+    if is_rank_objective(objective) and intent != "full_assessment":
+        return operations[-max_operations:]
+    if is_token_service_objective(objective) or is_instant_x1_scan_objective(objective):
+        return ["instant_x1_scan"]
+
+    pair_compare = bool(str(request.get("compare_asset") or "").strip())
+    if not pair_compare:
+        pair_compare = compare_asset_from_objective(
+            objective,
+            primary_asset=request.get("asset"),
+        ) is not None
+
+    scan_requested = "instant_x1_scan" in operations
+    scan_owned_requested = any(
+        operation in _SCAN_OWNED_OPERATIONS for operation in operations
+    )
+    specialists = [
+        operation
+        for operation in operations
+        if operation not in _SCAN_OWNED_OPERATIONS
+        and operation != "instant_x1_scan"
+    ]
+
+    context_enrichment_requested = any(
+        operation in _CANONICAL_CONTEXT_ENRICHMENTS
+        and not (pair_compare and operation == "historical_compare")
+        for operation in specialists
+    )
+    if not (scan_requested or scan_owned_requested or context_enrichment_requested):
+        return operations[-max_operations:]
+
+    if pair_compare and not scan_requested and not scan_owned_requested:
+        return operations[-max_operations:]
+
+    if not specialists:
+        return ["instant_x1_scan"]
+
+    specialist_room = max(0, max_operations - 1)
+    bounded_specialists = specialists[-specialist_room:] if specialist_room else []
+    return ["instant_x1_scan", *bounded_specialists]
 
 
 def _strip_markdown_fence(text: str) -> str:
@@ -559,15 +629,6 @@ def enforce_plan(
             if operation:
                 warnings.append(f"planner_operation_rejected: {operation}")
             continue
-        if (
-            operation == "instant_x1_scan"
-            and not is_instant_x1_scan_objective(objective)
-            and not is_token_service_objective(objective)
-        ):
-            warnings.append(
-                "planner_operation_rejected_without_instant_scan_objective: instant_x1_scan"
-            )
-            continue
         if rank_only_objective and operation != "rank":
             warnings.append(
                 f"planner_operation_rejected_for_rank_objective: {operation}"
@@ -588,13 +649,19 @@ def enforce_plan(
             warnings.append("planner_fallback: no allowed operations were proposed")
 
     # Objective-required operations are always executed and moved to the end so
-    # the objective-critical deterministic result remains the top-level report.
+    # the objective-critical deterministic result remains available even if the
+    # planner omitted it. Canonicalization below then removes duplicate baseline
+    # fact collection and preserves specialist enrichments.
     for required in required_operations(objective):
         if required in accepted:
             accepted.remove(required)
         accepted.append(required)
 
-    accepted = accepted[-max_plan_operations:]
+    accepted = _canonicalize_asset_context_plan(
+        request,
+        accepted,
+        max_operations=max_plan_operations,
+    )
 
     return {
         "operations": accepted,
