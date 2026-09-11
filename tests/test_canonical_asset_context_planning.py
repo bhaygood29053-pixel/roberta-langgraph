@@ -1,6 +1,33 @@
-"""Regression matrix for the canonical X1 asset-context routing policy."""
+"""Public-boundary regression matrix for canonical X1 asset-context routing."""
 
-from roberta.x1_scout.planner import enforce_plan
+from __future__ import annotations
+
+import sys
+from types import ModuleType
+
+
+# recommendation_policy is protected/private and intentionally absent from the
+# public-shell CI checkout. Supply only the two narrow planner dependencies so
+# this test can verify public X1 Scout routing without weakening that boundary.
+if "roberta.recommendation_policy" not in sys.modules:
+    policy = ModuleType("roberta.recommendation_policy")
+
+    def recommendation_intent(objective: object) -> str:
+        normalized = " ".join(str(objective or "").lower().split())
+        if "full assessment" in normalized or "due diligence" in normalized:
+            return "full_assessment"
+        return "none"
+
+    def autonomous_x1_operations_for_recommendation(objective: object) -> list[str]:
+        return []
+
+    policy.recommendation_intent = recommendation_intent
+    policy.autonomous_x1_operations_for_recommendation = (
+        autonomous_x1_operations_for_recommendation
+    )
+    sys.modules["roberta.recommendation_policy"] = policy
+
+from roberta.x1_scout.planner import enforce_plan  # noqa: E402
 
 
 MINT = "EFPkbXTdr3c7aRbCEKoJDYdbbzgzVDBShYGybP3gQwmy"
