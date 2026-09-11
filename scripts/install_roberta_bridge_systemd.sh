@@ -80,6 +80,16 @@ else
   printf 'Using existing Roberta environment file: %s\n' "$ENV_FILE"
 fi
 
+# CMIS may spend up to 30 seconds completing a cold verified-evidence bundle.
+# Keep the ROBERTA transport budget comfortably above that server-side window,
+# and replace any older managed 30-second value without exposing other secrets.
+if grep -q '^CMIS_TIMEOUT_SECONDS=' "$ENV_FILE"; then
+  sed -i "s/^CMIS_TIMEOUT_SECONDS=.*/CMIS_TIMEOUT_SECONDS=$CMIS_TIMEOUT_SECONDS/" "$ENV_FILE"
+else
+  printf 'CMIS_TIMEOUT_SECONDS=%s\n' "$CMIS_TIMEOUT_SECONDS" >> "$ENV_FILE"
+fi
+chmod 600 "$ENV_FILE"
+
 if ! sudo systemctl is-active --quiet roberta-bridge.service 2>/dev/null; then
   if ss -ltn 2>/dev/null | grep -Eq '127\.0\.0\.1:8766|\[::1\]:8766|:8766[[:space:]]'; then
     fail "Port 8766 is already in use by a non-managed process. Stop the manually started Roberta bridge, then run this installer again."
