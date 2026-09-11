@@ -137,12 +137,16 @@ printf '\n========== BUILD ROBERTA ASSEMBLED RUNTIME ==========\n'
 cd "$ROBERTA"
 ROBERTA_PRIVATE_CORE_PATH="$ROBERTA_CORE" bash scripts/build_roberta_runtime.sh
 
-if systemctl cat roberta-bridge.service >/dev/null 2>&1; then
-  sudo systemctl restart roberta-bridge.service
-else
-  printf 'roberta-bridge.service is not installed; installing managed service.\n'
-  bash scripts/install_roberta_bridge_systemd.sh
-fi
+printf '\n========== REFRESH ROBERTA SYSTEMD ASSEMBLY ==========\n'
+# Reinstall the managed bridge unit on every sync so transport-budget changes and
+# other accepted runtime settings cannot be left behind in a stale unit file.
+bash scripts/install_roberta_bridge_systemd.sh
+
+bridge_environment="$(systemctl show roberta-bridge.service -p Environment --value)"
+grep -Fq "CMIS_TIMEOUT_SECONDS=90" <<<"$bridge_environment" \
+  || fail "ROBERTA bridge is missing the 90-second CMIS evidence-completion timeout budget."
+printf 'roberta_cmis_timeout_seconds=90\n'
+printf 'roberta_bridge_assembled_runtime=PASS\n'
 
 printf '\n========== HEALTH CHECKS ==========\n'
 for _ in $(seq 1 30); do
