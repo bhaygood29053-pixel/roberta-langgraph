@@ -1,8 +1,20 @@
 """Roberta LangGraph coordinator."""
 
+# Apply public product semantics before the protected graph is imported. This
+# guarantees every later X1 Scout import sees the same native-XNT interpretation
+# instead of binding the generic token renderer first.
+from roberta import chat_ui as _chat_ui
+from roberta.x1_scout import instant_scan_product_ux as _instant_scan_product_ux
+from roberta.x1_native_asset_semantics import (
+    apply_native_xnt_output_contract,
+    apply_native_xnt_product_semantics,
+)
+
+apply_native_xnt_product_semantics(_instant_scan_product_ux)
+apply_native_xnt_output_contract(_chat_ui)
+
 from roberta.private_core import build_graph
 from roberta.state import RobertaState
-from roberta import chat_ui as _chat_ui
 from roberta import web_ui as _web_ui
 from roberta.web_ui_current_capabilities import apply_current_capability_surface
 from roberta.web_ui_intelligence_cards import (
