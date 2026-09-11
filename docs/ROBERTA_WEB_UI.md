@@ -84,6 +84,8 @@ The left sidebar contains:
 
 The Services drawer remains outcome-oriented and now also exposes conversational shortcuts for **Daily Brief**, **Tokenized Equities**, and **Wallet Relationships**. These are prompt starters, not direct internal-service selectors.
 
+The left navigation typography is intentionally larger than the original compact version. History labels, service names, service descriptions, and supporting controls are sized for comfortable reading rather than dashboard-density optimization.
+
 Chat history is stored in browser local storage under `robertaChatHistoryV3`.
 
 Saved investigations are stored separately under `robertaSavedInvestigationsV1`.
@@ -92,7 +94,7 @@ A saved investigation can be reopened or rechecked with current data. Rechecking
 
 ### Center
 
-The center always remains the conversation.
+The center always remains the conversation and now receives the width previously reserved for the permanent right-side inspector.
 
 It includes:
 
@@ -112,19 +114,27 @@ The empty state offers:
 
 Normal typed follow-ups use the accepted bridge thread id for conversation continuity. The browser does not promote remembered market values into current facts.
 
-### Right side
+### Right-side inspector removal
 
-The right panel is optional and collapsible.
+The persistent right-side evidence inspector is no longer part of the normal chat layout. The workspace is now two-column:
 
-It contains:
+```text
+Left navigation | Conversation
+```
 
-- current-answer summary;
-- evidence / risk / freshness / opinion / confidence labels when those fields can be read from the answer;
-- selected on-chain identifier detail;
-- evidence and explanation follow-up actions;
-- source/chart guidance.
+Evidence remains available inside ROBERTA answers through the existing progressive-disclosure controls, so removing the permanent panel does not remove evidence access.
 
-The conversation remains primary. On smaller screens, the evidence panel is hidden rather than squeezing the chat.
+Clickable on-chain identifiers still preserve their drill-down actions. When a user explicitly clicks an identifier, the former detail surface appears temporarily as an overlay rather than permanently consuming chat width. Closing that overlay restores the uninterrupted two-column chat layout.
+
+### Send / Working button state
+
+The main composer button communicates ROBERTA's active request state visually:
+
+- **Send** — green while ready for a new request;
+- **Working** — red while the current request is active and the button is disabled;
+- after the response returns, the button changes back to **Send** and green.
+
+This is a presentation-only state projection of the existing request lifecycle. It does not create a fake timer, alter routing, or change the ROBERTA execution boundary.
 
 ## Answer hierarchy
 
@@ -165,7 +175,7 @@ Long base58-like on-chain identifiers in ROBERTA answers are rendered as clickab
 
 The website deliberately labels them generically as **on-chain identifiers** rather than guessing whether a particular value is a wallet, transaction, token mint, pool, bridge, or program.
 
-Clicking one opens the detail panel with follow-up options such as:
+Clicking one opens the temporary identifier-detail overlay with follow-up options such as:
 
 - investigate this identifier;
 - trace related activity;
@@ -227,9 +237,10 @@ When ROBERTA gains a new accepted backend capability:
 4. preserve the conversation-first UX even as internal intelligence becomes more sophisticated;
 5. update this document and the website contract tests with any material public-surface change;
 6. advance the website capability-surface marker when the public discovery surface materially changes;
-7. require the local live-runtime sync gate to verify that the current marker and material accepted capability labels are actually served from port 8766.
+7. require the local live-runtime sync gate to verify that the current marker and material accepted capability labels are actually served from port 8766;
+8. preserve the chat-focused workspace contract: readable left navigation, no permanent right inspector, and green Send / red Working main-composer states.
 
-`bash scripts/sync_local_stack.sh` now fails closed if the live ROBERTA page does not include the current capability marker plus Wallet Relationships, Tokenized Equity / RWA, X1 Daily Intelligence Brief, and Evidence-Complete discovery content. `website_runtime=PASS` therefore means the refreshed local website is serving the accepted current capability surface rather than merely returning a healthy HTTP response.
+`bash scripts/sync_local_stack.sh` fails closed if the live ROBERTA page does not include the current capability marker plus Wallet Relationships, Tokenized Equity / RWA, X1 Daily Intelligence Brief, Evidence-Complete discovery content, and the current chat-focused workspace markers. `website_runtime=PASS` therefore means the refreshed local website is serving the accepted current capability surface and chat layout rather than merely returning a healthy HTTP response.
 
 ## Human Intelligence Experience — progressive disclosure
 
