@@ -91,13 +91,47 @@ print("cmis_private_runtime=PASS")
 PY
 )
 
-if systemctl cat cmis-gateway.service >/dev/null 2>&1; then
-  sudo systemctl restart cmis-gateway.service
-else
-  printf 'cmis-gateway.service is not installed; installing managed service.\n'
+printf '\n========== REFRESH CMIS SYSTEMD ASSEMBLY ==========\n'
+# Always reinstall the unit instead of merely restarting an existing one. Older
+# units may predate the repository-owned PYTHONPATH/WorkingDirectory contract and
+# can otherwise combine current cmis-core with stale public CMIS site-packages.
+cd "$CMIS"
+bash scripts/install_cmis_systemd.sh
+
+printf '\n========== VALIDATE CMIS ASSEMBLED RUNTIME ==========\n'
+(
   cd "$CMIS"
-  bash scripts/install_cmis_systemd.sh
-fi
+  env PYTHONPATH="$CMIS" "$CMIS_PYTHON" - <<'PY'
+import inspect
+
+from cmis_core.api import CUTOVER_CONTRACT, runtime_gateway_class
+from cmis_core.instant_scan_evidence_completion import InstantScanEvidenceCompletionMixin
+import liquidity_scout.cmis.instant_x1_scan_gateway as scan_gateway
+
+Gateway = runtime_gateway_class()
+assert CUTOVER_CONTRACT == "cmis-private-core/v1"
+assert InstantScanEvidenceCompletionMixin in Gateway.__mro__
+assert hasattr(scan_gateway.InstantX1ScanMixin, "_runtime_current_market_freshness_evidence")
+
+gateway = Gateway()
+resolver = getattr(gateway, "x1_current_market_freshness_evidence_resolver", None)
+manager = getattr(gateway, "x1_current_market_freshness_evidence_manager", None)
+assert callable(resolver), "freshness evidence resolver is not registered"
+assert manager is not None, "freshness evidence manager is not registered"
+
+print("cmis_gateway_class=", f"{Gateway.__module__}.{Gateway.__name__}")
+print("instant_scan_module=", inspect.getsourcefile(scan_gateway.InstantX1ScanMixin))
+print("freshness_resolver_registered=", callable(resolver))
+print("freshness_manager_registered=", manager is not None)
+print("cmis_assembled_runtime=PASS")
+PY
+)
+
+unit_text="$(systemctl cat cmis-gateway.service)"
+grep -Fq "WorkingDirectory=$CMIS" <<<"$unit_text" \
+  || fail "CMIS systemd unit is not bound to the current repository WorkingDirectory."
+grep -Fq "Environment=PYTHONPATH=$CMIS" <<<"$unit_text" \
+  || fail "CMIS systemd unit is missing the current repository PYTHONPATH."
 
 printf '\n========== BUILD ROBERTA ASSEMBLED RUNTIME ==========\n'
 cd "$ROBERTA"
@@ -145,6 +179,8 @@ grep -q 'Evidence-complete answers' <<<"$website" \
   || fail "The live website is missing the system-wide Evidence Completion capability surface."
 grep -q 'id="chat-focus-workspace-v1"' <<<"$website" \
   || fail "The live website is missing the chat-focused workspace layout."
+grep -q 'id="roberta-answer-consistency-v1"' <<<"$website" \
+  || fail "The live website is missing the deterministic answer-consistency surface."
 grep -q '.inspector{display:none!important}' <<<"$website" \
   || fail "The live website has not removed the right-side inspector from the visible chat layout."
 grep -q "Working':'Send" <<<"$website" \
@@ -166,4 +202,4 @@ systemctl --no-pager --full status cmis-gateway.service | sed -n '1,10p'
 systemctl --no-pager --full status roberta-bridge.service | sed -n '1,10p'
 
 printf '\nLOCAL_STACK_SYNC=PASS\n'
-printf 'All five operational repositories match origin/main, CMIS/ROBERTA runtimes were refreshed, and the live website passed current capability and chat-workspace checks.\n'
+printf 'All five operational repositories match origin/main, CMIS/ROBERTA runtimes were refreshed, CMIS assembly was validated, and the live website passed current capability and chat-workspace checks.\n'
