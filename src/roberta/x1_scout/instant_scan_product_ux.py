@@ -71,6 +71,8 @@ def build_instant_x1_scan_product_view(
 
     top_concentration = _mapping(holders.get("top_account_concentration"))
     freshness = _mapping(market.get("freshness"))
+    freshness_completion = _mapping(freshness.get("completion_attempt"))
+    holder_count_applicable = holders.get("holders_state") != "not_applicable"
 
     return {
         "contract_version": PRODUCT_VIEW_CONTRACT,
@@ -111,6 +113,7 @@ def build_instant_x1_scan_product_view(
             ),
             "freshness": dict(freshness),
             "freshness_state": freshness.get("freshness_state"),
+            "freshness_completion": dict(freshness_completion),
             "#LPs": market.get("#LPs"),
         },
         "tokenomics": {
@@ -147,6 +150,7 @@ def build_instant_x1_scan_product_view(
                 "holders",
                 "holders_verified",
             ),
+            "holder_count_applicable": holder_count_applicable,
             "holders_state": holders.get("holders_state"),
             "holders_reason": holders.get("holders_reason"),
             "holders_reported": holders.get("holders_reported"),
@@ -226,6 +230,9 @@ def render_instant_x1_scan_product_text(view: Mapping[str, Any]) -> str:
     evidence = _mapping(view.get("evidence"))
     freshness = _mapping(market.get("freshness"))
     freshness_fields = _mapping(freshness.get("fields"))
+    freshness_completion = _mapping(
+        market.get("freshness_completion") or freshness.get("completion_attempt")
+    )
 
     descriptor = (
         identity.get("symbol")
@@ -280,6 +287,28 @@ def render_instant_x1_scan_product_text(view: Mapping[str, Any]) -> str:
             if _mapping(freshness_fields.get("transactions_24h")).get("freshness_verified") is True
             else "24h transaction freshness: NOT VERIFIED"
         ),
+    ]
+
+    if freshness_completion:
+        lines.append(
+            "Freshness evidence completion: "
+            f"{str(freshness_completion.get('state') or 'UNKNOWN').upper()}"
+        )
+        if freshness_completion.get("attempted") is True:
+            lines.append(
+                "Freshness completion attempt: bounded wait performed before answer"
+            )
+        if freshness_completion.get("reason"):
+            lines.append(
+                "Freshness completion reason: "
+                f"{freshness_completion.get('reason')}"
+            )
+        producer_failures = freshness_completion.get("producer_failures")
+        if isinstance(producer_failures, list) and producer_failures:
+            lines.append("Freshness producer failures:")
+            lines.extend(f"- {item}" for item in producer_failures)
+
+    lines.extend([
         "",
         "Tokenomics",
         _render_verified(
@@ -293,22 +322,37 @@ def render_instant_x1_scan_product_text(view: Mapping[str, Any]) -> str:
         ),
         "",
         "Holders / Concentration",
-        (
-            "Holder count: NOT APPLICABLE — native XNT account distribution"
-            if holder.get("holders_state") == "not_applicable"
-            else _render_verified("Holders", holder.get("holders"))
-        ),
-        (
-            "Top-account concentration: unknown"
-            if concentration.get("verified") is not True
-            else (
+    ])
+
+    if holder.get("holder_count_applicable") is False or holder.get(
+        "holders_state"
+    ) == "not_applicable":
+        lines.extend(
+            [
+                "Holder count: NOT APPLICABLE — XNT is the native X1 currency, not an SPL-style token-holder population.",
+                "Native XNT distribution is evaluated with native account concentration instead of token holder count.",
+            ]
+        )
+    else:
+        lines.append(_render_verified("Holders", holder.get("holders")))
+
+    if concentration.get("verified") is True:
+        if concentration.get("basis") == (
+            "top_20_native_xnt_accounts_percent_of_circulating_xnt"
+        ):
+            lines.append(
                 "Top-20 native XNT account concentration: "
                 f"{concentration.get('value')}%"
-                if concentration.get("basis")
-                == "top_20_native_xnt_accounts_percent_of_circulating_xnt"
-                else f"Top-account concentration: {concentration.get('value')}"
             )
-        ),
+        else:
+            lines.append(
+                f"Top-account concentration: {concentration.get('value')}"
+            )
+    else:
+        reason = concentration.get("reason") or "concentration_not_verified"
+        lines.append(f"Top-account concentration: NOT VERIFIED — {reason}")
+
+    lines.extend([
         "",
         "History",
         f"Coverage status: {history.get('status') or 'unknown'}",
@@ -337,7 +381,7 @@ def render_instant_x1_scan_product_text(view: Mapping[str, Any]) -> str:
             "Legacy full asset lifetime verified: "
             f"{history.get('full_asset_lifetime_verified') is True}"
         ),
-    ]
+    ])
 
     history_metrics = history.get("metrics")
     if isinstance(history_metrics, Mapping) and history_metrics:
