@@ -14,10 +14,6 @@ _RENDER_HOOK = (
     "if(role==='assistant')d.innerHTML=formatIntelligenceCard(text);"
     "else d.textContent=text;"
 )
-_RENDER_HOOK_NORMALIZED = (
-    "if(role==='assistant')d.innerHTML=formatIntelligenceCard(normalizeRobertaHumanAnswer(text));"
-    "else d.textContent=text;"
-)
 _ANCHOR = "function answerActions(chatId){"
 
 _SCRIPT = r'''
@@ -38,6 +34,10 @@ function normalizeRobertaHumanAnswer(value){
   text=text.replace(/Evidenceweakproof strength/gi,'Evidence quality: proof strength');
   return text;
 }
+var _robertaBaseFormatIntelligenceCard=formatIntelligenceCard;
+formatIntelligenceCard=function(text){
+  return _robertaBaseFormatIntelligenceCard(normalizeRobertaHumanAnswer(text));
+};
 </script>
 '''
 
@@ -53,7 +53,6 @@ def apply_answer_consistency_surface(html: str) -> str:
     if _ANCHOR not in result:
         raise ValueError("ROBERTA answer-actions anchor is unavailable")
 
-    result = result.replace(_RENDER_HOOK, _RENDER_HOOK_NORMALIZED, 1)
     return result.replace(_ANCHOR, _SCRIPT + "\n" + _ANCHOR, 1)
 
 
