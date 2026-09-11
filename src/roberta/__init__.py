@@ -2,8 +2,13 @@
 
 from roberta.private_core import build_graph
 from roberta.state import RobertaState
+from roberta import chat_ui as _chat_ui
 from roberta import web_ui as _web_ui
 from roberta.web_ui_current_capabilities import apply_current_capability_surface
+from roberta.web_ui_intelligence_cards import (
+    apply_clean_human_output_contract,
+    apply_intelligence_card_surface,
+)
 
 # Keep the large conversation-first website stable while projecting the newest
 # accepted capability surface into the rendered HTML. web_ui_bytes() reads the
@@ -12,5 +17,13 @@ from roberta.web_ui_current_capabilities import apply_current_capability_surface
 _web_ui.ROBERTA_WEB_UI_HTML = apply_current_capability_surface(
     _web_ui.ROBERTA_WEB_UI_HTML
 )
+_web_ui.ROBERTA_WEB_UI_HTML = apply_intelligence_card_surface(
+    _web_ui.ROBERTA_WEB_UI_HTML
+)
+
+# Human answers stay evidence-complete internally, but the default response is
+# now selective: decision, key metrics, three main reasons, evidence quality,
+# then progressively disclosed supporting detail.
+apply_clean_human_output_contract(_chat_ui)
 
 __all__ = ["RobertaState", "build_graph"]
