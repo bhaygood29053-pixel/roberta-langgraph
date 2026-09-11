@@ -9,6 +9,10 @@ from roberta.web_ui_intelligence_cards import (
     apply_clean_human_output_contract,
     apply_intelligence_card_surface,
 )
+from roberta.web_ui_polarity_colors import (
+    apply_polarity_color_surface,
+    apply_polarity_output_contract,
+)
 
 # Keep the large conversation-first website stable while projecting the newest
 # accepted capability surface into the rendered HTML. web_ui_bytes() reads the
@@ -20,10 +24,15 @@ _web_ui.ROBERTA_WEB_UI_HTML = apply_current_capability_surface(
 _web_ui.ROBERTA_WEB_UI_HTML = apply_intelligence_card_surface(
     _web_ui.ROBERTA_WEB_UI_HTML
 )
+_web_ui.ROBERTA_WEB_UI_HTML = apply_polarity_color_surface(
+    _web_ui.ROBERTA_WEB_UI_HTML
+)
 
 # Human answers stay evidence-complete internally, but the default response is
 # now selective: decision, key metrics, three main reasons, evidence quality,
-# then progressively disclosed supporting detail.
+# then progressively disclosed supporting detail. Directional changes retain an
+# explicit sign so the UI can render positive changes green and negative red.
 apply_clean_human_output_contract(_chat_ui)
+apply_polarity_output_contract(_chat_ui)
 
 __all__ = ["RobertaState", "build_graph"]
