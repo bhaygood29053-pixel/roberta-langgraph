@@ -1,14 +1,19 @@
 # Human ROBERTA v2 — Plain Language Quality Gate
 
-Tracking: ROBERTA #449
+Tracking: ROBERTA #449 and #452
 
-Status: implementation branch `human-roberta-v2-vale`.
+Status: Vale CI gate accepted; runtime Quick/Normal enforcement active in #452 implementation.
 
 ## Purpose
 
 Human ROBERTA v1 established the correct response hierarchy, evidence-safe judgment, conversational continuity, and progressive disclosure. Real user testing still shows a narrower product defect: a response can avoid raw internal identifiers and still sound like an engineering or audit report.
 
-Human ROBERTA v2 adds a presentation-only Vale quality gate. Vale does not rewrite ROBERTA's answer and does not become an evidence, recommendation, or policy authority. It checks candidate human-facing prose for language that should be translated before Quick/Normal responses are accepted.
+Human ROBERTA v2 adds two presentation-only controls:
+
+1. Vale checks candidate human-facing prose for language that should be translated before Quick/Normal responses are accepted.
+2. The runtime Human renderer deterministically simplifies known engineering phrases in Quick/Normal output after the evidence-safe response contract is built.
+
+Neither layer becomes an evidence, recommendation, or policy authority.
 
 ## Authority boundary
 
@@ -22,7 +27,16 @@ User
         -> verified provider / RPC evidence
 ```
 
-Vale sits after human-response generation as QA only:
+The runtime simplifier sits after the validated public Human Response contract is built:
+
+```text
+accepted ROBERTA Human Response Decision
+  -> validated public Human Response contract
+  -> deterministic Human renderer
+  -> Quick/Normal plain-language presentation
+```
+
+Vale remains QA around the Human presentation surface:
 
 ```text
 accepted ROBERTA Human Response
@@ -31,9 +45,9 @@ accepted ROBERTA Human Response
   -> PASS / warning / error
 ```
 
-Vale may not:
+Neither Vale nor the runtime simplifier may:
 
-- change a fact, number, timestamp, freshness state, risk result, recommendation, conviction, or evidence quality;
+- change a fact, number, timestamp, freshness meaning, risk result, recommendation, conviction, or evidence quality;
 - suppress a material unknown because the technical wording is inconvenient;
 - manufacture a simpler replacement fact;
 - become current blockchain truth;
@@ -50,15 +64,33 @@ Examples:
 | Engineering phrasing | Human ROBERTA phrasing |
 | --- | --- |
 | deterministic risk engine | risk checks |
+| deterministic risk result | risk assessment |
 | freshness state is unverified | I can't confirm these numbers are current |
 | verification state is incomplete | there are still important things I couldn't confirm |
 | source contract | source details |
 | provider fact time | when the source data was observed |
 | canonical/decision object | internal analysis |
-| Proof Score | evidence quality, unless technical detail was requested |
-| Evidence Receipt | supporting evidence, unless technical detail was requested |
+| independent/provider corroboration | confirmation from another source |
+| Proof Score | evidence score, unless technical detail was requested |
+| Evidence Receipt | evidence record, unless technical detail was requested |
+| Chain Scout | chain analysis in Quick/Normal |
+| CMIS | evidence service in Quick/Normal |
 
 Domain terms that materially help the user, such as liquidity, slippage, mint authority, bridge, validator, or pool, are not automatically banned. Human ROBERTA should explain their practical consequence when the meaning is not obvious.
+
+## Runtime depth policy
+
+### Quick and Normal
+
+The renderer applies deterministic phrase normalization only to the final prose after the validated evidence contract has been constructed. This keeps the transformation downstream of fact authority and prevents presentation cleanup from altering source data.
+
+The simplifier may change wording, but it does not modify the structured Human Response contract or its underlying evidence values.
+
+### Deep Dive
+
+Deep Dive bypasses the runtime simplifier. Precise technical terminology, evidence references, source-contract names, and Chain Scout / CMIS authority language remain available when the user asks for technical depth.
+
+This preserves progressive disclosure rather than deleting technical capability.
 
 ## Severity policy
 
@@ -100,11 +132,11 @@ With Vale installed locally:
 vale --config=.vale.ini .vale-generated/human-response-corpus.md
 ```
 
-CI uses the official `vale-cli/vale-action@v3` with Vale `3.21.0`, reports warnings, and fails on error-level RobertaHuman rules.
+CI uses the official `vale-cli/vale-action@v3` with Vale `3.21.0`, reports warnings, and fails on error-level RobertaHuman rules. Renderer changes also trigger this workflow and the dedicated runtime plain-language regression suite.
 
 ## Relationship to the existing evaluator
 
-Vale supplements rather than replaces `roberta_human_response_quality/v1`.
+Vale and runtime presentation enforcement supplement rather than replace `roberta_human_response_quality/v1`.
 
 The deterministic ROBERTA evaluator continues to own response invariants such as:
 
@@ -119,7 +151,7 @@ The deterministic ROBERTA evaluator continues to own response invariants such as
 - continuity/freshness behavior;
 - no execution authority.
 
-Vale specializes in prose/style leakage that is difficult to cover with a short internal-jargon tuple.
+Vale specializes in prose/style leakage that is difficult to cover with a short internal-jargon tuple. The runtime renderer prevents a known set of those terms from reaching Quick/Normal output in the first place.
 
 ## Product target
 
