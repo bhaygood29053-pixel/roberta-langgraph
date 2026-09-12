@@ -411,7 +411,7 @@ def make_handler(bridge: RobertaBridge, *, api_key: str = ""):
                     )
                     recorded = append_beta_record(record)
                 except (UnicodeDecodeError, json.JSONDecodeError, BetaProductProofError, TypeError) as exc:
-                    self._send_json(400, {"service": "roberta_bridge", "status": "error", "error": {"code": "invalid_beta_feedback", "message": f"Beta feedback was rejected ({type(exc).__name__})."}})
+                    self._send_json(400, {"service":"roberta_bridge","status":"error","error":{"code":"invalid_beta_feedback","message":f"Beta feedback was rejected ({type(exc).__name__})."}})
                     return
                 self._send_json(200, {"service": "roberta_bridge", "status": "ok", "recorded": recorded})
                 return
@@ -573,7 +573,7 @@ def make_handler(bridge: RobertaBridge, *, api_key: str = ""):
                     reply, beta_telemetry = bridge.ask_with_evaluation(
                         message,
                         thread_id=thread_id,
-                        evaluation_mode=EVALUATION_TELEMETRY_VERSION,
+                        evaluation_mode=EVALUATION_TELEMETRY_V2,
                     )
                 else:
                     reply = bridge.ask(message, thread_id=thread_id)
