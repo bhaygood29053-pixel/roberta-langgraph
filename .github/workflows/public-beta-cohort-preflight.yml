@@ -1,0 +1,83 @@
+name: Public Beta Cohort Preflight
+
+on:
+  pull_request:
+    paths:
+      - "src/roberta/beta_cohort_summary.py"
+      - "scripts/summarize_beta_product_proof.py"
+      - "scripts/run_beta_cohort_preflight.py"
+      - "tests/test_beta_cohort_summary.py"
+      - "docs/ROBERTA_PUBLIC_BETA_COHORT_PROTOCOL_V1.md"
+      - ".github/workflows/public-beta-cohort-preflight.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "src/roberta/beta_cohort_summary.py"
+      - "scripts/summarize_beta_product_proof.py"
+      - "scripts/run_beta_cohort_preflight.py"
+      - "tests/test_beta_cohort_summary.py"
+      - "docs/ROBERTA_PUBLIC_BETA_COHORT_PROTOCOL_V1.md"
+      - ".github/workflows/public-beta-cohort-preflight.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cohort-preflight:
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out ROBERTA
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install public dependencies
+        run: python -m pip install -e '.[dev]'
+
+      - name: Run cohort aggregate regressions
+        run: python -m pytest -q tests/test_beta_cohort_summary.py
+
+      - name: Re-run accepted beta measurement boundary
+        run: |
+          python -m pytest -q \
+            tests/test_beta_product_proof.py \
+            tests/test_beta_product_proof_bridge.py \
+            tests/test_web_ui_beta_feedback.py
+
+      - name: Run deterministic collection preflight
+        env:
+          ROBERTA_BETA_PRODUCT_PROOF_PATH: ${{ runner.temp }}/roberta-beta/cohort-001.jsonl
+        run: |
+          python scripts/run_beta_cohort_preflight.py
+          test ! -e "$ROBERTA_BETA_PRODUCT_PROOF_PATH"
+          test -s "${ROBERTA_BETA_PRODUCT_PROOF_PATH%.jsonl}.preflight.jsonl"
+
+      - name: Prove aggregate summary CLI is content-free
+        env:
+          ROBERTA_BETA_PRODUCT_PROOF_PATH: ${{ runner.temp }}/roberta-beta/cohort-001.jsonl
+        run: |
+          python scripts/summarize_beta_product_proof.py \
+            "${ROBERTA_BETA_PRODUCT_PROOF_PATH%.jsonl}.preflight.jsonl" \
+            --output "${RUNNER_TEMP}/roberta-beta/cohort-001-summary.json"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          path = Path(os.environ["RUNNER_TEMP"]) / "roberta-beta" / "cohort-001-summary.json"
+          summary = json.loads(path.read_text(encoding="utf-8"))
+          assert summary["contract_version"] == "roberta_beta_cohort_summary/v1"
+          assert summary["cohort_size"] == 1
+          assert summary["feedback_count"] == 1
+          assert summary["execution_authorized"] is False
+          assert summary["privacy"]["contains_response_ids"] is False
+          assert summary["privacy"]["contains_prompt_or_response_text"] is False
+          PY
