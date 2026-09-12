@@ -28,6 +28,7 @@ from roberta.web_ui_polarity_colors import (
     apply_polarity_color_surface,
     apply_polarity_output_contract,
 )
+from roberta.web_ui_visual_summary_compat import apply_visual_summary_narrative_compat
 
 # Keep the large conversation-first website stable while projecting the newest
 # accepted capability surface into the rendered HTML. web_ui_bytes() reads the
@@ -40,6 +41,9 @@ _web_ui.ROBERTA_WEB_UI_HTML = apply_intelligence_card_surface(
     _web_ui.ROBERTA_WEB_UI_HTML
 )
 _web_ui.ROBERTA_WEB_UI_HTML = apply_polarity_color_surface(
+    _web_ui.ROBERTA_WEB_UI_HTML
+)
+_web_ui.ROBERTA_WEB_UI_HTML = apply_visual_summary_narrative_compat(
     _web_ui.ROBERTA_WEB_UI_HTML
 )
 _web_ui.ROBERTA_WEB_UI_HTML = apply_answer_consistency_surface(
