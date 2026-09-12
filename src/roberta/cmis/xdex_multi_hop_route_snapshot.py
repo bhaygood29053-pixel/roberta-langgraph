@@ -71,6 +71,18 @@ def validate_xdex_multi_hop_route_snapshot(snapshot: Mapping[str, Any]) -> dict[
         raise CMISXDEXMultiHopRouteSnapshotError("CMIS Smart Route snapshot must be an object")
     safe = deepcopy(dict(snapshot))
 
+    for forbidden in (
+        "raw_response",
+        "raw_provider_json",
+        "provider_json",
+        "provider_observation",
+        "parsed_quote",
+    ):
+        if forbidden in safe:
+            raise CMISXDEXMultiHopRouteSnapshotError(
+                "raw provider material must not cross the CMIS-to-Scout snapshot boundary"
+            )
+
     if safe.get("contract_version") != CMIS_XDEX_MULTI_HOP_ROUTE_SNAPSHOT_CONTRACT:
         raise CMISXDEXMultiHopRouteSnapshotError("CMIS Smart Route contract mismatch")
     if safe.get("chain") != CHAIN or safe.get("status") != "ok":
