@@ -1,10 +1,9 @@
 extends: substitution
-message: "Human ROBERTA should explain '%s' in plain language. Prefer '%s'."
+message: "Human ROBERTA: prefer '%s' instead of '%s' in Quick/Normal mode."
 level: error
 ignorecase: true
 swap:
   "deterministic risk engine": "risk checks"
-  "deterministic risk result": "risk result"
   "freshness state": "whether the data is current"
   "verification state": "what I could confirm"
   "accepted source contract": "source details"
