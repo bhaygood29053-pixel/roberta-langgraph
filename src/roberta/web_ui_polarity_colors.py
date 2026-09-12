@@ -27,7 +27,7 @@ _INTEL_INLINE_REPLACEMENT = r'''function intelInline(value){
   safe=safe.replace(/__(.+?)__/g,'<strong>$1</strong>');
   safe=safe.replace(/`([^`]+)`/g,'<code>$1</code>');
   safe=safe.replace(/\*\*/g,'').replace(/__/g,'');
-  safe=safe.replace(/\b(PASS|WARN|BLOCK|PARTIAL|VERIFIED|UNVERIFIED|UNAVAILABLE|NOT VERIFIED|WATCH|CLEAR|CAUTION|ERROR|AVAILABLE|STRONG|MODERATE|WEAK|HIGH|LIMITED|UNKNOWN)\b/g,function(m){return intelPill(m)});
+  safe=safe.replace(/\b(PASS|WARN|WARNING|BLOCK|PARTIAL|VERIFIED|UNVERIFIED|UNAVAILABLE|NOT VERIFIED|WATCH|CLEAR|CAUTION|ERROR|AVAILABLE|STRONG|MODERATE|WEAK|HIGH|LIMITED|UNKNOWN)\b/g,function(m){return intelPill(m)});
   safe=safe.replace(/\b([1-9A-HJ-NP-Za-km-z]{32,90})\b/g,'<button class="entityLink" data-entity="$1">$1</button>');
   /* Include HTML tag boundaries so **-16.2%** and **+16.2%** are colored too. */
   safe=safe.replace(/(^|[\s(>])([+]\d[\d,]*(?:\.\d+)?%?)(?=$|[\s<),.;])/g,'$1<span class="pos">$2</span>');
@@ -59,10 +59,16 @@ def apply_polarity_color_surface(html: str) -> str:
         raise RuntimeError("ROBERTA website head contract drifted before polarity overlay.")
     updated = updated.replace(head_anchor, _POLARITY_STYLE + "\n" + head_anchor, 1)
 
-    start_marker = "function intelInline(value){"
-    end_marker = "function intelBulletText(line){"
-    start = updated.find(start_marker)
-    end = updated.find(end_marker, start)
+    # Intelligence-card v1 used intelBulletText immediately after intelInline;
+    # visual-summary v2 uses intelFindLine. Accept either formatter boundary so
+    # the presentation overlays remain composable across surface versions.
+    start = updated.find("function intelInline(")
+    end_candidates = [
+        position
+        for marker in ("function intelBulletText(", "function intelFindLine(")
+        if (position := updated.find(marker, start)) >= 0
+    ]
+    end = min(end_candidates) if end_candidates else -1
     if start < 0 or end < 0:
         raise RuntimeError("ROBERTA intelligence-card formatter drifted before polarity overlay.")
     updated = updated[:start] + _INTEL_INLINE_REPLACEMENT + updated[end:]
