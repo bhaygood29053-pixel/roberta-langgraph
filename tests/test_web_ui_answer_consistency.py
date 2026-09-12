@@ -17,7 +17,16 @@ def test_answer_consistency_surface_is_applied_systemwide() -> None:
     assert ANSWER_CONSISTENCY_MARKER in html
     assert "normalizeRobertaHumanAnswer(text)" in html
     assert "latest accepted/stored observations; currentness is unverified" in html
-    assert "Evidence quality: proof strength" in html
+    assert "latest accepted/stored observation; currentness is unverified" in html
+    assert "accepted/stored market snapshot; currentness is unverified" in html
+    assert "Evidence quality: WEAK" in html
+
+
+def test_answer_consistency_recognizes_broader_unverified_freshness_phrasing() -> None:
+    html = web_ui.ROBERTA_WEB_UI_HTML
+    assert "/freshness (?:is|are) (?:not verified|unverified)/i.test(text)" in html
+    assert "current[- ]market freshness check came back NOT_VERIFIED" in html
+    assert "snapshot with unverified currentness" in html
 
 
 def test_answer_consistency_surface_is_idempotent() -> None:

@@ -27,15 +27,22 @@ function normalizeRobertaHumanAnswer(value){
   var freshnessNotVerified=(
     /live market freshness is not fully verified/i.test(text)||
     /currentness is unverified/i.test(text)||
-    /current[- ]state freshness (?:wasn't|was not|isn't|is not) confirmed/i.test(text)
+    /current[- ]state freshness (?:wasn't|was not|isn't|is not) confirmed/i.test(text)||
+    /freshness (?:is|are) (?:not verified|unverified)/i.test(text)||
+    /freshness[^.\n]{0,80}(?:NOT_VERIFIED|not verified|unverified)/i.test(text)||
+    /current[- ]market freshness check came back NOT_VERIFIED/i.test(text)
   );
   if(freshnessNotVerified){
     text=text.replace(/latest verified observations/gi,'latest accepted/stored observations; currentness is unverified');
+    text=text.replace(/last verified observation/gi,'latest accepted/stored observation; currentness is unverified');
     text=text.replace(/verified market snapshot/gi,'accepted/stored market snapshot; currentness is unverified');
     text=text.replace(/current verified values/gi,'latest accepted/stored values; currentness is unverified');
+    text=text.replace(/treat (?:these|them) as (?:a )?recent snapshot, not a live quote/gi,'treat these as accepted/stored observations; currentness is unverified');
+    text=text.replace(/stale-ish snapshot/gi,'snapshot with unverified currentness');
   }
-  text=text.replace(/\*\*Evidenceweak\*\*\s*proof strength/gi,'**Evidence quality:** proof strength');
-  text=text.replace(/Evidenceweakproof strength/gi,'Evidence quality: proof strength');
+  text=text.replace(/\*\*Evidence\s*weak\*\*\s*[\.:]?/gi,'**Evidence quality: WEAK.** ');
+  text=text.replace(/Evidence\s*weak\s*proof strength/gi,'Evidence quality: WEAK; proof strength');
+  text=text.replace(/Evidenceweakproof strength/gi,'Evidence quality: WEAK; proof strength');
   return text;
 }
 var _robertaBaseFormatIntelligenceCard=formatIntelligenceCard;
