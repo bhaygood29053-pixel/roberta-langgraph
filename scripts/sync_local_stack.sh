@@ -171,8 +171,12 @@ grep -q 'View evidence &amp; details' <<<"$website" \
   || fail "The live website does not contain the accepted #381 progressive-evidence UI."
 grep -q 'ROBERTA judgment' <<<"$website" \
   || fail "The live website does not contain the accepted Human Intelligence judgment UI."
-grep -q 'data-capability-surface="roberta-website-capabilities/2026-09-11"' <<<"$website" \
-  || fail "The live website is not serving the current 2026-09-11 capability surface."
+grep -q 'data-capability-surface="roberta-website-capabilities/2026-09-12"' <<<"$website" \
+  || fail "The live website is not serving the current 2026-09-12 capability surface."
+grep -q 'id="roberta-intelligence-card-v2"' <<<"$website" \
+  || fail "The live website is missing the Option #2 visual-summary dashboard surface."
+grep -q 'id="roberta-visual-summary-narrative-compat-v1"' <<<"$website" \
+  || fail "The live website is missing the narrative compatibility renderer for Option #2."
 grep -q 'Wallet relationships' <<<"$website" \
   || fail "The live website is missing accepted Wallet Relationship capability discovery."
 grep -q 'Tokenized equities &amp; RWAs' <<<"$website" \
