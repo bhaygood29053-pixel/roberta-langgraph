@@ -9,6 +9,7 @@ Quick / Normal / Deep Dive are presentation depths only.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping
 from copy import deepcopy
 from typing import Any
@@ -61,6 +62,32 @@ _STATE_LANGUAGE = {
     "OK": "accepted",
 }
 
+# Presentation-only substitutions for Quick/Normal Human ROBERTA responses.
+# These mappings intentionally avoid numbers, recommendation terms, verification
+# states, and uncertainty semantics. Deep Dive remains technically precise.
+_PLAIN_LANGUAGE_REPLACEMENTS = (
+    ("deterministic risk engine", "risk checks"),
+    ("deterministic risk result", "risk assessment"),
+    ("freshness state", "whether the data is current"),
+    ("verification state", "what could be confirmed"),
+    ("accepted source contract", "source details"),
+    ("source contract", "source details"),
+    ("canonical object", "internal analysis"),
+    ("decision object", "internal analysis"),
+    ("technical evidence reference", "supporting evidence"),
+    ("fact authority", "where the facts came from"),
+    ("judgment authority", "ROBERTA's judgment"),
+    ("provider fact time", "when the source data was observed"),
+    ("provider corroboration", "confirmation from another source"),
+    ("independent corroboration", "confirmation from another source"),
+    ("independently corroborated", "independently confirmed"),
+    ("Evidence Receipt", "evidence record"),
+    ("Proof Score", "evidence score"),
+    ("tokenomics verification", "token setup checks"),
+    ("Chain Scout", "chain analysis"),
+    ("CMIS", "evidence service"),
+)
+
 
 class HumanResponseRenderError(ValueError):
     """Raised when a protected response-decision object cannot be rendered safely."""
@@ -87,6 +114,18 @@ def _text(value: object, field: str) -> str:
 def _state(value: object) -> str:
     token = str(value or "UNKNOWN").strip().upper()
     return _STATE_LANGUAGE.get(token, token.replace("_", " ").lower())
+
+
+def _plain_language_text(text: str, *, depth: str) -> str:
+    """Simplify presentation wording without changing accepted evidence meaning."""
+
+    if depth == "deep_dive":
+        return text
+
+    rendered = text
+    for technical, plain in _PLAIN_LANGUAGE_REPLACEMENTS:
+        rendered = re.sub(re.escape(technical), plain, rendered, flags=re.IGNORECASE)
+    return rendered
 
 
 def _subject_label(response_decision: Mapping[str, Any]) -> str | None:
@@ -435,7 +474,7 @@ def render_human_response(
         if unknowns:
             lines.extend(["", _unknown_sentence(_mapping(unknowns[0], "important unknown"))])
         lines.extend(["", _conviction_sentence(contract)])
-        return "\n".join(lines).strip()
+        return _plain_language_text("\n".join(lines).strip(), depth=depth)
 
     counter_status = _text(
         contract.get("counterevidence_status"),
@@ -460,7 +499,7 @@ def render_human_response(
         if technical_lines:
             lines.extend(["", *technical_lines])
 
-    return "\n".join(lines).strip()
+    return _plain_language_text("\n".join(lines).strip(), depth=depth)
 
 
 __all__ = [
