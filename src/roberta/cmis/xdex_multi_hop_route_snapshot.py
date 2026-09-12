@@ -16,6 +16,101 @@ CMIS_XDEX_MULTI_HOP_ROUTE_SNAPSHOT_CONTRACT = "xdex_multi_hop_route_snapshot/v1"
 CHAIN = "x1"
 EVIDENCE_REQUIRED = "EVIDENCE_REQUIRED"
 
+_TOP_LEVEL_FIELDS = frozenset(
+    {
+        "contract_version",
+        "chain",
+        "status",
+        "input_mint",
+        "output_mint",
+        "input_amount_raw",
+        "gross_output_raw",
+        "net_output_raw",
+        "hop_count",
+        "path",
+        "hops",
+        "observation_window",
+        "route_output",
+        "pool_fee_evidence",
+        "provider_routing_fee_transform",
+        "price_impact",
+        "minimum_received",
+        "network_fee",
+        "cross_dex_configured",
+        "cross_dex_route_available",
+        "cross_dex_execution_observed",
+        "cross_dex_execution_verified",
+        "route_optimality_verified",
+        "provider_raw_json_exposed",
+        "read_only",
+        "execution_authorized",
+    }
+)
+_HOP_FIELDS = frozenset(
+    {
+        "index",
+        "venue",
+        "pool",
+        "token_in_mint",
+        "token_out_mint",
+        "amm_config",
+        "pool_context_slot",
+        "config_context_slot",
+        "amount_in_raw",
+        "expected_output_raw",
+        "active_reserve_in_raw",
+        "active_reserve_out_raw",
+        "trade_fee_rate_ppm",
+        "reconstructed_trade_fee_raw",
+        "reconstructed_creator_fee_raw",
+        "protocol_fee_rate_ppm_of_trade_fee",
+        "fund_fee_rate_ppm_of_trade_fee",
+        "creator_fee_rate_ppm",
+        "pool_identity_verified",
+        "pool_state_verified",
+        "venue_identity_verified",
+        "reserve_math_verified",
+        "fee_math_verified",
+        "price_impact_verified",
+        "minimum_received_bounded",
+        "execution_authorized",
+    }
+)
+_OBSERVATION_WINDOW_FIELDS = frozenset(
+    {
+        "slot_min",
+        "slot_max",
+        "slot_span",
+        "max_slot_span",
+        "current_state_alignment_verified",
+        "provider_fact_time_verified",
+    }
+)
+_ROUTE_OUTPUT_FIELDS = frozenset({"gross_output_raw", "aggregate_hop_output_verified"})
+_POOL_FEE_FIELDS = frozenset(
+    {
+        "hop_index",
+        "input_mint",
+        "trade_fee_rate_ppm",
+        "reconstructed_trade_fee_raw",
+        "reconstructed_creator_fee_raw",
+        "fee_math_verified",
+    }
+)
+_ROUTING_FEE_FIELDS = frozenset(
+    {
+        "fee_bps",
+        "fee_amount_raw",
+        "net_output_raw",
+        "floor_rounding_delta_raw",
+        "arithmetic_transform_verified",
+        "business_semantics_verified",
+    }
+)
+_PRICE_IMPACT_FIELDS = frozenset({"status", "verified"})
+_MINIMUM_RECEIVED_FIELDS = frozenset({"status", "bounded"})
+_NETWORK_FEE_FIELDS = frozenset({"status", "verified"})
+
 
 class CMISXDEXMultiHopRouteSnapshotError(ValueError):
     """Raised when a CMIS Smart Route snapshot widens the accepted boundary."""
@@ -55,8 +150,24 @@ def _required_false(record: Mapping[str, Any], field: str, label: str) -> None:
         raise CMISXDEXMultiHopRouteSnapshotError(f"{label}.{field} must remain false")
 
 
-def _validate_evidence_required(value: Any, field: str, state_field: str) -> dict[str, Any]:
+def _exact_fields(record: Mapping[str, Any], expected: frozenset[str], label: str) -> None:
+    actual = set(record)
+    if actual != expected:
+        missing = sorted(expected - actual)
+        extra = sorted(actual - expected)
+        raise CMISXDEXMultiHopRouteSnapshotError(
+            f"{label} fields drifted: missing={missing!r} unexpected={extra!r}"
+        )
+
+
+def _validate_evidence_required(
+    value: Any,
+    field: str,
+    state_field: str,
+    expected_fields: frozenset[str],
+) -> dict[str, Any]:
     record = deepcopy(dict(_mapping(value, field)))
+    _exact_fields(record, expected_fields, field)
     if record.get("status") != EVIDENCE_REQUIRED:
         raise CMISXDEXMultiHopRouteSnapshotError(f"{field}.status must remain EVIDENCE_REQUIRED")
     if record.get(state_field) is not False:
@@ -82,6 +193,7 @@ def validate_xdex_multi_hop_route_snapshot(snapshot: Mapping[str, Any]) -> dict[
             raise CMISXDEXMultiHopRouteSnapshotError(
                 "raw provider material must not cross the CMIS-to-Scout snapshot boundary"
             )
+    _exact_fields(safe, _TOP_LEVEL_FIELDS, "snapshot")
 
     if safe.get("contract_version") != CMIS_XDEX_MULTI_HOP_ROUTE_SNAPSHOT_CONTRACT:
         raise CMISXDEXMultiHopRouteSnapshotError("CMIS Smart Route contract mismatch")
@@ -123,6 +235,7 @@ def validate_xdex_multi_hop_route_snapshot(snapshot: Mapping[str, Any]) -> dict[
     normalized_hops: list[dict[str, Any]] = []
     for index, raw_hop in enumerate(hops):
         hop = deepcopy(dict(_mapping(raw_hop, f"hops[{index}]")))
+        _exact_fields(hop, _HOP_FIELDS, f"hops[{index}]")
         if hop.get("index") != index:
             raise CMISXDEXMultiHopRouteSnapshotError("hop indexes must be contiguous from zero")
         for field in ("venue", "pool", "token_in_mint", "token_out_mint", "amm_config"):
@@ -174,6 +287,7 @@ def validate_xdex_multi_hop_route_snapshot(snapshot: Mapping[str, Any]) -> dict[
         raise CMISXDEXMultiHopRouteSnapshotError("final hop output does not match gross route output")
 
     window = deepcopy(dict(_mapping(safe.get("observation_window"), "observation_window")))
+    _exact_fields(window, _OBSERVATION_WINDOW_FIELDS, "observation_window")
     slot_min = _nonnegative_int(window.get("slot_min"), "observation_window.slot_min")
     slot_max = _nonnegative_int(window.get("slot_max"), "observation_window.slot_max")
     slot_span = _nonnegative_int(window.get("slot_span"), "observation_window.slot_span")
@@ -184,6 +298,7 @@ def validate_xdex_multi_hop_route_snapshot(snapshot: Mapping[str, Any]) -> dict[
     _required_false(window, "provider_fact_time_verified", "observation_window")
 
     route_output = deepcopy(dict(_mapping(safe.get("route_output"), "route_output")))
+    _exact_fields(route_output, _ROUTE_OUTPUT_FIELDS, "route_output")
     if route_output.get("gross_output_raw") != gross_output_raw:
         raise CMISXDEXMultiHopRouteSnapshotError("route_output gross amount mismatch")
     _required_true(route_output, "aggregate_hop_output_verified", "route_output")
@@ -194,6 +309,7 @@ def validate_xdex_multi_hop_route_snapshot(snapshot: Mapping[str, Any]) -> dict[
     normalized_fees: list[dict[str, Any]] = []
     for index, raw_fee in enumerate(pool_fees):
         fee = deepcopy(dict(_mapping(raw_fee, f"pool_fee_evidence[{index}]")))
+        _exact_fields(fee, _POOL_FEE_FIELDS, f"pool_fee_evidence[{index}]")
         if fee.get("hop_index") != index or fee.get("input_mint") != normalized_hops[index]["token_in_mint"]:
             raise CMISXDEXMultiHopRouteSnapshotError("pool fee evidence identity mismatch")
         if fee.get("trade_fee_rate_ppm") != normalized_hops[index]["trade_fee_rate_ppm"]:
@@ -207,6 +323,7 @@ def validate_xdex_multi_hop_route_snapshot(snapshot: Mapping[str, Any]) -> dict[
         normalized_fees.append(fee)
 
     routing_fee = deepcopy(dict(_mapping(safe.get("provider_routing_fee_transform"), "provider_routing_fee_transform")))
+    _exact_fields(routing_fee, _ROUTING_FEE_FIELDS, "provider_routing_fee_transform")
     fee_bps = _nonnegative_int(routing_fee.get("fee_bps"), "provider_routing_fee_transform.fee_bps")
     fee_amount = _nonnegative_int(routing_fee.get("fee_amount_raw"), "provider_routing_fee_transform.fee_amount_raw")
     routing_net = _nonnegative_int(routing_fee.get("net_output_raw"), "provider_routing_fee_transform.net_output_raw")
@@ -218,9 +335,15 @@ def validate_xdex_multi_hop_route_snapshot(snapshot: Mapping[str, Any]) -> dict[
     _required_true(routing_fee, "arithmetic_transform_verified", "provider_routing_fee_transform")
     _required_false(routing_fee, "business_semantics_verified", "provider_routing_fee_transform")
 
-    safe["price_impact"] = _validate_evidence_required(safe.get("price_impact"), "price_impact", "verified")
-    safe["minimum_received"] = _validate_evidence_required(safe.get("minimum_received"), "minimum_received", "bounded")
-    safe["network_fee"] = _validate_evidence_required(safe.get("network_fee"), "network_fee", "verified")
+    safe["price_impact"] = _validate_evidence_required(
+        safe.get("price_impact"), "price_impact", "verified", _PRICE_IMPACT_FIELDS
+    )
+    safe["minimum_received"] = _validate_evidence_required(
+        safe.get("minimum_received"), "minimum_received", "bounded", _MINIMUM_RECEIVED_FIELDS
+    )
+    safe["network_fee"] = _validate_evidence_required(
+        safe.get("network_fee"), "network_fee", "verified", _NETWORK_FEE_FIELDS
+    )
     safe["hops"] = normalized_hops
     safe["pool_fee_evidence"] = normalized_fees
     safe["observation_window"] = window
