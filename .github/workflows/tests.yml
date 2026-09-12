@@ -199,3 +199,6 @@ jobs:
 
       - name: Run Tokenized Equity Claim Integrity tests
         run: python -m pytest -q tests/test_tokenized_equity_claim_integrity.py
+
+      - name: Run X1 Smart Route Scout projection tests
+        run: python -m pytest -q tests/test_x1_smart_route_projection.py
