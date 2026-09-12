@@ -19,6 +19,7 @@ from roberta.private_core import build_graph
 from roberta.state import RobertaState
 from roberta import web_ui as _web_ui
 from roberta.web_ui_answer_consistency import apply_answer_consistency_surface
+from roberta.web_ui_beta_feedback import apply_beta_feedback_surface
 from roberta.web_ui_current_capabilities import apply_current_capability_surface
 from roberta.web_ui_intelligence_cards import (
     apply_clean_human_output_contract,
@@ -47,6 +48,9 @@ _web_ui.ROBERTA_WEB_UI_HTML = apply_visual_summary_narrative_compat(
     _web_ui.ROBERTA_WEB_UI_HTML
 )
 _web_ui.ROBERTA_WEB_UI_HTML = apply_answer_consistency_surface(
+    _web_ui.ROBERTA_WEB_UI_HTML
+)
+_web_ui.ROBERTA_WEB_UI_HTML = apply_beta_feedback_surface(
     _web_ui.ROBERTA_WEB_UI_HTML
 )
 

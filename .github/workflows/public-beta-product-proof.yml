@@ -1,0 +1,73 @@
+name: Public Beta Product Proof
+
+on:
+  pull_request:
+    paths:
+      - "src/roberta/beta_product_proof.py"
+      - "src/roberta/bridge_http.py"
+      - "src/roberta/web_ui_beta_feedback.py"
+      - "src/roberta/__init__.py"
+      - "tests/test_beta_product_proof.py"
+      - "tests/test_beta_product_proof_bridge.py"
+      - "tests/test_web_ui_beta_feedback.py"
+      - "tests/test_web_ui.py"
+      - "docs/ROBERTA_PUBLIC_BETA_PRODUCT_PROOF_V1.md"
+      - ".github/workflows/public-beta-product-proof.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "src/roberta/beta_product_proof.py"
+      - "src/roberta/bridge_http.py"
+      - "src/roberta/web_ui_beta_feedback.py"
+      - "src/roberta/__init__.py"
+      - "tests/test_beta_product_proof.py"
+      - "tests/test_beta_product_proof_bridge.py"
+      - "tests/test_web_ui_beta_feedback.py"
+      - "tests/test_web_ui.py"
+      - "docs/ROBERTA_PUBLIC_BETA_PRODUCT_PROOF_V1.md"
+      - ".github/workflows/public-beta-product-proof.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  beta-product-proof:
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out ROBERTA
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install public dependencies
+        run: python -m pip install -e '.[dev]'
+
+      - name: Run privacy-safe beta contract regressions
+        run: |
+          python -m pytest -q \
+            tests/test_beta_product_proof.py \
+            tests/test_beta_product_proof_bridge.py \
+            tests/test_web_ui_beta_feedback.py
+
+      - name: Preserve ROBERTA website and bridge boundaries
+        run: |
+          python -m pytest -q \
+            tests/test_web_ui.py \
+            tests/test_bridge_http.py
+
+      - name: Prove collection is opt-in and execution stays disabled
+        run: |
+          PYTHONPATH=src python - <<'PY'
+          import os
+          from roberta.beta_product_proof import configured_beta_path
+          os.environ.pop("ROBERTA_BETA_PRODUCT_PROOF_PATH", None)
+          assert configured_beta_path() is None
+          PY
