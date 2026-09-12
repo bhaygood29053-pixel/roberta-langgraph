@@ -1,0 +1,58 @@
+name: Human ROBERTA Plain Language
+
+on:
+  pull_request:
+    paths:
+      - ".vale.ini"
+      - ".github/styles/RobertaHuman/**"
+      - ".github/workflows/human-response-vale.yml"
+      - "evals/human_response_learning_v1.json"
+      - "scripts/export_human_responses_for_vale.py"
+      - "src/roberta/human_response_quality.py"
+      - "docs/ROBERTA_HUMAN_PLAIN_LANGUAGE_V2.md"
+  push:
+    branches:
+      - main
+    paths:
+      - ".vale.ini"
+      - ".github/styles/RobertaHuman/**"
+      - ".github/workflows/human-response-vale.yml"
+      - "evals/human_response_learning_v1.json"
+      - "scripts/export_human_responses_for_vale.py"
+      - "src/roberta/human_response_quality.py"
+      - "docs/ROBERTA_HUMAN_PLAIN_LANGUAGE_V2.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  human-plain-language:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out ROBERTA
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Export Human ROBERTA reference responses
+        run: |
+          python scripts/export_human_responses_for_vale.py \
+            --source evals/human_response_learning_v1.json \
+            --output .vale-generated/human-response-corpus.md
+
+      - name: Vale plain-language gate
+        uses: vale-cli/vale-action@v3
+        with:
+          files: .vale-generated/human-response-corpus.md
+          config: .vale.ini
+          sync: false
+          filter_mode: nofilter
+          min_alert_level: warning
+          fail_level: error
+
+      - name: Preserve existing Human Response deterministic gate
+        run: python -m pip install -e '.[dev]' && python -m pytest -q tests/test_human_response_quality_v1.py
