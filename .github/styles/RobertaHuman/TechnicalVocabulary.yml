@@ -7,6 +7,7 @@ tokens:
   - '\bChain Scout\b'
   - '\bEvidence Receipts?\b'
   - '\bProof Score\b'
+  - '\bdeterministic risk result\b'
   - '\bprovider corroboration\b'
   - '\bindependent corroboration\b'
   - '\btokenomics verification\b'
