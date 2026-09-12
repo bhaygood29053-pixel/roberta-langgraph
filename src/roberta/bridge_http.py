@@ -11,6 +11,7 @@ import argparse
 import hmac
 import json
 import os
+import time
 from collections.abc import Mapping
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Optional
@@ -21,6 +22,13 @@ from langgraph.checkpoint.memory import InMemorySaver
 from roberta.evaluation_telemetry import (
     EVALUATION_TELEMETRY_V2,
     extend_evaluation_telemetry_v2,
+)
+from roberta.beta_product_proof import (
+    BetaProductProofError,
+    append_beta_record,
+    build_automatic_outcome,
+    build_user_feedback,
+    configured_beta_path,
 )
 from roberta.private_core import build_graph
 from roberta.web_ui import web_ui_bytes
@@ -374,6 +382,40 @@ def make_handler(bridge: RobertaBridge, *, api_key: str = ""):
             )
 
         def do_POST(self):  # noqa: N802 - BaseHTTPRequestHandler API
+            if self.path == "/v1/beta-feedback":
+                if not self._require_authorized():
+                    return
+                raw_length = self.headers.get("Content-Length")
+                try:
+                    length = int(raw_length or "0")
+                except ValueError:
+                    length = -1
+                if length <= 0 or length > MAX_REQUEST_BYTES:
+                    self._send_json(400, {"service": "roberta_bridge", "status": "error", "error": {"code": "invalid_beta_feedback", "message": "A bounded JSON feedback body is required."}})
+                    return
+                try:
+                    request = json.loads(self.rfile.read(length).decode("utf-8"))
+                    if not isinstance(request, Mapping):
+                        raise BetaProductProofError("feedback body must be an object")
+                    allowed = {"response_id", "helpful", "clarity", "evidence_drill_down", "would_use_again", "willingness_to_pay", "interest_surface"}
+                    if set(request) - allowed:
+                        raise BetaProductProofError("unsupported beta feedback fields")
+                    record = build_user_feedback(
+                        response_id=request.get("response_id"),
+                        helpful=request.get("helpful"),
+                        clarity=request.get("clarity"),
+                        evidence_drill_down=request.get("evidence_drill_down", False),
+                        would_use_again=request.get("would_use_again"),
+                        willingness_to_pay=request.get("willingness_to_pay"),
+                        interest_surface=request.get("interest_surface"),
+                    )
+                    recorded = append_beta_record(record)
+                except (UnicodeDecodeError, json.JSONDecodeError, BetaProductProofError, TypeError) as exc:
+                    self._send_json(400, {"service": "roberta_bridge", "status": "error", "error": {"code": "invalid_beta_feedback", "message": f"Beta feedback was rejected ({type(exc).__name__})."}})
+                    return
+                self._send_json(200, {"service": "roberta_bridge", "status": "ok", "recorded": recorded})
+                return
+
             if self.path != "/v1/roberta":
                 self._send_json(
                     404,
@@ -514,6 +556,10 @@ def make_handler(bridge: RobertaBridge, *, api_key: str = ""):
                     )
                     return
 
+            beta_started = time.perf_counter()
+            beta_enabled = configured_beta_path() is not None
+            beta_telemetry = None
+            beta_response_id = None
             try:
                 telemetry = None
                 if evaluation_mode in SUPPORTED_EVALUATION_TELEMETRY_VERSIONS:
@@ -521,6 +567,13 @@ def make_handler(bridge: RobertaBridge, *, api_key: str = ""):
                         message,
                         thread_id=thread_id,
                         evaluation_mode=evaluation_mode,
+                    )
+                    beta_telemetry = telemetry
+                elif beta_enabled:
+                    reply, beta_telemetry = bridge.ask_with_evaluation(
+                        message,
+                        thread_id=thread_id,
+                        evaluation_mode=EVALUATION_TELEMETRY_VERSION,
                     )
                 else:
                     reply = bridge.ask(message, thread_id=thread_id)
@@ -538,11 +591,25 @@ def make_handler(bridge: RobertaBridge, *, api_key: str = ""):
                 )
                 return
 
+            if beta_enabled and isinstance(beta_telemetry, Mapping):
+                try:
+                    beta_record = build_automatic_outcome(
+                        beta_telemetry,
+                        duration_ms=(time.perf_counter() - beta_started) * 1000,
+                    )
+                    if append_beta_record(beta_record):
+                        beta_response_id = beta_record["response_id"]
+                except (BetaProductProofError, OSError, TypeError, ValueError):
+                    # Product telemetry must never alter answer availability.
+                    beta_response_id = None
+
             response_payload = {
                 "service": "roberta_bridge",
                 "status": "ok",
                 "reply": reply,
             }
+            if isinstance(beta_response_id, str):
+                response_payload["beta_response_id"] = beta_response_id
             if isinstance(thread_id, str) and thread_id.strip():
                 response_payload["thread_id"] = thread_id.strip()
             if isinstance(telemetry, Mapping):
