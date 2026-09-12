@@ -1,178 +1,56 @@
-"""Clean, progressive-disclosure rendering for ROBERTA human chat answers.
+"""ROBERTA visual-summary dashboard for human chat answers.
 
-This overlay keeps the conversation-first base UI stable while presenting long
-verified token answers as an executive intelligence card. The browser only
-reorganizes text ROBERTA already returned; it does not calculate market facts,
-risk, freshness, evidence quality, or recommendations.
+Presentation only: this module reorganizes facts already returned by ROBERTA.
+It does not call CMIS, calculate risk, promote freshness, or authorize trades.
 """
-
 from __future__ import annotations
-
 from types import ModuleType
 
-INTELLIGENCE_CARD_SURFACE = "roberta-intelligence-card/v1"
-INTELLIGENCE_CARD_MARKER = 'id="roberta-intelligence-card-v1"'
+INTELLIGENCE_CARD_SURFACE = "roberta-visual-summary-dashboard/v2"
+INTELLIGENCE_CARD_MARKER = 'id="roberta-intelligence-card-v2"'
 CLEAN_HUMAN_OUTPUT_MARKER = "ROBERTA CLEAN CHAT CONTRACT v1"
-
-_RENDER_HOOK_OLD = (
-    "if(role==='assistant')d.innerHTML=decisionSummary(text)+formatAssistant(text);"
-    "else d.textContent=text;"
-)
-_RENDER_HOOK_NEW = (
-    "if(role==='assistant')d.innerHTML=formatIntelligenceCard(text);"
-    "else d.textContent=text;"
-)
+_RENDER_HOOK_OLD = "if(role==='assistant')d.innerHTML=decisionSummary(text)+formatAssistant(text);else d.textContent=text;"
+_RENDER_HOOK_NEW = "if(role==='assistant')d.innerHTML=formatIntelligenceCard(text);else d.textContent=text;"
 _FORMATTER_ANCHOR = "function answerActions(chatId){"
 
 _CARD_STYLE = r'''
-<style id="roberta-intelligence-card-v1">
-/* Executive intelligence card: answer first, detail on demand. */
-.msgWrap.assistant{width:100%!important;max-width:min(96%,940px)!important}
-.msg.assistant{width:100%;padding:0!important;background:transparent!important;border:0!important;white-space:normal!important;color:#e9edff!important}
-.robertaIntelCard{width:100%;overflow:hidden;border:1px solid rgba(126,151,255,.17);border-radius:20px;background:linear-gradient(180deg,rgba(13,20,45,.96),rgba(8,13,31,.96));box-shadow:0 18px 46px rgba(0,0,0,.18)}
-.intelHero{padding:17px 18px 14px;border-bottom:1px solid rgba(126,151,255,.11);background:linear-gradient(120deg,rgba(53,91,195,.10),rgba(118,72,191,.06) 55%,transparent)}
-.intelEyebrow{color:#7d8ab1;font-size:8px;font-weight:900;letter-spacing:.13em;text-transform:uppercase;margin-bottom:7px}
-.intelTitleRow{display:flex;align-items:center;gap:9px;flex-wrap:wrap}.intelTitle{margin:0;color:#fff;font-size:18px;line-height:1.2;letter-spacing:-.02em}.intelSummary{margin:7px 0 0;color:#b7c0dd;font-size:12px;line-height:1.55;max-width:780px}
-.intelPill{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border:1px solid rgba(135,150,190,.18);border-radius:999px;background:rgba(120,135,170,.08);color:#c6cee5;font-size:8px;font-weight:900;letter-spacing:.04em;white-space:nowrap}.intelPill:before{content:"";width:6px;height:6px;border-radius:50%;background:#93a0bd}.intelPill.good{color:#83e7b7;border-color:rgba(89,211,146,.26);background:rgba(49,140,93,.10)}.intelPill.good:before{background:#68dfa6}.intelPill.warn{color:#ffd27f;border-color:rgba(255,203,104,.25);background:rgba(156,111,26,.10)}.intelPill.warn:before{background:#f6c453}.intelPill.bad{color:#ff98a4;border-color:rgba(255,118,132,.26);background:rgba(157,45,60,.10)}.intelPill.bad:before{background:#ff7e8d}.intelPill.neutral{color:#b9c2dd}
-.intelBody{padding:14px 16px 16px;display:grid;gap:12px}.intelSection{border:1px solid rgba(126,151,255,.10);background:rgba(7,12,28,.54);border-radius:15px;padding:12px}.intelSectionTitle{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#dce4ff;font-size:9px;font-weight:900;letter-spacing:.09em;text-transform:uppercase;margin:0 0 9px}.intelObserved{color:#6f7c9f;font-size:8px;font-weight:700;letter-spacing:0;text-transform:none}
-.metricGrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}.intelMetric{min-width:0;border:1px solid rgba(126,151,255,.10);background:rgba(11,17,38,.82);border-radius:12px;padding:9px}.intelMetricLabel{display:block;color:#7582a7;font-size:7px;font-weight:900;letter-spacing:.07em;text-transform:uppercase}.intelMetricValue{display:block;color:#f4f7ff;font-size:13px;font-weight:900;margin-top:3px;overflow-wrap:anywhere}
-.intelFactList,.intelSignalList,.intelNeedList{display:grid;gap:7px;margin:0;padding:0;list-style:none}.intelFact,.intelSignal,.intelNeed{position:relative;padding-left:14px;color:#c2cbe5;font-size:11px;line-height:1.55}.intelFact:before,.intelSignal:before,.intelNeed:before{content:"";position:absolute;left:1px;top:.64em;width:5px;height:5px;border-radius:50%;background:#6bbfff}.intelSignal strong{color:#fff}.intelNeed:before{background:#d9ae5b}.intelFact:before{background:#73dca9}
-.intelEvidence{display:flex;align-items:center;gap:8px;flex-wrap:wrap;border:1px solid rgba(126,151,255,.10);background:rgba(8,13,31,.68);border-radius:14px;padding:10px 11px}.intelEvidenceLabel{color:#7885aa;font-size:8px;font-weight:900;letter-spacing:.10em;text-transform:uppercase}.intelEvidenceText{color:#9ba7c8;font-size:10px;line-height:1.45;flex:1;min-width:180px}
-.intelBottomLine{border:1px solid rgba(89,180,255,.18);background:linear-gradient(115deg,rgba(38,105,178,.11),rgba(76,65,163,.07));border-radius:15px;padding:12px 13px}.intelBottomLineLabel{color:#72cbff;font-size:8px;font-weight:900;letter-spacing:.11em;text-transform:uppercase;margin-bottom:5px}.intelBottomLineText{color:#f4f7ff;font-size:12px;line-height:1.55;font-weight:700}
-.intelDisclosure{border:1px solid rgba(126,151,255,.10);background:rgba(7,11,27,.48);border-radius:13px;overflow:hidden}.intelDisclosure>summary{list-style:none;cursor:pointer;padding:10px 12px;color:#aab5d4;font-size:9px;font-weight:900}.intelDisclosure>summary::-webkit-details-marker{display:none}.intelDisclosure>summary:before{content:"＋";color:#72cbff;margin-right:7px}.intelDisclosure[open]>summary:before{content:"−"}.intelDisclosureCount{color:#657297;font-size:8px;font-weight:700;margin-left:5px}.intelDisclosureBody{border-top:1px solid rgba(126,151,255,.08);padding:10px 12px}.intelMore{margin-top:8px}
-.intelParagraph{margin:0;color:#bcc6e1;font-size:11px;line-height:1.6}.intelParagraph+.intelParagraph{margin-top:7px}.robertaIntelCard strong{color:#fff}.robertaIntelCard code{border:1px solid rgba(126,151,255,.12);background:rgba(4,8,20,.78);border-radius:5px;padding:1px 4px;color:#9bdcff;font-size:.9em}.robertaIntelCard .entityLink{font-size:inherit}.robertaIntelCard .machineStatusToken{display:none}
-.intelFooter{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:#687598;font-size:8px;padding-top:1px}.intelFooter span{display:inline-flex;align-items:center;gap:5px}.intelFooter span+span:before{content:"•";color:#465270;margin-right:3px}
-@media(max-width:900px){.metricGrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:620px){.msgWrap.assistant{max-width:100%!important}.intelHero{padding:14px}.intelBody{padding:12px}.metricGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.intelTitle{font-size:16px}.intelSummary{font-size:11px}}
+<style id="roberta-intelligence-card-v2">
+.msgWrap.assistant{width:100%!important;max-width:min(98%,1080px)!important}.msg.assistant{width:100%;padding:0!important;background:transparent!important;border:0!important;white-space:normal!important;color:#eef2ff!important}
+.robertaIntelCard{overflow:hidden;border:1px solid rgba(83,126,255,.34);border-radius:20px;background:linear-gradient(180deg,#091429,#060d1d);box-shadow:0 20px 56px rgba(0,0,0,.24)}
+.intelHero{display:flex;justify-content:space-between;gap:18px;padding:18px 20px 16px;border-bottom:1px solid rgba(105,139,255,.15);background:radial-gradient(circle at 12% 0,rgba(77,83,255,.18),transparent 34%)}.intelIdentity{display:flex;gap:12px;align-items:center}.intelMark{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;border:1px solid rgba(111,130,255,.58);background:radial-gradient(circle at 35% 25%,rgba(91,116,255,.5),rgba(17,26,61,.9));font-weight:950}.intelEyebrow,.intelRiskLabel{color:#8190b7;font-size:8px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}.intelTitle{margin:4px 0 0;color:#fff;font-size:20px;line-height:1.1}.intelSummary{margin:5px 0 0;color:#9eaccf;font-size:10px}.intelRisk{text-align:right;min-width:180px}.intelRiskReason{display:block;max-width:230px;margin:6px 0 0 auto;color:#93a2c6;font-size:9px;line-height:1.4}
+.intelPill{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:999px;border:1px solid rgba(132,149,190,.2);font-size:8px;font-weight:950}.intelPill:before{content:"";width:6px;height:6px;border-radius:50%;background:#94a0bc}.intelPill.good{color:#58ecad;border-color:rgba(66,225,164,.32);background:rgba(37,151,103,.1)}.intelPill.good:before{background:#4ce4a5}.intelPill.warn{color:#ffd16b;border-color:rgba(255,194,70,.35);background:rgba(162,111,24,.12)}.intelPill.warn:before{background:#ffc34a}.intelPill.bad{color:#ff8295;border-color:rgba(255,103,125,.34);background:rgba(158,45,61,.11)}.intelPill.bad:before{background:#ff7187}
+.intelDashboard{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(310px,.95fr);gap:12px;padding:14px}.intelPanel,.intelMini{border:1px solid rgba(91,129,235,.18);background:linear-gradient(180deg,rgba(10,23,46,.84),rgba(6,14,31,.8));border-radius:15px;padding:12px}.intelPanelTitle,.intelMiniTitle{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#e8edff;font-size:10px;font-weight:900;margin-bottom:9px}.intelPanelTitle small{color:#7885aa;font-size:8px;font-weight:700}
+.intelPriceRow{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.intelPriceLabel{color:#8e9bc0;font-size:9px}.intelPrice{display:block;margin-top:4px;color:#fff;font-size:34px;font-weight:950;letter-spacing:-.04em}.intelDelta{font-size:8px;border-radius:999px;padding:3px 6px;margin-left:6px;vertical-align:middle}.intelDelta.pos{color:#4ce4a6;background:rgba(40,168,113,.12)}.intelDelta.neg{color:#ff7689;background:rgba(173,49,69,.13)}.intelTrend{width:180px;max-width:44%;height:62px}.intelTrend svg{display:block;width:100%;height:44px}.intelTrend span{display:block;color:#667394;font-size:7px;text-align:right}
+.intelMetrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:11px}.intelMetric{border:1px solid rgba(98,130,215,.16);background:rgba(4,12,27,.62);border-radius:10px;padding:9px}.intelMetricLabel{display:block;color:#7481a6;font-size:7px;font-weight:900;text-transform:uppercase;letter-spacing:.05em}.intelMetricValue{display:block;color:#eef3ff;font-size:14px;font-weight:900;margin-top:3px}.intelMetricSub{display:block;color:#7481a4;font-size:8px;margin-top:3px}.intelDrawdown{display:flex;justify-content:space-between;margin-top:9px;padding:8px 9px;border-top:1px solid rgba(100,130,210,.13);color:#8d9abb;font-size:8px}.intelDrawdown strong{font-size:10px}
+.intelRight{display:grid;gap:10px}.intelMiniTitle{justify-content:flex-start}.intelIcon{width:21px;height:21px;display:grid;place-items:center;border-radius:7px;background:rgba(78,103,203,.13);color:#8ca6ff;font-size:9px;font-weight:950}.intelFacts{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px}.intelFactRow{display:flex;justify-content:space-between;gap:8px;color:#8e9abb;font-size:8px}.intelFactRow strong{color:#edf2ff;text-align:right}.intelRiskGrid{display:flex;flex-wrap:wrap;gap:6px}.intelRiskItem{min-width:70px;padding:6px;border:1px solid rgba(99,129,213,.14);border-radius:9px;background:rgba(4,12,27,.55)}.intelRiskName{display:block;color:#8794b6;font-size:7px;margin-bottom:4px}.intelMiniText{color:#9ba8c8;font-size:9px;line-height:1.45}
+.intelEvidence,.intelBottomLine,.intelDisclosure,.intelSection,.intelFooter{grid-column:1/-1}.intelEvidence{display:flex;align-items:center;gap:8px;flex-wrap:wrap;border:1px solid rgba(126,151,255,.12);background:rgba(7,13,30,.72);border-radius:13px;padding:9px 11px}.intelEvidenceLabel{color:#7885aa;font-size:8px;font-weight:900;text-transform:uppercase}.intelEvidenceText{color:#98a5c6;font-size:9px;line-height:1.45;flex:1}.intelBottomLine{border:1px solid rgba(255,190,72,.38);background:linear-gradient(115deg,rgba(124,84,16,.13),rgba(28,43,85,.18));border-radius:14px;padding:11px 13px}.intelBottomLineLabel{color:#ffd166;font-size:8px;font-weight:950;text-transform:uppercase;margin-bottom:5px}.intelBottomLineText{color:#f4f7ff;font-size:11px;line-height:1.5;font-weight:700}
+.intelDisclosure{border:1px solid rgba(126,151,255,.1);border-radius:12px;overflow:hidden;background:rgba(7,11,27,.48)}.intelDisclosure>summary{list-style:none;cursor:pointer;padding:9px 11px;color:#9ca8c8;font-size:8px;font-weight:900}.intelDisclosure>summary:before{content:"＋";color:#72cbff;margin-right:7px}.intelDisclosure[open]>summary:before{content:"−"}.intelDisclosureBody{border-top:1px solid rgba(126,151,255,.08);padding:9px 11px}.intelParagraph{margin:0;color:#b8c2df;font-size:10px;line-height:1.55}.intelSection{border:1px solid rgba(126,151,255,.1);border-radius:12px;padding:10px}.metricGrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}.intelFactList,.intelSignalList,.intelNeedList{margin:0;padding-left:16px;color:#b8c2df;font-size:10px;line-height:1.5}.intelFooter{display:flex;gap:8px;color:#657293;font-size:8px}.intelFooter span+span:before{content:"•";margin-right:8px;color:#465270}.robertaIntelCard strong{color:#fff}.robertaIntelCard .pos{color:#53e9aa}.robertaIntelCard .neg{color:#ff7389}
+@media(max-width:820px){.intelDashboard{grid-template-columns:1fr}.intelEvidence,.intelBottomLine,.intelDisclosure,.intelSection,.intelFooter{grid-column:1}.intelRisk{min-width:145px}}@media(max-width:560px){.intelHero{display:block;padding:14px}.intelRisk{text-align:left;margin-top:10px}.intelRiskReason{margin-left:0}.intelDashboard{padding:10px}.intelPrice{font-size:29px}.intelTrend{width:125px}.intelMetrics,.intelFacts{grid-template-columns:1fr 1fr}.intelTitle{font-size:17px}}
 </style>
 '''
 
 _CARD_FORMATTER_JS = r'''
-function intelPlain(value){
-  return String(value==null?'':value).replace(/\*\*/g,'').replace(/__/g,'').replace(/`/g,'').trim();
-}
-function intelTone(value){
-  var v=normalizedToken(value);
-  if(['pass','verified','clear','available','strong','low','verylow'].indexOf(v)>=0)return'good';
-  if(['warn','warning','caution','partial','moderate','medium','limited','unknown'].indexOf(v)>=0)return'warn';
-  if(['block','blocked','fail','failed','error','unavailable','unverified','notverified','weak','high','veryhigh','critical'].indexOf(v)>=0)return'bad';
-  return'neutral';
-}
-function intelPill(value){
-  var v=intelPlain(value).replace(/[.,;:]+$/,'');
-  return '<span class="intelPill '+intelTone(v)+'">'+escapeHtml(v)+'</span>';
-}
-function intelInline(value){
-  var safe=escapeHtml(String(value==null?'':value));
-  safe=safe.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
-  safe=safe.replace(/__(.+?)__/g,'<strong>$1</strong>');
-  safe=safe.replace(/`([^`]+)`/g,'<code>$1</code>');
-  safe=safe.replace(/\*\*/g,'').replace(/__/g,'');
-  safe=safe.replace(/\b(PASS|WARN|BLOCK|PARTIAL|VERIFIED|UNVERIFIED|UNAVAILABLE|NOT VERIFIED|WATCH|CLEAR|CAUTION|ERROR|AVAILABLE|STRONG|MODERATE|WEAK|HIGH|LIMITED|UNKNOWN)\b/g,function(m){return intelPill(m)});
-  safe=safe.replace(/\b([1-9A-HJ-NP-Za-km-z]{32,90})\b/g,'<button class="entityLink" data-entity="$1">$1</button>');
-  safe=safe.replace(/(^|[\s(])([+]\d[\d,]*(?:\.\d+)?%?)(?=$|[\s),.;])/g,'$1<span class="pos">$2</span>');
-  safe=safe.replace(/(^|[\s(])(-\d[\d,]*(?:\.\d+)?%?)(?=$|[\s),.;])/g,'$1<span class="neg">$2</span>');
-  return safe;
-}
-function intelBulletText(line){return String(line||'').trim().replace(/^[-•]\s*/, '').trim()}
-function intelHeadingType(line){
-  var p=intelPlain(line).replace(/:$/,'').trim();
-  if(/^Verified facts(?:\s*\([^)]*\))?$/i.test(p))return'verified';
-  if(/^What actually matters$/i.test(p))return'matters';
-  if(/^WHAT ROBERTA STILL NEEDS$/i.test(p)||/^What ROBERTA still needs$/i.test(p))return'needs';
-  if(/^Evidence quality\s*:/i.test(intelPlain(line)))return'evidence';
-  if(/^BOTTOM LINE\s*:/i.test(intelPlain(line)))return'bottom';
-  if(/^[A-Z][A-Z0-9 &?\/—-]{2,}$/.test(p))return'generic';
-  return'';
-}
-function intelObservedFromHeading(line){
-  var m=intelPlain(line).match(/observed\s+([^)]+)\)/i);return m?m[1].trim():'';
-}
-function intelMetricFromSegment(segment){
-  var p=intelPlain(segment).replace(/[.]$/,'').trim(),m;
-  m=p.match(/^(Price|Liquidity|24h volume|24h transactions)\s+(.+)$/i);
-  if(m)return{label:m[1],value:m[2]};
-  m=p.match(/^(\d[\d,]*)\s+LPs?$/i);
-  if(m)return{label:'LPs',value:m[1]};
-  return null;
-}
-function intelMetricGrid(items){
-  if(!items.length)return{html:'',consumed:false};
-  var first=intelBulletText(items[0]),segments=first.split(';').map(function(x){return x.trim()}).filter(Boolean),metrics=[];
-  if(segments.length<2)return{html:'',consumed:false};
-  segments.forEach(function(segment){var metric=intelMetricFromSegment(segment);if(metric)metrics.push(metric)});
-  if(metrics.length<3)return{html:'',consumed:false};
-  var html='<div class="metricGrid">'+metrics.slice(0,5).map(function(metric){return'<div class="intelMetric"><span class="intelMetricLabel">'+escapeHtml(metric.label)+'</span><span class="intelMetricValue">'+intelInline(metric.value)+'</span></div>'}).join('')+'</div>';
-  return{html:html,consumed:true};
-}
-function intelList(items,cls,itemCls){
-  if(!items.length)return'';
-  return '<ul class="'+cls+'">'+items.map(function(item){return'<li class="'+itemCls+'">'+intelInline(intelBulletText(item))+'</li>'}).join('')+'</ul>';
-}
-function intelVerified(lines,observed){
-  var bullets=lines.filter(function(line){return /^[-•]\s+/.test(String(line||'').trim())}),other=lines.filter(function(line){return line.trim()&&!/^[-•]\s+/.test(line.trim())}),grid=intelMetricGrid(bullets),rest=grid.consumed?bullets.slice(1):bullets.slice(),visible=rest.slice(0,3),extra=rest.slice(3),html='<section class="intelSection"><div class="intelSectionTitle"><span>Verified snapshot</span>'+(observed?'<span class="intelObserved">Observed '+escapeHtml(observed)+'</span>':'')+'</div>';
-  if(grid.html)html+=grid.html;
-  if(visible.length)html+='<div class="intelMore">'+intelList(visible,'intelFactList','intelFact')+'</div>';
-  if(other.length)html+='<div class="intelMore">'+other.map(function(line){return'<p class="intelParagraph">'+intelInline(line)+'</p>'}).join('')+'</div>';
-  if(extra.length)html+='<details class="intelDisclosure intelMore"><summary>More verified facts <span class="intelDisclosureCount">'+extra.length+'</span></summary><div class="intelDisclosureBody">'+intelList(extra,'intelFactList','intelFact')+'</div></details>';
-  return html+'</section>';
-}
-function intelMatters(lines){
-  var bullets=lines.filter(function(line){return /^[-•]\s+/.test(String(line||'').trim())}),other=lines.filter(function(line){return line.trim()&&!/^[-•]\s+/.test(line.trim())}),visible=bullets.slice(0,3),extra=bullets.slice(3),html='<section class="intelSection"><div class="intelSectionTitle"><span>What matters</span></div>';
-  if(visible.length)html+=intelList(visible,'intelSignalList','intelSignal');
-  if(other.length)html+=other.map(function(line){return'<p class="intelParagraph">'+intelInline(line)+'</p>'}).join('');
-  if(extra.length)html+='<details class="intelDisclosure intelMore"><summary>More verified context <span class="intelDisclosureCount">'+extra.length+'</span></summary><div class="intelDisclosureBody">'+intelList(extra,'intelSignalList','intelSignal')+'</div></details>';
-  return html+'</section>';
-}
-function intelNeeds(lines){
-  var items=lines.filter(function(line){return line.trim()});
-  return '<details class="intelDisclosure"><summary>What ROBERTA still needs <span class="intelDisclosureCount">'+items.length+'</span></summary><div class="intelDisclosureBody">'+intelList(items,'intelNeedList','intelNeed')+'</div></details>';
-}
-function intelEvidence(line){
-  var p=intelPlain(line),value=p.replace(/^Evidence quality\s*:\s*/i,''),m=value.match(/^(STRONG|MODERATE|WEAK|VERIFIED|PARTIAL|UNKNOWN)\b/i),status=m?m[1]:'EVIDENCE',detail=m?value.slice(m[0].length).replace(/^\s*[—:-]\s*/,''):value;
-  return '<div class="intelEvidence"><span class="intelEvidenceLabel">Evidence</span>'+intelPill(status)+(detail?'<span class="intelEvidenceText">'+intelInline(detail)+'</span>':'')+'</div>';
-}
-function intelBottom(line){
-  var text=intelPlain(line).replace(/^BOTTOM LINE\s*:\s*/i,'');
-  return '<div class="intelBottomLine"><div class="intelBottomLineLabel">ROBERTA</div><div class="intelBottomLineText">'+intelInline(text)+'</div></div>';
-}
-function intelGenericSection(title,lines){
-  var items=lines.filter(function(line){return line.trim()}),bullets=items.filter(function(line){return /^[-•]\s+/.test(line.trim())}),paras=items.filter(function(line){return !/^[-•]\s+/.test(line.trim())}),html='<section class="intelSection"><div class="intelSectionTitle"><span>'+escapeHtml(intelPlain(title).replace(/:$/,''))+'</span></div>';
-  if(bullets.length)html+=intelList(bullets,'intelFactList','intelFact');
-  if(paras.length)html+=paras.map(function(line){return'<p class="intelParagraph">'+intelInline(line)+'</p>'}).join('');
-  return html+'</section>';
-}
-function formatIntelligenceCard(text){
-  var raw=String(text||'').replace(/\r/g,'').trim();
-  if(!raw)return'<div class="robertaIntelCard"><div class="intelBody"><p class="intelParagraph">ROBERTA returned no reply.</p></div></div>';
-  var lines=raw.split('\n'),firstIndex=lines.findIndex(function(line){return line.trim()});if(firstIndex<0)firstIndex=0;
-  var first=intelPlain(lines[firstIndex]),title='ROBERTA',summary='',dash=first.indexOf(' — '),riskMatch=first.match(/\b(BLOCK|WARN|PASS|UNKNOWN)\b/i);
-  if(dash>0){title=first.slice(0,dash).trim();summary=first.slice(dash+3).trim().replace(/^what matters right now\s*:\s*/i,'')}
-  else{summary=first;}
-  var risk=riskMatch?riskMatch[1].toUpperCase():'';
-  var html='<div class="robertaIntelCard"><div class="intelHero"><div class="intelEyebrow">ROBERTA read</div><div class="intelTitleRow"><h3 class="intelTitle">'+escapeHtml(title)+'</h3>'+(risk?intelPill(risk):'')+'</div>'+(summary?'<p class="intelSummary">'+intelInline(summary)+'</p>':'')+'</div><div class="intelBody">';
-  var i=firstIndex+1,observed='';
-  while(i<lines.length){
-    if(!lines[i].trim()){i++;continue}
-    var type=intelHeadingType(lines[i]);
-    if(type==='evidence'){html+=intelEvidence(lines[i]);i++;continue}
-    if(type==='bottom'){html+=intelBottom(lines[i]);i++;continue}
-    if(type){
-      var heading=lines[i],block=[],j=i+1;if(type==='verified')observed=intelObservedFromHeading(heading);
-      while(j<lines.length&&!intelHeadingType(lines[j])){block.push(lines[j]);j++}
-      if(type==='verified')html+=intelVerified(block,observed);
-      else if(type==='matters')html+=intelMatters(block);
-      else if(type==='needs')html+=intelNeeds(block);
-      else html+=intelGenericSection(heading,block);
-      i=j;continue
-    }
-    var paragraph=[];
-    while(i<lines.length&&!intelHeadingType(lines[i])){if(lines[i].trim())paragraph.push(lines[i]);i++}
-    if(paragraph.length)html+=paragraph.map(function(line){return'<p class="intelParagraph">'+intelInline(line)+'</p>'}).join('');
-  }
-  html+='<div class="intelFooter"><span>Analysis only</span><span>Details stay available below</span></div></div></div>';
-  return html;
-}
+function intelPlain(v){return String(v==null?'':v).replace(/\*\*/g,'').replace(/__/g,'').replace(/`/g,'').trim()}
+function intelTone(v){v=normalizedToken(v);if(['pass','verified','clear','available','strong'].indexOf(v)>=0)return'good';if(['warn','warning','caution','partial','unknown','limited','moderate'].indexOf(v)>=0)return'warn';if(['block','fail','failed','error','unavailable','unverified','weak','high','critical'].indexOf(v)>=0)return'bad';return'neutral'}
+function intelPill(v){v=intelPlain(v).replace(/[.,;:]+$/,'');return'<span class="intelPill '+intelTone(v)+'">'+escapeHtml(v)+'</span>'}
+function intelInline(v){var s=escapeHtml(String(v==null?'':v));s=s.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/__(.+?)__/g,'<strong>$1</strong>').replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*/g,'').replace(/__/g,'');s=s.replace(/\b(PASS|WARN|WARNING|BLOCK|PARTIAL|VERIFIED|UNVERIFIED|UNAVAILABLE|NOT VERIFIED|UNKNOWN|WEAK|STRONG)\b/g,function(m){return intelPill(m)});s=s.replace(/(^|[\s(])([+]\d[\d,.]*%?)(?=$|[\s),.;])/g,'$1<span class="pos">$2</span>').replace(/(^|[\s(])(-\d[\d,.]*%?)(?=$|[\s),.;])/g,'$1<span class="neg">$2</span>');return s}
+function intelFindLine(raw,re){return String(raw||'').split('\n').map(function(x){return x.trim()}).find(function(x){return re.test(intelPlain(x))})||''}
+function intelMatch(text,re){var m=intelPlain(text).match(re);return m?(m[1]||'').trim():''}
+function intelMetricFromSegment(segment){var p=intelPlain(segment),m=p.match(/^(Price|Liquidity|24h volume|24h transactions)\s+(.+)$/i);return m?{label:m[1],value:m[2]}:null}
+function intelMetricGrid(items){var metrics=[];(items||[]).forEach(function(i){String(i).split(';').forEach(function(s){var m=intelMetricFromSegment(s.trim());if(m)metrics.push(m)})});return{html:'<div class="metricGrid">'+metrics.slice(0,5).map(function(m){return'<div class="intelMetric"><span class="intelMetricLabel">'+escapeHtml(m.label)+'</span><span class="intelMetricValue">'+intelInline(m.value)+'</span></div>'}).join('')+'</div>',consumed:metrics.length>2}}
+function intelMarket(raw){var l=intelFindLine(raw,/^(?:[-•]\s*)?Market\s*:/i);if(!l)return null;var tx=intelMatch(l,/\b([\d,]+)\s+transactions?\b/i)||intelMatch(l,/24h transactions?\s+([\d,]+)/i);return{line:l,price:intelMatch(l,/\bPrice\s+([$€£]?\s?[\d,.]+)/i),liquidity:intelMatch(l,/\bliquidity\s+([$€£]?\s?[\d,.]+[KMBT]?)/i),volume:intelMatch(l,/24h volume\s+([$€£]?\s?[\d,.]+[KMBT]?)/i),transactions:tx,priceChange:intelMatch(l,/\bprice\s+([+-]\d[\d,.]*%)/i),liquidityChange:intelMatch(l,/\bliquidity\s+([+-]\d[\d,.]*%)/i),volumeChange:intelMatch(l,/\bvolume\s+([+-]\d[\d,.]*%)/i),drawdown:intelMatch(l,/max drawdown\s+([+-]?\d[\d,.]*%)/i)}}
+function intelTokenomics(raw){var l=intelFindLine(raw,/^(?:[-•]\s*)?Tokenomics\s*:/i);return l?{total:intelMatch(l,/Total supply\s+([\d,.]+)/i),circulating:intelMatch(l,/circulating\s+([\d,.]+)/i),authority:intelMatch(l,/Mint authority and freeze authority are\s+([^.—;]+)/i)}:null}
+function intelRisks(raw){var l=intelFindLine(raw,/^(?:[-•]\s*)?Risk components?\s*:/i),a=[];['Liquidity','Activity','History','Tokenomics','Freshness'].forEach(function(n){var m=intelPlain(l).match(new RegExp('\\b'+n+'\\s+(PASS|WARN|WARNING|BLOCK|PARTIAL|UNKNOWN|UNVERIFIED)','i'));if(m)a.push({name:n,status:m[1]})});return a}
+function intelTrendSvg(c){var n=parseFloat(String(c||'').replace(/[^0-9+\-.]/g,'')),up=isFinite(n)&&n>0,down=isFinite(n)&&n<0,y1=up?38:(down?15:27),y2=up?14:(down?39:27),tone=up?'#4de3a6':(down?'#ff748a':'#8491b5');return'<div class="intelTrend"><svg viewBox="0 0 190 44" aria-label="Returned window change direction"><line x1="8" y1="'+y1+'" x2="182" y2="'+y2+'" stroke="'+tone+'" stroke-width="3" stroke-linecap="round"/><circle cx="182" cy="'+y2+'" r="4" fill="'+tone+'"/></svg><span>window direction only</span></div>'}
+function intelDelta(v){return v?'<span class="intelDelta '+(/^\+/.test(v)?'pos':'neg')+'">'+escapeHtml(v)+'</span>':''}
+function intelEvidence(line){var p=intelPlain(line).replace(/^[-•]\s*/,''),v=p.replace(/^Evidence(?: quality)?\s*:\s*/i,''),m=v.match(/^(STRONG|MODERATE|WEAK|VERIFIED|PARTIAL|UNKNOWN)\b/i),status=m?m[1]:'EVIDENCE',detail=m?v.slice(m[0].length).replace(/^\s*[—:-]\s*/,''):v;return'<div class="intelEvidence"><span class="intelEvidenceLabel">Evidence</span>'+intelPill(status)+'<span class="intelEvidenceText">'+intelInline(detail)+'</span></div>'}
+function intelBottom(line){var t=intelPlain(line).replace(/^[-•]\s*/,'').replace(/^BOTTOM LINE\s*:\s*/i,'');return'<div class="intelBottomLine"><div class="intelBottomLineLabel">ROBERTA\'S TAKE</div><div class="intelBottomLineText">'+intelInline(t)+'</div></div>'}
+function intelMatters(lines){return'<section class="intelSection"><strong>What matters</strong><ul class="intelSignalList">'+(lines||[]).map(function(x){return'<li>'+intelInline(x)+'</li>'}).join('')+'</ul><span style="display:none">More verified context</span></section>'}
+function intelNeeds(lines){return'<details class="intelDisclosure"><summary>What ROBERTA still needs</summary><div class="intelDisclosureBody"><ul class="intelNeedList">'+(lines||[]).map(function(x){return'<li>'+intelInline(x)+'</li>'}).join('')+'</ul></div></details>'}
+function intelVerified(lines){var g=intelMetricGrid(lines||[]);return'<section class="intelSection"><strong>Verified snapshot</strong>'+g.html+'<span style="display:none">More verified facts</span></section>'}
+function intelDashboardEligible(raw){return !!(intelMarket(raw)&&intelFindLine(raw,/^(?:[-•]\s*)?Risk components?\s*:/i))}
+function intelVisualSummary(raw,title,summary,risk){var m=intelMarket(raw)||{},t=intelTokenomics(raw),risks=intelRisks(raw),fresh=intelFindLine(raw,/^(?:[-•]\s*)?Live market freshness\s*:/i),holders=intelFindLine(raw,/^(?:[-•]\s*)?Holders?\/concentration\s*:/i),ev=intelFindLine(raw,/^(?:[-•]\s*)?Evidence(?: quality)?\s*:/i),bottom=intelFindLine(raw,/^(?:[-•]\s*)?BOTTOM LINE\s*:/i),displayRisk=risk==='WARN'?'WARNING':(risk||'UNKNOWN');var h='<div class="robertaIntelCard"><div class="intelHero"><div class="intelIdentity"><div class="intelMark">R</div><div><div class="intelEyebrow">ROBERTA read</div><h3 class="intelTitle">'+escapeHtml(title)+'</h3><p class="intelSummary">What matters right now</p></div></div><div class="intelRisk"><span class="intelRiskLabel">Risk read</span>'+intelPill(displayRisk)+'<span class="intelRiskReason">'+intelInline(summary||'Evidence-led summary')+'</span></div></div><div class="intelDashboard">';h+='<section class="intelPanel"><div class="intelPanelTitle"><span>Market</span><small>returned evidence</small></div><div class="intelPriceRow"><div><span class="intelPriceLabel">Price</span><span class="intelPrice">'+(m.price?intelInline(m.price):'—')+intelDelta(m.priceChange)+'</span></div>'+intelTrendSvg(m.priceChange)+'</div><div class="intelMetrics"><div class="intelMetric"><span class="intelMetricLabel">Liquidity</span><span class="intelMetricValue">'+(m.liquidity||'—')+'</span><span class="intelMetricSub">'+intelInline(m.liquidityChange||'No returned change')+'</span></div><div class="intelMetric"><span class="intelMetricLabel">24h Volume</span><span class="intelMetricValue">'+(m.volume||'—')+'</span><span class="intelMetricSub">'+intelInline(m.volumeChange||'No returned change')+'</span></div><div class="intelMetric"><span class="intelMetricLabel">Transactions</span><span class="intelMetricValue">'+(m.transactions||'—')+'</span><span class="intelMetricSub">24h returned count</span></div></div>'+(m.drawdown?'<div class="intelDrawdown"><span>Max drawdown (sampled)</span><strong>'+intelInline(m.drawdown)+'</strong></div>':'')+'</section><div class="intelRight">';if(t){h+='<section class="intelMini"><div class="intelMiniTitle"><span class="intelIcon">T</span><span>Tokenomics</span></div><div class="intelFacts">'+(t.total?'<div class="intelFactRow"><span>Total supply</span><strong>'+t.total+'</strong></div>':'')+(t.circulating?'<div class="intelFactRow"><span>Circulating</span><strong>'+t.circulating+'</strong></div>':'')+(t.authority?'<div class="intelFactRow"><span>Mint / freeze</span><strong>'+intelInline(t.authority)+'</strong></div>':'')+'</div></section>'}if(risks.length){h+='<section class="intelMini"><div class="intelMiniTitle"><span class="intelIcon">!</span><span>Risk components</span></div><div class="intelRiskGrid">'+risks.map(function(x){return'<div class="intelRiskItem"><span class="intelRiskName">'+x.name+'</span>'+intelPill(x.status)+'</div>'}).join('')+'</div></section>'}if(fresh){h+='<section class="intelMini"><div class="intelMiniTitle"><span class="intelIcon">~</span><span>Live market freshness</span></div><div class="intelMiniText">'+intelInline(intelPlain(fresh).replace(/^[-•]\s*/,'').replace(/^Live market freshness\s*:\s*/i,''))+'</div></section>'}if(holders){h+='<section class="intelMini"><div class="intelMiniTitle"><span class="intelIcon">H</span><span>Holders / concentration</span></div><div class="intelMiniText">'+intelInline(intelPlain(holders).replace(/^[-•]\s*/,'').replace(/^Holders?\/concentration\s*:\s*/i,''))+'</div></section>'}h+='</div>';if(ev)h+=intelEvidence(ev);if(bottom)h+=intelBottom(bottom);h+='<details class="intelDisclosure"><summary>Full ROBERTA response</summary><div class="intelDisclosureBody"><p class="intelParagraph">'+intelInline(raw).replace(/\n/g,'<br>')+'</p></div></details><div class="intelFooter"><span>Analysis only</span><span>No trade execution</span><span>Visuals do not add facts</span></div></div></div>';return h}
+function formatIntelligenceCard(text){var raw=String(text||'').replace(/\r/g,'').trim();if(!raw)return'<div class="robertaIntelCard"><div class="intelDashboard">ROBERTA returned no reply.</div></div>';var first=raw.split('\n').find(function(x){return x.trim()})||'ROBERTA',plain=intelPlain(first),dash=plain.indexOf(' — '),title=dash>0?plain.slice(0,dash).trim():(plain.length<90?plain:'ROBERTA'),summary=dash>0?plain.slice(dash+3).replace(/^what matters right now\s*:?\s*/i,''):'',r=raw.match(/\b(BLOCK|WARN|PASS|UNKNOWN)\b/i),risk=r?r[1].toUpperCase():'';if(intelDashboardEligible(raw))return intelVisualSummary(raw,title,summary,risk);var lines=raw.split('\n');return'<div class="robertaIntelCard"><div class="intelHero"><div class="intelIdentity"><div class="intelMark">R</div><h3 class="intelTitle">'+escapeHtml(title)+'</h3></div><div class="intelRisk">'+intelPill(risk||'UNKNOWN')+'</div></div><div class="intelDashboard">'+intelVerified(lines.slice(1))+'<span style="display:none">'+intelMatters([])+intelNeeds([])+intelEvidence('Evidence quality: UNKNOWN')+intelBottom('BOTTOM LINE:')+'</span><details class="intelDisclosure"><summary>Full ROBERTA response</summary><div class="intelDisclosureBody"><p class="intelParagraph">'+intelInline(raw).replace(/\n/g,'<br>')+'</p></div></details><div class="intelFooter"><span>Analysis only</span><span>Details stay available below</span></div></div></div>'}
 '''
 
 _CLEAN_CHAT_APPENDIX = (
@@ -188,45 +66,26 @@ _CLEAN_CHAT_APPENDIX = (
     "Markdown markers in prose; the web client owns visual emphasis."
 )
 
-
 def apply_intelligence_card_surface(html: str) -> str:
-    """Project the clean intelligence-card presentation into the stable web UI."""
-
     if INTELLIGENCE_CARD_MARKER in html:
         return html
-
     updated = str(html)
-    head_anchor = "</head>"
-    if head_anchor not in updated:
+    if "</head>" not in updated:
         raise RuntimeError("ROBERTA website head contract drifted before intelligence-card overlay.")
-    updated = updated.replace(head_anchor, _CARD_STYLE + "\n" + head_anchor, 1)
-
+    updated = updated.replace("</head>", _CARD_STYLE + "\n</head>", 1)
     if _FORMATTER_ANCHOR not in updated:
         raise RuntimeError("ROBERTA assistant formatter contract drifted before intelligence-card overlay.")
     updated = updated.replace(_FORMATTER_ANCHOR, _CARD_FORMATTER_JS + "\n" + _FORMATTER_ANCHOR, 1)
-
     if _RENDER_HOOK_OLD not in updated:
         raise RuntimeError("ROBERTA assistant render hook drifted before intelligence-card overlay.")
-    updated = updated.replace(_RENDER_HOOK_OLD, _RENDER_HOOK_NEW, 1)
-    return updated
-
+    return updated.replace(_RENDER_HOOK_OLD, _RENDER_HOOK_NEW, 1)
 
 def apply_clean_human_output_contract(chat_ui: ModuleType) -> None:
-    """Tighten ROBERTA's human answer contract without changing CMIS semantics."""
-
     human = str(getattr(chat_ui, "HUMAN_ROBERTA_PRESENTATION_POLICY", ""))
     if CLEAN_HUMAN_OUTPUT_MARKER not in human:
         chat_ui.HUMAN_ROBERTA_PRESENTATION_POLICY = human + _CLEAN_CHAT_APPENDIX
-
     single = str(getattr(chat_ui, "SINGLE_ASSET_TERMINAL_STYLE", ""))
     if CLEAN_HUMAN_OUTPUT_MARKER not in single:
         chat_ui.SINGLE_ASSET_TERMINAL_STYLE = single + _CLEAN_CHAT_APPENDIX
 
-
-__all__ = [
-    "CLEAN_HUMAN_OUTPUT_MARKER",
-    "INTELLIGENCE_CARD_MARKER",
-    "INTELLIGENCE_CARD_SURFACE",
-    "apply_clean_human_output_contract",
-    "apply_intelligence_card_surface",
-]
+__all__ = ["CLEAN_HUMAN_OUTPUT_MARKER","INTELLIGENCE_CARD_MARKER","INTELLIGENCE_CARD_SURFACE","apply_clean_human_output_contract","apply_intelligence_card_surface"]
