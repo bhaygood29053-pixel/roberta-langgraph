@@ -5,13 +5,14 @@ import threading
 import urllib.error
 import urllib.request
 
-from roberta.bridge_http import create_server
+from roberta.bridge_http import EVALUATION_TELEMETRY_V2, create_server
 
 
 class FakeBetaBridge:
     def __init__(self):
         self.ask_calls = 0
         self.evaluation_calls = 0
+        self.evaluation_modes = []
 
     def ask(self, message: str, *, thread_id=None):
         self.ask_calls += 1
@@ -19,8 +20,9 @@ class FakeBetaBridge:
 
     def ask_with_evaluation(self, message: str, *, thread_id=None, evaluation_mode=None):
         self.evaluation_calls += 1
+        self.evaluation_modes.append(evaluation_mode)
         return "bounded beta answer", {
-            "evaluation_telemetry_version": "roberta_evaluation_telemetry/v1",
+            "evaluation_telemetry_version": evaluation_mode,
             "evaluation_evidence": {
                 "human_response_decision": {
                     "workflow": "x1_smart_route_pretrade",
@@ -34,6 +36,43 @@ class FakeBetaBridge:
             },
             "claims": [{"name": "recommendation"}],
             "evidence_provenance": {"source_contracts": ["accepted-contract"]},
+            "execution_authorized": False,
+        }
+
+
+class FakeFactualBetaBridge(FakeBetaBridge):
+    def ask_with_evaluation(self, message: str, *, thread_id=None, evaluation_mode=None):
+        self.evaluation_calls += 1
+        self.evaluation_modes.append(evaluation_mode)
+        return "bounded factual answer", {
+            "evaluation_telemetry_version": evaluation_mode,
+            "evaluation_evidence": {
+                "factual_response": {
+                    "specialist": "x1_scout",
+                    "chain": "x1",
+                    "requested_asset": "must-not-persist",
+                    "source": {
+                        "service": "cmis",
+                        "operation": "instant_x1_scan",
+                    },
+                    "confidence": {},
+                    "evidence_context": {
+                        "available": True,
+                        "verification_status": "VERIFIED",
+                        "freshness_verified": False,
+                        "category_coverage_percent": 80.0,
+                    },
+                },
+                "evaluation_projection_integrity": {
+                    "contract_version": "roberta_evaluation_projection_integrity/v1",
+                    "status": "PASS",
+                    "execution_authorized": False,
+                },
+            },
+            "claims": [{"name": "asset_symbol"}],
+            "evidence_provenance": {
+                "source_contracts": ["instant_x1_scan/v6"],
+            },
             "execution_authorized": False,
         }
 
@@ -101,6 +140,7 @@ def test_beta_enabled_records_coarse_outcome_without_prompt_or_reply(monkeypatch
         assert len(response_id) == 32
         assert bridge.ask_calls == 0
         assert bridge.evaluation_calls == 1
+        assert bridge.evaluation_modes == [EVALUATION_TELEMETRY_V2]
 
         rows = [json.loads(line) for line in destination.read_text(encoding="utf-8").splitlines()]
         assert len(rows) == 1
@@ -115,6 +155,39 @@ def test_beta_enabled_records_coarse_outcome_without_prompt_or_reply(monkeypatch
         assert "bounded beta answer" not in encoded
         assert "message" not in row
         assert "reply" not in row
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
+
+
+def test_beta_enabled_records_v2_factual_x1_outcome_without_content(monkeypatch, tmp_path):
+    destination = tmp_path / "beta.jsonl"
+    monkeypatch.setenv("ROBERTA_BETA_PRODUCT_PROOF_PATH", str(destination))
+    bridge = FakeFactualBetaBridge()
+    server, thread = _serve(bridge)
+    try:
+        base = f"http://127.0.0.1:{server.server_port}"
+        status, payload = _request(
+            f"{base}/v1/roberta",
+            body={"message": "investigate this exact private test token"},
+        )
+        assert status == 200
+        assert payload["reply"] == "bounded factual answer"
+        assert bridge.evaluation_modes == [EVALUATION_TELEMETRY_V2]
+
+        rows = [json.loads(line) for line in destination.read_text(encoding="utf-8").splitlines()]
+        assert len(rows) == 1
+        row = rows[0]
+        assert row["workflow"] == "x1_scout:instant_x1_scan"
+        assert row["outcome"] == "evidence_required"
+        assert row["evidence_quality"] == "MEDIUM"
+        assert row["execution_authorized"] is False
+        assert row["content_persisted"] is False
+        encoded = json.dumps(row)
+        assert "must-not-persist" not in encoded
+        assert "investigate this exact private test token" not in encoded
+        assert "bounded factual answer" not in encoded
     finally:
         server.shutdown()
         server.server_close()

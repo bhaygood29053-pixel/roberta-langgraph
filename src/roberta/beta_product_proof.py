@@ -18,6 +18,7 @@ BETA_PRODUCT_PROOF_VERSION = "roberta_beta_product_proof/v1"
 AUTO_OUTCOME_TYPE = "automatic_response_outcome"
 USER_FEEDBACK_TYPE = "explicit_user_feedback"
 BETA_PATH_ENV = "ROBERTA_BETA_PRODUCT_PROOF_PATH"
+EVALUATION_TELEMETRY_V2 = "roberta_evaluation_telemetry/v2"
 
 _ID_RE = re.compile(r"^[0-9a-f]{32}$")
 _WORKFLOW_RE = re.compile(r"^[A-Za-z0-9_.:-]{1,96}$")
@@ -96,6 +97,46 @@ def _decision_from_telemetry(telemetry: Mapping[str, Any]) -> Mapping[str, Any] 
     return decision if isinstance(decision, Mapping) else None
 
 
+def _factual_response_from_telemetry(
+    telemetry: Mapping[str, Any],
+) -> Mapping[str, Any] | None:
+    """Return only accepted v2 X1 Scout -> CMIS factual projection evidence."""
+
+    if telemetry.get("evaluation_telemetry_version") != EVALUATION_TELEMETRY_V2:
+        return None
+    evidence = telemetry.get("evaluation_evidence")
+    if not isinstance(evidence, Mapping):
+        return None
+
+    projection = evidence.get("evaluation_projection_integrity")
+    if isinstance(projection, Mapping):
+        if projection.get("execution_authorized") is True:
+            raise BetaProductProofError(
+                "factual projection execution_authorized must remain false"
+            )
+        if str(projection.get("status") or "").strip().upper() != "PASS":
+            return None
+    else:
+        return None
+
+    factual = evidence.get("factual_response")
+    if not isinstance(factual, Mapping):
+        return None
+    source = factual.get("source")
+    if not isinstance(source, Mapping):
+        return None
+    operation = source.get("operation")
+    if (
+        factual.get("specialist") != "x1_scout"
+        or factual.get("chain") != "x1"
+        or source.get("service") != "cmis"
+        or not isinstance(operation, str)
+        or not operation.strip()
+    ):
+        return None
+    return factual
+
+
 def _workflow(value: object) -> str:
     result = str(value or "unknown").strip() or "unknown"
     if not _WORKFLOW_RE.fullmatch(result):
@@ -111,6 +152,68 @@ def _evidence_quality(value: object) -> str:
 def _response_depth(value: object) -> str:
     result = str(value or "unknown").strip().lower() or "unknown"
     return result if result in _ALLOWED_DEPTHS else "unknown"
+
+
+def _explicit_factual_quality(
+    factual: Mapping[str, Any],
+    context: Mapping[str, Any],
+) -> str | None:
+    confidence = factual.get("confidence")
+    containers = [confidence, context]
+    for container in containers:
+        if not isinstance(container, Mapping):
+            continue
+        for key in ("evidence_quality", "quality"):
+            value = _evidence_quality(container.get(key))
+            if value != "UNKNOWN":
+                return value
+    return None
+
+
+def _factual_outcome(
+    factual: Mapping[str, Any],
+) -> tuple[str, str, str, int]:
+    source = factual.get("source")
+    operation = source.get("operation") if isinstance(source, Mapping) else None
+    workflow = _workflow(f"x1_scout:{str(operation).strip()}")
+    depth = "unknown"
+
+    raw_context = factual.get("evidence_context")
+    context = raw_context if isinstance(raw_context, Mapping) else {}
+    available = context.get("available")
+    verification = str(context.get("verification_status") or "").strip().upper()
+    freshness_verified = context.get("freshness_verified")
+    coverage = context.get("category_coverage_percent")
+
+    if available is False:
+        return workflow, depth, "UNAVAILABLE", 1
+
+    gap_count = 0
+    verified = verification in {"VERIFIED", "PASS", "ACCEPTED"}
+    if verification and not verified:
+        gap_count += 1
+    if freshness_verified is False:
+        gap_count += 1
+    if (
+        not isinstance(coverage, bool)
+        and isinstance(coverage, (int, float))
+        and float(coverage) < 100.0
+    ):
+        gap_count += 1
+
+    explicit_quality = _explicit_factual_quality(factual, context)
+    if explicit_quality is not None:
+        evidence_quality = explicit_quality
+    elif verified and freshness_verified is True:
+        evidence_quality = "HIGH"
+    elif verified:
+        evidence_quality = "MEDIUM"
+    elif available is True:
+        evidence_quality = "LOW" if gap_count else "UNKNOWN"
+    else:
+        evidence_quality = "UNKNOWN"
+
+    return workflow, depth, evidence_quality, min(gap_count, 99)
 
 
 def _forbidden_key_scan(value: object, *, path: str = "record") -> None:
@@ -140,13 +243,7 @@ def build_automatic_outcome(
         raise BetaProductProofError("beta observation cannot accept execution_authorized=true")
 
     decision = _decision_from_telemetry(telemetry)
-    if decision is None:
-        workflow = "unknown"
-        depth = "unknown"
-        evidence_quality = "UNAVAILABLE"
-        unknown_count = 0
-        outcome = "unavailable"
-    else:
+    if decision is not None:
         if decision.get("execution_authorized") is True:
             raise BetaProductProofError("decision execution_authorized must remain false")
         workflow = _workflow(decision.get("workflow"))
@@ -155,6 +252,19 @@ def build_automatic_outcome(
         unknowns = decision.get("important_unknowns")
         unknown_count = min(len(unknowns), 99) if isinstance(unknowns, list) else 0
         outcome = "evidence_required" if unknown_count else "success"
+    else:
+        factual = _factual_response_from_telemetry(telemetry)
+        if factual is None:
+            workflow = "unknown"
+            depth = "unknown"
+            evidence_quality = "UNAVAILABLE"
+            unknown_count = 0
+            outcome = "unavailable"
+        else:
+            workflow, depth, evidence_quality, unknown_count = _factual_outcome(factual)
+            outcome = "evidence_required" if unknown_count else "success"
+            if evidence_quality == "UNAVAILABLE":
+                outcome = "unavailable"
 
     claims = telemetry.get("claims")
     claim_count = min(len(claims), 99) if isinstance(claims, list) else 0
