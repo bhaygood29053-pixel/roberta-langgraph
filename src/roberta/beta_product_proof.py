@@ -100,7 +100,7 @@ def _decision_from_telemetry(telemetry: Mapping[str, Any]) -> Mapping[str, Any] 
 def _factual_response_from_telemetry(
     telemetry: Mapping[str, Any],
 ) -> Mapping[str, Any] | None:
-    """Return only accepted v2 X1 Scout -> CMIS factual projection evidence."""
+    """Return only accepted v2 X1 factual projection evidence."""
 
     if telemetry.get("evaluation_telemetry_version") != EVALUATION_TELEMETRY_V2:
         return None
@@ -126,10 +126,14 @@ def _factual_response_from_telemetry(
     if not isinstance(source, Mapping):
         return None
     operation = source.get("operation")
+    source_service = source.get("service")
+    accepted_source = source_service == "cmis" or (
+        source_service == "x1_scout" and operation == "asset_intelligence"
+    )
     if (
         factual.get("specialist") != "x1_scout"
         or factual.get("chain") != "x1"
-        or source.get("service") != "cmis"
+        or not accepted_source
         or not isinstance(operation, str)
         or not operation.strip()
     ):
