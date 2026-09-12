@@ -1,0 +1,128 @@
+{
+  "schema_version": 1,
+  "authority": "evaluation_input_only",
+  "live_market_authority": false,
+  "execution_authorized": false,
+  "cases": [
+    {
+      "id": "instant-x1-scan-normal",
+      "service": "instant_x1_scan",
+      "response_depth": "normal",
+      "prompt": "Is ANL risky right now?",
+      "response": "I'd be careful with ANL right now. Trading is active, but I still can't confirm some important safety details, including whether more tokens can still be created and whether all of the market information is current. Until those gaps are cleared up, I wouldn't treat this as a clean trade.",
+      "authority": "evaluation_input_only",
+      "live_market_authority": false,
+      "execution_authorized": false
+    },
+    {
+      "id": "instant-x1-scan-quick",
+      "service": "instant_x1_scan",
+      "response_depth": "quick",
+      "prompt": "Quick: should I touch this token?",
+      "response": "I'd wait. The market is active, but too many important safety details are still unconfirmed for me to call this a clean trade.",
+      "authority": "evaluation_input_only",
+      "live_market_authority": false,
+      "execution_authorized": false
+    },
+    {
+      "id": "pretrade-normal",
+      "service": "pre_trade",
+      "response_depth": "normal",
+      "prompt": "What do you think about a $500 buy?",
+      "response": "I wouldn't make the $500 trade yet. I still can't tell you with enough confidence what your final fill would look like after price movement, slippage, and fees. Until those are verified for your trade size, I'd wait.",
+      "authority": "evaluation_input_only",
+      "live_market_authority": false,
+      "execution_authorized": false
+    },
+    {
+      "id": "smart-route-normal",
+      "service": "smart_route",
+      "response_depth": "normal",
+      "prompt": "Is this the best route for my swap?",
+      "response": "The route looks usable, but I wouldn't treat the quoted result as guaranteed. The main thing I care about is whether the path still gives you a reasonable final price after fees and price movement at your trade size. If that changes materially, I'd use a different route or wait.",
+      "authority": "evaluation_input_only",
+      "live_market_authority": false,
+      "execution_authorized": false
+    },
+    {
+      "id": "wallet-relationship-normal",
+      "service": "wallet_relationship",
+      "response_depth": "normal",
+      "prompt": "Did these two wallets interact?",
+      "response": "Yes. The evidence in this example shows a direct transaction between the two wallets. That proves an observed interaction, but it does not prove the wallets share an owner, belong to insiders, or acted together for the same reason.",
+      "authority": "evaluation_input_only",
+      "live_market_authority": false,
+      "execution_authorized": false
+    },
+    {
+      "id": "bridge-provenance-normal",
+      "service": "cross_chain_asset_provenance",
+      "response_depth": "normal",
+      "prompt": "Can you prove where this bridged asset came from?",
+      "response": "I can trace the asset through the bridge path shown in this example and connect the origin-side asset to the X1-side representation. What I would not claim from that alone is who ultimately controls every wallet involved or why the transfer happened.",
+      "authority": "evaluation_input_only",
+      "live_market_authority": false,
+      "execution_authorized": false
+    },
+    {
+      "id": "burn-intelligence-normal",
+      "service": "burn_intelligence",
+      "response_depth": "normal",
+      "prompt": "Was this token burn real?",
+      "response": "The burn shown in this example is supported by the transaction evidence I have. I can tell you what amount was removed in that event, but I would keep that separate from any claim about future price impact.",
+      "authority": "evaluation_input_only",
+      "live_market_authority": false,
+      "execution_authorized": false
+    },
+    {
+      "id": "regulatory-normal",
+      "service": "regulatory_intelligence",
+      "response_depth": "normal",
+      "prompt": "Does this new rule matter for the token?",
+      "response": "It could matter, but I would separate the rule itself from what it means for this specific token. I can explain the parts of the rule that apply and point out what still depends on the issuer, structure, or jurisdiction instead of pretending the legal answer is automatic.",
+      "authority": "evaluation_input_only",
+      "live_market_authority": false,
+      "execution_authorized": false
+    },
+    {
+      "id": "daily-brief-normal",
+      "service": "daily_intelligence_brief",
+      "response_depth": "normal",
+      "prompt": "What changed on X1 today?",
+      "response": "The useful part of today's brief is not just what moved, but what actually changed enough to matter. I would lead with the biggest verified change, explain why it matters, then separate weaker signals and anything I still can't confirm.",
+      "authority": "evaluation_input_only",
+      "live_market_authority": false,
+      "execution_authorized": false
+    },
+    {
+      "id": "tokenized-equity-normal",
+      "service": "tokenized_equity_human",
+      "response_depth": "normal",
+      "prompt": "What exactly am I buying?",
+      "response": "You're buying a tokenized claim tied to an underlying equity structure, not automatically the same legal rights as holding the stock directly. I would check the backing, custody, redemption terms, dividends, voting rights, and who stands between you and the underlying asset before treating it like ordinary stock ownership.",
+      "authority": "evaluation_input_only",
+      "live_market_authority": false,
+      "execution_authorized": false
+    },
+    {
+      "id": "mint-authority-meaning-first",
+      "service": "token_risk",
+      "response_depth": "normal",
+      "prompt": "Can more of this token be made?",
+      "response": "Yes. More tokens can still be created — the mint authority is active. That means the supply can increase, so I would treat dilution risk as a real consideration.",
+      "authority": "evaluation_input_only",
+      "live_market_authority": false,
+      "execution_authorized": false
+    },
+    {
+      "id": "deep-dive-technical-allowed",
+      "service": "pre_trade",
+      "response_depth": "deep_dive",
+      "prompt": "Show me the technical details and evidence trail.",
+      "response": "Deep Dive: the Chain Scout consumed the accepted CMIS source contract and retained the evidence receipt, freshness state, and execution_authorized=false boundary. The RPC-facing evidence remains separate from ROBERTA's judgment, and the decision object does not recalculate source facts.",
+      "authority": "evaluation_input_only",
+      "live_market_authority": false,
+      "execution_authorized": false
+    }
+  ]
+}
