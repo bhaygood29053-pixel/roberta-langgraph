@@ -1,83 +1,102 @@
 # ROBERTA Roadmap Checkpoint — 2026-09-12
 
-This checkpoint supersedes the **Live checkpoint** and **Active execution order** sections dated 2026-09-10 in `docs/LANGGRAPH_ROADMAP.md`. Historical architecture, authority, Learning System, and completed-work sections in that roadmap remain unchanged until the next consolidated rewrite.
+This checkpoint supersedes the stale **Live checkpoint** and **Active execution order** sections dated 2026-09-10 in `docs/LANGGRAPH_ROADMAP.md`. Historical architecture, authority, Learning System, and completed-work sections remain unchanged until the next consolidated rewrite.
 
 ## Current accepted flagship state
 
-Tokenized Equity / RWA Intelligence is accepted end to end through X1 Scout, Claim Integrity, protected Machine synthesis, and the Human “What exactly am I buying?” explanation.
+ROBERTA has completed the major backend/productization chain needed for a first public-beta cohort:
 
-Final regression hardening is now accepted:
-
-- public ROBERTA PR #445 merged as `f8ca20b52a3f41ef5678a0ded141127d19758fdd`;
-- public `Tokenized Equity Final Hardening` passed on Python 3.11 and 3.12;
-- public repository-wide tests passed on the exact PR head before merge;
-- protected `roberta-core` PR #99 merged as `cb84b27684bc70cd10b54cadb1a6b6266d52ba2b`;
-- protected `Tokenized Equity Final Hardening` passed on Python 3.11 and 3.12 against exact accepted public shell `f8ca20b52a3f41ef5678a0ded141127d19758fdd`;
-- full private-core CI passed on Python 3.11 and 3.12 plus pinned-shell compatibility;
-- Wallet Relationship, X1 Daily Intelligence Brief, existing Human Intelligence, website/chat capability surface, and protected/public overlay coexistence remain accepted;
+- Tokenized Equity / RWA intelligence is accepted end to end through X1 Scout, Claim Integrity, protected Machine synthesis, Human “What exactly am I buying?” explanation, and final hardening.
+- X1 Smart Route is accepted through CMIS Phase 1 + Phase 2, X1 Scout projection, protected ROBERTA Pre-Trade adoption, and Ask ROBERTA/website exposure.
+- Public Beta Product Proof v1 is accepted with privacy-safe, content-free outcome/feedback telemetry.
+- Public Beta Cohort Preflight v1 is accepted; the seven-workflow scenario pack and PASS/PARTIAL/FAIL rubric are frozen.
+- Human ROBERTA v2 plain-language enforcement and acceptance coverage are accepted for Quick/Normal, while Deep Dive remains the explicit technical surface.
+- The selected Option #2 visual dashboard is accepted through PR #467 and now renders the current narrative asset-answer shape rather than falling back to the thin legacy snapshot card.
+- Protected `roberta-core` has promoted its active compatibility baseline through ROBERTA #104 / PR #105; protected main is `7a380a95a21b52a66eed85577c39808bcd4cd6b2` at this checkpoint.
 - `execution_authorized=false` remains invariant.
 
-ROBERTA #431 is therefore complete and parent #418 is eligible for closure.
+Public ROBERTA main observed for this checkpoint: `d9f03d4db7b4d1b7eedc75854e7eb4479ffecd75` (merge PR #467, faithful Option #2 visual dashboard).
 
 ## Active execution order
 
-### 1. X1 Smart Route Intelligence — ACTIVE NEXT
+### 1. Cohort 001 — ACTIVE FLAGSHIP
 
-Upstream: `bhaygood29053-pixel/cmis#681`  
-Downstream adoption: `bhaygood29053-pixel/roberta-langgraph#444`
+Issue: `#466`  
+Parent: `#462`
 
-Dependency chain:
+The code/preflight blocker is cleared. The dominant remaining product question is real user behavior.
 
-`CMIS #681 -> X1 Scout projection -> ROBERTA #444 Pre-Trade adoption -> public beta / product proof`
+Current setup state:
 
-CMIS #681 is the active evidence task. It must first build a bounded deterministic `xdex_multi_hop_route_intelligence/v1` contract and independently corroborate material route facts against X1 mainnet evidence where possible.
+- actual-runtime cohort preflight: PASS;
+- live cohort JSONL initially empty: PASS;
+- accepted cohort-preflight merge present locally: PASS;
+- moderator inputs frozen outside telemetry/GitHub: PASS;
+- assembled `.venv-runtime` construction: PASS;
+- current port `8766` owner identified as the accepted `roberta-bridge.service`: PASS;
+- bridge health: PASS;
+- verify `ROBERTA_BETA_PRODUCT_PROOF_PATH` is present in the already-running systemd process environment: STILL REQUIRED;
+- valid Participant 1 / C01: NOT YET SCORED;
+- at least one complete C01-C07 real-user run: NOT YET COMPLETE.
 
-Required boundaries:
+Do not add new backend intelligence during the participant run unless an observed user/evidence gap justifies a separate issue.
 
-- candidate route != global route optimality;
-- provider route != independent verification;
-- configured cross-DEX support != observed cross-DEX execution;
-- quote freshness != reserve freshness;
-- quoted output != executed output;
-- minimum received != guaranteed fill;
-- pool fee != all-in fee;
-- unexplained arithmetic difference != router/platform fee;
-- network fee remains separate unless prepared-transaction semantics are proven;
-- `execution_authorized=false`.
+### 2. Cohort closeout / product proof — NEXT
 
-After at least two accepted bounded routing providers/venues, CMIS may add `x1_route_comparison/v1` for an exact trade size and exact candidate set. `best_route` must never imply exhaustive X1-wide optimality unless completeness is independently proven.
+After valid C01-C07 evidence exists:
 
-### 2. ROBERTA #444 — QUEUED ON CMIS #681
+1. generate the content-free `roberta_beta_cohort_summary/v1`;
+2. rank observed product/evidence/Human-language failures by frequency x impact;
+3. close or update parent #462 from actual cohort evidence;
+4. choose the first commercial workflow, API surface, onboarding change, or new intelligence task from observed demand rather than feature speculation.
 
-Adopt accepted Smart Route evidence through X1 Scout into ROBERTA Pre-Trade.
+Initial beta targets remain directional until cohort size is recorded:
 
-Target user outcome:
+- helpful >= 70%;
+- too-technical + confusing <= 20%;
+- supported workflow unavailable <= 10%;
+- would-use-again >= 60%;
+- every EVIDENCE_REQUIRED answer names the missing evidence rather than guessing.
 
-> “What route would you use for this exact X1 trade, and why?”
+### 3. Human-language / presentation quality — SUPPORTING
 
-ROBERTA may recommend and explain using bounded verified evidence. It may not construct, sign, broadcast, custody, bridge, trade, or move value.
+Accepted Human v2 work now includes deterministic plain-language/runtime gates, Vale 3.21 downstream presentation checks, realistic service-family acceptance coverage, and zero-token offline replay support in `roberta-eval`.
 
-### 3. Public beta / product proof — NEXT MAJOR PRODUCT PHASE
+Use repeated cohort `too_technical` / `confusing` evidence to extend permanent regressions. Presentation tooling must not rewrite facts, freshness, risk, recommendation authority, or execution boundaries.
 
-After Smart Route adoption:
+### 4. Evaluation Laboratory — SPLIT STATUS
 
-- keep **Ask ROBERTA** as the primary entry point;
-- preserve Investigate / Ask / Compare / Watch / Discover / Brief;
-- test the improved Pre-Trade workflow with real users;
-- measure repeat usage, unanswered questions, evidence drill-down, confusing answers, route/pre-trade demand, and willingness to pay;
-- choose the first paid feature set and API/developer surface from observed use rather than adding unrelated backend contracts.
+Broad live LAB #21/#22 campaigns remain paused unless explicitly resumed.
 
-### 4. Supporting / lower-priority tracks
+Offline Human-quality tooling is active/accepted and does not resume live campaigns:
 
-- Learning Plane scheduling #275 / protected `roberta-core` #11 — supporting, not a flagship blocker.
-- Telegram #264 — lower priority; rebase/revalidate only if deliberately reprioritized.
-- Evaluation Laboratory — paused by owner; do not resume LAB campaigns or eval-driven protected PR #90 without explicit instruction.
-- Controlled Execution — locked; no transaction/value-moving authority.
+- Human v2 zero-token language grading: accepted;
+- batch/replay zero-token saved-run grading: accepted via `roberta-eval` PR #56 / merge `6fecbfd937a961dc07df0ecd0d5d6288a294e983`;
+- grading remains advisory, factual-authority false, and makes zero judge-model/external calls.
+
+Protected `roberta-core` #89 / PR #90 remains open/unaccepted current-X1 delegation remediation and must not be treated as accepted capability or merged merely because it exists.
+
+### 5. CMIS / X1 intelligence expansion — EVIDENCE-DRIVEN, NOT FLAGSHIP
+
+CMIS Smart Route Phase 1 + 2 are complete. Future cross-DEX execution evidence, a second bounded route candidate/provider, and `x1_route_comparison/v1` are future expansions and are not current beta blockers.
+
+Provider/evidence research should proceed only where it closes a demonstrated product evidence gap.
+
+### 6. Supporting / lower priority
+
+- Learning Plane scheduling #275 / protected `roberta-core` #11 — supporting; current head still requires its own fresh acceptance gate before merge.
+- Telegram #264 — lower priority / needs refresh.
+- Learning System durable-source work remains queued behind accepted phase ordering; XenBlocks source onboarding remains blocked on exact-byte source preservation.
+- Controlled Execution — locked; no transaction construction, signing, broadcasting, custody, trade execution, bridge execution, or value movement.
 
 ## Product phase
 
-ROBERTA has moved beyond the main architecture-build phase. The immediate remaining technical gap is a demonstrated user-facing one: evidence-backed exact-size X1 route analysis for Pre-Trade.
+ROBERTA is now in **public beta / Cohort 001 activation**, not broad architecture build-out.
 
-After that gap closes, the dominant uncertainty is product-market proof, not another broad backend expansion.
+Active chain:
+
+`Core intelligence ✅ -> Tokenized Equity ✅ -> Smart Route ✅ -> Ask ROBERTA ✅ -> Human v2 ✅ -> Beta measurement ✅ -> Cohort preflight ✅ -> #466 REAL USER COHORT ACTIVE -> commercial proof`
+
+The dominant uncertainty is actual user usefulness and willingness to return/pay, not whether another backend contract can be built.
 
 Last reconciled: **2026-09-12 America/New_York**.
