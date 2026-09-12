@@ -38,7 +38,11 @@ def _technical_response_decision(depth="normal"):
             _observation(
                 "facts.market.source",
                 "The Chain Scout source contract has no provider corroboration.",
-            )
+            ),
+            _observation(
+                "facts.market.activity",
+                "Measured market activity remains unavailable.",
+            ),
         ],
         "counterevidence_status": "present",
         "counterevidence": [
@@ -57,8 +61,12 @@ def _technical_response_decision(depth="normal"):
         "evidence_profile": [
             {
                 "dimension": "freshness",
-                "state": "NOT_VERIFIED",
-            }
+                "state": "PARTIAL",
+            },
+            {
+                "dimension": "proof_strength",
+                "state": "WEAK",
+            },
         ],
         "what_would_change_my_mind": [
             {
