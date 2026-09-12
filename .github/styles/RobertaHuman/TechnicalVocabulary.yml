@@ -1,0 +1,16 @@
+extends: existence
+message: "Human ROBERTA should explain '%s' in ordinary language before or instead of using it in Quick/Normal mode."
+level: warning
+ignorecase: true
+tokens:
+  - '\bCMIS\b'
+  - '\bChain Scout\b'
+  - '\bEvidence Receipts?\b'
+  - '\bProof Score\b'
+  - '\bdeterministic risk result\b'
+  - '\bprovider corroboration\b'
+  - '\bindependent corroboration\b'
+  - '\btokenomics verification\b'
+  - '\bverification evidence\b'
+  - '\bprovider evidence\b'
+  - '\bcontract version\b'
