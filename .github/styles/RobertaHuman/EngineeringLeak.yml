@@ -1,0 +1,17 @@
+extends: substitution
+message: "Human ROBERTA should explain '%s' in plain language. Prefer '%s'."
+level: error
+ignorecase: true
+swap:
+  "deterministic risk engine": "risk checks"
+  "deterministic risk result": "risk result"
+  "freshness state": "whether the data is current"
+  "verification state": "what I could confirm"
+  "accepted source contract": "source details"
+  "source contract": "source details"
+  "canonical object": "internal analysis"
+  "decision object": "internal analysis"
+  "technical evidence reference": "supporting evidence"
+  "fact authority": "where the facts came from"
+  "judgment authority": "ROBERTA's judgment"
+  "provider fact time": "when the source data was observed"
