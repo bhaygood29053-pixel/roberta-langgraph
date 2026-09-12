@@ -19,14 +19,28 @@ def test_current_accepted_capabilities_are_visible_without_internal_service_cata
     assert "Large trades &amp; price impact" in html
     assert "Evidence-complete answers" in html
 
+    # Smart Route remains an Ask ROBERTA behavior, not a backend-service button.
+    assert "pre-trade routes" in html
+    assert "what verified route do you have?" in html
+    assert "gross and net output" in html
+    assert "verified costs" in html
+    assert "price impact" in html
+    assert "minimum received or slippage" in html
+    assert "network fee" in html
+    assert "What route would you use for a $500 AGI buy?" in html
+
     # Newly accepted capabilities remain conversational entry points rather than
     # exposing implementation service names to website users.
     assert "Give me today's X1 intelligence brief." in html
     assert "What exactly am I buying with this tokenized equity?" in html
     assert "Did these two wallets directly interact?" in html
     assert "cmis_evidence_complete_response/v1" not in html
+    assert "x1_smart_route_intelligence/v1" not in html
+    assert "xdex_multi_hop_route_snapshot/v1" not in html
+    assert "route_optimality_verified" not in html
     assert "CMIS" not in html
     assert "X1 Scout" not in html
+    assert "XDEX" not in html
 
 
 def test_chat_workspace_prioritizes_readability_and_conversation_width():
@@ -59,4 +73,5 @@ def test_live_web_bytes_include_current_capability_surface():
     assert WEBSITE_CAPABILITY_MARKER in html
     assert WORKSPACE_CHAT_FOCUS_MARKER in html
     assert "Evidence-complete answers" in html
+    assert "Before I trade $500 of AGI" in html
     assert "ROBERTA does not execute transactions from this website." in html

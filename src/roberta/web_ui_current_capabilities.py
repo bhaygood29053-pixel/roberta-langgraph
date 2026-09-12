@@ -10,8 +10,8 @@ No CMIS/provider names or raw contract identifiers are exposed to website users.
 
 from __future__ import annotations
 
-WEBSITE_CAPABILITY_SURFACE = "roberta-website-capabilities/2026-09-11"
-WEBSITE_CAPABILITY_MARKER = 'data-capability-surface="roberta-website-capabilities/2026-09-11"'
+WEBSITE_CAPABILITY_SURFACE = "roberta-website-capabilities/2026-09-12"
+WEBSITE_CAPABILITY_MARKER = 'data-capability-surface="roberta-website-capabilities/2026-09-12"'
 WORKSPACE_CHAT_FOCUS_MARKER = 'id="chat-focus-workspace-v1"'
 
 _HERO_OLD = (
@@ -20,19 +20,19 @@ _HERO_OLD = (
 )
 _HERO_NEW = (
     '<p class="heroLead">She will investigate it, explain what she found, and tell you what she thinks. '
-    'Ask about tokens, wallets, relationships, liquidity, trades, burns, bridges, tokenized equities, risk, '
+    'Ask about tokens, wallets, relationships, liquidity, trades, pre-trade routes, burns, bridges, tokenized equities, risk, '
     'daily X1 intelligence, or unusual activity without learning a technical tool first.</p>'
 )
 
 _CURRENT_CAPABILITIES = r'''
-    <section id="current-capabilities" class="section" data-capability-surface="roberta-website-capabilities/2026-09-11">
+    <section id="current-capabilities" class="section" data-capability-surface="roberta-website-capabilities/2026-09-12">
       <div class="shell">
         <div class="sectionHead">
           <div><div class="kicker">Current accepted capabilities</div><h2>More of ROBERTA is now available through one conversation.</h2></div>
           <p>The website stays simple while ROBERTA automatically works through the verified evidence needed for the question. Missing evidence stays explicit instead of being guessed.</p>
         </div>
         <div class="helpGrid">
-          <article class="helpCard"><h3>Pre-trade intelligence</h3><p>Assess trade size, liquidity, activity, verified price-impact evidence, risk, freshness, and what execution evidence is still unavailable.</p><button data-ask-now="Evaluate a $500 AGI buy before I trade and show me the verified evidence and anything still unavailable.">Example: Evaluate a trade →</button></article>
+          <article class="helpCard"><h3>Pre-trade intelligence</h3><p>Assess an exact trade using the verified route ROBERTA has, gross and bounded net output, verified fee evidence, freshness, and anything still missing such as price impact, minimum received or slippage, and network fee.</p><button data-ask-now="Before I trade $500 of AGI, what verified route do you have? Show gross and net output, verified costs, and what evidence is still missing.">Example: Evaluate a route →</button></article>
           <article class="helpCard"><h3>Wallet relationships</h3><p>Verify direct wallet-to-wallet interactions, connected transactions, first observed interaction, and token amounts without inventing ownership or intent.</p><button data-ask-now="Did these two wallets directly interact? Show me the verified transactions connecting them.">Example: Compare two wallets →</button></article>
           <article class="helpCard"><h3>Tokenized equities &amp; RWAs</h3><p>Investigate provenance, wrapper layers, backing and rights evidence, custody, activity, and cross-chain lineage. Accepted Machine synthesis preserves evidence-required and denied states instead of reconstructing missing facts.</p><button data-ask-now="What exactly am I buying with this tokenized equity? Show provenance, rights, backing, custody, and evidence limits.">Example: Explain a tokenized equity →</button></article>
           <article class="helpCard"><h3>X1 Daily Intelligence Brief</h3><p>Ask for a concise X1 intelligence brief that separates verified activity, priority, uncertainty, judgment, and evidence limits.</p><button data-ask-now="Give me today's X1 intelligence brief and tell me what matters most.">Example: Today's X1 brief →</button></article>
@@ -44,6 +44,7 @@ _CURRENT_CAPABILITIES = r'''
 '''
 
 _EXTRA_HERO_EXAMPLES = (
+    '          <button class="heroExample" data-ask-now="What verified route would you use for a $500 AGI buy, and what evidence is still missing?">What route would you use for a $500 AGI buy?</button>\n'
     '          <button class="heroExample" data-ask-now="Give me today\'s X1 intelligence brief.">Give me today\'s X1 intelligence brief.</button>\n'
     '          <button class="heroExample" data-ask-now="What exactly am I buying with this tokenized equity?">What exactly am I buying with this tokenized equity?</button>\n'
 )
