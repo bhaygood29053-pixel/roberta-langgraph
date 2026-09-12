@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """Run Human ROBERTA v2 language acceptance cases.
 
-The runner evaluates presentation only and optionally exports the accepted
-responses to Markdown for Vale. It does not call a model, provider, Chain Scout,
-or CMIS and has no live-market or execution authority.
+The runner evaluates presentation only and optionally exports the Quick/Normal
+plain-language surfaces to Markdown for Vale. Deep Dive remains part of the
+deterministic acceptance sweep but is intentionally excluded from the
+Quick/Normal prose linter because technical detail is explicit there.
+
+This script does not call a model, provider, Chain Scout, or CMIS and has no
+live-market or execution authority.
 """
 
 from __future__ import annotations
@@ -24,7 +28,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--markdown-output",
         default=None,
-        help="Optional Markdown output containing the evaluated responses.",
+        help="Optional Markdown output containing Quick/Normal responses for Vale.",
     )
     return parser
 
@@ -33,12 +37,14 @@ def _write_markdown(path: str, results) -> None:
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
     lines = [
-        "# Human ROBERTA v2 language acceptance sweep",
+        "# Human ROBERTA v2 plain-language acceptance sweep",
         "",
-        "Evaluation-only response corpus. Not blockchain evidence or live market truth.",
+        "Quick/Normal evaluation-only response corpus. Not blockchain evidence or live market truth.",
         "",
     ]
     for result in results:
+        if result.response_depth == "deep_dive":
+            continue
         lines.extend(
             [
                 f"## {result.case_id} — {result.service} — {result.response_depth}",
@@ -70,6 +76,8 @@ def main() -> int:
         f"HUMAN_LANGUAGE_ACCEPTANCE total={len(results)} "
         f"passed={len(results) - len(failures)} failed={len(failures)}"
     )
+    print("VALE_SCOPE=quick,normal")
+    print("DEEP_DIVE_DETERMINISTIC_ONLY=true")
     print("LIVE_MARKET_AUTHORITY=false")
     print("EXECUTION_AUTHORIZED=false")
     return 1 if failures else 0
