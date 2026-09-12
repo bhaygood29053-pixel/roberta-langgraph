@@ -65,6 +65,12 @@ def _response_id(value: object | None) -> str:
     return result
 
 
+def _required_feedback_response_id(value: object) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise BetaProductProofError("response_id is required for beta feedback")
+    return _response_id(value)
+
+
 def _duration_bucket(duration_ms: object) -> str:
     if isinstance(duration_ms, bool) or not isinstance(duration_ms, (int, float)):
         raise BetaProductProofError("duration_ms must be a non-negative number")
@@ -186,6 +192,7 @@ def build_user_feedback(
     interest_surface: str | None = None,
     timestamp: str | None = None,
 ) -> dict[str, object]:
+    joined_response_id = _required_feedback_response_id(response_id)
     clarity_value = str(clarity).strip().lower()
     if clarity_value not in _ALLOWED_CLARITY:
         raise BetaProductProofError("unsupported clarity feedback")
@@ -203,7 +210,7 @@ def build_user_feedback(
     record: dict[str, object] = {
         "contract_version": BETA_PRODUCT_PROOF_VERSION,
         "record_type": USER_FEEDBACK_TYPE,
-        "response_id": _response_id(response_id),
+        "response_id": joined_response_id,
         "timestamp": str(timestamp or _now_iso()),
         "helpful": helpful,
         "clarity": clarity_value,
