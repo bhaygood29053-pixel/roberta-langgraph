@@ -38,6 +38,9 @@ def test_sync_script_verifies_health_and_live_website():
     assert "ROBERTA — Verified On-Chain Intelligence" in SCRIPT
     assert "View evidence &amp; details" in SCRIPT
     assert "ROBERTA judgment" in SCRIPT
+    assert 'roberta-website-capabilities/2026-09-12' in SCRIPT
+    assert 'roberta-intelligence-card-v2' in SCRIPT
+    assert 'roberta-visual-summary-narrative-compat-v1' in SCRIPT
     assert "website_runtime=PASS" in SCRIPT
     assert "LOCAL_STACK_SYNC=PASS" in SCRIPT
 
