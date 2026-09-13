@@ -109,11 +109,15 @@ class _CapturingGraph:
         }
 
 
-def test_daily_brief_selects_exact_ranked_mints_then_uses_explicit_accepted_route() -> None:
+def test_daily_brief_selects_exact_ranked_mints_then_uses_canonical_accepted_route() -> None:
+    # Deliberately put the lexically later mint first in volume-rank order. The
+    # accepted CMIS request canonicalizes the bounded selected set, so rank order
+    # must not make the planner reject the Daily Brief request.
+    assert sorted([MINT_B, MINT_A]) == [MINT_A, MINT_B]
     client = _RankClient(
         [
-            {"rank": 1, "mint": MINT_A, "symbol": "AAA", "value": 1000.0},
-            {"rank": 2, "mint": MINT_B, "symbol": "BBB", "value": 900.0},
+            {"rank": 1, "mint": MINT_B, "symbol": "BBB", "value": 1000.0},
+            {"rank": 2, "mint": MINT_A, "symbol": "AAA", "value": 900.0},
         ]
     )
     graph = _CapturingGraph()
