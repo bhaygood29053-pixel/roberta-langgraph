@@ -209,11 +209,16 @@ def run_x1_daily_intelligence_brief_workflow(
             selection=selection,
         )
 
+    # The accepted CMIS Daily Brief request canonicalizes exact mint subjects in
+    # lexical order. Rank order selects the bounded subject set, but it is not a
+    # fact-bearing order. Canonicalize before the Scout planner validates the
+    # request so `asset` and the first normalized subject are always identical.
+    canonical_subjects = sorted(subjects)
     request = {
-        "asset": subjects[0],
+        "asset": canonical_subjects[0],
         "objective": str(objective or "").strip(),
         "operation": "x1_intelligence_brief_inputs",
-        "daily_brief_subjects": subjects,
+        "daily_brief_subjects": canonical_subjects,
         "daily_brief_window_start": window_start,
         "daily_brief_window_end": window_end,
         "daily_brief_requested_services": list(SUPPORTED_COMPONENT_SERVICES),
