@@ -25,7 +25,7 @@ def __getattr__(name: str) -> Any:
 
         return build_x1_scout_graph
     if name == "build_x1_scout_tool":
-        from roberta.x1_scout.tool import build_x1_scout_tool
+        from roberta.x1_scout.daily_brief_tool import build_x1_scout_tool
 
         return build_x1_scout_tool
     if name in {"extract_x1_policy_facts", "x1_policy_facts_from_state"}:
