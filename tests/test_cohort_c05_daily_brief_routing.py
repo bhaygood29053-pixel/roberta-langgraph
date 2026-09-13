@@ -13,6 +13,7 @@ from roberta.x1_scout.daily_intelligence_brief_workflow import (
     X1_DAILY_BRIEF_SCOPE_SELECTION_CONTRACT,
     run_x1_daily_intelligence_brief_workflow,
 )
+from roberta.x1_scout.planner import enforce_plan
 
 
 C05 = "Give me today's X1 intelligence brief and tell me what deserves attention."
@@ -141,6 +142,11 @@ def test_daily_brief_selects_exact_ranked_mints_then_uses_canonical_accepted_rou
         "discovery_intelligence",
         "large_trade_discovery",
     ]
+
+    # This is the exact planner gate that failed in the Cohort 001 live runtime.
+    plan = enforce_plan(request, None)
+    assert plan["operations"] == ["x1_intelligence_brief_inputs"]
+    assert plan["source"] == "explicit"
 
     selection = report["daily_brief_scope_selection"]
     assert selection["contract_version"] == X1_DAILY_BRIEF_SCOPE_SELECTION_CONTRACT
