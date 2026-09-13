@@ -1009,6 +1009,38 @@ def validate_capability_manifest(value: Any) -> CMISCapabilities:
                             f"CMIS x1/wallet_relationship_intelligence {field} must be boolean."
                         )
                     normalized_capability[field] = raw_flag
+            if chain == "x1" and service == "x1_intelligence_brief_inputs":
+                service_contract = capability_raw.get("service_contract_version")
+                request_contract = capability_raw.get("request_contract_version")
+                composition_contract = capability_raw.get(
+                    "composition_contract_version"
+                )
+
+                for field, value in (
+                    ("service_contract_version", service_contract),
+                    ("request_contract_version", request_contract),
+                    ("composition_contract_version", composition_contract),
+                ):
+                    if not isinstance(value, str) or not value.strip():
+                        raise CMISCapabilityContractError(
+                            f"CMIS x1/x1_intelligence_brief_inputs {field} must be text."
+                        )
+                    normalized_capability[field] = value
+
+                for field in (
+                    "read_only",
+                    "public_service_promoted",
+                    "scout_reliance_promoted",
+                    "complete_x1_ecosystem_coverage_verified",
+                    "execution_authorized",
+                ):
+                    raw_flag = capability_raw.get(field)
+                    if not isinstance(raw_flag, bool):
+                        raise CMISCapabilityContractError(
+                            f"CMIS x1/x1_intelligence_brief_inputs {field} must be boolean."
+                        )
+                    normalized_capability[field] = raw_flag
+
             if chain == "x1" and service == "asset_lookup":
                 identity_contract = capability_raw.get("identity_contract_version")
                 if identity_contract is not None:
